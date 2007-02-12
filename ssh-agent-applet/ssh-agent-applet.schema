@@ -45,7 +45,7 @@
       <applyto>/apps/ssh-agent-applet/search_paths</applyto>
       <owner>ssh-agent-applet</owner>
       <type>string</type>
-      <default>ssh/id_rsa</default>
+      <default>ssh/id_rsa, ssh/id_dsa</default>
       <locale name="C">
         <short>Comma separated list of paths to look for keys.</short>
         <long>
