@@ -1,5 +1,6 @@
 - refer to web address in docs
 - finish INSTALL
+- full license in About box
 - credits for the thumbdrive image (Tango Project)
 - Makefile + autotools based install (will fix a number of problems)
 - spec file
