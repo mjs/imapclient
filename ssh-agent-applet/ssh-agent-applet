@@ -1,0 +1,227 @@
+#!/usr/bin/env python
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+#
+# Copyright 2007 Menno Smits
+# Written by Menno Smits <menno _at_ freshfoo.com>
+
+import sys
+import os
+import subprocess
+import pygtk
+pygtk.require('2.0')
+
+import gtk
+import gtk.glade
+import gconf
+import gnomeapplet
+
+from sshagentapplet import defs
+from sshagentapplet.volumewatcher import VolumeWatcher
+from sshagentapplet.popup import PopUp
+
+ICON = os.path.join(defs.DATA_DIR, 'drive-removable-media.svg')
+SECS_PER_HOUR = 3600
+
+# Right button menu
+MENU_XML = '''\
+<popup name="button3">
+    <menuitem name="Disabled" verb="Disabled" _label="_Disabled?" 
+        type="toggle" />
+    <menuitem name="Clear" verb="Clear" _label="_Clear all loaded keys"/>
+    <separator/>
+    <menuitem name="Prefs" verb="Prefs" _label="_Preferences" 
+        pixtype="stock" pixname="gtk-properties"/>
+    <menuitem name="About" verb="About" _label="_About" 
+        pixtype="stock" pixname="gnome-stock-about"/>
+</popup>
+'''
+
+class SshAgentApplet(gnomeapplet.Applet):
+
+    def __init__(self, applet, iid):
+        self.__gobject_init__()
+
+        self.applet = applet
+        self.icon = gtk.Image()
+        self.icon.set_from_file(ICON)
+        self.applet.add(self.icon)
+
+        self.gconf = gconf.client_get_default()
+
+        # Load preferences dialog and widgets
+        self.glade = gtk.glade.XML(os.path.join(defs.DATA_DIR, 
+            'ssh-agent-applet.glade'))
+        for prefname in (
+                'prefs', 
+                'pref_unmount', 
+                #'pref_clear_on_suspend', 
+                'pref_key_lifetime', 
+                'pref_search_paths',
+                'about'):
+            setattr(self, prefname, self.glade.get_widget(prefname))
+        self.glade.signal_autoconnect(self)
+        self.prefs.hide_all()
+        self.about.hide_all()
+
+        # Set values on prefs dialog 
+        self.pref_unmount.set_active(
+                bool(self.gconf.get_bool(defs.GCONF_BASE+'unmount')))
+        #self.pref_clear_on_suspend.set_active(
+                #bool(self.gconf.get_bool(defs.GCONF_BASE+'clear_on_suspend')))
+        self.pref_key_lifetime.set_value(
+                self.gconf.get_int(defs.GCONF_BASE+'key_lifetime'))
+
+        print self.gconf.get_int(defs.GCONF_BASE+'key_lifetime')
+        print self.gconf.get_string(defs.GCONF_BASE+'search_paths')
+        self.pref_search_paths.set_text(
+                self.gconf.get_string(defs.GCONF_BASE+'search_paths'))
+
+        # Setup applet menu
+        verbs = [
+            ("Clear", self.on_clear), 
+            ("Prefs", self.on_show_prefs), 
+            ("About", self.on_about),
+            ]
+        self.applet.setup_menu(MENU_XML, verbs, None)
+
+        # Setup handler for UI events on the popup menu so that we see when
+        # Enabled is toggled
+        self.enabled = True
+        popup = self.applet.get_popup_component()
+        popup.connect('ui-event', self.disabled_toggle)
+
+        # Start watching for new volumes
+        self.volumewatcher = VolumeWatcher(self.volume_mounted)
+
+        self.applet.show_all()
+
+    def disabled_toggle(self, obj, name, i, value):
+        self.enabled = not (value == '1')
+        print 'enabled', self.enabled
+
+    def on_clear(self, event, data=None):
+        os.system('ssh-add -D')
+
+    def on_show_prefs(self, event, data=None):
+        self.prefs.show_all()
+
+    def on_about(self, event, data=None):
+        self.about.show_all()
+
+    def on_prefs_close_clicked(self, *args):
+        '''Preferences window Close button clicked
+        '''
+        self.close_prefs()
+
+    def on_prefs_delete_event(self, widget, event):
+        '''Preferences window closed
+        '''
+        self.close_prefs()
+        return True
+
+    def close_prefs(self):
+        '''Save settings to gconf and hide preferences window
+        '''
+        self.gconf.set_bool(defs.GCONF_BASE+'unmount', 
+                self.pref_unmount.get_active())
+        #self.gconf.set_bool(defs.GCONF_BASE+'clear_on_suspend', 
+            #self.pref_clear_on_suspend.get_active())
+        self.gconf.set_int(defs.GCONF_BASE+'key_lifetime', 
+            int(self.pref_key_lifetime.get_value()))
+        self.gconf.set_string(defs.GCONF_BASE+'search_paths', 
+            self.pref_search_paths.get_text())
+
+        self.prefs.hide_all()       # Don't destroy, just hide
+
+    def volume_mounted(self, mount_point):
+        '''This handler is called when a new volume appears on the system.
+        It is called by the VolumeWatcher instance.
+
+        @param mount_point: The mount point of the new volume
+        @return: C{True} if the volume should be unmounted, C{False} otherwise
+        '''
+        try:
+            paths =  self.gconf.get_string(defs.GCONF_BASE+'search_paths')
+            paths = [ p.strip() for p in paths.split(',') ]
+            paths = [ p for p in paths if p ]
+
+            key_found = False
+            error = False
+
+            # Read un key lifetime 
+            keylife = int(self.gconf.get_int(defs.GCONF_BASE+'key_lifetime') 
+                    * SECS_PER_HOUR)
+
+            for search_path in paths:
+                keypath = os.path.join(mount_point, search_path)
+                if os.path.isfile(keypath):
+                    # Key found, add it to ssh-agent
+                    key_found = True
+                    try:
+                        add_key(keypath, keylife)
+                        PopUp('Imported key at %s' % keypath)
+                    except IOError, e:
+                        PopUp(str(e))
+                        error = True
+
+            if bool(self.gconf.get_bool(defs.GCONF_BASE+'unmount')):
+                # Unmount option set
+                return key_found and not error
+            else: 
+                # Unmount option isn't set so don't unmount
+                return False
+        except Exception, e:
+            print str(e)
+
+def add_key(path, keylife):
+    '''Add a key to ssh-agent
+    '''
+    keylife = '%ld' % keylife
+    exitcode = subprocess.call(['/usr/bin/ssh-add', '-t', keylife, path],
+            stdin=file('/dev/null', 'r'))
+    if exitcode:
+        raise IOError('ssh-add failed with exitcode %r' % exitcode)
+
+def applet_factory(applet, iid):
+    SshAgentApplet(applet, iid)
+    return gtk.TRUE
+
+def standalone():
+    main_window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+    main_window.set_title("SSH Agent Applet")
+    main_window.connect("destroy", gtk.mainquit) 
+    app = gnomeapplet.Applet()
+    applet_factory(app, None)
+    app.reparent(main_window)
+    main_window.show_all()
+    gtk.main()
+    sys.exit()
+
+def main():
+    if '--standalone' in sys.argv[1:]:
+        # Run standalone (for development)
+        standalone()
+    else:
+        # Run as a panel applet
+        gnomeapplet.bonobo_factory("OAFIID:GNOME_SshAgentApplet_Factory", 
+                gnomeapplet.Applet.__gtype__, "hello", "0", applet_factory)
+
+if __name__ == '__main__':
+    main()
+
+
+
+

@@ -1,0 +1,57 @@
+<gconfschemafile>
+  <schemalist>
+
+    <schema>
+      <key>/schemas/apps/ssh-agent-applet/unmount</key>
+      <applyto>/apps/ssh-agent-applet/unmount</applyto>
+      <owner>ssh-agent-applet</owner>
+      <type>bool</type>
+      <default>1</default>
+      <locale name="C">
+        <short>Unmount volume once key is loaded.</short>
+        <long>
+        </long>
+      </locale>
+    </schema>
+
+    <schema>
+      <key>/schemas/apps/ssh-agent-applet/clear_on_suspend</key>
+      <applyto>/apps/ssh-agent-applet/clear_on_suspend</applyto>
+      <owner>ssh-agent-applet</owner>
+      <type>bool</type>
+      <default>1</default>
+      <locale name="C">
+        <short>Clear loaded SSH keys when computer is suspended.</short>
+        <long>
+        </long>
+      </locale>
+    </schema>
+
+    <schema>
+      <key>/schemas/apps/ssh-agent-applet/key_lifetime</key>
+      <applyto>/apps/ssh-agent-applet/key_lifetime</applyto>
+      <owner>ssh-agent-applet</owner>
+      <type>int</type>
+      <default>12</default>
+      <locale name="C">
+        <short>Default key lifetime (in hours).</short>
+        <long>
+        </long>
+      </locale>
+    </schema>
+
+    <schema>
+      <key>/schemas/apps/ssh-agent-applet/search_paths</key>
+      <applyto>/apps/ssh-agent-applet/search_paths</applyto>
+      <owner>ssh-agent-applet</owner>
+      <type>string</type>
+      <default>ssh/id_rsa</default>
+      <locale name="C">
+        <short>Comma separated list of paths to look for keys.</short>
+        <long>
+        </long>
+      </locale>
+    </schema>
+
+  </schemalist>
+</gconfschemafile>
