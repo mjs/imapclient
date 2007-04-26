@@ -1,0 +1,12 @@
+- higher level fetch methods for common attributes, flattened
+- testing with read-only access to some folders
+- transparent "&" escaping
+- FetchTokeniser breaks with nested lists. Fix? 
+- SSL support
+- allow per-call uid overrides
+- more docs
+- better namespace support
+- transparent splitting of long message id lists
+- more complex authentication methods
+- get rid of imaplib completely?
+- support for streaming data in and out (via generators/file-like objects)
