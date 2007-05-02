@@ -20,10 +20,7 @@ import shlex
 import datetime
 #imaplib.Debug = 5
 
-# AUTHORS file
-#----- initial release -----
-
-__version__ = '0.1'
+__version__ = '0.2'
 __author__ = 'Menno Smits <menno@freshfoo.com>'
 
 __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT',
