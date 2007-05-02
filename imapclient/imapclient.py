@@ -39,7 +39,7 @@ RECENT = r'\Recent'         # This flag is read-only
 
 class IMAPClient:
     '''
-    A Pythonic, easy-tou-use IMAP client class.
+    A Pythonic, easy-to-use IMAP client class.
 
     Unlike imaplib, arguments and returns values are Pythonic and readily
     usable. Exceptions are raised when problems occur (no error checking of
