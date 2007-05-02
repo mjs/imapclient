@@ -22,10 +22,10 @@ if os.popen('svn status').readlines():
 
 # Tag in svn
 exitcode = os.system('svn cp '
-    '-m "tagging imapclient "%s" '
+    '-m "tagging imapclient "%(version)s" '
     'file:///home/msmits/svnroot/trunk/imapclient '
-    'file:///home/msmits/svnroot/tags/imapclient/$version ' % (
-        imapclient.__version__))
+    'file:///home/msmits/svnroot/tags/imapclient/%(version)s' % {
+        'version': imapclient.__version__ })
 if exitcode:
     sys.exit(2)
 
