@@ -12,55 +12,61 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+# Copyright 2007 Menno Smits
+
 import re
 import imaplib
 import shlex
 import datetime
+#imaplib.Debug = 5
 
-#XXX: fix fetch bug
-
-#TODO: finish up livetest.py for stable-ish functionality
-#   folder exists
-#   select
-#   basic search
-#   fetch
-#   flags stuff
-
-#XXX's
-
-#TODO: flags and message parts constants
-#TODO: simple README: 
-#   - quick intro
-#   - compare imaplib and imapclient
-#   - install and test instructions
-#   - defer to example, doctstrings etc
-# example.py
-#TODO: add COPYING
-#TODO: copyright 
+# AUTHORS file
 #----- initial release -----
 
-# Common flags
-F_DELETED = r'\Deleted'
+__version__ = '0.1'
+__author__ = 'Menno Smits <menno@freshfoo.com>'
+
+__all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT',
+    'RECENT']
+
+# System flags
+DELETED = r'\Deleted'
+SEEN = r'\Seen'
+ANSWERED = r'\Answered'
+FLAGGED = r'\Flagged'
+DRAFT = r'\Draft'
+RECENT = r'\Recent'         # This flag is read-only
 
 class IMAPClient:
     '''
-    A high level, friendly IMAP client interface.
+    A Pythonic, easy-tou-use IMAP client class.
 
     Unlike imaplib, arguments and returns values are Pythonic and readily
     usable. Exceptions are raised when problems occur (no error checking of
     return values is required).
 
     Message unique identifiers (UID) can be used with any call. The use_uid
-    argument to the constructor and the use_uid attribute control whether or
-    not UIDs are used.
+    argument to the constructor and the use_uid attribute control whether UIDs
+    are used.
 
+    Any method that accepts message id's takes either a sequence containing
+    message IDs (eg. [1,2,3]) or a single message ID as an integer.
+
+    Any method that accepts message flags takes either a sequence containing
+    message flags (eg. [DELETED, 'foo', 'Bar']) or a single message flag (eg.
+    'Foo'). See the constants at the top of this file for commonly used flags.
+
+    The IMAP related exceptions that will be raised by this class are:
+        IMAPClient.Error
+        IMAPClient.AbortError
+        IMAPClient.ReadOnlyError
+    These are aliases for the imaplib.IMAP4 exceptions of the same name. Socket
+    errors may also be raised in the case of network errors.
     '''
-    #XXX: document how messages and flags are accepted
 
-    # Map error classes across from imaplib
-    error = imaplib.IMAP4.error
-    abort = imaplib.IMAP4.abort
-    readonly = imaplib.IMAP4.readonly
+    Error = imaplib.IMAP4.error
+    AbortError = imaplib.IMAP4.abort
+    ReadOnlyError = imaplib.IMAP4.readonly
 
     re_sep = re.compile('^\(\("[^"]*" "([^"]+)"\)\)')
     re_folder = re.compile('\([^)]*\) "[^"]+" "([^"]+)"')
@@ -95,7 +101,7 @@ class IMAPClient:
         if match:
             return match.group(1)
         else:
-            raise self.error('could not determine folder separator')
+            raise self.Error('could not determine folder separator')
 
     def list_folders(self, directory="", pattern="*"):
         '''Get a listing of folders on the server.
@@ -120,7 +126,6 @@ class IMAPClient:
         return folders
 
     def select_folder(self, folder):
-        #XXX: readonly option
         '''Select the current folder on the server. Future calls to methods
         such as search and fetch will act on the selected folder.
 
@@ -151,6 +156,16 @@ class IMAPClient:
         self._checkok('create', typ, data)
         return data[0]
 
+    def delete_folder(self, folder):
+        '''Delete a new folder on the server.
+
+        @param folder: Folder name to delete.
+        @return: Server response.
+        '''
+        typ, data = self._imap.delete(folder)
+        self._checkok('delete', typ, data)
+        return data[0]
+
     def folder_exists(self, folder):
         '''Determine if a folder exists on the server.
 
@@ -162,42 +177,71 @@ class IMAPClient:
         return len(data) == 1 and data[0] != None
 
     def search(self, criteria='ALL', charset=None):
-        #XXX: Pythonic criteria specification
+        if not criteria:
+            raise ValueError('no criteria specified')
+
         if isinstance(criteria, basestring):
             criteria = (criteria,)
+        crit_list = ['(%s)' % c for c in criteria]
 
         if self.use_uid:
             if charset is None:
-                typ, data = self._imap.uid('SEARCH', *criteria)
+                typ, data = self._imap.uid('SEARCH', *crit_list)
             else:
                 typ, data = self._imap.uid('SEARCH', 'CHARSET', charset,
-                    *criteria)
+                    *crit_list)
         else:
-            typ, data = self._imap.search(charset, *criteria)
+            typ, data = self._imap.search(charset, *crit_list)
 
         self._checkok('search', typ, data)
 
         return [ long(i) for i in data[0].split() ]
 
+    def get_flags(self, messages):
+        '''Return the flags set for messages
+
+        @param messages: Message IDs to check flags for
+        @return: As for add_f
+            { msgid1: [flag1, flag2, ... ], }
+        '''
+        response = self.fetch(messages, ['FLAGS'])
+        return self._flatten_dict(response)
+
+    def add_flags(self, messages, flags):
+        '''Add one or more flags to messages
+
+        @param messages: Message IDs to add flags to
+        @param flags: Sequence of flags to add
+        @return: The flags set for each message ID as a dictionary
+            { msgid1: [flag1, flag2, ... ], }
+        '''
+        return self._store('+FLAGS', messages, flags)
+
+    def remove_flags(self, messages, flags):
+        '''Remove one or more flags from messages
+
+        @param messages: Message IDs to remove flags from
+        @param flags: Sequence of flags to remove
+        @return: As for get_flags.
+        '''
+        return self._store('-FLAGS', messages, flags)
+
+    def set_flags(self, messages, flags):
+        '''Set the flags for messages
+
+        @param messages: Message IDs to set flags for
+        @param flags: Sequence of flags to set
+        @return: As for get_flags.
+        '''
+        return self._store('FLAGS', messages, flags)
+
     def delete_messages(self, messages):
         '''Short-hand method for deleting one or more messages
 
         @param messages: Message IDs to mark for deletion.
-        @return: Same as for set_flags.
+        @return: Same as for get_flags.
         '''
-        return self.add_flags(messages, F_DELETED)
-
-    def add_flags(self, messages, flags):
-        #XXX: doc
-        return self._store('+FLAGS', messages, flags)
-
-    def remove_flags(self, messages, flags):
-        #XXX: doc
-        return self._store('-FLAGS', messages, flags)
-
-    def set_flags(self, messages, flags):
-        #XXX: doc
-        return self._store('FLAGS', messages, flags)
+        return self.add_flags(messages, DELETED)
 
     def fetch(self, messages, parts):
         '''Retrieve selected data items for one or more messages.
@@ -205,18 +249,18 @@ class IMAPClient:
         @param messages: Message IDs to fetch.
         @param parts: A sequence of data items to retrieve.
         @return: A dictionary indexed by message number. Each item is itself a
-            dictionary, one item per field.
+            dictionary containing the requested message parts.
         '''
+        if not messages:
+            return {}
+
         msg_list = messages_to_str(messages)
+        parts_list = seq_to_parenlist([ p.upper() for p in parts ])
 
-        #XXX: parts handling is broken, needs to be turned into a parenthenised list first
-        parts = [ p.upper() for p in parts ]
-
-        #XXX: abstract out UID handling if possible
         if self.use_uid:
-            typ, data = self._imap.uid('FETCH', msg_list, *parts)
+            typ, data = self._imap.uid('FETCH', msg_list, parts_list)
         else:
-            typ, data = self._imap.fetch(msg_list, *parts)
+            typ, data = self._imap.fetch(msg_list, parts_list)
         self._checkok('fetch', typ, data)
 
         parser = FetchParser()
@@ -240,7 +284,7 @@ class IMAPClient:
         else:
             time_val = None
 
-        flags_list = flags_to_str(flags)
+        flags_list = seq_to_parenlist(flags)
 
         typ, data = self._imap.append(folder, flags_list, time_val, msg)
         self._checkok('append', typ, data)
@@ -253,6 +297,11 @@ class IMAPClient:
         #TODO: expunge response
 
     def getacl(self, folder):
+        '''Get the ACL for a folder
+
+        @param folder: Folder name to get the ACL for.
+        @return: A list of (who, acl) tuples
+        '''
         typ, data = self._imap.getacl(folder)
         self._checkok('getacl', typ, data)
 
@@ -279,10 +328,10 @@ class IMAPClient:
     def _checkok(self, command, typ, data):
         '''Check command responses for errors.
 
-        Will raise IMAPClient.error if a command failed.
+        @raise: IMAPClient.Error if a command failed.
         '''
         if typ != 'OK':
-            raise self.error('%s failed: %r' % (command, data[0]))
+            raise self.Error('%s failed: %r' % (command, data[0]))
 
     def _store(self, cmd, messages, flags):
         '''Worker functions for flag manipulation functions
@@ -290,24 +339,34 @@ class IMAPClient:
         @param cmd: STORE command to use (eg. '+FLAGS')
         @param messages: Sequence of message IDs
         @param flags: Sequence of flags to set.
-        @return: Parsed fetch response (dictionary)
+        @return: The flags set for each message ID as a dictionary
+            { msgid1: [flag1, flag2, ... ], }
         '''
         if not messages:
             return {}
 
         msg_list = messages_to_str(messages)
-        flag_list = flags_to_str(flags)
+        flag_list = seq_to_parenlist(flags)
 
         if self.use_uid:
-            typ, data = self._imap.uid('STORE', msg_list, '+FLAGS', flag_list)
+            typ, data = self._imap.uid('STORE', msg_list, cmd, flag_list)
         else:
-            typ, data = self.store(msg_list, cmd, flag_list)
+            typ, data = self._imap.store(msg_list, cmd, flag_list)
         self._checkok('store', typ, data)
 
-        return FetchParser()(data)
+        return self._flatten_dict(FetchParser()(data))
+
+    def _flatten_dict(self, fetch_dict):
+        return dict([
+            (msgid, data.values()[0])
+            for msgid, data in fetch_dict.iteritems()
+            ])
 
 class FetchParser(object):
-    #XXX: quick doc
+    '''
+    Parse an IMAP FETCH response and convert the return values to useful Python
+    values.
+    '''
 
     def parse(self, response):
         out = {}
@@ -362,7 +421,7 @@ class FetchParser(object):
 
             else:
                 if isinstance(item, Literal):
-                    #assert len(data) == item.length    #XXX
+                    #assert len(data) == item.length
                     arg = literal_data
                 else:
                     arg = item
@@ -395,20 +454,22 @@ class FetchTokeniser(object):
     General response tokenizer and converter
     '''
 
-    #XXX reuse expressions
-    PAIR_RE = re.compile(
-        '([\w\.]+)\s+'          # name
-        '((?:\d+)'              # bare integer
-        '|(?:".*?")'            # quoted string 
-        '|(?:\(.*?\))'          # parenthensized list
-        '|(?:{\d+?})'           # IMAP literal
-        ')\s*')
+    QUOTED_STRING = '(?:".*?")'
+    PAREN_LIST = '(?:\(.*?\))'
 
-    DATA_RE = re.compile(
-        '((?:".*?")'            # quoted string 
-        '|(?:\(.*?\))'          # parenthensized list
-        '|(?:\S+)'              # word 
-        ')\s*')
+    PAIR_RE = re.compile((
+        '([\w\.]+)\s+' +        # name
+        '((?:\d+)' +            # bare integer 
+        '|(?:{\d+?})' +         # IMAP literal
+        '|' + QUOTED_STRING +
+        '|' + PAREN_LIST +
+        ')\s*'))
+
+    DATA_RE = re.compile((
+        '(' + QUOTED_STRING +
+        '|' + PAREN_LIST +
+        '|(?:\S+)' +            # word
+        ')\s*'))
 
     def process_pairs(self, s):
         '''Break up and convert a string of FETCH response pairs
@@ -497,12 +558,11 @@ def messages_to_str(messages):
         raise ValueError('invalid message list: %r' % messages)
     return ','.join([str(m) for m in messages])
 
-def flags_to_str(flags):
-    '''Convert a sequence of flags or a single flag into a flag list for use
-    with IMAP commands.
+def seq_to_parenlist(flags):
+    '''Convert a sequence into parenthised list for use with IMAP commands
 
-    @param flags: Flag sequence to process (eg. [F_DELETED])
-    @return: Flags list string (eg. r'(\Deleted))
+    @param flags: Sequence to process (eg. ['abc', 'def'])
+    @return: IMAP parenthenised list (eg. '(abc def)')
     '''
     if isinstance(flags, str):
         flags = (flags,)
