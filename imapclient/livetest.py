@@ -19,7 +19,6 @@ from datetime import datetime
 from optparse import OptionParser
 import imapclient
 
-#TODO: test search() more 
 #TODO: more fetch() testing
 #TODO: test error conditions
 #TODO: prettify test output
@@ -116,6 +115,36 @@ def test_flags(server):
     _flagtest(server.add_flags, ['boo'], base_flags + ['boo'])
     _flagtest(server.remove_flags, ['boo'], base_flags)
 
+def test_search(server):
+    clear_folder(server, 'INBOX')
+
+    # Add some test messages
+    msg_tmpl = 'Subject: %s\r\n\r\nBody'
+    subjects = ('a', 'b', 'c')
+    for subject in subjects:
+        msg = msg_tmpl % subject
+        if subject == 'c':
+            flags = (imapclient.DELETED,)
+        else:
+            flags = ()
+        server.append('INBOX', msg, flags)
+
+    messages_all = server.search('ALL')
+    assert len(messages_all) == len(subjects)   # Check we see all messages
+    assert server.search() == messages_all      # Check default
+
+    # Single criteria
+    assert len(server.search('DELETED')) == 1
+    assert len(server.search('NOT DELETED')) == len(subjects) - 1
+    assert server.search('NOT DELETED') == server.search(['NOT DELETED'])
+
+    # Multiple criteria
+    assert len(server.search(['NOT DELETED', 'SMALLER 100'])) == \
+            len(subjects) - 1
+    assert len(server.search(['NOT DELETED', 'SUBJECT "a"'])) == 1
+    assert len(server.search(['NOT DELETED', 'SUBJECT "c"'])) == 0
+
+
 def runtests(server):
     '''Run a sequence of tests against the IMAP server
     '''
@@ -125,6 +154,7 @@ def runtests(server):
     test_folders(server)
     test_append(server)
     test_flags(server)
+    test_search(server)
 
 def clear_folder(server, folder):
     server.select_folder(folder)
