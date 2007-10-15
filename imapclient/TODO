@@ -1,6 +1,12 @@
+- package as an egg
+- rename to IMAPClient(et), be consistent in the docs, update cheeseshop
+    - script to run tests
+    - include test_suite
+    - update install instructions in README 
+    - update testing instructions
+- automatic changelog generation
 - support for more IMAP functions: sort, examine etc
 - write a comparision of imaplib vs imapclient.py
-- proper installer
 - abstract out UID handling if possible
 - higher level fetch methods for common attributes, flattened
 - handling read-only access

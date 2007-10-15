@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 '''
-Release script for imapclient
+Release script for IMAPClient
 '''
 
 import os
@@ -22,13 +22,13 @@ if os.popen('svn status').readlines():
 
 # Tag in svn
 exitcode = os.system('svn cp '
-    '-m "tagging imapclient %(version)s" '
-    'file:///home/msmits/svnroot/trunk/imapclient '
-    'file:///home/msmits/svnroot/tags/imapclient/%(version)s' % {
+    '-m "tagging IMAPClient %(version)s" '
+    'file:///home/msmits/svnroot/trunk/IMAPClient '
+    'file:///home/msmits/svnroot/tags/IMAPClient/%(version)s' % {
         'version': imapclient.__version__ })
 if exitcode:
     sys.exit(2)
 
 # Create distribution archives
 os.system('python setup.py sdist -d %s --formats=gztar,zip' % DIST_DIR)
-
+os.system('rm -rf IMAPClient.egg-info')

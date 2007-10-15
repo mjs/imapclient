@@ -1,7 +1,7 @@
 Introduction
 ------------
-imapclient.py aims to be a easy-to-use, Pythonic and complete IMAP client
-library with no dependencies outside the Python standard library. 
+IMAPClient aims to be a easy-to-use, Pythonic and complete IMAP client library
+with no dependencies outside the Python standard library. 
 
 Features:
     - Arguments and return values are natural Python types. 
@@ -11,8 +11,8 @@ Features:
     - Convenience methods are provided for commonly used functionality.
     - Exceptions are raised when errors occur.
 
-Why imapclient.py?
-------------------
+Why IMAPClient?
+---------------
 You may ask: "why create another IMAP client library for Python? Doesn't the
 Python standard library already have imaplib?". 
 
@@ -26,24 +26,25 @@ Also, imaplib doesn't make good use of exceptions. This means you need to check
 the return value of each call to imaplib to see if what you just did was
 successful.
 
-imapclient.py actually uses imaplib internally. This may change at some point
-in the future.
+IMAPClient actually uses imaplib internally. This may change at some point in
+the future.
 
 Current Status
 --------------
-imapclient.py is currently under development. It is incomplete and some API's
-may change in the near future. There's still a significant amount of IMAP
+IMAPClient is currently under development. It is incomplete and some API's may
+change in the near future. There's still a significant amount of IMAP
 functionality that the IMAPClient class doesn't cover yet.  That said, what's
 there now is documented, has been tested and should be fairly solid. 
 
 See the TODO file for planned developments.
 
-Using imapclient.py
--------------------
+Using IMAPClient
+----------------
+XXX
 Install the single source file (imapclient.py) in your Python site-packages
 directory or where it makes sense for your application.
 
-See example.py for a simple example of how to use imapclient.py.
+See example.py for a simple example of how to use IMAPClient.
 
 The code is well documented. See the docstrings for more usage information.
 

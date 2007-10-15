@@ -1,0 +1,7 @@
+include README COPYING AUTHORS THANKS example.py
+include run_tests.py
+include ez_setup.py
+include make_release.py
+recursive-include doc *
+recursive-include examples *
+

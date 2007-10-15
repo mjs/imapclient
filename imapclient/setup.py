@@ -1,8 +1,15 @@
-from distutils.core import setup
+#!/usr/bin/env python
+
+# bootstrap setuptools if necessary
+from ez_setup import use_setuptools
+use_setuptools()
+
+from setuptools import setup, find_packages
 import imapclient
+version = imapclient.__version__
 
 desc = """\
-imapclient aims to be a easy-to-use, Pythonic and complete IMAP client library with no dependencies outside the Python standard library.
+IMAPClient aims to be a easy-to-use, Pythonic and complete IMAP client library with no dependencies outside the Python standard library.
 
 Features:
     * Arguments and return values are natural Python types.
@@ -11,17 +18,20 @@ Features:
     * Convenience methods are provided for commonly used functionality.
     * Exceptions are raised when errors occur.
 
-imapclient includes units tests for more complex functionality and a automated functional test that can be run against a live IMAP server.
+IMAPClient includes units tests for more complex functionality and a automated functional test that can be run against a live IMAP server.
 """
 
 setup(
-        name='imapclient',
-        version=imapclient.__version__,
+        name='IMAPClient',
+        version=version,
         author="Menno Smits",
         author_email="menno@freshfoo.com",
         license="http://www.gnu.org/licenses/gpl.txt",
         url="http://freshfoo.com/wiki/CodeIndex",
-        py_modules=['imapclient'],
+        download_url='http://freshfoo.com/projects/imapclient/IMAPClient-%s.tar.gz' % version,
+        packages=['imapclient', 'imapclient.test'],
+        py_modules=[],
+        install_requires=[],
         description="Easy-to-use, Pythonic and complete IMAP client library with "
             "no dependencies outside the Python standard library.",
         long_description=desc,
