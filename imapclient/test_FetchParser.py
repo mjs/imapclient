@@ -178,6 +178,22 @@ class TestFetchParser(unittest.TestCase):
                 }
             )
 
+    def testLiteralsWithSections(self):
+        self._parse_test(
+            [('1 (BODY[TEXT] {11}', 'Hi there.\r\n'), ')'],
+            { 1: {'BODY[TEXT]': 'Hi there.\r\n',} }
+            )
+
+    def testLiteralsWithSectionsAndOtherParts(self):
+        self._parse_test(
+            [('1 (FLAGS (\\Seen) UID 2 BODY[HEADER.FIELDS (FROM)] {21}',
+              'From: foo@foo.com\r\n'), ')'],
+            {2: { 'BODY[HEADER.FIELDS (FROM)]': 'From: foo@foo.com\r\n',
+                  'FLAGS': ['\\Seen'],
+                   }
+                }
+            )
+
     def testUID(self):
         '''Test UID handling. The UID is returned instead of the given message
         ID if present.

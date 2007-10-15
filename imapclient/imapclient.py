@@ -455,9 +455,9 @@ class FetchTokeniser(object):
     PAREN_LIST = '(?:\(.*?\))'
 
     PAIR_RE = re.compile((
-        '([\w\.]+)\s+' +        # name
-        '((?:\d+)' +            # bare integer 
-        '|(?:{\d+?})' +         # IMAP literal
+        '([\w\.]+(?:\[[^\]]+\]+)?)\s+' +    # name (matches "FOO", "FOO.BAR" & "BODY[SECTION STUFF]")
+        '((?:\d+)' +                        # bare integer 
+        '|(?:{\d+?})' +                     # IMAP literal
         '|' + QUOTED_STRING +
         '|' + PAREN_LIST +
         ')\s*'))
@@ -477,7 +477,7 @@ class FetchTokeniser(object):
         out = []
         for m in strict_finditer(self.PAIR_RE, s):
             name, data = m.groups()
-            out.append((name, self._convert(data)))
+            out.append((name, self.nativefy(data)))
         return out
 
     def process_list(self, s):
@@ -490,10 +490,10 @@ class FetchTokeniser(object):
             return []
         out = []
         for m in strict_finditer(self.DATA_RE, s):
-            out.append(self._convert(m.group(1)))
+            out.append(self.nativefy(m.group(1)))
         return out
 
-    def _convert(self, s):
+    def nativefy(self, s):
         if s.startswith('"'):
             return s[1:-1]      # Debracket
         elif s.startswith('{'):
