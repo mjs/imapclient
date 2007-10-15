@@ -2,6 +2,7 @@ README
 COPYING
 TODO
 AUTHORS
+THANKS
 imapclient.py
 test_FetchParser.py
 livetest.py
