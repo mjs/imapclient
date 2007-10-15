@@ -14,7 +14,7 @@ def fatal(msg):
     sys.stderr.write(msg+'\n')
     sys.exit(1)
 
-os.system('rm -f *.pyc')
+os.system('find -name "*.pyc" | xargs rm -f')
 
 # Check for stale commits
 if os.popen('svn status').readlines():
