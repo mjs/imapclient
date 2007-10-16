@@ -1,7 +1,3 @@
-- fix MANIFEST
-- update install instructions in README 
-- update testing instructions
-- rename to IMAPClient(et), be consistent in the docs, update cheeseshop
 - automatic changelog generation
 - support for more IMAP functions: sort, examine etc
 - write a comparision of imaplib vs imapclient.py
