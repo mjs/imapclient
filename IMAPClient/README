@@ -44,7 +44,7 @@ XXX
 Install the single source file (imapclient.py) in your Python site-packages
 directory or where it makes sense for your application.
 
-See example.py for a simple example of how to use IMAPClient.
+See examples/example.py for a simple example of how to use IMAPClient.
 
 The code is well documented. See the docstrings for more usage information.
 
@@ -71,4 +71,4 @@ Unit Tests
 ----------
 There are fairly comprehensive unit tests for the FETCH response parser and
 related code in test_FetchParser.py. These tests use unittest and can be run
-using "python test_FetchParser.py".
+using "python setup.py test" or "python run_tests.py".

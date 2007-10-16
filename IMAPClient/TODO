@@ -1,9 +1,7 @@
-- package as an egg
+- fix MANIFEST
+- update install instructions in README 
+- update testing instructions
 - rename to IMAPClient(et), be consistent in the docs, update cheeseshop
-    - script to run tests
-    - include test_suite
-    - update install instructions in README 
-    - update testing instructions
 - automatic changelog generation
 - support for more IMAP functions: sort, examine etc
 - write a comparision of imaplib vs imapclient.py

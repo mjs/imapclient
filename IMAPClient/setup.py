@@ -30,6 +30,7 @@ setup(
         url="http://freshfoo.com/wiki/CodeIndex",
         download_url='http://freshfoo.com/projects/imapclient/IMAPClient-%s.tar.gz' % version,
         packages=['imapclient', 'imapclient.test'],
+        test_suite='imapclient.test.load_suite',
         py_modules=[],
         install_requires=[],
         description="Easy-to-use, Pythonic and complete IMAP client library with "

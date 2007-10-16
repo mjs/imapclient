@@ -20,7 +20,7 @@ Unit tests for the FetchTokeniser and FetchParser classes
 
 import unittest
 import datetime
-from imapclient import FetchParser, FetchTokeniser, Literal
+from imapclient.imapclient import FetchParser, FetchTokeniser, Literal
 from pprint import pformat
 
 #TODO: test timezone handling
