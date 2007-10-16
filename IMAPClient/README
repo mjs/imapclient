@@ -40,9 +40,17 @@ See the TODO file for planned developments.
 
 Using IMAPClient
 ----------------
-XXX
-Install the single source file (imapclient.py) in your Python site-packages
-directory or where it makes sense for your application.
+IMAPClient uses setuptools. To install directly from PyPI use the easy_install
+tool:
+
+    easy_install IMAPClient
+
+To install from the source distribution:
+
+    python setup.py install
+
+The usual setuptools installation options are available. See 
+http://peak.telecommunity.com/DevCenter/EasyInstall for more info.
 
 See examples/example.py for a simple example of how to use IMAPClient.
 
