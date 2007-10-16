@@ -28,7 +28,7 @@ setup(
         author_email="menno@freshfoo.com",
         license="http://www.gnu.org/licenses/gpl.txt",
         url="http://freshfoo.com/wiki/CodeIndex",
-        download_url='http://freshfoo.com/projects/imapclient/IMAPClient-%s.tar.gz' % version,
+        download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.tar.gz' % version,
         packages=['imapclient', 'imapclient.test'],
         test_suite='imapclient.test.load_suite',
         py_modules=[],
