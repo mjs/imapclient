@@ -20,9 +20,6 @@ import shlex
 import datetime
 #imaplib.Debug = 5
 
-__version__ = '0.2'
-__author__ = 'Menno Smits <menno@freshfoo.com>'
-
 __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT',
     'RECENT']
 
