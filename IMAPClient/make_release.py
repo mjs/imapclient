@@ -15,6 +15,7 @@ def fatal(msg):
     sys.exit(1)
 
 os.system('find -name "*.pyc" | xargs rm -f')
+os.system('rm -rf IMAPClient.egg-info')
 
 # Check for stale commits
 if os.popen('svn status').readlines():
