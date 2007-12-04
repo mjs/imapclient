@@ -64,6 +64,8 @@ class IMAPClient:
 
     re_sep = re.compile('^\(\("[^"]*" "([^"]+)"\)\)')
     re_folder = re.compile('\([^)]*\) "[^"]+" "([^"]+)"')
+    re_status = re.compile(r'^\s*(?P<folder>[ \w%&+."\-]+)\s+'
+                           r'\((?P<status_items>.*)\)$')
 
     def __init__(self, host, port=143, use_uid=True):
         '''Initialise object instance and connect to the remote IMAP server.
@@ -81,6 +83,33 @@ class IMAPClient:
         typ, data = self._imap.login(username, password)
         self._checkok('login', typ, data)
         return data[0]
+
+    def logout(self):
+        '''Perform a logout
+        '''
+        typ, data = self._imap.logout()
+        self._checkbye('logout', typ, data)
+        return data[0]
+
+    def capabilities(self):
+        '''Returns the server capability list
+        '''
+        return self._imap.capabilities
+
+    def has_capability(self, capability):
+        '''Checks if the server has the given capability.
+
+        @param capability: capability to test (eg 'SORT')
+        '''
+        # FIXME: this will not detect capabilities that are backwards
+        # compatible with the current level. For instance the SORT
+        # capabilities may in the future be named SORT2 which is
+        # still compatible with the current standard and will not
+        # be detected by this method.
+        if capability.upper() in self._imap.capabilities:
+            return True
+        else:
+            return False
 
     def get_folder_delimiter(self):
         '''Determine the folder separator used by the IMAP server.
@@ -119,6 +148,28 @@ class IMAPClient:
 
         return folders
 
+    def list_sub_folders(self, directory="", pattern="*"):
+        '''Get a listing of subscribed folders on the server.
+
+        The default behaviour (no args) will list all subscribed folders for the
+        logged in user.
+
+        @param directory: The base directory to look for folders from.
+        @param pattern: A pattern to match against folder names. Only folder
+            names matching this pattern will be returned. Wildcards accepted.
+        @return: A list of folder names.
+        '''
+        typ, data = self._imap.lsub(directory, pattern)
+        self._checkok('lsub', typ, data)
+
+        folders = []
+        for line in data:
+            m = self.re_folder.match(line)
+            if m:
+                folders.append(m.group(1))
+
+        return folders
+
     def select_folder(self, folder):
         '''Select the current folder on the server. Future calls to methods
         such as search and fetch will act on the selected folder.
@@ -130,6 +181,31 @@ class IMAPClient:
         typ, data = self._imap.select(folder)
         self._checkok('select', typ, data)
         return long(data[0])
+
+    def folder_status(self, folder, what=None):
+        '''Requests the status from folder.
+
+        @param folder: The folder name.
+        @param what: A sequence of status items to query. Defaults to
+            ('MESSAGES', 'RECENT', 'UIDNEXT', 'UIDVALIDITY', 'UNSEEN').
+        @return: Dictionary of the status items for the folder. The keys match
+            the items specified in the what parameter.
+        @rtype: dict
+        '''
+        if what is None:
+            what = ('MESSAGES', 'RECENT', 'UIDNEXT', 'UIDVALIDITY', 'UNSEEN')
+        elif isinstance(what, basestring):
+            what = (what,)
+        what_ = '(%s)' % (' '.join(what))
+
+        typ, data = self._imap.status(folder, what_)
+        self._checkok('status', typ, data)
+
+        match = self.re_status.match(data[0])
+        if not match:
+            raise self.Error('Could not get the folder status')
+        items = iter(match.group('status_items').strip().split())
+        return dict(zip(items, items))
 
     def close_folder(self):
         '''Close the currently selected folder.
@@ -188,6 +264,34 @@ class IMAPClient:
             typ, data = self._imap.search(charset, *crit_list)
 
         self._checkok('search', typ, data)
+
+        return [ long(i) for i in data[0].split() ]
+
+    def sort(self, sort_criteria, criteria='ALL', charset='UTF-8' ):
+        '''Returns a list of messages sorted by sort_criteria.
+
+        Note that this is an extension to the IMAP4:
+        http://www.ietf.org/internet-drafts/draft-ietf-imapext-sort-19.txt
+        '''
+        if not criteria:
+            raise ValueError('no criteria specified')
+
+        if not self.has_capability('SORT'):
+            raise self.Error('The server does not support the SORT extension')
+
+        if isinstance(criteria, basestring):
+            criteria = (criteria,)
+        crit_list = ['(%s)' % c for c in criteria]
+
+        sort_criteria = seq_to_parenlist([ s.upper() for s in sort_criteria])
+
+        if self.use_uid:
+            typ, data = self._imap.uid('SORT', sort_criteria, charset,
+                *crit_list)
+        else:
+            typ, data = self._imap.sort(sort_criteria, charset, *crit_list)
+
+        self._checkok('sort', typ, data)
 
         return [ long(i) for i in data[0].split() ]
 
@@ -319,13 +423,19 @@ class IMAPClient:
         self._checkok('setacl', typ, data)
         return data[0]
 
-    def _checkok(self, command, typ, data):
+    def _check_resp(self, expected, command, typ, data):
         '''Check command responses for errors.
 
-        @raise: IMAPClient.Error if a command failed.
+        @raise: Error if a command failed.
         '''
-        if typ != 'OK':
+        if typ != expected:
             raise self.Error('%s failed: %r' % (command, data[0]))
+
+    def _checkok(self, command, typ, data):
+        self._check_resp('OK', command, typ, data)
+
+    def _checkbye(self, command, typ, data):
+        self._check_resp('BYE', command, typ, data)
 
     def _store(self, cmd, messages, flags):
         '''Worker functions for flag manipulation functions
@@ -355,6 +465,7 @@ class IMAPClient:
             (msgid, data.values()[0])
             for msgid, data in fetch_dict.iteritems()
             ])
+
 
 class FetchParser(object):
     '''
@@ -453,7 +564,7 @@ class FetchTokeniser(object):
 
     PAIR_RE = re.compile((
         '([\w\.]+(?:\[[^\]]+\]+)?)\s+' +    # name (matches "FOO", "FOO.BAR" & "BODY[SECTION STUFF]")
-        '((?:\d+)' +                        # bare integer 
+        '((?:\d+)' +                        # bare integer
         '|(?:{\d+?})' +                     # IMAP literal
         '|' + QUOTED_STRING +
         '|' + PAREN_LIST +
