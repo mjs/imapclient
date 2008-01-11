@@ -24,6 +24,14 @@ import imapclient
 #TODO: prettify test output
 #TODO: coverage checking
 
+def test_capabilities(server):
+    caps = server.capabilities()
+    assert isinstance(caps, tuple)
+    assert len(caps) > 1
+    for cap in caps:
+        assert server.has_capability(cap)
+    assert not server.has_capability('WONT EXIST')
+
 def test_list_folders(server):
     folders = server.list_folders()
     assert len(folders) > 0, 'No folders visible on server'
@@ -36,6 +44,29 @@ def test_select_and_close(server):
     assert isinstance(num_msgs, long)
     assert num_msgs >= 0
     server.close_folder()
+
+def test_subscriptions(server):
+    all_folders = server.list_folders()
+    all_folders.sort()
+
+    # Subscribe to all folders
+    for folder in all_folders:
+        server.subscribe_folder(folder)
+
+    subs = server.list_sub_folders()
+    subs.sort()
+    assert all_folders == subs
+
+    # Unsubscribe all folders
+    for folder in all_folders:
+        server.unsubscribe_folder(folder)
+
+    assert server.list_sub_folders() == []
+
+    assert_raises(imapclient.IMAPClient.Error, server.subscribe_folder,
+            'this folder is not likely to exist')
+
+    #TODO test directory and patterns
 
 def test_folders(server):
     '''Test folder manipulation
@@ -54,17 +85,43 @@ def test_folders(server):
     server.delete_folder(test_folder_name)
     assert not server.folder_exists(test_folder_name)
 
+
+def test_status(server):
+    # Default behaviour should return 5 keys
+    assert len(server.folder_status('INBOX')) == 5
+
+    new_folder = 'test-status-%s' % datetime.now().ctime()
+    server.create_folder(new_folder)
+    try:
+        status = server.folder_status(new_folder)
+        assert status['MESSAGES'] == 0
+        assert status['RECENT'] == 0
+        assert status['UNSEEN'] == 0
+
+        # Add a message to the folder, it should show up now.
+        body = 'Subject: something\r\n\r\nFoo'
+        server.append(new_folder, body)
+
+        status = server.folder_status(new_folder)
+        assert status['MESSAGES'] == 1
+        assert status['RECENT'] == 1
+        assert status['UNSEEN'] == 1
+
+    finally:
+        server.delete_folder(new_folder)
+
 def test_append(server):
     '''Test that appending a message works correctly
     '''
     clear_folder(server, 'INBOX')
 
     # Message time microseconds are set to 0 because the server may return
-    # time in with seconds precision.
-    msg_time = datetime.now().replace(microsecond=0)
+    # time in with seconds precision. Also, test with a UTC time because some
+    # servers always return a UTC time for the message (Dovecot...).
+    msg_time = datetime.utcnow().replace(microsecond=0)
 
     # Append message
-    body = 'Subject: something\r\n\r\nFoo'
+    body = 'Subject: something\r\n\r\nFoo\r\n'
     resp = server.append('INBOX', body, ('abc', 'def'), msg_time)
     assert isinstance(resp, str)
 
@@ -89,6 +146,7 @@ def test_append(server):
 
     # Message body should match
     assert msginfo['RFC822'] == body
+
 
 def test_flags(server):
     '''Test flag manipulations
@@ -145,13 +203,26 @@ def test_search(server):
     assert len(server.search(['NOT DELETED', 'SUBJECT "c"'])) == 0
 
 
+def assert_raises(exception_class, func, *args, **kwargs):
+    try:
+        func(*args, **kwargs)
+    except exception_class:
+        return
+    except Exception, e:
+        raise AssertionError('expected %r but got %s instead' % (exception_class, type(e)))
+    raise AssertionError('no exception raised, expected %r' % exception_class)
+
+
 def runtests(server):
     '''Run a sequence of tests against the IMAP server
     '''
     # The ordering of these tests is important
+    test_capabilities(server)
     test_list_folders(server)
     test_select_and_close(server)
+    test_subscriptions(server)
     test_folders(server)
+    test_status(server)
     test_append(server)
     test_flags(server)
     test_search(server)
