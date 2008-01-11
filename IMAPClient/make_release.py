@@ -9,6 +9,7 @@ import sys
 import imapclient
 
 DIST_DIR = '../dist'
+SVN_URL = 'svn://jiali.freshfoo.com'
 
 def fatal(msg):
     sys.stderr.write(msg+'\n')
@@ -24,9 +25,12 @@ if os.popen('svn status').readlines():
 # Tag in svn
 exitcode = os.system('svn cp '
     '-m "tagging IMAPClient %(version)s" '
-    'file:///home/msmits/svnroot/trunk/IMAPClient '
-    'file:///home/msmits/svnroot/tags/IMAPClient/%(version)s' % {
-        'version': imapclient.__version__ })
+    '%(svn_url)s/trunk/IMAPClient '
+    '%(svn_url)s/tags/IMAPClient/%(version)s' % dict(
+        version=imapclient.__version__,
+        svn_url=SVN_URL,
+    )
+)
 if exitcode:
     sys.exit(2)
 
