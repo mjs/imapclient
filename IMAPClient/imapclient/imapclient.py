@@ -64,7 +64,7 @@ class IMAPClient:
 
     re_sep = re.compile('^\(\("[^"]*" "([^"]+)"\)\)')
     re_folder = re.compile('\([^)]*\) "[^"]+" "([^"]+)"')
-    re_status = re.compile(r'^\s*(?P<folder>[ \w%&+."\-]+)\s+'
+    re_status = re.compile(r'^\s*"(?P<folder>[^"]+)"\s+'
                            r'\((?P<status_items>.*)\)$')
 
     def __init__(self, host, port=143, use_uid=True):
@@ -164,9 +164,10 @@ class IMAPClient:
 
         folders = []
         for line in data:
-            m = self.re_folder.match(line)
-            if m:
-                folders.append(m.group(1))
+            if line:
+                m = self.re_folder.match(line)
+                if m:
+                    folders.append(m.group(1))
 
         return folders
 
@@ -204,8 +205,14 @@ class IMAPClient:
         match = self.re_status.match(data[0])
         if not match:
             raise self.Error('Could not get the folder status')
-        items = iter(match.group('status_items').strip().split())
-        return dict(zip(items, items))
+
+        out = {}
+        status_items = match.group('status_items').strip().split()
+        while status_items:
+            key = status_items.pop(0)
+            value = long(status_items.pop(0))
+            out[key] = value
+        return out
 
     def close_folder(self):
         '''Close the currently selected folder.
@@ -245,6 +252,26 @@ class IMAPClient:
         typ, data = self._imap.list('', folder)
         self._checkok('list', typ, data)
         return len(data) == 1 and data[0] != None
+
+    def subscribe_folder(self, folder):
+        '''Subscribe to a folder.
+
+        @param folder: Folder name to subscribe to.
+        @return: Server response message.
+        '''
+        typ, data = self._imap.subscribe(folder)
+        self._checkok('subscribe', typ, data)
+        return data
+
+    def unsubscribe_folder(self, folder):
+        '''Unsubscribe a folder.
+
+        @param folder: Folder name to unsubscribe.
+        @return: Server response message.
+        '''
+        typ, data = self._imap.unsubscribe(folder)
+        self._checkok('unsubscribe', typ, data)
+        return data
 
     def search(self, criteria='ALL', charset=None):
         if not criteria:
@@ -378,7 +405,8 @@ class IMAPClient:
         @rtype: str
         '''
         if msg_time:
-            time_val = msg_time.timetuple()
+            # Send time as UTC as imaplib can screw up if tm_isdst == -1
+            time_val = msg_time.utcnow().utctimetuple()
         else:
             time_val = None
 
