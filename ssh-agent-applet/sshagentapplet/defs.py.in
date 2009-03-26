@@ -1,4 +1,0 @@
-PACKAGE = "ssh-agent-applet"
-GCONF_BASE = '/apps/%s/' % PACKAGE
-VERSION = "<<VERSION>>"
-DATA_DIR = "<<DATA_DIR>>"

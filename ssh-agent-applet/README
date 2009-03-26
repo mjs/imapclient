@@ -1,9 +1,0 @@
-ssh-agent-applet is a Gnome applet that allows you to conveniently keep your
-ssh key(s) on external media. This means that if your computer is cracked or
-stolen, the attacker will not have a copy of private ssh key(s).
-
-Using ssh-agent-applet, your keys are loaded into ssh-agent as soon as you
-insert your "key drive" into a USB port. The drive is automatically unmounted
-once the key loaded so you can remove it from the USB port immediately.
-
-See INSTALL for details of how to install and configure the applet.
