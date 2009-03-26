@@ -1,13 +1,13 @@
+- transparent "&" escaping
 - automatic changelog generation
 - support for more IMAP functions: sort, examine etc
+    - someone sent a patch for this?
 - write a comparision of imaplib vs imapclient.py
 	(presentation is a good start)
 - abstract out UID handling if possible
 - higher level fetch methods for common attributes, flattened
 - handling read-only access
-- transparent "&" escaping
 - more unit tests using mocking
-- SSL support
 - allow per-call uid overrides
 - more docs
 - better namespace support

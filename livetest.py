@@ -235,16 +235,18 @@ def clear_folder(server, folder):
 def command_line():
     p = OptionParser()
     p.add_option('-H', '--host', dest='host', action='store',
-            help='IMAP host connect to')
+                 help='IMAP host connect to')
     p.add_option('-P', '--port', dest='port', action='store',
-            default=143, help='IMAP port to use (default is 143)')
+                 default=143, help='IMAP port to use (default is 143)')
+    p.add_option('-s', '--ssl', dest='ssl', action='store_true', default=False,
+                 help='Use SSL connection')
     p.add_option('-u', '--username', dest='username', action='store',
-            help='Username to login with')
+                 help='Username to login with')
     p.add_option('-p', '--password', dest='password', action='store',
-            help='Password to login with')
+                 help='Password to login with')
     p.add_option('', '--clobber', dest='clobber', action='store_true',
-            default=False, help='These tests are destructive. Use this '
-            'option to bypass the confirmation prompt.')
+                 default=False, help='These tests are destructive. Use this '
+                 'option to bypass the confirmation prompt.')
 
     options, args = p.parse_args()
 
@@ -256,6 +258,7 @@ def command_line():
             p.error('%s must be specified' % opt_name)
 
     return options
+
 
 def user_confirm():
     print """\
@@ -276,9 +279,9 @@ def main():
     # Test with use_uid on and off
     for use_uid in (True, False):
         print '-'*60
-        print "Testing with use_uid=%r..." % use_uid
+        print "Testing with use_uid=%r, ssl=%r..." % (use_uid, options.ssl)
         print '-'*60
-        server = imapclient.IMAPClient(options.host, use_uid=use_uid)
+        server = imapclient.IMAPClient(options.host, use_uid=use_uid, ssl=options.ssl)
         server.login(options.username, options.password)
         runtests(server)
         print 'SUCCESS'

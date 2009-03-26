@@ -67,14 +67,25 @@ class IMAPClient:
     re_status = re.compile(r'^\s*"(?P<folder>[^"]+)"\s+'
                            r'\((?P<status_items>.*)\)$')
 
-    def __init__(self, host, port=143, use_uid=True):
+    def __init__(self, host, port=None, use_uid=True, ssl=False):
         '''Initialise object instance and connect to the remote IMAP server.
 
         @param host: The IMAP server address/hostname to connect to.
-        @param port: The port number to use (default is 143).
+        @param port: The port number to use (default is 143, 993 for SSL).
         @param use_uid: Should message UIDs be used (default is True).
+        @param ssl: Make an SSL connection (default is False)
         '''
-        self._imap = imaplib.IMAP4(host, port)
+        if ssl:
+            ImapClass = imaplib.IMAP4_SSL
+            default_port = 993
+        else:
+            ImapClass = imaplib.IMAP4
+            default_port = 143
+
+        if port is None:
+            port = default_port
+
+        self._imap = ImapClass(host, port)
         self.use_uid = use_uid
 
     def login(self, username, password):
