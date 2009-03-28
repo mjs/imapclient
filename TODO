@@ -1,10 +1,12 @@
+- clean up basic command handling to avoid repetition
+- might be able to metaprogram the way out of the currently clumsy UID handling situation
+- releases with bzr
 - transparent "&" escaping
 - automatic changelog generation
 - support for more IMAP functions: sort, examine etc
     - someone sent a patch for this?
 - write a comparision of imaplib vs imapclient.py
 	(presentation is a good start)
-- abstract out UID handling if possible
 - higher level fetch methods for common attributes, flattened
 - handling read-only access
 - more unit tests using mocking
