@@ -7,7 +7,9 @@
     - someone sent a patch for this?
 - write a comparision of imaplib vs imapclient.py
 	(presentation is a good start)
-- higher level fetch methods for common attributes, flattened
+- turn livetests into a nose based tested
+    - remove the need for ordered execution
+- higher level fetch methods for common or single attributes, flattened
 - handling read-only access
 - more unit tests using mocking
 - allow per-call uid overrides
