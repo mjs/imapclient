@@ -31,7 +31,7 @@ FLAGGED = r'\Flagged'
 DRAFT = r'\Draft'
 RECENT = r'\Recent'         # This flag is read-only
 
-class IMAPClient:
+class IMAPClient(object):
     '''
     A Pythonic, easy-to-use IMAP client class.
 
@@ -593,6 +593,7 @@ class FetchParser(object):
     def do_default(self, arg):
         return arg
 
+
 class FetchTokeniser(object):
     '''
     General response tokenizer and converter
@@ -654,6 +655,7 @@ class FetchTokeniser(object):
         else:
             return s
 
+
 class Literal(object):
     '''
     Simple class to represent a literal token in the fetch response
@@ -668,6 +670,7 @@ class Literal(object):
 
     def __str__(self):
         return '{%d}' % self.length
+
 
 def strict_finditer(regex, s):
     '''Like re.finditer except the regex must match from exactly where the
@@ -688,6 +691,7 @@ def strict_finditer(regex, s):
             else:
                 return
 
+
 def messages_to_str(messages):
     '''Convert a sequence of messages ids or a single message id into an
     message ID list for use with IMAP commands.
@@ -701,6 +705,7 @@ def messages_to_str(messages):
     elif not isinstance(messages, (tuple, list)):
         raise ValueError('invalid message list: %r' % messages)
     return ','.join([str(m) for m in messages])
+
 
 def seq_to_parenlist(flags):
     '''Convert a sequence into parenthised list for use with IMAP commands
