@@ -1,8 +1,14 @@
 Thanks go to the following people for their help with this project.
 
-Helder Guerreiro (helder _AT_ paxjulia DOT com) 
-    - patches for capability checks, logout command, status command, lsub
-      command
+Patches
+-------
+Helder Guerreiro
+    - capability checks
+    - logout command
+    - status command
+    - lsub command
 
-Brian Jackson (iggy _AT_ theiggy DOT com) 
-    - bug report
+Bug Reports
+------------
+Brian Jackson
+Neil Martinsen-Burrell
