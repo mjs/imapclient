@@ -1,3 +1,4 @@
+- port all tests to nosetests
 - transparent "&" escaping
 - automatic changelog generation
 - support for more IMAP functions: sort, examine etc
