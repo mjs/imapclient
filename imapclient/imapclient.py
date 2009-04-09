@@ -63,7 +63,7 @@ class IMAPClient(object):
     ReadOnlyError = imaplib.IMAP4.readonly
 
     re_sep = re.compile('^\(\("[^"]*" "([^"]+)"\)\)')
-    re_folder = re.compile('\([^)]*\) "[^"]+" "([^"]+)"')
+    re_folder = re.compile('\([^)]*\) "[^"]+" "?([^"]+)"?')
     re_status = re.compile(r'^\s*"(?P<folder>[^"]+)"\s+'
                            r'\((?P<status_items>.*)\)$')
 
@@ -156,8 +156,8 @@ class IMAPClient(object):
             m = self.re_folder.match(line)
             if m:
                 folders.append(m.group(1))
-
         return folders
+
 
     def list_sub_folders(self, directory="", pattern="*"):
         '''Get a listing of subscribed folders on the server.
@@ -179,8 +179,8 @@ class IMAPClient(object):
                 m = self.re_folder.match(line)
                 if m:
                     folders.append(m.group(1))
-
         return folders
+
 
     def select_folder(self, folder):
         '''Select the current folder on the server. Future calls to methods

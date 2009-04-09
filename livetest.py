@@ -138,7 +138,7 @@ def test_append(server):
     msginfo = resp.values()[0]
 
     # Time should match the time we specified
-    assert msginfo['INTERNALDATE'] == msg_time
+    assert msginfo['INTERNALDATE'] == msg_time, '%r != %r' % (msginfo['INTERNALDATE'], msg_time)
 
     # Flags should be the same
     assert 'abc' in msginfo['FLAGS']

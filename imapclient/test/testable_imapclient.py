@@ -1,9 +1,9 @@
 
 from imapclient.imapclient import IMAPClient
+from imapclient.test.mock import Mock
 
 class TestableIMAPClient(IMAPClient):
 
     def __init__(self):
-        #XXX
         self._imap = Mock()
 
