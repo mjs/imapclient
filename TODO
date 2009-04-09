@@ -1,4 +1,5 @@
 - port all tests to nosetests
+- sort out INTERNALDATE timezone issues in livetest.py (see freshfoo.com)
 - transparent "&" escaping
 - automatic changelog generation
 - support for more IMAP functions: sort, examine etc
