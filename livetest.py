@@ -45,28 +45,43 @@ def test_select_and_close(server):
     assert num_msgs >= 0
     server.close_folder()
 
+#XXX need to handle invalid encodings that already exist on the server
+# Two approaches:
+#   - detect the badness and don't attempt to unencode
+#   - use a FolderName object that keeps the original name for reuse
+#       - __str__ would give the user's view (unicode or whatever)
+#       - attribute/method to get the original
+
 def test_subscriptions(server):
-    all_folders = server.list_folders()
-    all_folders.sort()
+    # Unsubscribe everything first
+    #XXX hack hack hack
+    server.folder_encode = False
+    for folder in server.list_sub_folders():
+        server.unsubscribe_folder(folder)
+    server.folder_encode = True
 
-    # Subscribe to all folders
+    # Add a folder with a name that needs escaping
+    #XXX this method of mailbox creation is dodgy
+    server.create_folder('sub & unsub - %s' % datetime.now().ctime())
+    all_folders = sorted(server.list_folders())
+
     for folder in all_folders:
+        print `folder`
         server.subscribe_folder(folder)
+    print all_folders
+    print sorted(server.list_sub_folders())
+    assert all_folders == sorted(server.list_sub_folders())
 
-    subs = server.list_sub_folders()
-    subs.sort()
-    assert all_folders == subs
-
-    # Unsubscribe all folders
     for folder in all_folders:
         server.unsubscribe_folder(folder)
-
     assert server.list_sub_folders() == []
 
-    assert_raises(imapclient.IMAPClient.Error, server.subscribe_folder,
-            'this folder is not likely to exist')
+    assert_raises(imapclient.IMAPClient.Error,
+                  server.subscribe_folder,
+                  'this folder is not likely to exist')
 
     #TODO test directory and patterns
+
 
 def test_folders(server):
     '''Test folder manipulation
@@ -74,10 +89,19 @@ def test_folders(server):
     assert server.folder_exists('INBOX')
     assert not server.folder_exists('this is very unlikely to exist')
 
-    test_folder_name = 'test-%s' % datetime.now().ctime()
+    # Include an ampersand to test encoding/decoding
+    test_folder_name = 'test & stuff-%s' % datetime.now().ctime()
 
     server.create_folder(test_folder_name)
     assert server.folder_exists(test_folder_name)
+    assert test_folder_name in server.list_folders()
+
+    server.folder_encode = False
+    try:
+        assert test_folder_name not in server.list_folders()
+        assert test_folder_name.replace('&', '&-') in server.list_folders()
+    finally:
+        server.folder_encode = True
 
     server.select_folder(test_folder_name)
     server.close_folder()
@@ -90,7 +114,7 @@ def test_status(server):
     # Default behaviour should return 5 keys
     assert len(server.folder_status('INBOX')) == 5
 
-    new_folder = 'test-status-%s' % datetime.now().ctime()
+    new_folder = 'test & status-%s' % datetime.now().ctime()
     server.create_folder(new_folder)
     try:
         status = server.folder_status(new_folder)
@@ -217,15 +241,15 @@ def runtests(server):
     '''Run a sequence of tests against the IMAP server
     '''
     # The ordering of these tests is important
-    test_capabilities(server)
-    test_list_folders(server)
-    test_select_and_close(server)
+    #test_capabilities(server)
+    #test_list_folders(server)
+    #test_select_and_close(server)
     test_subscriptions(server)
     test_folders(server)
-    test_status(server)
-    test_append(server)
-    test_flags(server)
-    test_search(server)
+    #test_status(server)
+    #test_append(server)
+    #test_flags(server)
+    #test_search(server)
 
 def clear_folder(server, folder):
     server.select_folder(folder)
@@ -247,6 +271,12 @@ def command_line():
     p.add_option('', '--clobber', dest='clobber', action='store_true',
                  default=False, help='These tests are destructive. Use this '
                  'option to bypass the confirmation prompt.')
+    p.add_option('', '--debug', dest='debug', action='store_true',
+                 default=False,
+                 help='Instead of running tests, set up the connection & drop into pdb')
+    p.add_option('', '--interact', dest='interact', action='store_true',
+                 default=False,
+                 help='Instead of running tests, set up the connection & drop into a shell')
 
     options, args = p.parse_args()
 
@@ -270,6 +300,7 @@ Email in the specified account will be lost!
         print "Aborting tests."
         sys.exit()
 
+
 def main():
     options = command_line()
 
@@ -283,8 +314,15 @@ def main():
         print '-'*60
         server = imapclient.IMAPClient(options.host, use_uid=use_uid, ssl=options.ssl)
         server.login(options.username, options.password)
-        runtests(server)
-        print 'SUCCESS'
+        if options.debug:
+            import pdb
+            pdb.set_trace()
+        elif options.interact:
+            import code
+            code.interact(local=locals())
+        else:
+            runtests(server)
+            print 'SUCCESS'
 
 if __name__ == '__main__':
     main()

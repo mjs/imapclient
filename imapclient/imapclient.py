@@ -31,7 +31,8 @@ FLAGGED = r'\Flagged'
 DRAFT = r'\Draft'
 RECENT = r'\Recent'         # This flag is read-only
 
-class IMAPClient:
+
+class IMAPClient(object):
     '''
     A Pythonic, easy-to-use IMAP client class.
 
@@ -87,6 +88,24 @@ class IMAPClient:
 
         self._imap = ImapClass(host, port)
         self.use_uid = use_uid
+        self.folder_encode = True
+
+    
+    def _set_folder_encode(self, on_off):
+        if on_off:
+            self._folder_encode = True
+            self._decode_folder_name = decode_folder_name
+            self._encode_folder_name = encode_folder_name
+        else:
+            self._folder_encode = False
+            self._decode_folder_name = lambda x: x
+            self._encode_folder_name = self._decode_folder_name
+
+    folder_encode = property(lambda self: self._folder_encode,
+                             _set_folder_encode,
+                             None,
+                             "Set True to have folder names transparently encoded/decoded")
+
 
     def login(self, username, password):
         '''Perform a simple login
@@ -95,6 +114,7 @@ class IMAPClient:
         self._checkok('login', typ, data)
         return data[0]
 
+
     def logout(self):
         '''Perform a logout
         '''
@@ -102,10 +122,12 @@ class IMAPClient:
         self._checkbye('logout', typ, data)
         return data[0]
 
+
     def capabilities(self):
         '''Returns the server capability list
         '''
         return self._imap.capabilities
+
 
     def has_capability(self, capability):
         '''Checks if the server has the given capability.
@@ -137,6 +159,7 @@ class IMAPClient:
         else:
             raise self.Error('could not determine folder separator')
 
+
     def list_folders(self, directory="", pattern="*"):
         '''Get a listing of folders on the server.
 
@@ -155,9 +178,9 @@ class IMAPClient:
         for line in data:
             m = self.re_folder.match(line)
             if m:
-                folders.append(m.group(1))
-
+                folders.append(self._decode_folder_name(m.group(1)))
         return folders
+
 
     def list_sub_folders(self, directory="", pattern="*"):
         '''Get a listing of subscribed folders on the server.
@@ -178,9 +201,10 @@ class IMAPClient:
             if line:
                 m = self.re_folder.match(line)
                 if m:
-                    folders.append(m.group(1))
+                    folders.append(self._decode_folder_name(m.group(1)))
 
         return folders
+
 
     def select_folder(self, folder):
         '''Select the current folder on the server. Future calls to methods
@@ -190,9 +214,10 @@ class IMAPClient:
         @return: Number of messages in the folder.
         @rtype: long int
         '''
-        typ, data = self._imap.select(folder)
+        typ, data = self._imap.select(self._encode_folder_name(folder))
         self._checkok('select', typ, data)
         return long(data[0])
+
 
     def folder_status(self, folder, what=None):
         '''Requests the status from folder.
@@ -210,7 +235,7 @@ class IMAPClient:
             what = (what,)
         what_ = '(%s)' % (' '.join(what))
 
-        typ, data = self._imap.status(folder, what_)
+        typ, data = self._imap.status(self._encode_folder_name(folder), what_)
         self._checkok('status', typ, data)
 
         match = self.re_status.match(data[0])
@@ -225,6 +250,7 @@ class IMAPClient:
             out[key] = value
         return out
 
+
     def close_folder(self):
         '''Close the currently selected folder.
 
@@ -234,15 +260,17 @@ class IMAPClient:
         self._checkok('close', typ, data)
         return data[0]
 
+
     def create_folder(self, folder):
         '''Create a new folder on the server.
 
         @param folder: The folder name.
         @return: Server response.
         '''
-        typ, data = self._imap.create(folder)
+        typ, data = self._imap.create(self._encode_folder_name(folder))
         self._checkok('create', typ, data)
         return data[0]
+
 
     def delete_folder(self, folder):
         '''Delete a new folder on the server.
@@ -250,9 +278,10 @@ class IMAPClient:
         @param folder: Folder name to delete.
         @return: Server response.
         '''
-        typ, data = self._imap.delete(folder)
+        typ, data = self._imap.delete(self._encode_folder_name(folder))
         self._checkok('delete', typ, data)
         return data[0]
+
 
     def folder_exists(self, folder):
         '''Determine if a folder exists on the server.
@@ -260,9 +289,10 @@ class IMAPClient:
         @param folder: Full folder name to look for.
         @return: True if the folder exists. False otherwise.
         '''
-        typ, data = self._imap.list('', folder)
+        typ, data = self._imap.list('', self._encode_folder_name(folder))
         self._checkok('list', typ, data)
         return len(data) == 1 and data[0] != None
+
 
     def subscribe_folder(self, folder):
         '''Subscribe to a folder.
@@ -270,9 +300,10 @@ class IMAPClient:
         @param folder: Folder name to subscribe to.
         @return: Server response message.
         '''
-        typ, data = self._imap.subscribe(folder)
+        typ, data = self._imap.subscribe(self._encode_folder_name(folder))
         self._checkok('subscribe', typ, data)
         return data
+
 
     def unsubscribe_folder(self, folder):
         '''Unsubscribe a folder.
@@ -280,9 +311,10 @@ class IMAPClient:
         @param folder: Folder name to unsubscribe.
         @return: Server response message.
         '''
-        typ, data = self._imap.unsubscribe(folder)
+        typ, data = self._imap.unsubscribe(self._encode_folder_name(folder))
         self._checkok('unsubscribe', typ, data)
         return data
+
 
     def search(self, criteria='ALL', charset=None):
         if not criteria:
@@ -304,6 +336,7 @@ class IMAPClient:
         self._checkok('search', typ, data)
 
         return [ long(i) for i in data[0].split() ]
+
 
     def sort(self, sort_criteria, criteria='ALL', charset='UTF-8' ):
         '''Returns a list of messages sorted by sort_criteria.
@@ -333,6 +366,7 @@ class IMAPClient:
 
         return [ long(i) for i in data[0].split() ]
 
+
     def get_flags(self, messages):
         '''Return the flags set for messages
 
@@ -342,6 +376,7 @@ class IMAPClient:
         '''
         response = self.fetch(messages, ['FLAGS'])
         return self._flatten_dict(response)
+
 
     def add_flags(self, messages, flags):
         '''Add one or more flags to messages
@@ -353,6 +388,7 @@ class IMAPClient:
         '''
         return self._store('+FLAGS', messages, flags)
 
+
     def remove_flags(self, messages, flags):
         '''Remove one or more flags from messages
 
@@ -361,6 +397,7 @@ class IMAPClient:
         @return: As for get_flags.
         '''
         return self._store('-FLAGS', messages, flags)
+
 
     def set_flags(self, messages, flags):
         '''Set the flags for messages
@@ -371,6 +408,7 @@ class IMAPClient:
         '''
         return self._store('FLAGS', messages, flags)
 
+
     def delete_messages(self, messages):
         '''Short-hand method for deleting one or more messages
 
@@ -378,6 +416,7 @@ class IMAPClient:
         @return: Same as for get_flags.
         '''
         return self.add_flags(messages, DELETED)
+
 
     def fetch(self, messages, parts):
         '''Retrieve selected data items for one or more messages.
@@ -401,6 +440,7 @@ class IMAPClient:
 
         parser = FetchParser()
         return parser(data)
+
 
     def append(self, folder, msg, flags=(), msg_time=None):
         '''Append a message to a folder
@@ -428,10 +468,12 @@ class IMAPClient:
 
         return data[0]
 
+
     def expunge(self):
         typ, data = self._imap.expunge()
         self._checkok('expunge', typ, data)
         #TODO: expunge response
+
 
     def getacl(self, folder):
         '''Get the ACL for a folder
@@ -450,6 +492,7 @@ class IMAPClient:
             out.append((parts[i], parts[i+1]))
         return out
 
+
     def setacl(self, folder, who, what):
         '''Set an ACL for a folder
 
@@ -462,6 +505,7 @@ class IMAPClient:
         self._checkok('setacl', typ, data)
         return data[0]
 
+
     def _check_resp(self, expected, command, typ, data):
         '''Check command responses for errors.
 
@@ -470,14 +514,17 @@ class IMAPClient:
         if typ != expected:
             raise self.Error('%s failed: %r' % (command, data[0]))
 
+
     def _checkok(self, command, typ, data):
         self._check_resp('OK', command, typ, data)
+
 
     def _checkbye(self, command, typ, data):
         self._check_resp('BYE', command, typ, data)
 
+
     def _store(self, cmd, messages, flags):
-        '''Worker functions for flag manipulation functions
+        '''Worker function for flag manipulation functions
 
         @param cmd: STORE command to use (eg. '+FLAGS')
         @param messages: Sequence of message IDs
@@ -498,6 +545,7 @@ class IMAPClient:
         self._checkok('store', typ, data)
 
         return self._flatten_dict(FetchParser()(data))
+
 
     def _flatten_dict(self, fetch_dict):
         return dict([
@@ -593,6 +641,7 @@ class FetchParser(object):
     def do_default(self, arg):
         return arg
 
+
 class FetchTokeniser(object):
     '''
     General response tokenizer and converter
@@ -669,6 +718,7 @@ class Literal(object):
     def __str__(self):
         return '{%d}' % self.length
 
+
 def strict_finditer(regex, s):
     '''Like re.finditer except the regex must match from exactly where the
     previous match ended and all the entire input must be matched.
@@ -702,6 +752,7 @@ def messages_to_str(messages):
         raise ValueError('invalid message list: %r' % messages)
     return ','.join([str(m) for m in messages])
 
+
 def seq_to_parenlist(flags):
     '''Convert a sequence into parenthised list for use with IMAP commands
 
@@ -714,4 +765,26 @@ def seq_to_parenlist(flags):
         raise ValueError('invalid flags list: %r' % flags)
     return '(%s)' % ' '.join(flags)
 
+
+def encode_folder_name(name):
+    """Take a folder name and escape ampersands so that the correct name is
+    seen by the IMAP server.
+
+    @param name: Mailbox name (eg. "stuff & things")
+    @return: Encoded mailbox name (eg. "stuff &- things")
+    """
+    #TODO - full UTF-7 handling
+    return name.replace('&', '&-')
+
+
+#XXX test that decode name matched re-encoded name, if it doesn't return the original
+def decode_folder_name(name):
+    """Take a folder name as returned by an IMAP server and unescape
+    ampersands so that the expected name is seen.
+
+    @param name: Encoded mailbox name (eg. "stuff &- things")
+    @return: Mailbox name (eg. "stuff & things")
+    """
+    #TODO - full UTF-7 handling
+    return name.replace('&-', '&')
 
