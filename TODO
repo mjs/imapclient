@@ -1,25 +1,22 @@
-- transparent "&" escaping
-    - turn & into &- and vice versa
-    - update README to list this feature
-    - test against a bunch of servers
+- transparent folder escaping
+    - more testing
         - gmail
-        - cyrus (netbox)
+        - cyrus
+        - exchange
         - script to do this (in parallel)
+    - update README, website and docstrings to advertise this feature
+
+- turn livetests into a nose based tested
+    - make each test independent
+
 - clean up basic command handling to avoid repetition
 - might be able to metaprogram the way out of the currently clumsy UID handling situation
 - releases with bzr
-- proper modified UTF-7 mailbox handling
-    - convert Python unicode
-    - update README to list this feature
-- handle servers that don't support UTF-7 mailbox names
-    - can this be detected?
 - automatic changelog generation
 - support for more IMAP functions: sort, examine etc
     - someone sent a patch for this?
 - write a comparision of imaplib vs imapclient.py
 	(presentation is a good start)
-- turn livetests into a nose based tested
-    - remove the need for ordered execution
 - use mailbox instead of folder to be consistent with RFCs
 - higher level fetch methods for common or single attributes, flattened
 - handling read-only access

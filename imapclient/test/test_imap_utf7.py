@@ -1,5 +1,5 @@
-# The contents of this file has been derived from the Twisted project
-# (http://twistedmatrix.com/). This author is Jp Calderone.
+# The contents of this file has been derived code from the Twisted project
+# (http://twistedmatrix.com/). The original author is Jp Calderone.
 
 # Twisted project license follows:
 

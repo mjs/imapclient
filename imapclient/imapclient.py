@@ -20,6 +20,9 @@ import shlex
 import datetime
 #imaplib.Debug = 5
 
+#XXX 
+import imap_utf7
+
 __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT',
     'RECENT']
 
@@ -90,23 +93,7 @@ class IMAPClient(object):
         self.use_uid = use_uid
         self.folder_encode = True
 
-    
-    def _set_folder_encode(self, on_off):
-        if on_off:
-            self._folder_encode = True
-            self._decode_folder_name = decode_folder_name
-            self._encode_folder_name = encode_folder_name
-        else:
-            self._folder_encode = False
-            self._decode_folder_name = lambda x: x
-            self._encode_folder_name = self._decode_folder_name
-
-    folder_encode = property(lambda self: self._folder_encode,
-                             _set_folder_encode,
-                             None,
-                             "Set True to have folder names transparently encoded/decoded")
-
-
+   
     def login(self, username, password):
         '''Perform a simple login
         '''
@@ -463,7 +450,8 @@ class IMAPClient(object):
 
         flags_list = seq_to_parenlist(flags)
 
-        typ, data = self._imap.append(folder, flags_list, time_val, msg)
+        typ, data = self._imap.append(self._encode_folder_name(folder),
+                                      flags_list, time_val, msg)
         self._checkok('append', typ, data)
 
         return data[0]
@@ -552,6 +540,17 @@ class IMAPClient(object):
             (msgid, data.values()[0])
             for msgid, data in fetch_dict.iteritems()
             ])
+
+    def _decode_folder_name(self, name):
+        if self.folder_encode:
+            return imap_utf7.decode(name)
+        return name
+
+
+    def _encode_folder_name(self, name):
+        if self.folder_encode:
+            return imap_utf7.encode(name)
+        return name
 
 
 class FetchParser(object):
@@ -765,26 +764,4 @@ def seq_to_parenlist(flags):
         raise ValueError('invalid flags list: %r' % flags)
     return '(%s)' % ' '.join(flags)
 
-
-def encode_folder_name(name):
-    """Take a folder name and escape ampersands so that the correct name is
-    seen by the IMAP server.
-
-    @param name: Mailbox name (eg. "stuff & things")
-    @return: Encoded mailbox name (eg. "stuff &- things")
-    """
-    #TODO - full UTF-7 handling
-    return name.replace('&', '&-')
-
-
-#XXX test that decode name matched re-encoded name, if it doesn't return the original
-def decode_folder_name(name):
-    """Take a folder name as returned by an IMAP server and unescape
-    ampersands so that the expected name is seen.
-
-    @param name: Encoded mailbox name (eg. "stuff &- things")
-    @return: Mailbox name (eg. "stuff & things")
-    """
-    #TODO - full UTF-7 handling
-    return name.replace('&-', '&')
 
