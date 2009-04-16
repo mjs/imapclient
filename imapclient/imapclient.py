@@ -163,9 +163,17 @@ class IMAPClient(object):
 
         folders = []
         for line in data:
+            folder_text = None
+            #XXX write a unit test for this bug
+            #XXX can the FetchParser code be used here instead?
+            #if isinstance(line, tuple):
+                #folder_text = line[-1]
+            #else:
             m = self.re_folder.match(line)
             if m:
-                folders.append(self._decode_folder_name(m.group(1)))
+                folder_text = m.group(1)
+            if folder_text is not None:
+                folders.append(self._decode_folder_name(folder_text))
         return folders
 
 

@@ -1,4 +1,6 @@
 - transparent folder escaping
+    - re_folder currently fails if there's strange chars in the folder name
+        - write a unit test for this
     - more testing
         - gmail
         - cyrus
