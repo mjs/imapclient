@@ -20,6 +20,9 @@ import shlex
 import datetime
 #imaplib.Debug = 5
 
+#XXX 
+import imap_utf7
+
 __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT',
     'RECENT']
 
@@ -30,6 +33,7 @@ ANSWERED = r'\Answered'
 FLAGGED = r'\Flagged'
 DRAFT = r'\Draft'
 RECENT = r'\Recent'         # This flag is read-only
+
 
 class IMAPClient(object):
     '''
@@ -87,13 +91,16 @@ class IMAPClient(object):
 
         self._imap = ImapClass(host, port)
         self.use_uid = use_uid
+        self.folder_encode = True
 
+   
     def login(self, username, password):
         '''Perform a simple login
         '''
         typ, data = self._imap.login(username, password)
         self._checkok('login', typ, data)
         return data[0]
+
 
     def logout(self):
         '''Perform a logout
@@ -102,10 +109,12 @@ class IMAPClient(object):
         self._checkbye('logout', typ, data)
         return data[0]
 
+
     def capabilities(self):
         '''Returns the server capability list
         '''
         return self._imap.capabilities
+
 
     def has_capability(self, capability):
         '''Checks if the server has the given capability.
@@ -137,6 +146,7 @@ class IMAPClient(object):
         else:
             raise self.Error('could not determine folder separator')
 
+
     def list_folders(self, directory="", pattern="*"):
         '''Get a listing of folders on the server.
 
@@ -153,9 +163,17 @@ class IMAPClient(object):
 
         folders = []
         for line in data:
+            folder_text = None
+            #XXX write a unit test for this bug
+            #XXX can the FetchParser code be used here instead?
+            #if isinstance(line, tuple):
+                #folder_text = line[-1]
+            #else:
             m = self.re_folder.match(line)
             if m:
-                folders.append(m.group(1))
+                folder_text = m.group(1)
+            if folder_text is not None:
+                folders.append(self._decode_folder_name(folder_text))
         return folders
 
 
@@ -178,7 +196,7 @@ class IMAPClient(object):
             if line:
                 m = self.re_folder.match(line)
                 if m:
-                    folders.append(m.group(1))
+                    folders.append(self._decode_folder_name(m.group(1)))
         return folders
 
 
@@ -190,9 +208,10 @@ class IMAPClient(object):
         @return: Number of messages in the folder.
         @rtype: long int
         '''
-        typ, data = self._imap.select(folder)
+        typ, data = self._imap.select(self._encode_folder_name(folder))
         self._checkok('select', typ, data)
         return long(data[0])
+
 
     def folder_status(self, folder, what=None):
         '''Requests the status from folder.
@@ -210,7 +229,7 @@ class IMAPClient(object):
             what = (what,)
         what_ = '(%s)' % (' '.join(what))
 
-        typ, data = self._imap.status(folder, what_)
+        typ, data = self._imap.status(self._encode_folder_name(folder), what_)
         self._checkok('status', typ, data)
 
         match = self.re_status.match(data[0])
@@ -225,6 +244,7 @@ class IMAPClient(object):
             out[key] = value
         return out
 
+
     def close_folder(self):
         '''Close the currently selected folder.
 
@@ -234,15 +254,17 @@ class IMAPClient(object):
         self._checkok('close', typ, data)
         return data[0]
 
+
     def create_folder(self, folder):
         '''Create a new folder on the server.
 
         @param folder: The folder name.
         @return: Server response.
         '''
-        typ, data = self._imap.create(folder)
+        typ, data = self._imap.create(self._encode_folder_name(folder))
         self._checkok('create', typ, data)
         return data[0]
+
 
     def delete_folder(self, folder):
         '''Delete a new folder on the server.
@@ -250,9 +272,10 @@ class IMAPClient(object):
         @param folder: Folder name to delete.
         @return: Server response.
         '''
-        typ, data = self._imap.delete(folder)
+        typ, data = self._imap.delete(self._encode_folder_name(folder))
         self._checkok('delete', typ, data)
         return data[0]
+
 
     def folder_exists(self, folder):
         '''Determine if a folder exists on the server.
@@ -260,9 +283,10 @@ class IMAPClient(object):
         @param folder: Full folder name to look for.
         @return: True if the folder exists. False otherwise.
         '''
-        typ, data = self._imap.list('', folder)
+        typ, data = self._imap.list('', self._encode_folder_name(folder))
         self._checkok('list', typ, data)
         return len(data) == 1 and data[0] != None
+
 
     def subscribe_folder(self, folder):
         '''Subscribe to a folder.
@@ -270,9 +294,10 @@ class IMAPClient(object):
         @param folder: Folder name to subscribe to.
         @return: Server response message.
         '''
-        typ, data = self._imap.subscribe(folder)
+        typ, data = self._imap.subscribe(self._encode_folder_name(folder))
         self._checkok('subscribe', typ, data)
         return data
+
 
     def unsubscribe_folder(self, folder):
         '''Unsubscribe a folder.
@@ -280,9 +305,10 @@ class IMAPClient(object):
         @param folder: Folder name to unsubscribe.
         @return: Server response message.
         '''
-        typ, data = self._imap.unsubscribe(folder)
+        typ, data = self._imap.unsubscribe(self._encode_folder_name(folder))
         self._checkok('unsubscribe', typ, data)
         return data
+
 
     def search(self, criteria='ALL', charset=None):
         if not criteria:
@@ -304,6 +330,7 @@ class IMAPClient(object):
         self._checkok('search', typ, data)
 
         return [ long(i) for i in data[0].split() ]
+
 
     def sort(self, sort_criteria, criteria='ALL', charset='UTF-8' ):
         '''Returns a list of messages sorted by sort_criteria.
@@ -333,6 +360,7 @@ class IMAPClient(object):
 
         return [ long(i) for i in data[0].split() ]
 
+
     def get_flags(self, messages):
         '''Return the flags set for messages
 
@@ -342,6 +370,7 @@ class IMAPClient(object):
         '''
         response = self.fetch(messages, ['FLAGS'])
         return self._flatten_dict(response)
+
 
     def add_flags(self, messages, flags):
         '''Add one or more flags to messages
@@ -353,6 +382,7 @@ class IMAPClient(object):
         '''
         return self._store('+FLAGS', messages, flags)
 
+
     def remove_flags(self, messages, flags):
         '''Remove one or more flags from messages
 
@@ -361,6 +391,7 @@ class IMAPClient(object):
         @return: As for get_flags.
         '''
         return self._store('-FLAGS', messages, flags)
+
 
     def set_flags(self, messages, flags):
         '''Set the flags for messages
@@ -371,6 +402,7 @@ class IMAPClient(object):
         '''
         return self._store('FLAGS', messages, flags)
 
+
     def delete_messages(self, messages):
         '''Short-hand method for deleting one or more messages
 
@@ -378,6 +410,7 @@ class IMAPClient(object):
         @return: Same as for get_flags.
         '''
         return self.add_flags(messages, DELETED)
+
 
     def fetch(self, messages, parts):
         '''Retrieve selected data items for one or more messages.
@@ -402,6 +435,7 @@ class IMAPClient(object):
         parser = FetchParser()
         return parser(data)
 
+
     def append(self, folder, msg, flags=(), msg_time=None):
         '''Append a message to a folder
 
@@ -423,15 +457,18 @@ class IMAPClient(object):
 
         flags_list = seq_to_parenlist(flags)
 
-        typ, data = self._imap.append(folder, flags_list, time_val, msg)
+        typ, data = self._imap.append(self._encode_folder_name(folder),
+                                      flags_list, time_val, msg)
         self._checkok('append', typ, data)
 
         return data[0]
+
 
     def expunge(self):
         typ, data = self._imap.expunge()
         self._checkok('expunge', typ, data)
         #TODO: expunge response
+
 
     def getacl(self, folder):
         '''Get the ACL for a folder
@@ -450,6 +487,7 @@ class IMAPClient(object):
             out.append((parts[i], parts[i+1]))
         return out
 
+
     def setacl(self, folder, who, what):
         '''Set an ACL for a folder
 
@@ -462,6 +500,7 @@ class IMAPClient(object):
         self._checkok('setacl', typ, data)
         return data[0]
 
+
     def _check_resp(self, expected, command, typ, data):
         '''Check command responses for errors.
 
@@ -470,14 +509,17 @@ class IMAPClient(object):
         if typ != expected:
             raise self.Error('%s failed: %r' % (command, data[0]))
 
+
     def _checkok(self, command, typ, data):
         self._check_resp('OK', command, typ, data)
+
 
     def _checkbye(self, command, typ, data):
         self._check_resp('BYE', command, typ, data)
 
+
     def _store(self, cmd, messages, flags):
-        '''Worker functions for flag manipulation functions
+        '''Worker function for flag manipulation functions
 
         @param cmd: STORE command to use (eg. '+FLAGS')
         @param messages: Sequence of message IDs
@@ -499,11 +541,23 @@ class IMAPClient(object):
 
         return self._flatten_dict(FetchParser()(data))
 
+
     def _flatten_dict(self, fetch_dict):
         return dict([
             (msgid, data.values()[0])
             for msgid, data in fetch_dict.iteritems()
             ])
+
+    def _decode_folder_name(self, name):
+        if self.folder_encode:
+            return imap_utf7.decode(name)
+        return name
+
+
+    def _encode_folder_name(self, name):
+        if self.folder_encode:
+            return imap_utf7.encode(name)
+        return name
 
 
 class FetchParser(object):
