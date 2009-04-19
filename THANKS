@@ -13,6 +13,11 @@ Jp Calderone
     taken from the Twisted project (http://twistedmatrix.com/). This
     functionality was written by Jp Calderone.
 
+Michael Foord
+    IMAPClient is distributed with Michael's excellent mock.py 
+    (http://www.voidspace.org.uk/python/mock/)
+
+
 Bug Reports
 ------------
 Brian Jackson
