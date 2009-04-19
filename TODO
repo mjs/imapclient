@@ -1,6 +1,4 @@
 - transparent folder escaping
-    - re_folder currently fails if there's strange chars in the folder name
-        - write a unit test for this
     - more testing
         - gmail
         - cyrus
@@ -9,6 +7,9 @@
     - update README, website and docstrings to advertise this feature
 
 - sort out INTERNALDATE timezone issues in livetest.py (see freshfoo.com)
+
+- livetest.py --interact support is clumsy
+    - make this a separate command-line utility instead
 
 ---- release 0.5 ----
 
@@ -19,6 +20,7 @@
 - clean up basic command handling to avoid repetition
 - might be able to metaprogram the way out of the currently clumsy UID handling situation
 - sphinx based docs
+    - publish on web site too
 - support for more IMAP functions: sort, examine etc
     - someone sent a patch for this?
 - write a comparision of imaplib vs imapclient.py

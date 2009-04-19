@@ -1,11 +1,12 @@
 import unittest
-from imapclient.test.testable_imapclient import TestableIMAPClient
+from imapclient.test.testable_imapclient import TestableIMAPClient as IMAPClient
 from imapclient.test.mock import sentinel
+
 
 class IMAPClientTestBase(unittest.TestCase):
 
     def setUp(self):
-        self.client = TestableIMAPClient()
+        self.client = IMAPClient()
 
 
 class TestListFolders(IMAPClientTestBase):
@@ -19,6 +20,11 @@ class TestListFolders(IMAPClientTestBase):
 
         self.assert_(self.client._imap.list.call_args == ((sentinel.dir, sentinel.pattern), {}))
         self.assert_(folders == ['A', 'Foo Bar'])
+
+
+    def test_NO(self):
+        self.client._imap.list.return_value = ('NO', ['badness'])
+        self.assertRaises(IMAPClient.Error, self.client.list_folders)
 
 
     def test_without_quotes(self):
@@ -41,10 +47,15 @@ class TestListFolders(IMAPClientTestBase):
         self.assert_(folders == ['Alpha', 'Foo Bar', 'C'], 'got %r' % folders)
 
 
-class TestListFolders(IMAPClientTestBase):
+    def test_funky_characters(self):
+        self.client._imap.list.return_value = ('OK',
+                                               [('(\\NoInferiors \\UnMarked) "/" {5}', 'bang\xff'),
+                                                '',
+                                                '(\\HasNoChildren \\UnMarked) "/" "INBOX"'])
 
-    def test_fail(self):
-        self.assert_(False, 'todo')
+        folders = self.client.list_folders()
+        self.assert_(folders == ['bang\xff', 'INBOX'], 'got %r' % folders)
+
 
 
 if __name__ == '__main__':
