@@ -10,13 +10,15 @@
 
 - sort out INTERNALDATE timezone issues in livetest.py (see freshfoo.com)
 
+---- release 0.5 ----
+
+- automate releases with bzr
+    - automatic changelog generation
 - turn livetests into a nose based tested
     - make each test independent
-
 - clean up basic command handling to avoid repetition
 - might be able to metaprogram the way out of the currently clumsy UID handling situation
-- releases with bzr
-- automatic changelog generation
+- sphinx based docs
 - support for more IMAP functions: sort, examine etc
     - someone sent a patch for this?
 - write a comparision of imaplib vs imapclient.py
