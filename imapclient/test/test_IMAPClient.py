@@ -41,5 +41,11 @@ class TestListFolders(IMAPClientTestBase):
         self.assert_(folders == ['Alpha', 'Foo Bar', 'C'], 'got %r' % folders)
 
 
+class TestListFolders(IMAPClientTestBase):
+
+    def test_fail(self):
+        self.assert_(False, 'todo')
+
+
 if __name__ == '__main__':
     unittest.main()

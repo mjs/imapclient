@@ -20,7 +20,7 @@ import shlex
 import datetime
 #imaplib.Debug = 5
 
-#XXX 
+#XXX avoid relative import?
 import imap_utf7
 
 __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT',
