@@ -1,16 +1,19 @@
 - transparent folder escaping
     - more testing
-        - gmail
         - cyrus
         - exchange
-        - script to do this (in parallel)
 
 - more testing of timezone changes
+    - put server in a different timezone for a while
 
 - livetest.py --interact support is clumsy
     - make this a separate command-line utility instead
 
 - email JP Calderone re use of his code
+
+- XXX's
+
+- a bunch of stuff doesn't work with gmail's IMAP (see livetest.py)
 
 - update docs & web site:
     - transparent folder escaping
@@ -33,7 +36,7 @@
 	(presentation is a good start)
 - use mailbox instead of folder to be consistent with RFCs
 - higher level fetch methods for common or single attributes, flattened
-- handling read-only access
+- handling of read-only access
 - more unit tests using mocking
 - allow per-call uid overrides
 - more docs
