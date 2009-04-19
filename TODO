@@ -4,12 +4,18 @@
         - cyrus
         - exchange
         - script to do this (in parallel)
-    - update README, website and docstrings to advertise this feature
 
-- sort out INTERNALDATE timezone issues in livetest.py (see freshfoo.com)
+- more testing of timezone changes
 
 - livetest.py --interact support is clumsy
     - make this a separate command-line utility instead
+
+- email JP Calderone re use of his code
+
+- update docs & web site:
+    - transparent folder escaping
+    - changelog
+        - compat breakage for for folder escaping and timezone handling
 
 ---- release 0.5 ----
 

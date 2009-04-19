@@ -20,9 +20,6 @@ from optparse import OptionParser
 import imapclient
 
 #TODO: more fetch() testing
-#TODO: test error conditions
-#TODO: prettify test output
-#TODO: coverage checking
 
 def test_capabilities(server):
     caps = server.capabilities()
@@ -135,10 +132,9 @@ def test_append(server):
     '''
     clear_folder(server, 'INBOX')
 
-    # Message time microseconds are set to 0 because the server may return
-    # time in with seconds precision. Also, test with a UTC time because some
-    # servers always return a UTC time for the message (Dovecot...).
-    msg_time = datetime.utcnow().replace(microsecond=0)
+    # Message time microseconds are set to 0 because the server will return
+    # time with only seconds precision.
+    msg_time = datetime.now().replace(microsecond=0)
 
     # Append message
     body = 'Subject: something\r\n\r\nFoo\r\n'
@@ -158,8 +154,8 @@ def test_append(server):
     msginfo = resp.values()[0]
 
     # Time should match the time we specified
-    #XXX broken
-    #assert msginfo['INTERNALDATE'] == msg_time
+    assert msginfo['INTERNALDATE'].tzinfo is not None
+    assert msginfo['INTERNALDATE'].replace(tzinfo=None) == msg_time
 
     # Flags should be the same
     assert 'abc' in msginfo['FLAGS']

@@ -18,10 +18,12 @@ import re
 import imaplib
 import shlex
 import datetime
+import time
 #imaplib.Debug = 5
 
-#XXX avoid relative import?
+#XXX avoid relative imports?
 import imap_utf7
+from fixed_offset import FixedOffset
 
 __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT',
     'RECENT']
@@ -449,8 +451,7 @@ class IMAPClient(object):
         @rtype: str
         '''
         if msg_time:
-            # Send time as UTC as imaplib can screw up if tm_isdst == -1
-            time_val = msg_time.utcnow().utctimetuple()
+            time_val = '"%s"' % datetime_to_imap(msg_time)
         else:
             time_val = None
 
@@ -637,11 +638,25 @@ class FetchParser(object):
             (eg. " 9-Feb-2007 17:08:08 +0000")
         @return: datetime.datetime instance for the given time (in UTC)
         '''
-        t = imaplib.Internaldate2tuple('INTERNALDATE "%s"' % arg)
-        if t is None:
-            return None
-        else:
-            return datetime.datetime(*t[:6])
+        arg = 'INTERNALDATE "%s"' % arg
+        mo = imaplib.InternalDate.match(arg)
+        if not mo:
+            raise ValueError("couldn't parse date %r" % arg)
+
+        zoneh = int(mo.group('zoneh'))
+        zonem = (zoneh * 60) + int(mo.group('zonem'))
+        if mo.group('zonen') == '-':
+            zonem = -zonem
+        tz = FixedOffset(zonem)
+
+        year = int(mo.group('year'))
+        mon = imaplib.Mon2num[mo.group('mon')]
+        day = int(mo.group('day'))
+        hour = int(mo.group('hour'))
+        min = int(mo.group('min'))
+        sec = int(mo.group('sec'))
+
+        return datetime.datetime(year, mon, day, hour, min, sec, 0, tz)
 
     def do_default(self, arg):
         return arg
@@ -772,4 +787,19 @@ def seq_to_parenlist(flags):
         raise ValueError('invalid flags list: %r' % flags)
     return '(%s)' % ' '.join(flags)
 
+
+def datetime_to_imap(dt):
+    '''Convert a datetime instance to a IMAP datetime string
+
+    If timezone information is missing the current system timezone is used.
+    '''
+    if not dt.tzinfo:
+        if time.daylight:
+            offset = time.altzone
+        else:
+            offset = time.timezone
+        dt = dt.replace(tzinfo=FixedOffset(-offset // 60))
+
+    return dt.strftime("%d-%b-%Y %H:%M:%S %z")
+    
 

@@ -21,9 +21,9 @@ Unit tests for the FetchTokeniser and FetchParser classes
 import unittest
 import datetime
 from imapclient.imapclient import FetchParser, FetchTokeniser, Literal
+from imapclient.fixed_offset import FixedOffset
 from pprint import pformat
 
-#TODO: test timezone handling
 #TODO: test invalid dates and times
 #TODO: more response types  
 
@@ -111,11 +111,26 @@ class TestFetchParser(unittest.TestCase):
     def testGarbage(self):
         self.assertRaises(ValueError, self.p, [r'2 (FLAGS (\Deleted) MORE)'])
 
-    def testINTERNALDATE(self):
-        self._parse_test(
-            [r'3 (INTERNALDATE " 9-Feb-2007 17:08:08 +0000")'],
-            {3: {'INTERNALDATE': datetime.datetime(2007, 2, 9, 17, 8, 8)}}
-            )
+
+    def test_INTERNALDATE(self):
+        def parse(date_str):
+            output = self.p(['3 (INTERNALDATE "%s")' % date_str])
+            assert output.keys() == [3]
+            assert output[3].keys() == ['INTERNALDATE']
+            return output[3]['INTERNALDATE']
+
+        dt = parse(' 9-Feb-2007 17:08:08 -0430')
+        self.assert_(dt == datetime.datetime(2007, 2, 9, 17, 8, 8, 0,
+                                             FixedOffset(-4*60 - 30)))
+ 
+        dt = parse('12-Feb-2007 17:08:08 +0200')
+        self.assert_(dt == datetime.datetime(2007, 2, 12, 17, 8, 8, 0,
+                                             FixedOffset(2*60)))
+ 
+        dt = parse(' 9-Dec-2007 17:08:08 +0000')
+        self.assert_(dt == datetime.datetime(2007, 12, 9, 17, 8, 8, 0,
+                                             FixedOffset(0)))
+
 
     def testMultipleTypes(self):
         '''Test multiple response types'''
@@ -123,7 +138,8 @@ class TestFetchParser(unittest.TestCase):
             [r'2 (FLAGS (\Deleted Foo \Seen) INTERNALDATE " 9-Feb-2007 17:08:08 +0000")'],
             {2: {
                     'FLAGS': [r'\Deleted', 'Foo', r'\Seen'],
-                    'INTERNALDATE': datetime.datetime(2007, 2, 9, 17, 8, 8)
+                    'INTERNALDATE': datetime.datetime(2007, 2, 9, 17, 8, 8, 0,
+                                                      FixedOffset(0))
                     }
                 }
             )
@@ -167,12 +183,13 @@ class TestFetchParser(unittest.TestCase):
     def testMultiTypesWithLiteral(self):
         self._parse_test(
             [
-                ('1 (INTERNALDATE " 9-Feb-2007 17:08:08 +0000" RFC822 {21}',
+                ('1 (INTERNALDATE " 9-Feb-2007 17:08:08 +0100" RFC822 {21}',
                       'Subject: test\r\n\r\nbody'),
                 ')'
                 ],
             {1: {
-                    'INTERNALDATE': datetime.datetime(2007, 2, 9, 17, 8, 8),
+                    'INTERNALDATE': datetime.datetime(2007, 2, 9, 17, 8, 8, 0,
+                                                      FixedOffset(60)),
                     'RFC822': 'Subject: test\r\n\r\nbody',
                     }
                 }
