@@ -99,30 +99,13 @@ class TestDateTimeToImap(unittest.TestCase):
         dt = datetime(2009, 1, 2, 3, 4, 5, 0, FixedOffset(2*60 + 30))
         self.assert_(datetime_to_imap(dt) == '02-Jan-2009 03:04:05 +0230')
 
-    @patch('imapclient.imapclient.time.daylight', False)
-    @patch('imapclient.imapclient.time.timezone', -3600)
-    def test_without_timezone_west(self):
+    @patch('imapclient.imapclient.FixedOffset.for_system')
+    def test_without_timezone(self, for_system):
         dt = datetime(2009, 1, 2, 3, 4, 5, 0)
-        actual = datetime_to_imap(dt)
-        self.assert_(datetime_to_imap(dt) == '02-Jan-2009 03:04:05 +0100')
+        for_system.return_value = FixedOffset(-5 * 60)
 
-    @patch('imapclient.imapclient.time.daylight', False)
-    @patch('imapclient.imapclient.time.timezone', 7200)
-    def test_without_timezone_east(self):
-        dt = datetime(2009, 1, 2, 3, 4, 5, 0)
-        self.assert_(datetime_to_imap(dt) == '02-Jan-2009 03:04:05 -0200')
+        self.assert_(datetime_to_imap(dt) == '02-Jan-2009 03:04:05 -0500')
 
-    @patch('imapclient.imapclient.time.daylight', False)
-    @patch('imapclient.imapclient.time.timezone', 0)
-    def test_without_timezone_gmt(self):
-        dt = datetime(2009, 1, 2, 3, 4, 5, 0)
-        self.assert_(datetime_to_imap(dt) == '02-Jan-2009 03:04:05 +0000')
-
-    @patch('imapclient.imapclient.time.daylight', True)
-    @patch('imapclient.imapclient.time.altzone', -7200)
-    def test_without_timezone_with_dst(self):
-        dt = datetime(2009, 1, 2, 3, 4, 5, 0)
-        self.assert_(datetime_to_imap(dt) == '02-Jan-2009 03:04:05 +0200')
 
 
 if __name__ == '__main__':

@@ -18,7 +18,6 @@ import re
 import imaplib
 import shlex
 import datetime
-import time
 #imaplib.Debug = 5
 
 #XXX avoid relative imports?
@@ -656,7 +655,11 @@ class FetchParser(object):
         min = int(mo.group('min'))
         sec = int(mo.group('sec'))
 
-        return datetime.datetime(year, mon, day, hour, min, sec, 0, tz)
+        dt = datetime.datetime(year, mon, day, hour, min, sec, 0, tz)
+
+        # Normalise to host system's timezone
+        return dt.astimezone(FixedOffset.for_system()).replace(tzinfo=None)
+
 
     def do_default(self, arg):
         return arg
@@ -794,11 +797,7 @@ def datetime_to_imap(dt):
     If timezone information is missing the current system timezone is used.
     '''
     if not dt.tzinfo:
-        if time.daylight:
-            offset = time.altzone
-        else:
-            offset = time.timezone
-        dt = dt.replace(tzinfo=FixedOffset(-offset // 60))
+        dt = dt.replace(tzinfo=FixedOffset.for_system())
 
     return dt.strftime("%d-%b-%Y %H:%M:%S %z")
     

@@ -156,8 +156,9 @@ def test_append(server):
     msginfo = resp.values()[0]
 
     # Time should match the time we specified
-    assert msginfo['INTERNALDATE'].tzinfo is not None
-    assert msginfo['INTERNALDATE'].replace(tzinfo=None) == msg_time
+    returned_msg_time = msginfo['INTERNALDATE']
+    assert returned_msg_time.tzinfo is None
+    assert returned_msg_time == msg_time
 
     # Flags should be the same
     assert 'abc' in msginfo['FLAGS']

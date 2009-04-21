@@ -1,6 +1,7 @@
 import unittest
 from datetime import timedelta
 from imapclient.fixed_offset import FixedOffset
+from imapclient.test.mock import patch
 
 class TestFixedOffset(unittest.TestCase):
 
@@ -28,6 +29,18 @@ class TestFixedOffset(unittest.TestCase):
                     timedelta(hours=-2), '-0200')
         self._check(FixedOffset(-11*60 - 30),
                     timedelta(minutes=(-11*60) - 30), '-1130')
+
+    @patch('imapclient.fixed_offset.time.daylight', True)
+    @patch('imapclient.fixed_offset.time.altzone', 15*60*60)
+    def test_for_system_DST(self):
+        offset = FixedOffset.for_system()
+        self.assert_(offset.tzname(None) == '-1500')
+
+    @patch('imapclient.fixed_offset.time.daylight', False)
+    @patch('imapclient.fixed_offset.time.timezone', -15*60*60)
+    def test_for_system_no_DST(self):
+        offset = FixedOffset.for_system()
+        self.assert_(offset.tzname(None) == '+1500')
 
 if __name__ == '__main__':
     unittest.main()

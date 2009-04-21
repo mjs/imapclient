@@ -1,3 +1,4 @@
+import time
 from datetime import datetime, tzinfo, timedelta
 
 ZERO = timedelta(0)
@@ -25,3 +26,15 @@ class FixedOffset(tzinfo):
 
     def dst(self, _):
         return ZERO
+
+    @classmethod
+    def for_system(klass):
+        """Return a FixedOffset instance for the current working timezone and
+        DST conditions.
+        """
+        if time.daylight:
+            offset = time.altzone
+        else:
+            offset = time.timezone
+        return klass(-offset // 60)
+
