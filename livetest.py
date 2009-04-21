@@ -23,116 +23,116 @@ import imapclient
 
 #TODO: more fetch() testing
 
-def test_capabilities(server):
-    caps = server.capabilities()
+def test_capabilities(client):
+    caps = client.capabilities()
     assert isinstance(caps, tuple)
     assert len(caps) > 1
     for cap in caps:
-        assert server.has_capability(cap)
-    assert not server.has_capability('WONT EXIST')
+        assert client.has_capability(cap)
+    assert not client.has_capability('WONT EXIST')
 
-def test_list_folders(server):
-    folders = server.list_folders()
+def test_list_folders(client):
+    folders = client.list_folders()
     assert len(folders) > 0, 'No folders visible on server'
     assert 'INBOX' in [f.upper() for f in folders], 'INBOX not returned'
     #TODO: test wildcards
     #TODO: test other folders...
 
 
-def test_select_and_close(server):
-    num_msgs = server.select_folder('INBOX')
+def test_select_and_close(client):
+    num_msgs = client.select_folder('INBOX')
     assert isinstance(num_msgs, long)
     assert num_msgs >= 0
-    server.close_folder()
+    client.close_folder()
 
 
-def test_subscriptions(server):
+def test_subscriptions(client):
     # Start with a clean slate
-    clear_folders(server)
+    clear_folders(client)
 
-    for folder in server.list_sub_folders():
-        server.unsubscribe_folder(folder)
+    for folder in client.list_sub_folders():
+        client.unsubscribe_folder(folder)
 
     test_folders = ['foobar',
                     'stuff & things',
                     u'test & \u2622']
 
     for folder in test_folders:
-        server.create_folder(folder)
+        client.create_folder(folder)
 
-    all_folders = sorted(server.list_folders())
-
-    for folder in all_folders:
-        server.subscribe_folder(folder)
-
-    assert all_folders == sorted(server.list_sub_folders())
+    all_folders = sorted(client.list_folders())
 
     for folder in all_folders:
-        server.unsubscribe_folder(folder)
-    assert server.list_sub_folders() == []
+        client.subscribe_folder(folder)
+
+    assert all_folders == sorted(client.list_sub_folders())
+
+    for folder in all_folders:
+        client.unsubscribe_folder(folder)
+    assert client.list_sub_folders() == []
 
     assert_raises(imapclient.IMAPClient.Error,
-                  server.subscribe_folder,
+                  client.subscribe_folder,
                   'this folder is not likely to exist')
 
 
-def test_folders(server):
+def test_folders(client):
     '''Test folder manipulation
     '''
-    clear_folders(server)
+    clear_folders(client)
 
-    assert server.folder_exists('INBOX')
-    assert not server.folder_exists('this is very unlikely to exist')
+    assert client.folder_exists('INBOX')
+    assert not client.folder_exists('this is very unlikely to exist')
 
     test_folders = ['foobar',
                     'stuff & things',
                     u'test & \u2622']
 
     for folder in test_folders:
-        assert not server.folder_exists(folder)
+        assert not client.folder_exists(folder)
 
-        server.create_folder(folder)
+        client.create_folder(folder)
 
-        assert server.folder_exists(folder)
-        assert folder in server.list_folders()
+        assert client.folder_exists(folder)
+        assert folder in client.list_folders()
 
-        server.select_folder(folder)
-        server.close_folder()
+        client.select_folder(folder)
+        client.close_folder()
 
-        server.delete_folder(folder)
-        assert not server.folder_exists(folder)
+        client.delete_folder(folder)
+        assert not client.folder_exists(folder)
 
 
-def test_status(server):
-    clear_folders(server)
+def test_status(client):
+    clear_folders(client)
 
     # Default behaviour should return 5 keys
-    assert len(server.folder_status('INBOX')) == 5
+    assert len(client.folder_status('INBOX')) == 5
 
     new_folder = u'test \u2622'
-    server.create_folder(new_folder)
+    client.create_folder(new_folder)
     try:
-        status = server.folder_status(new_folder)
+        status = client.folder_status(new_folder)
         assert status['MESSAGES'] == 0
         assert status['RECENT'] == 0
         assert status['UNSEEN'] == 0
 
         # Add a message to the folder, it should show up now.
         body = 'Subject: something\r\n\r\nFoo'
-        server.append(new_folder, body)
+        client.append(new_folder, body)
 
-        status = server.folder_status(new_folder)
+        status = client.folder_status(new_folder)
         assert status['MESSAGES'] == 1
         assert status['RECENT'] == 1
         assert status['UNSEEN'] == 1
 
     finally:
-        server.delete_folder(new_folder)
+        client.delete_folder(new_folder)
 
-def test_append(server):
+def test_append(client):
     '''Test that appending a message works correctly
     '''
-    clear_folder(server, 'INBOX')
+    clear_folder(client, 'INBOX')
 
     # Message time microseconds are set to 0 because the server will return
     # time with only seconds precision.
@@ -140,15 +140,15 @@ def test_append(server):
 
     # Append message
     body = 'Subject: something\r\n\r\nFoo\r\n'
-    resp = server.append('INBOX', body, ('abc', 'def'), msg_time)
+    resp = client.append('INBOX', body, ('abc', 'def'), msg_time)
     assert isinstance(resp, str)
 
     # Retrieve the just added message and check that all looks well
-    num_msgs = server.select_folder('INBOX')
+    num_msgs = client.select_folder('INBOX')
     assert num_msgs == 1
 
-    resp = server.fetch(
-            server.search()[0],
+    resp = client.fetch(
+            client.search()[0],
             ('RFC822', 'FLAGS', 'INTERNALDATE')
             )
 
@@ -168,11 +168,11 @@ def test_append(server):
     assert msginfo['RFC822'] == body
 
 
-def test_flags(server):
+def test_flags(client):
     '''Test flag manipulations
     '''
-    server.select_folder('INBOX')
-    msgid = server.search()[0]
+    client.select_folder('INBOX')
+    msgid = client.search()[0]
 
     def _flagtest(func, args, expected_flags):
         answer = func(msgid, *args)
@@ -188,13 +188,13 @@ def test_flags(server):
         assert answer_flags == expected_flags
 
     base_flags = ['abc', 'def']
-    _flagtest(server.set_flags, [base_flags], base_flags)
-    _flagtest(server.get_flags, [], base_flags)
-    _flagtest(server.add_flags, ['boo'], base_flags + ['boo'])
-    _flagtest(server.remove_flags, ['boo'], base_flags)
+    _flagtest(client.set_flags, [base_flags], base_flags)
+    _flagtest(client.get_flags, [], base_flags)
+    _flagtest(client.add_flags, ['boo'], base_flags + ['boo'])
+    _flagtest(client.remove_flags, ['boo'], base_flags)
 
-def test_search(server):
-    clear_folder(server, 'INBOX')
+def test_search(client):
+    clear_folder(client, 'INBOX')
 
     # Add some test messages
     msg_tmpl = 'Subject: %s\r\n\r\nBody'
@@ -205,22 +205,22 @@ def test_search(server):
             flags = (imapclient.DELETED,)
         else:
             flags = ()
-        server.append('INBOX', msg, flags)
+        client.append('INBOX', msg, flags)
 
-    messages_all = server.search('ALL')
+    messages_all = client.search('ALL')
     assert len(messages_all) == len(subjects)   # Check we see all messages
-    assert server.search() == messages_all      # Check default
+    assert client.search() == messages_all      # Check default
 
     # Single criteria
-    assert len(server.search('DELETED')) == 1
-    assert len(server.search('NOT DELETED')) == len(subjects) - 1
-    assert server.search('NOT DELETED') == server.search(['NOT DELETED'])
+    assert len(client.search('DELETED')) == 1
+    assert len(client.search('NOT DELETED')) == len(subjects) - 1
+    assert client.search('NOT DELETED') == client.search(['NOT DELETED'])
 
     # Multiple criteria
-    assert len(server.search(['NOT DELETED', 'SMALLER 100'])) == \
+    assert len(client.search(['NOT DELETED', 'SMALLER 100'])) == \
             len(subjects) - 1
-    assert len(server.search(['NOT DELETED', 'SUBJECT "a"'])) == 1
-    assert len(server.search(['NOT DELETED', 'SUBJECT "c"'])) == 0
+    assert len(client.search(['NOT DELETED', 'SUBJECT "a"'])) == 1
+    assert len(client.search(['NOT DELETED', 'SUBJECT "c"'])) == 0
 
 
 def assert_raises(exception_class, func, *args, **kwargs):
@@ -233,32 +233,32 @@ def assert_raises(exception_class, func, *args, **kwargs):
     raise AssertionError('no exception raised, expected %r' % exception_class)
 
 
-def runtests(server):
+def runtests(client):
     '''Run a sequence of tests against the IMAP server
     '''
     # The ordering of these tests is important
-    test_capabilities(server)
-    test_list_folders(server)
-    test_select_and_close(server)
-    test_subscriptions(server)
-    test_folders(server)
-    test_status(server)
-    test_append(server)
-    test_flags(server)
-    test_search(server)
+    test_capabilities(client)
+    test_list_folders(client)
+    test_select_and_close(client)
+    test_subscriptions(client)
+    test_folders(client)
+    test_status(client)
+    test_append(client)
+    test_flags(client)
+    test_search(client)
 
-def clear_folder(server, folder):
-    server.select_folder(folder)
-    server.delete_messages(server.search())
-    server.expunge()
+def clear_folder(client, folder):
+    client.select_folder(folder)
+    client.delete_messages(client.search())
+    client.expunge()
 
 
-def clear_folders(server):
-    server.folder_encode = False
-    for folder in server.list_folders():
+def clear_folders(client):
+    client.folder_encode = False
+    for folder in client.list_folders():
         if folder.upper() != 'INBOX':
-            server.delete_folder(folder)
-    server.folder_encode = True
+            client.delete_folder(folder)
+    client.folder_encode = True
 
 def command_line():
     p = OptionParser()
@@ -275,9 +275,6 @@ def command_line():
     p.add_option('', '--clobber', dest='clobber', action='store_true',
                  default=False, help='These tests are destructive. Use this '
                  'option to bypass the confirmation prompt.')
-    p.add_option('', '--debug', dest='debug', action='store_true',
-                 default=False,
-                 help='Instead of running tests, set up the connection & drop into pdb')
     p.add_option('', '--interact', dest='interact', action='store_true',
                  default=False,
                  help='Instead of running tests, set up the connection & drop into a shell')
@@ -316,16 +313,14 @@ def main():
         print '-'*60
         print "Testing with use_uid=%r, ssl=%r..." % (use_uid, options.ssl)
         print '-'*60
-        server = imapclient.IMAPClient(options.host, use_uid=use_uid, ssl=options.ssl)
-        server.login(options.username, options.password)
-        if options.debug:
-            import pdb
-            pdb.set_trace()
-        elif options.interact:
+        client = imapclient.IMAPClient(options.host, use_uid=use_uid, ssl=options.ssl)
+        client.login(options.username, options.password)
+        if options.interact:
             import code
-            code.interact(local=locals())
+            code.interact('HAI! IMAPClient instance is "c"', local=dict(c=client))
+            break
         else:
-            runtests(server)
+            runtests(client)
             print 'SUCCESS'
 
 if __name__ == '__main__':
