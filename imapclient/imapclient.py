@@ -70,7 +70,7 @@ class IMAPClient(object):
 
     re_sep = re.compile('^\(\("[^"]*" "([^"]+)"\)\)')
     re_folder = re.compile('\([^)]*\) "[^"]+" "?([^"]+)"?')
-    re_status = re.compile(r'^\s*"(?P<folder>[^"]+)"\s+'
+    re_status = re.compile(r'^\s*"?(?P<folder>[^"]+)"?\s+'
                            r'\((?P<status_items>.*)\)$')
 
     def __init__(self, host, port=None, use_uid=True, ssl=False):
@@ -425,7 +425,7 @@ class IMAPClient(object):
             return {}
 
         msg_list = messages_to_str(messages)
-        parts_list = seq_to_parenlist([ p.upper() for p in parts ])
+        parts_list = seq_to_parenlist([p.upper() for p in parts])
 
         if self.use_uid:
             typ, data = self._imap.uid('FETCH', msg_list, parts_list)

@@ -1,7 +1,6 @@
 - transparent folder escaping
     - more testing
         - cyrus
-        - exchange
 
 - more testing of timezone changes
     - put server in a different timezone for a while
@@ -13,8 +12,6 @@
 
 - XXX's
 
-- a bunch of stuff doesn't work with gmail's IMAP (see livetest.py)
-
 - update docs & web site:
     - transparent folder escaping
     - changelog
@@ -22,9 +19,10 @@
 
 ---- release 0.5 ----
 
+- a bunch of stuff doesn't work with gmail's IMAP (see livetest.py)
 - automate releases with bzr
     - automatic changelog generation
-- turn livetests into a nose based tested
+- turn livetests into a nose based testeLondond
     - make each test independent
 - clean up basic command handling to avoid repetition
 - might be able to metaprogram the way out of the currently clumsy UID handling situation
