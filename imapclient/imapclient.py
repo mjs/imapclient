@@ -20,7 +20,6 @@ import shlex
 import datetime
 #imaplib.Debug = 5
 
-#XXX avoid relative imports?
 import imap_utf7
 from fixed_offset import FixedOffset
 
