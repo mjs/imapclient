@@ -8,6 +8,11 @@ Features:
     - IMAP server responses are fully parsed and readily useable. 
     - IMAP unique message IDs (UIDs) are handled transparently. There is no
       need to call different methods to use UIDs.
+    - Escaping for internationalized mailbox names is transparently handled.
+      Unicode mailbox names may be passed as input where-ever a folder name is
+      accepted.
+    - Time zones are transparently handled including when the server and client
+      are in different zones.
     - Convenience methods are provided for commonly used functionality.
     - Exceptions are raised when errors occur.
 
@@ -66,8 +71,8 @@ It must be used with an account that has an INBOX folder and write access to
 the account. The folders and contents of the account don't matter.
 
 WARNING: The operations performed by livetest.py are destructive. Emails and
-folders in the test account WILL BE CHANGED AND DELETED. Please only run
-against a dummy account that you don't care about.
+folders in the test account WILL BE DELETED. Please only run against a dummy
+account that you don't care about.
 
 Run livetest.py with the --help option to see usage.
 

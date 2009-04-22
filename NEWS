@@ -1,0 +1,15 @@
+#XXX standard format?
+#XXX should this be NEWS?
+
+folder name quoting bugs
+
+transparent internationalised folder name handling
+
+timezone handling fixed
+
+more tests
+
+includes mock.py
+
+
+

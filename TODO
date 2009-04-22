@@ -1,11 +1,9 @@
-- email JP Calderone re use of his code
-
 - update docs & web site:
     - transparent folder escaping
-    - changelog
-        - compat breakage for for folder escaping and timezone handling
+    - update NEWS
 
 ---- release 0.5 ----
+- email JP Calderone re use of his code <exarkun at divmod com>
 
 - a bunch of stuff doesn't work with gmail's IMAP (see livetest.py)
 - automate releases with bzr

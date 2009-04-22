@@ -54,6 +54,14 @@ class IMAPClient(object):
     message flags (eg. [DELETED, 'foo', 'Bar']) or a single message flag (eg.
     'Foo'). See the constants at the top of this file for commonly used flags.
 
+    Any method that takes a folder name will accept a standard string or a
+    unicode string. Unicode strings will be transparently encoded using
+    modified UTF-7 as specified by RFC-2060. Such folder names will be returned
+    as unicode strings by methods that return folder names.
+
+    Transparent folder name encoding can be enabled or disabled with the
+    folder_encode attribute. It defaults to True.
+
     The IMAP related exceptions that will be raised by this class are:
         IMAPClient.Error
         IMAPClient.AbortError
@@ -156,7 +164,10 @@ class IMAPClient(object):
         @param directory: The base directory to look for folders from.
         @param pattern: A pattern to match against folder names. Only folder
             names matching this pattern will be returned. Wildcards accepted.
-        @return: A list of folder names.
+        @return: A list of folder names. Each folder name will be either a
+            string or a unicode string (if the folder on the server required
+            decoding). If the folder_encode attribute is False, no decoding
+            will be performed and only ordinary strings will be returned.
         '''
         typ, data = self._imap.list(directory, pattern)
         self._checkok('list', typ, data)
@@ -185,7 +196,7 @@ class IMAPClient(object):
         @param directory: The base directory to look for folders from.
         @param pattern: A pattern to match against folder names. Only folder
             names matching this pattern will be returned. Wildcards accepted.
-        @return: A list of folder names.
+        @return: A list of folder names. As per the return of list_folders().
         '''
         typ, data = self._imap.lsub(directory, pattern)
         self._checkok('lsub', typ, data)
@@ -418,6 +429,8 @@ class IMAPClient(object):
         @param parts: A sequence of data items to retrieve.
         @return: A dictionary indexed by message number. Each item is itself a
             dictionary containing the requested message parts.
+            INTERNALDATE parts will be returned as datetime objects converted
+            to the local machine's time zone.
         '''
         if not messages:
             return {}
@@ -443,7 +456,9 @@ class IMAPClient(object):
         @param flags: Sequnce of message flags to set. If not specified no
             flags will be set.
         @param msg_time: Optional date and time to set for the message. The
-            server will set a time if it isn't specified.
+            server will set a time if it isn't specified. If msg_time contains
+            timezone information (tzinfo), this will be honoured. Otherwise the
+            local machine's time zone sent to the server.
         @type msg_time: datetime.datetime
         @return: The append response returned by the server.
         @rtype: str
