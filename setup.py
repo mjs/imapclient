@@ -15,6 +15,8 @@ Features:
     * Arguments and return values are natural Python types.
     * IMAP server responses are fully parsed and readily useable.
     * IMAP unique message IDs (UIDs) are handled transparently.
+    * Internationalised mailbox names are transparently handled.
+    * Time zones are correctly handled.
     * Convenience methods are provided for commonly used functionality.
     * Exceptions are raised when errors occur.
 
