@@ -1,5 +1,7 @@
 - email JP Calderone re use of his code <exarkun at divmod com>
 
+- make source repo available via HTTP
+
 - automate releases with bzr
 
 - look at paver to automate the release process more
