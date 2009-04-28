@@ -58,3 +58,5 @@ class IMAP4UTF7TestCase(unittest.TestCase):
         self.failUnlessEqual(encode('&'), '&-')
         self.failUnlessEqual(decode('&-'), '&')
 
+if __name__ == '__main__':
+    unittest.main()
