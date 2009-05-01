@@ -1,5 +1,14 @@
 - email JP Calderone re use of his code <exarkun at divmod com>
 
+- fix handling of BODYSTRUCTURE and other deeply nested responses
+    - probably need an s-expression parser
+    - can this be done using the responses we get from imaplib?
+        - consider doing these responses at a lower level
+
+- standalone interaction script that will use ipython if possible
+
+- relax license?
+
 - make source repo available via HTTP
 
 - automate releases with bzr
