@@ -1,5 +1,7 @@
 Version 0.5
 -----------
+Support for SSL based connections.
+
 Folder names are now encoded and decoded transparently if required (using
 modified UTF-7). This means that any methods that return folder names may
 return unicode objects as well as normal strings [API CHANGE]. Additionally,
