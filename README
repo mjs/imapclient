@@ -41,7 +41,8 @@ change in the near future. There's still a significant amount of IMAP
 functionality that the IMAPClient class doesn't cover yet.  That said, what's
 there now is documented, has been tested and should be fairly solid. 
 
-See the TODO file for planned developments.
+The project's home page is a Trac instance at http://imapclient.freshfoo.com/.
+Details about upcoming versions and planned features/fixes can be found there.
 
 Using IMAPClient
 ----------------

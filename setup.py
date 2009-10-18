@@ -4,7 +4,7 @@
 from ez_setup import use_setuptools
 use_setuptools()
 
-from setuptools import setup, find_packages
+from setuptools import setup
 import imapclient
 version = imapclient.__version__
 
@@ -29,7 +29,7 @@ setup(
         author="Menno Smits",
         author_email="menno@freshfoo.com",
         license="http://www.gnu.org/licenses/gpl.txt",
-        url="http://freshfoo.com/wiki/CodeIndex",
+        url="http://imapclient.freshfoo.com/",
         download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.tar.gz' % version,
         packages=['imapclient', 'imapclient.test'],
         test_suite='imapclient.test.load_suite',
