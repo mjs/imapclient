@@ -449,6 +449,7 @@ class IMAPClient(object):
 
 
     def altfetch(self, messages, parts):
+        import pdb; pdb.set_trace()
         if not messages:
             return {}
 
@@ -841,9 +842,4 @@ def datetime_to_imap(dt):
         dt = dt.replace(tzinfo=FixedOffset.for_system())
     return dt.strftime("%d-%b-%Y %H:%M:%S %z")
 
-i = IMAPClient('127.0.0.1')
-i.login('mailtest', 'foobar')
-i.select_folder('INBOX')
-i._imap.debug = 5
-print i.altfetch(1, ['FLAGS', 'RFC822'])
 
