@@ -6,9 +6,15 @@ def main():
     i.login('mailtest', 'foobar')
     i.select_folder('INBOX')
     msgs = i.search()
-    print msgs
     i._imap.debug = 5
-    pprint(i.altfetch(msgs[0], 'RFC822'))
+    lines = i.altfetch(msgs[0], ['RFC822'])
+
+    print lines[0]
+    body = '\r\n'.join(lines[1:-1])
+    body += '\r\n'
+    print body
+    print len(body)
+
 
 if __name__ == '__main__':
     main()

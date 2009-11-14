@@ -449,7 +449,6 @@ class IMAPClient(object):
 
 
     def altfetch(self, messages, parts):
-        import pdb; pdb.set_trace()
         if not messages:
             return {}
 

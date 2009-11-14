@@ -18,6 +18,7 @@
 Unit tests for the FetchTokeniser and FetchParser classes
 '''
 
+from textwrap import dedent
 import unittest
 from imapclient.response_parser import parse_response
 from imapclient.fixed_offset import FixedOffset
@@ -32,6 +33,7 @@ system_offset = FixedOffset.for_system()
 def datetime_to_native(dt):
     return dt.astimezone(system_offset).replace(tzinfo=None)
 
+CRLF = '\r\n'
 
 class TestParseResponse(unittest.TestCase):
 
@@ -69,6 +71,27 @@ class TestParseResponse(unittest.TestCase):
                     ('TEXT', 'PLAIN', ('CHARSET', 'US-ASCII', 'NAME', 'cc.diff'),
                     '<hi.there>', 'foo', 'BASE64', 4554, 73), 'MIXED'))
 
+
+    def test_literal(self):
+        literal_text = add_crlf(dedent("""\
+            012
+            abc def XYZ
+            """))
+        self._test('{18}' + CRLF + literal_text, literal_text)
+
+
+    def test_literal_with_more(self):
+        literal_text = add_crlf(dedent("""\
+            012
+            abc def XYZ
+            """))
+        response = add_crlf(dedent("""\
+            (12 "foo" {18}
+            %s)
+            """) % literal_text)
+        self._test(response, (12, 'foo', literal_text))
+
+
     def _test(self, to_parse, expected, wrap=True):
         # convenience - expected value should be wrapped in another tuple
         if wrap:
@@ -78,6 +101,10 @@ class TestParseResponse(unittest.TestCase):
                 output == expected,
                 format_error(to_parse, output, expected),
             )
+
+
+#TODO convert the following are mainly FETCH specific tests
+
 #     def testCharacterCase(self):
 #         '''Test handling of varied case in the response type name
 #         '''
@@ -213,6 +240,11 @@ def format_error(input_, output, expected):
                 pformat(expected),
             )
 
+
+def add_crlf(text):
+    return CRLF.join(text.splitlines()) + CRLF
+
+
 # class TestFetchTokeniser(unittest.TestCase):
 #     def setUp(self):
 #         self.t = FetchTokeniser()
@@ -285,11 +317,6 @@ def format_error(input_, output, expected):
 # example2 = '(("TEXT" "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 1152 23)("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "cc.diff") "<960723163407.20117h@cac.washington.edu>" "Compiler diff" "BASE64" 4554 73) "MIXED")'
 # example3 = '1 FETCH (UID 1 INTERNALDATE "18-Oct-2009 19:59:06 +0100")'
 # err1 = '1 FETCH (UID '
-
-# print parse_response(example1)
-# print parse_response(example2)
-# print parse_response(example3)
-# print parse_response(err1)
 
 if __name__ == '__main__':
     unittest.main()
