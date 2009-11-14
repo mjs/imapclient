@@ -2,8 +2,8 @@
 
 import shlex
 
-#XXX error handling: needs to be friendly
 #XXX higher level response type response type processing
+#TODO more exact error reporting
 
 __all__ = ['parse_response', 'ParseError']
 
@@ -11,6 +11,8 @@ __all__ = ['parse_response', 'ParseError']
 class ParseError(ValueError):
     pass
 
+
+EOF = object()
 
 class ResponseTokeniser(object):
 
@@ -29,7 +31,10 @@ class ResponseTokeniser(object):
         return iter(self.lex)
 
     def next(self):
-        return self.lex.next()
+        try:
+            return self.lex.next()
+        except StopIteration:
+            return EOF
 
     def read(self, bytes):
         return self.lex.instream.read(bytes)
@@ -38,16 +43,20 @@ class ResponseTokeniser(object):
 def atom(src, token):
     if token == "(":
         out = []
-        token = src.next()
-        while token != ")":
-            out.append(atom(src, token))
+        while True:
             token = src.next()
-        return tuple(out)
+            if token == ")":
+                return tuple(out)
+            if token == EOF:
+                preceeding = ' '.join(str(val) for val in out)
+                raise ParseError('Tuple incomplete before "(%s"' % preceeding)
+            out.append(atom(src, token))
     elif token == 'NIL':
         return None
     elif token.startswith('{'):
         literal_len = int(token[1:-1])
-        assert src.read(1) == '\n' #XXX use ParseError
+        if src.read(1) != '\n':
+           raise ParseError('No CRLF after %s' % token)
         return src.read(literal_len)
     elif token.startswith('"'):
         return token[1:-1]
@@ -59,5 +68,10 @@ def atom(src, token):
 
 def parse_response(text):
     src = ResponseTokeniser(text)
-    return tuple([atom(src, token) for token in src])
+    try:
+        return tuple([atom(src, token) for token in src])
+    except ParseError:
+        raise
+    except ValueError, err:
+        raise ParseError("%s: %s" % (str(err), src.lex.token))
 

@@ -20,7 +20,7 @@ Unit tests for the FetchTokeniser and FetchParser classes
 
 from textwrap import dedent
 import unittest
-from imapclient.response_parser import parse_response
+from imapclient.response_parser import parse_response, ParseError
 from imapclient.fixed_offset import FixedOffset
 from pprint import pformat
 
@@ -37,6 +37,10 @@ CRLF = '\r\n'
 
 class TestParseResponse(unittest.TestCase):
 
+    def test_unquoted(self):
+        self._test('FOO', 'FOO')
+        self._test('F.O:-O_0;', 'F.O:-O_0;')
+
     def test_string(self):
         self._test('"TEST"', 'TEST')
 
@@ -50,7 +54,7 @@ class TestParseResponse(unittest.TestCase):
         self._test('()', ())
 
     def test_tuple(self):
-        self._test('(123 "foo")', (123, 'foo'))
+        self._test('(123 "foo" GeE)', (123, 'foo', 'GeE'))
 
     def test_int_and_tuple(self):
         self._test('1 (123 "foo")', (1, (123, 'foo')), wrap=False)
@@ -64,10 +68,10 @@ class TestParseResponse(unittest.TestCase):
                    (123, "foo", ((0, 1, 2), "more", None), 66))
 
     def test_complex_mixed(self):
-        self._test('(("TEXT" "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 1152 23)'
+        self._test('((FOO "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 1152 23)'
                    '("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "cc.diff") '
                    '"<hi.there>" "foo" "BASE64" 4554 73) "MIXED")',
-                   (('TEXT', 'PLAIN', ('CHARSET', 'US-ASCII'), None, None, '7BIT', 1152, 23),
+                   (('FOO', 'PLAIN', ('CHARSET', 'US-ASCII'), None, None, '7BIT', 1152, 23),
                     ('TEXT', 'PLAIN', ('CHARSET', 'US-ASCII', 'NAME', 'cc.diff'),
                     '<hi.there>', 'foo', 'BASE64', 4554, 73), 'MIXED'))
 
@@ -92,15 +96,35 @@ class TestParseResponse(unittest.TestCase):
         self._test(response, (12, 'foo', literal_text))
 
 
+    def test_incomplete_tuple(self):
+        self._test_parse_error('abc (1 2', 'Tuple incomplete before "(1 2"')
+
+
+    def test_bad_literal(self):
+        self._test_parse_error('{99} abc', 'No CRLF after {99}')
+
+
+    def test_bad_quoting(self):
+        self._test_parse_error('"abc next', 'No closing quotation: "abc next')
+
+
     def _test(self, to_parse, expected, wrap=True):
-        # convenience - expected value should be wrapped in another tuple
         if wrap:
+            # convenience - expected value should be wrapped in another tuple
             expected = (expected,)
         output = parse_response(to_parse)
         self.assert_(
                 output == expected,
                 format_error(to_parse, output, expected),
             )
+
+    def _test_parse_error(self, to_parse, expected_msg):
+        try:
+            parse_response(to_parse)
+            self.fail("didn't raise an exception")
+        except ParseError, err:
+            self.assert_(expected_msg == str(err),
+                         'got ParseError with wrong msg: %r' % str(err))
 
 
 #TODO convert the following are mainly FETCH specific tests
@@ -312,11 +336,6 @@ def add_crlf(text):
 #                 format_error(input_, output, expected),
 #             )
 #         return output
-
-# example1 = '("TEXT" "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 2279 48)'
-# example2 = '(("TEXT" "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 1152 23)("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "cc.diff") "<960723163407.20117h@cac.washington.edu>" "Compiler diff" "BASE64" 4554 73) "MIXED")'
-# example3 = '1 FETCH (UID 1 INTERNALDATE "18-Oct-2009 19:59:06 +0100")'
-# err1 = '1 FETCH (UID '
 
 if __name__ == '__main__':
     unittest.main()
