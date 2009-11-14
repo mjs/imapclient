@@ -448,6 +448,33 @@ class IMAPClient(object):
         return parser(data)
 
 
+    def altfetch(self, messages, parts):
+        if not messages:
+            return {}
+
+        msg_list = messages_to_str(messages)
+        parts_list = seq_to_parenlist([p.upper() for p in parts])
+
+        if self.use_uid:
+            tag = self._imap._command('UID', 'FETCH', msg_list, parts_list)
+        else:
+            tag = self._imap._command('FETCH', msg_list, parts_list)
+
+        print tag
+        lines = []
+        while True:
+            line = self._imap._get_line()
+            if line.startswith(tag):
+                break
+            lines.append(line)
+        return lines
+    
+        #self._checkok('fetch', typ, data)
+
+        #parser = FetchParser()
+        #return parser(data)
+
+
     def append(self, folder, msg, flags=(), msg_time=None):
         '''Append a message to a folder
 
@@ -812,7 +839,11 @@ def datetime_to_imap(dt):
     '''
     if not dt.tzinfo:
         dt = dt.replace(tzinfo=FixedOffset.for_system())
-
     return dt.strftime("%d-%b-%Y %H:%M:%S %z")
-    
+
+i = IMAPClient('127.0.0.1')
+i.login('mailtest', 'foobar')
+i.select_folder('INBOX')
+i._imap.debug = 5
+print i.altfetch(1, ['FLAGS', 'RFC822'])
 
