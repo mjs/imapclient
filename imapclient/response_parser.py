@@ -1,8 +1,14 @@
-# Inspired by: http://effbot.org/zone/simple-iterator-parser.htm
+"""
+XXX
+
+Inspired by: http://effbot.org/zone/simple-iterator-parser.htm
+"""
 
 import shlex
 
 #XXX higher level response type response type processing
+#XXX plug-in this version
+#XXX remove old FetchParser
 #TODO more exact error reporting
 
 __all__ = ['parse_response', 'ParseError']
@@ -10,6 +16,31 @@ __all__ = ['parse_response', 'ParseError']
 
 class ParseError(ValueError):
     pass
+
+
+
+def parse_response(text):
+    #XXX
+    src = ResponseTokeniser(text)
+    try:
+        return tuple([atom(src, token) for token in src])
+    except ParseError:
+        raise
+    except ValueError, err:
+        raise ParseError("%s: %s" % (str(err), src.lex.token))
+
+
+def parse_fetch_response(text):
+    #XXX
+    response = parse_response(text)
+
+    msgid = response[0]
+
+    # Second item should be FETCH
+    if response[1] != 'FETCH':
+        raise ParseError('not a FETCH response')
+
+
 
 
 EOF = object()
@@ -66,12 +97,4 @@ def atom(src, token):
         return token
 
 
-def parse_response(text):
-    src = ResponseTokeniser(text)
-    try:
-        return tuple([atom(src, token) for token in src])
-    except ParseError:
-        raise
-    except ValueError, err:
-        raise ParseError("%s: %s" % (str(err), src.lex.token))
 
