@@ -37,6 +37,7 @@ class TestParseResponse(unittest.TestCase):
     def test_unquoted(self):
         self._test('FOO', 'FOO')
         self._test('F.O:-O_0;', 'F.O:-O_0;')
+        self._test(r'\Seen', r'\Seen')
 
     def test_string(self):
         self._test('"TEST"', 'TEST')
@@ -128,16 +129,12 @@ system_offset = FixedOffset.for_system()
 def datetime_to_native(dt):
     return dt.astimezone(system_offset).replace(tzinfo=None)
 
+
 class TestParseFetchResponse(unittest.TestCase):
 
     def test_basic(self):
         self.assertEquals(parse_fetch_response('* 4 FETCH ()'), {4: {}})
-
-
-    def test_simple_pair(self):
-        self.assertEquals(parse_fetch_response('* 23 FETCH (ABC 123 STUFF "hello")'),
-                          {'23': {'ABC': 123,
-                                  'STUFF': 'hello'}})
+        self.assertEquals(parse_fetch_response('* 4 fEtCh ()'), {4: {}})
 
 
     def test_non_fetch(self):
@@ -148,13 +145,40 @@ class TestParseFetchResponse(unittest.TestCase):
         self.assertRaises(ParseError, parse_fetch_response, '* abc FETCH ()')
 
 
+    def test_bad_data(self):
+        self.assertRaises(ParseError, parse_fetch_response, '* 2 FETCH WHAT')
+
+
+    def test_simple_pairs(self):
+        self.assertEquals(parse_fetch_response('* 23 FETCH (ABC 123 StUfF "hello")'),
+                          {23: {'ABC': 123,
+                                'STUFF': 'hello'}})
+
+
+    def test_odd_pairs(self):
+        self.assertRaises(ParseError, parse_fetch_response, '* 2 FETCH (ONE)')
+        self.assertRaises(ParseError, parse_fetch_response, '* 2 FETCH (ONE TWO THREE)')
+
+
     def test_UID(self):
         self.assertEquals(parse_fetch_response('* 23 FETCH (UID 76)'),
-                          {'76': {}})
+                          {76: {}})
+        self.assertEquals(parse_fetch_response('* 23 FETCH (uiD 76)'),
+                          {76: {}})
 
+
+    def test_bad_UID(self):
+        self.assertRaises(ParseError, parse_fetch_response, '* 2 FETCH (UID X)')
+        
 
     def test_FLAGS(self):
+        self.assertEquals(parse_fetch_response('* 23 FETCH (FLAGS (\Seen Stuff))'),
+                          {23: {'FLAGS': (r'\Seen', 'Stuff')}})
+
+
+    def test_multiple_messages(self):
         self.fail()
+
 
     def test_INTERNALDATE(self):
         self.fail()
@@ -180,34 +204,6 @@ class TestParseFetchResponse(unittest.TestCase):
  
 #         dt = check(' 9-Dec-2007 17:08:08 +0000',
 #                    datetime.datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
-
-    def test_multiple_fields(self):
-        self.fail()
-
-    def test_multiple_messages(self):
-        self.fail()
-
-    def test_case_handling(self):
-        self.fail()
-#         self._parse_test(
-#             [r'2 (flaGS (\Deleted Foo \Seen))'],
-#             {2: {'FLAGS': [r'\Deleted', 'Foo', r'\Seen']}}
-#             )
-
-
-    def test_invalid(self):
-        self.fail()
-#         self.assertRaises(ValueError, self.p, [r'2 (FLAGS (\Deleted) MORE)'])
-#         self.assertRaises(ValueError,
-#                 self.t.process_pairs, 'FOO 123 BAH "abc" WHAT?')
-#         self.assertRaises(ValueError,
-#                 self.t.process_pairs, 'HMMM FOO 123 BAH "abc"')
-#         self.assertRaises(ValueError,
-#                 self.t.process_pairs, 'FOO 123 BAD BAH "abc"')
-
-#TODO convert the following are mainly FETCH specific tests
-
-#     def test_INTERNALDATE(self):
 
 
 #     def testMultipleMessages(self):

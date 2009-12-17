@@ -32,23 +32,52 @@ def parse_response(text):
 
 
 def parse_fetch_response(text):
+    #XXX doc
     response = iter(parse_response(text))
 
     def expect(expected_value):
-        next_value = response.next()
+        next_value = response.next().upper()
         if next_value != expected_value:
             raise ParseError('expected %r, got %r' % (expected_value, next_value))
 
-    msg_data = {}
+    parsed_response = {}
     while True:
         try:
             expect('*')
         except StopIteration:
             break
-        msgid = int(response.next())
+
+        msg_id = _int_or_error(response.next(), 'invalid message ID')
         expect('FETCH')
-        msg_data[msgid] = response.next()
-    return msg_data
+
+        msg_response = response.next()
+        if not isinstance(msg_response, tuple):
+            raise ParseError('bad response type: %s' % repr(msg_response))
+        if len(msg_response) % 2:
+            raise ParseError('uneven number of response items: %s' % repr(msg_response))
+
+        #XXX extract this
+        msg_data = {}
+        for i in xrange(0, len(msg_response), 2):
+            word = msg_response[i].upper()
+            value = msg_response[i+1]
+
+            if word == 'UID':
+                msg_id = _int_or_error(value, 'invalid UID')
+            else:
+                msg_data[word] = value
+
+        parsed_response[msg_id] = msg_data
+
+    return parsed_response
+
+
+def _int_or_error(value, error_text):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        raise ParseError('%s: %s' % (error_text, repr(value)))
+
 
 
 EOF = object()
@@ -56,7 +85,7 @@ EOF = object()
 class ResponseTokeniser(object):
 
     CTRL_CHARS = ''.join([chr(ch) for ch in range(32)])
-    ATOM_SPECIALS = r'()%*\"]' + CTRL_CHARS
+    ATOM_SPECIALS = r'()%*"]' + CTRL_CHARS
     ALL_CHARS = [chr(ch) for ch in range(256)]
     ATOM_NON_SPECIALS = [ch for ch in ALL_CHARS if ch not in ATOM_SPECIALS]
 
