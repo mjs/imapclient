@@ -128,23 +128,29 @@ system_offset = FixedOffset.for_system()
 def datetime_to_native(dt):
     return dt.astimezone(system_offset).replace(tzinfo=None)
 
-class TestPatchFetchResponse(object):
+class TestParseFetchResponse(unittest.TestCase):
 
     def test_basic(self):
-        parse_fetch_response('4 FETCH ()', {'4': {}})
+        self.assertEquals(parse_fetch_response('* 4 FETCH ()'), {4: {}})
+
+
+    def test_simple_pair(self):
+        self.assertEquals(parse_fetch_response('* 23 FETCH (ABC 123 STUFF "hello")'),
+                          {'23': {'ABC': 123,
+                                  'STUFF': 'hello'}})
+
 
     def test_non_fetch(self):
-        self.assertRaises(ParseError, parse_fetch_response, '4 OTHER ()')
+        self.assertRaises(ParseError, parse_fetch_response, '* 4 OTHER ()')
+
+
+    def test_bad_msgid(self):
+        self.assertRaises(ParseError, parse_fetch_response, '* abc FETCH ()')
+
 
     def test_UID(self):
-        self.fail()
-#         '''Test UID handling. The UID is returned instead of the given message
-#         ID if present.
-#         '''
-#         self._parse_test(
-#             ['1 (UID 8)'],
-#             {8: {}}
-#             )
+        self.assertEquals(parse_fetch_response('* 23 FETCH (UID 76)'),
+                          {'76': {}})
 
 
     def test_FLAGS(self):
@@ -176,6 +182,9 @@ class TestPatchFetchResponse(object):
 #                    datetime.datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
 
     def test_multiple_fields(self):
+        self.fail()
+
+    def test_multiple_messages(self):
         self.fail()
 
     def test_case_handling(self):

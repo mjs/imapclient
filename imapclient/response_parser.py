@@ -5,6 +5,7 @@ Inspired by: http://effbot.org/zone/simple-iterator-parser.htm
 """
 
 import shlex
+from cStringIO import StringIO
 
 #XXX higher level response type response type processing
 #XXX plug-in this version
@@ -20,10 +21,10 @@ class ParseError(ValueError):
 
 
 def parse_response(text):
-    #XXX
+    #XXX doc
     src = ResponseTokeniser(text)
     try:
-        return tuple([atom(src, token) for token in src])
+        return tuple(atom(src, token) for token in src)
     except ParseError:
         raise
     except ValueError, err:
@@ -31,16 +32,23 @@ def parse_response(text):
 
 
 def parse_fetch_response(text):
-    #XXX
-    response = parse_response(text)
+    response = iter(parse_response(text))
 
-    msgid = response[0]
+    def expect(expected_value):
+        next_value = response.next()
+        if next_value != expected_value:
+            raise ParseError('expected %r, got %r' % (expected_value, next_value))
 
-    # Second item should be FETCH
-    if response[1] != 'FETCH':
-        raise ParseError('not a FETCH response')
-
-
+    msg_data = {}
+    while True:
+        try:
+            expect('*')
+        except StopIteration:
+            break
+        msgid = int(response.next())
+        expect('FETCH')
+        msg_data[msgid] = response.next()
+    return msg_data
 
 
 EOF = object()

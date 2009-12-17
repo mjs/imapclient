@@ -1,5 +1,6 @@
 from pprint import pprint
 from imapclient import IMAPClient
+from imapclient.response_parser import parse_response
 
 def main():
     i = IMAPClient('localhost')
@@ -7,14 +8,13 @@ def main():
     i.select_folder('INBOX')
     msgs = i.search()
     i._imap.debug = 5
-    lines = i.altfetch(msgs[0], ['RFC822'])
+    lines = i.altfetch(msgs, ['ENVELOPE', 'BODYSTRUCTURE'])
 
-    print lines[0]
-    body = '\r\n'.join(lines[1:-1])
-    body += '\r\n'
-    print body
-    print len(body)
+    body = '\r\n'.join(lines)
+    #body += '\r\n'
 
+    for x in parse_response(body):
+        print x
 
 if __name__ == '__main__':
     main()
