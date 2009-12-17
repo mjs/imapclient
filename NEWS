@@ -1,3 +1,7 @@
+Version 0.5.1
+-------------
+Changed license from GPL to new BSD.
+
 Version 0.5
 -----------
 Support for SSL based connections.

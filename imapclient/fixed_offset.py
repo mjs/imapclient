@@ -1,5 +1,9 @@
+# Copyright (c) 2009, Menno Smits
+# Released subject to the New BSD License
+# Please see http://en.wikipedia.org/wiki/BSD_licenses
+
 import time
-from datetime import datetime, tzinfo, timedelta
+from datetime import tzinfo, timedelta
 
 ZERO = timedelta(0)
 

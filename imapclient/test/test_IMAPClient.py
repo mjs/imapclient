@@ -1,3 +1,7 @@
+# Copyright (c) 2009, Menno Smits
+# Released subject to the New BSD License
+# Please see http://en.wikipedia.org/wiki/BSD_licenses
+
 from datetime import datetime
 from imapclient.fixed_offset import FixedOffset
 from imapclient.imapclient import datetime_to_imap

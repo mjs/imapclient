@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2009, Menno Smits
+# Released subject to the New BSD License
+# Please see http://en.wikipedia.org/wiki/BSD_licenses
+
+
 # bootstrap setuptools if necessary
 from ez_setup import use_setuptools
 use_setuptools()
@@ -28,7 +33,7 @@ setup(
         version=version,
         author="Menno Smits",
         author_email="menno@freshfoo.com",
-        license="http://www.gnu.org/licenses/gpl.txt",
+        license="http://en.wikipedia.org/wiki/BSD_licenses",
         url="http://imapclient.freshfoo.com/",
         download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.tar.gz' % version,
         packages=['imapclient', 'imapclient.test'],
@@ -41,7 +46,7 @@ setup(
         classifiers=[
             'Development Status :: 3 - Alpha',
             'Intended Audience :: Developers',
-            'License :: OSI Approved :: GNU General Public License (GPL)',
+            'License :: OSI Approved :: BSD License',
             'Operating System :: OS Independent',
             'Natural Language :: English',
             'Programming Language :: Python',
