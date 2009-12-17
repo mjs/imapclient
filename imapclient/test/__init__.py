@@ -21,7 +21,7 @@ def load_suite():
 
 def run_suite():
     suite = load_suite()
-    runner = unittest.TextTestRunner(verbosity=1)
+    runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
 
 
