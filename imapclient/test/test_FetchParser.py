@@ -2,9 +2,9 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-'''
+"""
 Unit tests for the FetchTokeniser and FetchParser classes
-'''
+"""
 
 import unittest
 import datetime
@@ -93,8 +93,8 @@ class TestFetchParser(unittest.TestCase):
         self.p = FetchParser()
 
     def testCharacterCase(self):
-        '''Test handling of varied case in the response type name
-        '''
+        """Test handling of varied case in the response type name
+        """
         self._parse_test(
             [r'2 (flaGS (\Deleted Foo \Seen))'],
             {2: {'FLAGS': [r'\Deleted', 'Foo', r'\Seen']}}
@@ -130,7 +130,7 @@ class TestFetchParser(unittest.TestCase):
 
 
     def testMultipleTypes(self):
-        '''Test multiple response types'''
+        """Test multiple response types"""
         self._parse_test(
             [r'2 (FLAGS (\Deleted Foo \Seen) INTERNALDATE " 9-Feb-2007 17:08:08 +0000")'],
             {2: {
@@ -143,8 +143,8 @@ class TestFetchParser(unittest.TestCase):
             )
 
     def testMultipleMessages(self):
-        '''Test with multple messages in the response
-        '''
+        """Test with multple messages in the response
+        """
         self._parse_test(
             [
                 r'2 (FLAGS (Foo Bar))',
@@ -157,8 +157,8 @@ class TestFetchParser(unittest.TestCase):
             )
 
     def testLiteral(self):
-        '''Test literal handling
-        '''
+        """Test literal handling
+        """
         self._parse_test(
             [('1 (RFC822 {21}', 'Subject: test\r\n\r\nbody'), ')'],
             { 1: {'RFC822': 'Subject: test\r\n\r\nbody'} }
@@ -211,9 +211,9 @@ class TestFetchParser(unittest.TestCase):
             )
 
     def testUID(self):
-        '''Test UID handling. The UID is returned instead of the given message
+        """Test UID handling. The UID is returned instead of the given message
         ID if present.
-        '''
+        """
         self._parse_test(
             ['1 (UID 8)'],
             {8: {}}
