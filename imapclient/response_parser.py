@@ -10,6 +10,8 @@ from cStringIO import StringIO
 #XXX higher level response type response type processing
 #XXX plug-in this version
 #XXX remove old FetchParser
+#XXX handle escaping in strings especially: \"
+#    Check the RFC on this.
 #TODO more exact error reporting
 
 __all__ = ['parse_response', 'ParseError']
