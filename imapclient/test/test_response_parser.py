@@ -149,6 +149,10 @@ class TestParseFetchResponse(unittest.TestCase):
         self.assertRaises(ParseError, parse_fetch_response, '* 2 FETCH WHAT')
 
 
+    def test_missing_data(self):
+        self.assertRaises(ParseError, parse_fetch_response, '* 2 FETCH')
+
+
     def test_simple_pairs(self):
         self.assertEquals(parse_fetch_response('* 23 FETCH (ABC 123 StUfF "hello")'),
                           {23: {'ABC': 123,
