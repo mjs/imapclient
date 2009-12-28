@@ -82,15 +82,13 @@ class TestListFolders(IMAPClientTest):
         self.assert_(folders == ['bang\xff', 'INBOX'], 'got %r' % folders)
 
 
-    def test_escaped_quotes(self):
+    def test_quoted_specials(self):
         folders = self.client._proc_folder_list(['(\\HasNoChildren) "/" "Test \"Folder\""',
                                                  '(\\HasNoChildren) "/" "Left\"Right"',
+                                                r'(\\HasNoChildren) "/" "Left\\Right"',
                                                  ])
-        self.assert_(folders == ['Test "Folder"', 'Left\"Right'], 'got %r' % folders)
+        self.assert_(folders == ['Test "Folder"', 'Left\"Right', r'Left\Right'], 'got %r' % folders)
 
-
-    def test_other_escaping(self):
-        self.fail("what other escapes are allowed?")
 
 
 class TestAppend(IMAPClientTest):

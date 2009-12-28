@@ -191,6 +191,7 @@ class IMAPClient(object):
                 if match:
                     folder_text = match.group('folder')
                     folder_text = folder_text.replace(r'\"', '"')
+                    folder_text = folder_text.replace(r'\\', '\\')
             if folder_text is not None:
                 folders.append(self._decode_folder_name(folder_text))
         return folders
