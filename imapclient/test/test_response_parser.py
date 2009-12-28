@@ -94,6 +94,11 @@ class TestParseResponse(unittest.TestCase):
         self._test(response, (12, 'foo', literal_text))
 
 
+    def test_quoted_specials(self):
+        self._test(r'"foo \"bar\""', ('foo "bar"',))
+        self._test(r'"foo\\bar"', (r'foo\bar',))
+
+
     def test_incomplete_tuple(self):
         self._test_parse_error('abc (1 2', 'Tuple incomplete before "(1 2"')
 
@@ -104,6 +109,8 @@ class TestParseResponse(unittest.TestCase):
 
     def test_bad_quoting(self):
         self._test_parse_error('"abc next', 'No closing quotation: "abc next')
+
+
 
 
     def _test(self, to_parse, expected, wrap=True):
