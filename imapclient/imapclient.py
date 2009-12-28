@@ -63,7 +63,8 @@ class IMAPClient(object):
     ReadOnlyError = imaplib.IMAP4.readonly
 
     re_sep = re.compile('^\(\("[^"]*" "([^"]+)"\)\)')
-    re_folder = re.compile('\([^)]*\) "[^"]+" "?([^"]+)"?')
+#     re_folder = re.compile('\([^)]*\) "[^"]+" "?([^"]+)"?')
+    re_folder = re.compile(r'\([^)]*\) "[^"]+" (?P<qqq>"?)(?P<folder>.+)(?P=qqq)')
     re_status = re.compile(r'^\s*"?(?P<folder>[^"]+)"?\s+'
                            r'\((?P<status_items>.*)\)$')
 
@@ -159,20 +160,7 @@ class IMAPClient(object):
         """
         typ, data = self._imap.list(directory, pattern)
         self._checkok('list', typ, data)
-
-        folders = []
-        for line in data:
-            #TODO can the FetchParser code be adapted for use here?
-            folder_text = None
-            if isinstance(line, tuple):
-                folder_text = line[-1]
-            else:
-                match = self.re_folder.match(line)
-                if match:
-                    folder_text = match.group(1)
-            if folder_text is not None:
-                folders.append(self._decode_folder_name(folder_text))
-        return folders
+        return self._proc_folder_list(data)
 
 
     def list_sub_folders(self, directory="", pattern="*"):
@@ -188,15 +176,25 @@ class IMAPClient(object):
         """
         typ, data = self._imap.lsub(directory, pattern)
         self._checkok('lsub', typ, data)
+        return self._proc_folder_list(data)
 
+
+    def _proc_folder_list(self, folder_data):
         folders = []
-        for line in data:
-            if line:
-                m = self.re_folder.match(line)
-                if m:
-                    folders.append(self._decode_folder_name(m.group(1)))
+        for line in folder_data:
+            #TODO can the FetchParser code be adapted for use here?
+            folder_text = None
+            if isinstance(line, tuple):
+                folder_text = line[-1]
+            else:
+                match = self.re_folder.match(line)
+                if match:
+                    folder_text = match.group('folder')
+                    folder_text = folder_text.replace(r'\"', '"')
+            if folder_text is not None:
+                folders.append(self._decode_folder_name(folder_text))
         return folders
-
+        
 
     def select_folder(self, folder):
         """Select the current folder on the server. Future calls to methods
