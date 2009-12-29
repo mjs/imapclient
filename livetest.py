@@ -21,11 +21,18 @@ def test_capabilities(client):
     assert not client.has_capability('WONT EXIST')
 
 def test_list_folders(client):
+    clear_folders(client)
+    some_folders = ['simple', r'foo\bar', r'test"folder"']
+    for name in some_folders:
+        client.create_folder(name)
+
     folders = client.list_folders()
     assert len(folders) > 0, 'No folders visible on server'
     assert 'INBOX' in [f.upper() for f in folders], 'INBOX not returned'
+
+    for name in some_folders:
+        assert name in folders
     #TODO: test wildcards
-    #TODO: test other folders...
 
 
 def test_select_and_close(client):
