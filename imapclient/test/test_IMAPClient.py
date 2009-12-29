@@ -89,6 +89,11 @@ class TestListFolders(IMAPClientTest):
                                                  ])
         self.assert_(folders == ['Test "Folder"', 'Left\"Right', r'Left\Right'], 'got %r' % folders)
 
+    def test_blanks(self):
+        folders = self.client._proc_folder_list(['', None, 
+                                                 r'(\\HasNoChildren) "/" "last"',
+                                                ])
+        self.assert_(folders == ['last'], 'got %r' % folders)
 
 
 class TestAppend(IMAPClientTest):

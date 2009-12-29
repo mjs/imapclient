@@ -11,6 +11,7 @@ import datetime
 import imap_utf7
 from fixed_offset import FixedOffset
 
+
 __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT',
     'RECENT']
 
@@ -186,7 +187,7 @@ class IMAPClient(object):
             folder_text = None
             if isinstance(line, tuple):
                 folder_text = line[-1]
-            else:
+            elif line:
                 match = self.re_folder.match(line)
                 if match:
                     folder_text = match.group('folder')
