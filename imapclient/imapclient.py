@@ -598,6 +598,7 @@ class FetchParser(object):
             raise ValueError("don't know how to handle %r" % data)
 
         data = data.lstrip()
+        msgid = None
         if data[0].isdigit():
             # Get message ID
             msgid, data = data.split(None, 1)
@@ -605,11 +606,9 @@ class FetchParser(object):
 
             assert data.startswith('('), data
             data = data[1:]
-            if data.endswith(')'):
-                data = data[:-1]
 
-        else:
-            msgid = None
+        if data.endswith(')'):
+            data = data[:-1]
 
         for name, item in FetchTokeniser().process_pairs(data):
             name = name.upper()

@@ -179,20 +179,19 @@ class TestFetchParser(unittest.TestCase):
             )
 
     def testMultiTypesWithLiteral(self):
-        self._parse_test(
-            [
-                ('1 (INTERNALDATE " 9-Feb-2007 17:08:08 +0100" RFC822 {21}',
-                      'Subject: test\r\n\r\nbody'),
-                ')'
-                ],
-            {1: {
-                    'INTERNALDATE': datetime_to_native(datetime.datetime(2007, 2, 9,
-                                                                         17, 8, 8, 0,
-                                                                         FixedOffset(60))),
-                    'RFC822': 'Subject: test\r\n\r\nbody',
+        expected = {1: {'INTERNALDATE': datetime_to_native(datetime.datetime(2007, 2, 9,
+                                                                             17, 8, 8, 0,
+                                                                             FixedOffset(60))),
+                        'RFC822': 'Subject: test\r\n\r\nbody'}
                     }
-                }
-            )
+        self._parse_test([('1 (INTERNALDATE " 9-Feb-2007 17:08:08 +0100" RFC822 {21}',
+                           'Subject: test\r\n\r\nbody'), ')'],
+                         expected)
+
+        # Also test where there literal comes back first
+        self._parse_test([('1 (RFC822 {21}', 'Subject: test\r\n\r\nbody'),
+                           'INTERNALDATE " 9-Feb-2007 17:08:08 +0100")'],
+                           expected)
 
     def testLiteralsWithSections(self):
         self._parse_test(
