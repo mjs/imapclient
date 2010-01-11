@@ -17,6 +17,9 @@ Michael Foord
     IMAPClient is distributed with Michael's excellent mock.py 
     (http://www.voidspace.org.uk/python/mock/)
 
+Mark Hammond <mhammond _AT_ skipinet.com.au)
+     Much work related to response parsing.
+
 
 Bug Reports
 ------------
