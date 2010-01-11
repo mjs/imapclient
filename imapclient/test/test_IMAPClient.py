@@ -5,7 +5,7 @@
 from datetime import datetime
 from imapclient.fixed_offset import FixedOffset
 from imapclient.imapclient import datetime_to_imap
-from imapclient.test.mock import patch, sentinel
+from imapclient.test.mock import patch, sentinel, Mock
 from imapclient.test.testable_imapclient import TestableIMAPClient as IMAPClient
 import unittest
 
@@ -18,50 +18,82 @@ class IMAPClientTest(unittest.TestCase):
 
 class TestListFolders(IMAPClientTest):
 
-    def test_simple(self):
-        self.client._imap.list.return_value = ('OK', ['(\\HasNoChildren) "/" "A"',
-                                                      '(\\HasNoChildren) "/" "Foo Bar"',
-                                                      ])
+    def test_list_folders(self):
+        self.client._imap.list.return_value = ('OK', sentinel.folder_data)
+        self.client._proc_folder_list = Mock(return_value=sentinel.folder_list)
 
         folders = self.client.list_folders(sentinel.dir, sentinel.pattern)
 
         self.assert_(self.client._imap.list.call_args == ((sentinel.dir, sentinel.pattern), {}))
-        self.assert_(folders == ['A', 'Foo Bar'])
+        self.assert_(self.client._proc_folder_list.call_args == ((sentinel.folder_data,), {}))
+        self.assert_(folders is sentinel.folder_list)
+
+        
+    def test_list_sub_folders(self):
+        self.client._imap.lsub.return_value = ('OK', sentinel.folder_data)
+        self.client._proc_folder_list = Mock(return_value=sentinel.folder_list)
+
+        folders = self.client.list_sub_folders(sentinel.dir, sentinel.pattern)
+
+        self.assert_(self.client._imap.lsub.call_args == ((sentinel.dir, sentinel.pattern), {}))
+        self.assert_(self.client._proc_folder_list.call_args == ((sentinel.folder_data,), {}))
+        self.assert_(folders is sentinel.folder_list)
 
 
-    def test_NO(self):
+    def test_list_folders_NO(self):
         self.client._imap.list.return_value = ('NO', ['badness'])
         self.assertRaises(IMAPClient.Error, self.client.list_folders)
 
 
-    def test_without_quotes(self):
-        self.client._imap.list.return_value = ('OK', ['(\\HasNoChildren) "/" A',
-                                                      '(\\HasNoChildren) "/" B',
-                                                      '(\\HasNoChildren) "/" C',
-                                                      ])
+    def test_list_sub_folders_NO(self):
+        self.client._imap.list.return_value = ('NO', ['badness'])
+        self.assertRaises(IMAPClient.Error, self.client.list_folders)
 
-        folders = self.client.list_folders()
+
+    def test_simple(self):
+        folders = self.client._proc_folder_list(['(\\HasNoChildren) "/" "A"',
+                                                 '(\\HasNoChildren) "/" "Foo Bar"',
+                                                 ])
+        self.assert_(folders == ['A', 'Foo Bar'])
+
+
+
+
+    def test_without_quotes(self):
+        folders = self.client._proc_folder_list(['(\\HasNoChildren) "/" A',
+                                                 '(\\HasNoChildren) "/" B',
+                                                 '(\\HasNoChildren) "/" C',
+                                                 ])
         self.assert_(folders == ['A', 'B', 'C'], 'got %r' % folders)
 
 
     def test_mixed(self):
-        self.client._imap.list.return_value = ('OK', ['(\\HasNoChildren) "/" Alpha',
-                                                      '(\\HasNoChildren) "/" "Foo Bar"',
-                                                      '(\\HasNoChildren) "/" C',
-                                                      ])
-
-        folders = self.client.list_folders()
+        folders = self.client._proc_folder_list(['(\\HasNoChildren) "/" Alpha',
+                                                 '(\\HasNoChildren) "/" "Foo Bar"',
+                                                 '(\\HasNoChildren) "/" C',
+                                                 ])
         self.assert_(folders == ['Alpha', 'Foo Bar', 'C'], 'got %r' % folders)
 
 
     def test_funky_characters(self):
-        self.client._imap.list.return_value = ('OK',
-                                               [('(\\NoInferiors \\UnMarked) "/" {5}', 'bang\xff'),
-                                                '',
-                                                '(\\HasNoChildren \\UnMarked) "/" "INBOX"'])
-
-        folders = self.client.list_folders()
+        folders = self.client._proc_folder_list([('(\\NoInferiors \\UnMarked) "/" {5}', 'bang\xff'),
+                                                 '',
+                                                 '(\\HasNoChildren \\UnMarked) "/" "INBOX"'])
         self.assert_(folders == ['bang\xff', 'INBOX'], 'got %r' % folders)
+
+
+    def test_quoted_specials(self):
+        folders = self.client._proc_folder_list(['(\\HasNoChildren) "/" "Test \"Folder\""',
+                                                 '(\\HasNoChildren) "/" "Left\"Right"',
+                                                r'(\\HasNoChildren) "/" "Left\\Right"',
+                                                 ])
+        self.assert_(folders == ['Test "Folder"', 'Left\"Right', r'Left\Right'], 'got %r' % folders)
+
+    def test_blanks(self):
+        folders = self.client._proc_folder_list(['', None, 
+                                                 r'(\\HasNoChildren) "/" "last"',
+                                                ])
+        self.assert_(folders == ['last'], 'got %r' % folders)
 
 
 class TestAppend(IMAPClientTest):

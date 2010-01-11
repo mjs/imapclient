@@ -1,6 +1,13 @@
+Version 0.5.2 (not yet released)
+-------------
+Correctly handle double quotes and backslashes in folder names when
+parsing LIST and LSUB responses (#28).
+
+
 Version 0.5.1
 -------------
 Changed license from GPL to new BSD.
+
 
 Version 0.5
 -----------
