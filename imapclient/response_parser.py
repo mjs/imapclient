@@ -21,7 +21,6 @@ class ParseError(ValueError):
     pass
 
 
-
 def parse_response(text):
     #XXX doc
     src = ResponseTokeniser(text)
@@ -37,29 +36,26 @@ def parse_fetch_response(text):
     #XXX doc
     response = iter(parse_response(text))
 
-    def expect(expected_value):
-        next_value = response.next().upper()
-        if next_value != expected_value:
-            raise ParseError('expected %r, got %r' % (expected_value, next_value))
-
     parsed_response = {}
     while True:
         try:
-            expect('*')
+            msg_id = _int_or_error(response.next(), 'invalid message ID')
         except StopIteration:
             break
 
-        msg_id = _int_or_error(response.next(), 'invalid message ID')
-        expect('FETCH')
+        try:
+            msg_response = response.next()
+        except StopIteration:
+            raise ParseError('unexpected EOF')
 
-        msg_response = response.next()
         if not isinstance(msg_response, tuple):
             raise ParseError('bad response type: %s' % repr(msg_response))
         if len(msg_response) % 2:
             raise ParseError('uneven number of response items: %s' % repr(msg_response))
 
-        #XXX extract this
-        msg_data = {}
+        # always return the 'sequence' of the message, so it is available
+        # even if we return keyed by UID.
+        msg_data = {'SEQ': msg_id}
         for i in xrange(0, len(msg_response), 2):
             word = msg_response[i].upper()
             value = msg_response[i+1]
@@ -80,19 +76,67 @@ def _int_or_error(value, error_text):
     except (TypeError, ValueError):
         raise ParseError('%s: %s' % (error_text, repr(value)))
 
-
-
 EOF = object()
+
+# imaplib has poor handling of 'literals' - it both fails to remove the
+# {size} marker, and fails to keep responses grouped into the same logical
+# 'line'.  What we end up with is a list of response 'records', where each
+# record is either a simple string, or tuple of (str_with_lit, literal) -
+# where str_with_lit is a string with the {xxx} marker at its end.  Note
+# that each elt of this list does *not* correspond 1:1 with the untagged
+# responses.
+# (http://bugs.python.org/issue5045 also has comments about this)
+# So: we have a special file-like object for each of these records.  When
+# a string literal is finally processed, we peek into this file-like object
+# to grab the literal.
+class LiteralHandlingReader:
+    def __init__(self, lexer, resp_record):
+        self.pushed = None
+        self.lexer = lexer
+        if isinstance(resp_record, tuple):
+            # A 'record' with a string which includes a literal marker, and
+            # the literal itself.
+            src_text, self.literal = resp_record
+            assert src_text.endswith("}"), src_text
+            # add a token-sep after the text.
+            self.src = StringIO(src_text + " ")
+        else:
+            # just a line with no literals.
+            self.src = StringIO(resp_record)
+            self.literal = None
+
+    def read(self, n):
+        # We also hack into the lexer so we get special treatment for '\\'
+        # chars - they are only special inside a quoted string.
+        assert n==1
+        if self.pushed is not None:
+            ret = self.pushed
+            self.pushed = None
+        else:
+            ret = self.src.read(n)
+            if ret=="\\" and self.lexer.state not in '"\\':
+                self.pushed = "\\"
+        return ret
+
+    def close(self):
+        self.src.close()
+        self.src = None
+        self.literal = None
+
 
 class ResponseTokeniser(object):
 
     CTRL_CHARS = ''.join([chr(ch) for ch in range(32)])
-    ATOM_SPECIALS = r'()%*"]' + CTRL_CHARS
+    ATOM_SPECIALS = r'()%*"' + CTRL_CHARS
     ALL_CHARS = [chr(ch) for ch in range(256)]
     ATOM_NON_SPECIALS = [ch for ch in ALL_CHARS if ch not in ATOM_SPECIALS]
 
-    def __init__(self, text):
-        self.lex = shlex.shlex(text)
+    def __init__(self, resp_chunks):
+        # initialize the lexer with all the chunks we read.
+        self.lex = shlex.shlex('', posix=True)
+        for chunk in reversed(resp_chunks):
+            self.lex.push_source(LiteralHandlingReader(self.lex, chunk))
+
         self.lex.quotes = '"'
         self.lex.commenters = ''
         self.lex.wordchars = self.ATOM_NON_SPECIALS
@@ -105,9 +149,6 @@ class ResponseTokeniser(object):
             return self.lex.next()
         except StopIteration:
             return EOF
-
-    def read(self, bytes):
-        return self.lex.instream.read(bytes)
 
 
 def atom(src, token):
@@ -125,15 +166,16 @@ def atom(src, token):
         return None
     elif token.startswith('{'):
         literal_len = int(token[1:-1])
-        if src.read(1) != '\n':
-           raise ParseError('No CRLF after %s' % token)
-        return src.read(literal_len)
+        literal_text = src.lex.instream.literal
+        if literal_text is None:
+           raise ParseError('No literal corresponds to %r' % token)
+        if len(literal_text) != literal_len:
+            raise ParseError('Expecting literal of size %d, got %d' % (
+                                literal_len, len(literal_text)))
+        return literal_text
     elif token.startswith('"'):
         return token[1:-1]
     elif token.isdigit():
         return int(token)
     else:
         return token
-
-
-

@@ -73,13 +73,54 @@ class TestParseResponse(unittest.TestCase):
                     ('TEXT', 'PLAIN', ('CHARSET', 'US-ASCII', 'NAME', 'cc.diff'),
                     '<hi.there>', 'foo', 'BASE64', 4554, 73), 'MIXED'))
 
+    def test_envelopey(self):
+        self._test('(UID 5 ENVELOPE ("internal_date" "subject" '
+                   '(("name" NIL "address1" "domain1.com")) '
+                   '((NIL NIL "address2" "domain2.com")) '
+                   '(("name" NIL "address3" "domain3.com")) '
+                   '((NIL NIL "address4" "domain4.com")) '
+                   'NIL NIL "<reply-to-id>" "<msg_id>"))',
+                   ('UID',
+                    5,
+                    'ENVELOPE',
+                    ('internal_date',
+                     'subject',
+                     (('name', None, 'address1', 'domain1.com'),),
+                     ((None, None, 'address2', 'domain2.com'),),
+                     (('name', None, 'address3', 'domain3.com'),),
+                     ((None, None, 'address4', 'domain4.com'),),
+                     None,
+                     None,
+                     '<reply-to-id>',
+                     '<msg_id>')))
+
+    def test_envelopey_quoted(self):
+        self._test('(UID 5 ENVELOPE ("internal_date" "subject with \\"quotes\\"" '
+                   '(("name" NIL "address1" "domain1.com")) '
+                   '((NIL NIL "address2" "domain2.com")) '
+                   '(("name" NIL "address3" "domain3.com")) '
+                   '((NIL NIL "address4" "domain4.com")) '
+                   'NIL NIL "<reply-to-id>" "<msg_id>"))',
+                   ('UID',
+                    5,
+                    'ENVELOPE',
+                    ('internal_date',
+                     'subject with "quotes"',
+                     (('name', None, 'address1', 'domain1.com'),),
+                     ((None, None, 'address2', 'domain2.com'),),
+                     (('name', None, 'address3', 'domain3.com'),),
+                     ((None, None, 'address4', 'domain4.com'),),
+                     None,
+                     None,
+                     '<reply-to-id>',
+                     '<msg_id>')))
 
     def test_literal(self):
         literal_text = add_crlf(dedent("""\
             012
             abc def XYZ
             """))
-        self._test('{18}' + CRLF + literal_text, literal_text)
+        self._test([('{18}', literal_text)], literal_text)
 
 
     def test_literal_with_more(self):
@@ -87,16 +128,13 @@ class TestParseResponse(unittest.TestCase):
             012
             abc def XYZ
             """))
-        response = add_crlf(dedent("""\
-            (12 "foo" {18}
-            %s)
-            """) % literal_text)
+        response = [('(12 "foo" {18}', literal_text), ")"]
         self._test(response, (12, 'foo', literal_text))
 
 
     def test_quoted_specials(self):
-        self._test(r'"foo \"bar\""', ('foo "bar"',))
-        self._test(r'"foo\\bar"', (r'foo\bar',))
+        self._test(r'"foo \"bar\""', 'foo "bar"')
+        self._test(r'"foo\\bar"', r'foo\bar')
 
 
     def test_incomplete_tuple(self):
@@ -104,19 +142,20 @@ class TestParseResponse(unittest.TestCase):
 
 
     def test_bad_literal(self):
-        self._test_parse_error('{99} abc', 'No CRLF after {99}')
+        self._test_parse_error([('{99}', 'abc')],
+                               'Expecting literal of size 99, got 3')
 
 
     def test_bad_quoting(self):
-        self._test_parse_error('"abc next', 'No closing quotation: "abc next')
-
-
+        self._test_parse_error('"abc next', 'No closing quotation:')
 
 
     def _test(self, to_parse, expected, wrap=True):
         if wrap:
             # convenience - expected value should be wrapped in another tuple
             expected = (expected,)
+        if not isinstance(to_parse, list):
+            to_parse = [to_parse]
         output = parse_response(to_parse)
         self.assert_(
                 output == expected,
@@ -128,7 +167,7 @@ class TestParseResponse(unittest.TestCase):
             parse_response(to_parse)
             self.fail("didn't raise an exception")
         except ParseError, err:
-            self.assert_(expected_msg == str(err),
+            self.assert_(expected_msg == str(err)[:len(expected_msg)],
                          'got ParseError with wrong msg: %r' % str(err))
 
 
@@ -140,42 +179,42 @@ def datetime_to_native(dt):
 class TestParseFetchResponse(unittest.TestCase):
 
     def test_basic(self):
-        self.assertEquals(parse_fetch_response('* 4 FETCH ()'), {4: {}})
-        self.assertEquals(parse_fetch_response('* 4 fEtCh ()'), {4: {}})
+        self.assertEquals(parse_fetch_response('4 ()'), {4: {'SEQ': 4}})
 
 
-    def test_non_fetch(self):
-        self.assertRaises(ParseError, parse_fetch_response, '* 4 OTHER ()')
+#    def test_non_fetch(self):
+#        self.assertRaises(ParseError, parse_fetch_response, ['4 ()'])
 
 
     def test_bad_msgid(self):
-        self.assertRaises(ParseError, parse_fetch_response, '* abc FETCH ()')
+        self.assertRaises(ParseError, parse_fetch_response, ['abc ()'])
 
 
     def test_bad_data(self):
-        self.assertRaises(ParseError, parse_fetch_response, '* 2 FETCH WHAT')
+        self.assertRaises(ParseError, parse_fetch_response, ['2 WHAT'])
 
 
     def test_missing_data(self):
-        self.assertRaises(ParseError, parse_fetch_response, '* 2 FETCH')
+        self.assertRaises(ParseError, parse_fetch_response, ['2'])
 
 
     def test_simple_pairs(self):
-        self.assertEquals(parse_fetch_response('* 23 FETCH (ABC 123 StUfF "hello")'),
+        self.assertEquals(parse_fetch_response(['23 (ABC 123 StUfF "hello")']),
                           {23: {'ABC': 123,
-                                'STUFF': 'hello'}})
+                                'STUFF': 'hello',
+                                'SEQ': 23}})
 
 
     def test_odd_pairs(self):
-        self.assertRaises(ParseError, parse_fetch_response, '* 2 FETCH (ONE)')
-        self.assertRaises(ParseError, parse_fetch_response, '* 2 FETCH (ONE TWO THREE)')
+        self.assertRaises(ParseError, parse_fetch_response, ['* 2 FETCH (ONE)'])
+        self.assertRaises(ParseError, parse_fetch_response, ['* 2 FETCH (ONE TWO THREE)'])
 
 
     def test_UID(self):
-        self.assertEquals(parse_fetch_response('* 23 FETCH (UID 76)'),
-                          {76: {}})
-        self.assertEquals(parse_fetch_response('* 23 FETCH (uiD 76)'),
-                          {76: {}})
+        self.assertEquals(parse_fetch_response(['23 (UID 76)']),
+                          {76: {'SEQ': 23}})
+        self.assertEquals(parse_fetch_response(['23 (uiD 76)']),
+                          {76: {'SEQ': 23}})
 
 
     def test_bad_UID(self):
@@ -183,12 +222,18 @@ class TestParseFetchResponse(unittest.TestCase):
         
 
     def test_FLAGS(self):
-        self.assertEquals(parse_fetch_response('* 23 FETCH (FLAGS (\Seen Stuff))'),
-                          {23: {'FLAGS': (r'\Seen', 'Stuff')}})
+        self.assertEquals(parse_fetch_response(['23 (FLAGS (\Seen Stuff))']),
+                          {23: {'SEQ': 23, 'FLAGS': (r'\Seen', 'Stuff')}})
 
 
     def test_multiple_messages(self):
-        self.fail()
+        self.assertEquals(parse_fetch_response(
+                                    ["2 (FLAGS (Foo Bar)) ",
+                                     "7 (FLAGS (Baz Sneeve))"]),
+                         {
+                            2: {'FLAGS': ('Foo', 'Bar'), 'SEQ': 2},
+                            7: {'FLAGS': ('Baz', 'Sneeve'), 'SEQ': 7},
+                         })
 
 
     def test_INTERNALDATE(self):
@@ -216,20 +261,6 @@ class TestParseFetchResponse(unittest.TestCase):
 #         dt = check(' 9-Dec-2007 17:08:08 +0000',
 #                    datetime.datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
 
-
-#     def testMultipleMessages(self):
-#         '''Test with multple messages in the response
-#         '''
-#         self._parse_test(
-#             [
-#                 r'2 (FLAGS (Foo Bar))',
-#                 r'7 (FLAGS (Baz Sneeve))',
-#                 ],
-#             {
-#                 2: {'FLAGS': ['Foo', 'Bar']},
-#                 7: {'FLAGS': ['Baz', 'Sneeve']},
-#                 }
-#             )
 
 #     def testLiteral(self):
 #         '''Test literal handling
