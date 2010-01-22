@@ -465,6 +465,20 @@ class IMAPClient(object):
         return data[0]
 
 
+    def copy(self, messages, folder):
+        """XXX
+        """
+        msg_list = messages_to_str(messages)
+        folder = self._encode_folder_name(folder)
+
+        if self.use_uid:
+            typ, data = self._imap.uid('COPY', msg_list, folder)
+        else:
+            typ, data = self._imap.copy(msg_list, folder)
+        self._checkok('copy', typ, data)
+        return data[0]
+
+
     def expunge(self):
         typ, data = self._imap.expunge()
         self._checkok('expunge', typ, data)
