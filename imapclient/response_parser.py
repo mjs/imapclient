@@ -4,8 +4,11 @@ XXX
 Inspired by: http://effbot.org/zone/simple-iterator-parser.htm
 """
 
+import imaplib
 import shlex
 from cStringIO import StringIO
+from datetime import datetime
+from fixed_offset import FixedOffset
 
 #XXX higher level response type response type processing
 #XXX plug-in this version
@@ -62,6 +65,8 @@ def parse_fetch_response(text):
 
             if word == 'UID':
                 msg_id = _int_or_error(value, 'invalid UID')
+            elif word == 'INTERNALDATE':
+                msg_data[word] = _convert_INTERNALDATE(value)
             else:
                 msg_data[word] = value
 
@@ -75,6 +80,31 @@ def _int_or_error(value, error_text):
         return int(value)
     except (TypeError, ValueError):
         raise ParseError('%s: %s' % (error_text, repr(value)))
+
+
+def _convert_INTERNALDATE(date_string):
+    mo = imaplib.InternalDate.match('INTERNALDATE "%s"' % date_string)
+    if not mo:
+        raise ValueError("couldn't parse date %r" % date_string)
+
+    zoneh = int(mo.group('zoneh'))
+    zonem = (zoneh * 60) + int(mo.group('zonem'))
+    if mo.group('zonen') == '-':
+        zonem = -zonem
+    tz = FixedOffset(zonem)
+
+    year = int(mo.group('year'))
+    mon = imaplib.Mon2num[mo.group('mon')]
+    day = int(mo.group('day'))
+    hour = int(mo.group('hour'))
+    min = int(mo.group('min'))
+    sec = int(mo.group('sec'))
+
+    dt = datetime(year, mon, day, hour, min, sec, 0, tz)
+
+    # Normalise to host system's timezone
+    return dt.astimezone(FixedOffset.for_system()).replace(tzinfo=None)
+
 
 EOF = object()
 

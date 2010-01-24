@@ -18,6 +18,7 @@
 Unit tests for the FetchTokeniser and FetchParser classes
 '''
 
+from datetime import datetime
 from textwrap import dedent
 import unittest
 from imapclient.response_parser import parse_response, parse_fetch_response, ParseError
@@ -26,8 +27,6 @@ from pprint import pformat
 
 #TODO: tokenising tests
 #TODO: test invalid dates and times
-#TODO: more response types
-#TODO: clean up this file
 
 
 CRLF = '\r\n'
@@ -171,10 +170,6 @@ class TestParseResponse(unittest.TestCase):
                          'got ParseError with wrong msg: %r' % str(err))
 
 
-system_offset = FixedOffset.for_system()
-def datetime_to_native(dt):
-    return dt.astimezone(system_offset).replace(tzinfo=None)
-
 
 class TestParseFetchResponse(unittest.TestCase):
 
@@ -248,47 +243,34 @@ class TestParseFetchResponse(unittest.TestCase):
 
 
     def test_INTERNALDATE(self):
-        self.fail()
+        def check(date_str, expected_dt):
+            output = parse_fetch_response(['3 (INTERNALDATE "%s")' % date_str])
+            self.assertEquals(output.keys(), [3])
+            self.assertEquals(set(output[3].keys()), set(['INTERNALDATE', 'SEQ']))
+            actual_dt = output[3]['INTERNALDATE']
+            self.assert_(actual_dt.tzinfo is None)   # Returned date should be in local timezone
+            expected_dt = datetime_to_native(expected_dt)
+            self.assert_(actual_dt == expected_dt, '%s != %s' % (actual_dt, expected_dt))
 
-#         def check(date_str, expected_dt):
-#             output = self.p(['3 (INTERNALDATE "%s")' % date_str])
-#             assert output.keys() == [3]
-#             assert output[3].keys() == ['INTERNALDATE']
-#             actual_dt = output[3]['INTERNALDATE']
-
-#             # Returned date should be in local timezone
-#             self.assert_(actual_dt.tzinfo is None)
-
-#             expected_dt = datetime_to_native(expected_dt)
-#             self.assert_(actual_dt == expected_dt,
-#                          '%s != %s' % (actual_dt, expected_dt))
-
-#         dt = check(' 9-Feb-2007 17:08:08 -0430',
-#                    datetime.datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30)))
+        dt = check(' 9-Feb-2007 17:08:08 -0430',
+                   datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30)))
  
-#         dt = check('12-Feb-2007 17:08:08 +0200',
-#                    datetime.datetime(2007, 2, 12, 17, 8, 8, 0, FixedOffset(2*60)))
+        dt = check('12-Feb-2007 17:08:08 +0200',
+                   datetime(2007, 2, 12, 17, 8, 8, 0, FixedOffset(2*60)))
  
-#         dt = check(' 9-Dec-2007 17:08:08 +0000',
-#                    datetime.datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
+        dt = check(' 9-Dec-2007 17:08:08 +0000',
+                   datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
 
 
-
-#     def testMultiTypesWithLiteral(self):
-#         self._parse_test(
-#             [
-#                 ('1 (INTERNALDATE " 9-Feb-2007 17:08:08 +0100" RFC822 {21}',
-#                       'Subject: test\r\n\r\nbody'),
-#                 ')'
-#                 ],
-#             {1: {
-#                     'INTERNALDATE': datetime_to_native(datetime.datetime(2007, 2, 9,
-#                                                                          17, 8, 8, 0,
-#                                                                          FixedOffset(60))),
-#                     'RFC822': 'Subject: test\r\n\r\nbody',
-#                     }
-#                 }
-#             )
+    def test_mixed_types(self):
+        self.assertEquals(parse_fetch_response([('1 (INTERNALDATE " 9-Feb-2007 17:08:08 +0100" RFC822 {21}',
+                                                 'Subject: test\r\n\r\nbody'),
+                                                ')']),
+                          {1: {'INTERNALDATE': datetime_to_native(datetime(2007, 2, 9,
+                                                                           17, 8, 8, 0,
+                                                                           FixedOffset(60))),
+                               'RFC822': 'Subject: test\r\n\r\nbody',
+                               'SEQ': 1}})
 
 
 
@@ -296,12 +278,16 @@ def format_error(input_, output, expected):
     return 'failed for:\n%s\ngot:\n%s\nexpected:\n%s' % (
                 pformat(input_),
                 pformat(output),
-                pformat(expected),
-            )
+                pformat(expected))
 
 
 def add_crlf(text):
     return CRLF.join(text.splitlines()) + CRLF
+
+
+system_offset = FixedOffset.for_system()
+def datetime_to_native(dt):
+    return dt.astimezone(system_offset).replace(tzinfo=None)
 
 
 if __name__ == '__main__':
