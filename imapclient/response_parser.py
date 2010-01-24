@@ -10,9 +10,6 @@ from cStringIO import StringIO
 from datetime import datetime
 from fixed_offset import FixedOffset
 
-#XXX higher level response type response type processing
-#XXX plug-in this version
-#XXX remove old FetchParser
 #XXX handle escaping in strings especially: \"
 #    Check the RFC on this.
 #TODO more exact error reporting
