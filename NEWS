@@ -1,3 +1,11 @@
+Version 0.6 (in development)
+-----------
+Command response parsing code rewritten from stratch to deal with
+various bugs that surfaced when dealing with more complex responses
+(eg. BODYSTRUCTURE and ENVELOPE). This change also fixes various
+problems when interacting with Gmail and MS Exchange (#1).
+
+
 Version 0.5.2
 -------------
 Correctly handle double quotes and backslashes in folder names when
