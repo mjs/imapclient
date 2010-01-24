@@ -174,7 +174,7 @@ def test_flags(client):
         answer = func(msgid, *args)
 
         assert answer.has_key(msgid)
-        answer_flags = answer[msgid]
+        answer_flags = list(answer[msgid])
 
         # This is required because the order of the returned flags isn't
         # guaranteed
