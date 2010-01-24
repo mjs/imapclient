@@ -1,8 +1,11 @@
 """
-XXX
+Parsing for IMAP command responses with focus on FETCH responses as
+returned by imaplib.
 
-Inspired by: http://effbot.org/zone/simple-iterator-parser.htm
+Intially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 """
+
+#TODO more exact error reporting
 
 import imaplib
 import shlex
@@ -10,9 +13,6 @@ from cStringIO import StringIO
 from datetime import datetime
 from fixed_offset import FixedOffset
 
-#XXX handle escaping in strings especially: \"
-#    Check the RFC on this.
-#TODO more exact error reporting
 
 __all__ = ['parse_response', 'ParseError']
 
@@ -22,7 +22,10 @@ class ParseError(ValueError):
 
 
 def parse_response(text):
-    #XXX doc
+    """Pull apart IMAP command responses.
+
+    Returns nested tuples of appropriately typed objects.
+    """
     src = ResponseTokeniser(text)
     try:
         return tuple(atom(src, token) for token in src)
@@ -33,7 +36,11 @@ def parse_response(text):
 
 
 def parse_fetch_response(text):
-    #XXX doc
+    """Pull apart IMAP FETCH responses as returned by imaplib.
+
+    Returns a dictionary, keyed by message ID. Each value a dictionary
+    keyed by FETCH field type (eg."RFC822").
+    """
     response = iter(parse_response(text))
 
     parsed_response = {}
