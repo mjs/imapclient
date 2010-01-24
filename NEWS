@@ -1,7 +1,10 @@
-Version 0.5.2 (not yet released)
+Version 0.5.2
 -------------
 Correctly handle double quotes and backslashes in folder names when
 parsing LIST and LSUB responses (#28).
+
+Fixed problem with parsing responses where a literal followed another
+literal (#33).
 
 
 Version 0.5.1
