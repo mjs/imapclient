@@ -182,10 +182,6 @@ class TestParseFetchResponse(unittest.TestCase):
         self.assertEquals(parse_fetch_response('4 ()'), {4: {'SEQ': 4}})
 
 
-#    def test_non_fetch(self):
-#        self.assertRaises(ParseError, parse_fetch_response, ['4 ()'])
-
-
     def test_bad_msgid(self):
         self.assertRaises(ParseError, parse_fetch_response, ['abc ()'])
 
@@ -206,8 +202,8 @@ class TestParseFetchResponse(unittest.TestCase):
 
 
     def test_odd_pairs(self):
-        self.assertRaises(ParseError, parse_fetch_response, ['* 2 FETCH (ONE)'])
-        self.assertRaises(ParseError, parse_fetch_response, ['* 2 FETCH (ONE TWO THREE)'])
+        self.assertRaises(ParseError, parse_fetch_response, ['(ONE)'])
+        self.assertRaises(ParseError, parse_fetch_response, ['(ONE TWO THREE)'])
 
 
     def test_UID(self):
@@ -218,7 +214,7 @@ class TestParseFetchResponse(unittest.TestCase):
 
 
     def test_bad_UID(self):
-        self.assertRaises(ParseError, parse_fetch_response, '* 2 FETCH (UID X)')
+        self.assertRaises(ParseError, parse_fetch_response, '(UID X)')
         
 
     def test_FLAGS(self):
