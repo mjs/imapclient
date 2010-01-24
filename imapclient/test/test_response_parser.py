@@ -232,6 +232,21 @@ class TestParseFetchResponse(unittest.TestCase):
                          })
 
 
+    def test_literals(self):
+        self.assertEquals(parse_fetch_response([('1 (RFC822.TEXT {4}', 'body'),
+                                                (' RFC822 {21}', 'Subject: test\r\n\r\nbody'),
+                                                ')']),
+                          {1: {'RFC822.TEXT': 'body',
+                               'RFC822': 'Subject: test\r\n\r\nbody',
+                               'SEQ': 1}})
+
+
+    def test_literals_and_keys_with_square_brackets(self):
+        self.assertEquals(parse_fetch_response([('1 (BODY[TEXT] {11}', 'Hi there.\r\n'), ')']),
+                          { 1: {'BODY[TEXT]': 'Hi there.\r\n',
+                                'SEQ': 1}})
+
+
     def test_INTERNALDATE(self):
         self.fail()
 
@@ -258,27 +273,6 @@ class TestParseFetchResponse(unittest.TestCase):
 #                    datetime.datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
 
 
-#     def testLiteral(self):
-#         '''Test literal handling
-#         '''
-#         self._parse_test(
-#             [('1 (RFC822 {21}', 'Subject: test\r\n\r\nbody'), ')'],
-#             { 1: {'RFC822': 'Subject: test\r\n\r\nbody'} }
-#             )
-
-#     def testMultipleLiterals(self):
-#         self._parse_test(
-#             [
-#                 ('1 (RFC822.TEXT {4}', 'body'),
-#                 (' RFC822 {21}', 'Subject: test\r\n\r\nbody'),
-#                 ')'
-#                 ],
-#             { 1: {
-#                     'RFC822.TEXT': 'body',
-#                     'RFC822': 'Subject: test\r\n\r\nbody',
-#                     }
-#                 }
-#             )
 
 #     def testMultiTypesWithLiteral(self):
 #         self._parse_test(
@@ -293,22 +287,6 @@ class TestParseFetchResponse(unittest.TestCase):
 #                                                                          FixedOffset(60))),
 #                     'RFC822': 'Subject: test\r\n\r\nbody',
 #                     }
-#                 }
-#             )
-
-#     def testLiteralsWithSections(self):
-#         self._parse_test(
-#             [('1 (BODY[TEXT] {11}', 'Hi there.\r\n'), ')'],
-#             { 1: {'BODY[TEXT]': 'Hi there.\r\n',} }
-#             )
-
-#     def testLiteralsWithSectionsAndOtherParts(self):
-#         self._parse_test(
-#             [('1 (FLAGS (\\Seen) UID 2 BODY[HEADER.FIELDS (FROM)] {21}',
-#               'From: foo@foo.com\r\n'), ')'],
-#             {2: { 'BODY[HEADER.FIELDS (FROM)]': 'From: foo@foo.com\r\n',
-#                   'FLAGS': ['\\Seen'],
-#                    }
 #                 }
 #             )
 
