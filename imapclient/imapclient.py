@@ -5,7 +5,6 @@
 import re
 import imaplib
 import shlex
-import datetime
 #imaplib.Debug = 5
 
 import imap_utf7
@@ -14,6 +13,8 @@ from fixed_offset import FixedOffset
 
 __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT',
     'RECENT']
+
+from response_parser import parse_fetch_response
 
 # System flags
 DELETED = r'\Deleted'
@@ -326,6 +327,8 @@ class IMAPClient(object):
             typ, data = self._imap.search(charset, *crit_list)
 
         self._checkok('search', typ, data)
+        if data == [None]: # no untagged responses...
+            return []
 
         return [ long(i) for i in data[0].split() ]
 
@@ -427,13 +430,18 @@ class IMAPClient(object):
         parts_list = seq_to_parenlist([p.upper() for p in parts])
 
         if self.use_uid:
-            typ, data = self._imap.uid('FETCH', msg_list, parts_list)
+            tag = self._imap._command('UID', 'FETCH', msg_list, parts_list)
         else:
-            typ, data = self._imap.fetch(msg_list, parts_list)
+            tag = self._imap._command('FETCH', msg_list, parts_list)
+        typ, data = self._imap._command_complete('FETCH', tag)
         self._checkok('fetch', typ, data)
+        typ, data = self._imap._untagged_response(typ, data, 'FETCH')
+        # appears to be a special case - no 'untagged' responses (ie, no
+        # folders) results in [None]
+        if data == [None]:
+          return {}
 
-        parser = FetchParser()
-        return parser(data)
+        return parse_fetch_response(data)
 
 
     def append(self, folder, msg, flags=(), msg_time=None):
@@ -540,7 +548,7 @@ class IMAPClient(object):
             typ, data = self._imap.store(msg_list, cmd, flag_list)
         self._checkok('store', typ, data)
 
-        return self._flatten_dict(FetchParser()(data))
+        return self._flatten_dict(parse_fetch_response((data)))
 
 
     def _flatten_dict(self, fetch_dict):
@@ -559,209 +567,6 @@ class IMAPClient(object):
         if self.folder_encode:
             return imap_utf7.encode(name)
         return name
-
-
-class FetchParser(object):
-    """
-    Parse an IMAP FETCH response and convert the return values to useful Python
-    values.
-    """
-
-    def parse(self, response):
-        out = {}
-        for response_item in response:
-            msgid, data = self.parse_data(response_item)
-
-            if msgid != None:
-                # Response for a new message
-                current_msg_data = {}
-                out[msgid] = current_msg_data
-
-            current_msg_data.update(data)
-
-        return out
-
-    __call__ = parse
-
-    def parse_data(self, data):
-        out = {}
-
-        if isinstance(data, str):
-            if data == ')':
-                # End of response for current message
-                return None, {}
-
-        elif isinstance(data, tuple):
-            data, literal_data = data
-
-        else:
-            raise ValueError("don't know how to handle %r" % data)
-
-        data = data.lstrip()
-        msgid = None
-        if data[0].isdigit():
-            # Get message ID
-            msgid, data = data.split(None, 1)
-            msgid = long(msgid)
-
-            assert data.startswith('('), data
-            data = data[1:]
-
-        if data.endswith(')'):
-            data = data[:-1]
-
-        for name, item in FetchTokeniser().process_pairs(data):
-            name = name.upper()
-
-            if name == 'UID':
-                # Using UID's, override the message ID
-                msgid = long(item)
-
-            else:
-                if isinstance(item, Literal):
-                    #assert len(data) == item.length
-                    arg = literal_data
-                else:
-                    arg = item
-
-                # Call handler function based on the response type
-                methname = 'do_'+name.upper().replace('.', '_')
-                meth = getattr(self, methname, self.do_default)
-                out[name] = meth(arg)
-
-        return msgid, out
-
-    def do_INTERNALDATE(self, arg):
-        """Process an INTERNALDATE response
-
-        @param arg: A quoted IMAP INTERNALDATE string
-            (eg. " 9-Feb-2007 17:08:08 +0000")
-        @return: datetime.datetime instance for the given time (in UTC)
-        """
-        arg = 'INTERNALDATE "%s"' % arg
-        mo = imaplib.InternalDate.match(arg)
-        if not mo:
-            raise ValueError("couldn't parse date %r" % arg)
-
-        zoneh = int(mo.group('zoneh'))
-        zonem = (zoneh * 60) + int(mo.group('zonem'))
-        if mo.group('zonen') == '-':
-            zonem = -zonem
-        tz = FixedOffset(zonem)
-
-        year = int(mo.group('year'))
-        mon = imaplib.Mon2num[mo.group('mon')]
-        day = int(mo.group('day'))
-        hour = int(mo.group('hour'))
-        min = int(mo.group('min'))
-        sec = int(mo.group('sec'))
-
-        dt = datetime.datetime(year, mon, day, hour, min, sec, 0, tz)
-
-        # Normalise to host system's timezone
-        return dt.astimezone(FixedOffset.for_system()).replace(tzinfo=None)
-
-
-    def do_default(self, arg):
-        return arg
-
-
-class FetchTokeniser(object):
-    """
-    General response tokenizer and converter
-    """
-
-    QUOTED_STRING = '(?:".*?")'
-    PAREN_LIST = '(?:\(.*?\))'
-
-    PAIR_RE = re.compile((
-        '([\w\.]+(?:\[[^\]]+\]+)?)\s+' +    # name (matches "FOO", "FOO.BAR" & "BODY[SECTION STUFF]")
-        '((?:\d+)' +                        # bare integer
-        '|(?:{\d+?})' +                     # IMAP literal
-        '|' + QUOTED_STRING +
-        '|' + PAREN_LIST +
-        ')\s*'))
-
-    DATA_RE = re.compile((
-        '(' + QUOTED_STRING +
-        '|' + PAREN_LIST +
-        '|(?:\S+)' +            # word
-        ')\s*'))
-
-    def process_pairs(self, s):
-        """Break up and convert a string of FETCH response pairs
-
-        @param s: FETCH response string eg. "FOO 12 BAH (1 abc def "foo bar")"
-        @return: Tokenised and converted input return as (name, data) pairs.
-        """
-        out = []
-        for m in strict_finditer(self.PAIR_RE, s):
-            name, data = m.groups()
-            out.append((name, self.nativefy(data)))
-        return out
-
-    def process_list(self, s):
-        """Break up and convert a string of data items
-
-        @param s: FETCH response string eg. "(1 abc def "foo bar")"
-        @return: A list of converted items.
-        """
-        if s == '':
-            return []
-        out = []
-        for m in strict_finditer(self.DATA_RE, s):
-            out.append(self.nativefy(m.group(1)))
-        return out
-
-    def nativefy(self, s):
-        if s.startswith('"'):
-            return s[1:-1]      # Debracket
-        elif s.startswith('{'):
-            return Literal(long(s[1:-1]))
-        elif s.startswith('('):
-            return self.process_list(s[1:-1])
-        elif s.isdigit():
-            return long(s)
-        elif s.upper() == 'NIL':
-            return None
-        else:
-            return s
-
-
-class Literal(object):
-    """
-    Simple class to represent a literal token in the fetch response
-    (eg. "{21}")
-    """
-
-    def __init__(self, length):
-        self.length = length
-
-    def __eq__(self, other):
-        return self.length == other.length
-
-    def __str__(self):
-        return '{%d}' % self.length
-
-
-def strict_finditer(regex, s):
-    """Like re.finditer except the regex must match from exactly where the
-    previous match ended and all the entire input must be matched.
-    """
-    i = 0
-    matched = False
-    while 1:
-        match = regex.match(s[i:])
-        if match:
-            matched = True
-            i += match.end()
-            yield match
-        else:
-            if (len(s) > 0 and not matched) or i < len(s):
-                raise ValueError("failed to match all of input. "
-                        "%r remains" % s[i:])
-            else:
-                return
 
 
 def messages_to_str(messages):
@@ -799,7 +604,6 @@ def datetime_to_imap(dt):
     """
     if not dt.tzinfo:
         dt = dt.replace(tzinfo=FixedOffset.for_system())
-
     return dt.strftime("%d-%b-%Y %H:%M:%S %z")
-    
+
 
