@@ -5,6 +5,9 @@ various bugs that surfaced when dealing with more complex responses
 (eg. BODYSTRUCTURE and ENVELOPE). This change also fixes various
 problems when interacting with Gmail and MS Exchange (#1).
 
+[API CHANGE] select_folder now returns a dictionary with the full
+SELECT command response instead of just the message count (#24).
+
 
 Version 0.5.2
 -------------

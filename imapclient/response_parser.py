@@ -161,9 +161,9 @@ class LiteralHandlingReader:
 class ResponseTokeniser(object):
 
     CTRL_CHARS = ''.join([chr(ch) for ch in range(32)])
-    ATOM_SPECIALS = r'()%*"' + CTRL_CHARS
+    SPECIALS = r'()%"' + CTRL_CHARS
     ALL_CHARS = [chr(ch) for ch in range(256)]
-    ATOM_NON_SPECIALS = [ch for ch in ALL_CHARS if ch not in ATOM_SPECIALS]
+    NON_SPECIALS = [ch for ch in ALL_CHARS if ch not in SPECIALS]
 
     def __init__(self, resp_chunks):
         # initialize the lexer with all the chunks we read.
@@ -173,7 +173,7 @@ class ResponseTokeniser(object):
 
         self.lex.quotes = '"'
         self.lex.commenters = ''
-        self.lex.wordchars = self.ATOM_NON_SPECIALS
+        self.lex.wordchars = self.NON_SPECIALS
 
     def __iter__(self):
         return iter(self.lex)

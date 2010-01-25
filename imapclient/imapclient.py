@@ -14,7 +14,8 @@ from fixed_offset import FixedOffset
 __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT',
     'RECENT']
 
-from response_parser import parse_fetch_response
+from response_parser import parse_response, parse_fetch_response
+
 
 # System flags
 DELETED = r'\Deleted'
@@ -204,12 +205,37 @@ class IMAPClient(object):
         such as search and fetch will act on the selected folder.
 
         @param folder: The folder name.
-        @return: Number of messages in the folder.
-        @rtype: long int
+        @return: A dictionary containing the SELECT response
+          values. At least the EXISTS, FLAGS and RECENT keys are
+          guaranteed to exist. Example:
+            {'EXISTS': 3,
+             'FLAGS': ('\\Answered', '\\Flagged', '\\Deleted', ... ),
+             'RECENT': 0,
+             'PERMANENTFLAGS': ('\\Answered', '\\Flagged', '\\Deleted', ... ),
+             'READ-WRITE': True,
+             'UIDNEXT': 11,
+             'UIDVALIDITY': 1239278212}
         """
         typ, data = self._imap.select(self._encode_folder_name(folder))
         self._checkok('select', typ, data)
-        return long(data[0])
+        return self._process_select_response(self._imap.untagged_responses)
+
+
+    def _process_select_response(self, resp):
+        out = {}
+        for key, value in resp.iteritems():
+            key = key.upper()
+            if key == 'OK':
+                continue
+            elif key in ('EXISTS', 'RECENT', 'UIDNEXT', 'UIDVALIDITY'):
+                value = int(value[0])
+            elif key in ('FLAGS', 'PERMANENTFLAGS'):
+                value = parse_response(value)[0]
+            elif key == 'READ-WRITE':
+                value = True
+                                 
+            out[key] = value
+        return out
 
 
     def folder_status(self, folder, what=None):

@@ -36,9 +36,12 @@ def test_list_folders(client):
 
 
 def test_select_and_close(client):
-    num_msgs = client.select_folder('INBOX')
-    assert isinstance(num_msgs, long)
-    assert num_msgs >= 0
+    resp = client.select_folder('INBOX')
+    assert isinstance(resp['EXISTS'], int)
+    assert resp['EXISTS'] > 1
+    assert isinstance(resp['RECENT'], int)
+    assert isinstance(resp['FLAGS'], tuple)
+    assert len(resp['FLAGS']) > 1
     client.close_folder()
 
 
@@ -140,8 +143,7 @@ def test_append(client):
     assert isinstance(resp, str)
 
     # Retrieve the just added message and check that all looks well
-    num_msgs = client.select_folder('INBOX')
-    assert num_msgs == 1
+    assert client.select_folder('INBOX')['EXISTS'] == 1
 
     resp = client.fetch(
             client.search()[0],
