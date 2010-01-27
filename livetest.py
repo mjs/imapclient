@@ -40,7 +40,7 @@ def test_list_folders(client):
 def test_select_and_close(client):
     resp = client.select_folder('INBOX')
     assert isinstance(resp['EXISTS'], int)
-    assert resp['EXISTS'] > 1
+    assert resp['EXISTS'] > 0
     assert isinstance(resp['RECENT'], int)
     assert isinstance(resp['FLAGS'], tuple)
     assert len(resp['FLAGS']) > 1
