@@ -12,6 +12,8 @@ import imapclient
 
 #TODO: more fetch() testing
 
+SIMPLE_MESSAGE = 'Subject: something\r\n\r\nFoo\r\n'
+
 def test_capabilities(client):
     caps = client.capabilities()
     assert isinstance(caps, tuple)
@@ -117,8 +119,7 @@ def test_status(client):
         assert status['UNSEEN'] == 0
 
         # Add a message to the folder, it should show up now.
-        body = 'Subject: something\r\n\r\nFoo'
-        client.append(new_folder, body)
+        client.append(new_folder, SIMPLE_MESSAGE)
 
         status = client.folder_status(new_folder)
         assert status['MESSAGES'] == 1
@@ -138,8 +139,7 @@ def test_append(client):
     msg_time = datetime.now().replace(microsecond=0)
 
     # Append message
-    body = 'Subject: something\r\n\r\nFoo\r\n'
-    resp = client.append('INBOX', body, ('abc', 'def'), msg_time)
+    resp = client.append('INBOX', SIMPLE_MESSAGE, ('abc', 'def'), msg_time)
     assert isinstance(resp, str)
 
     # Retrieve the just added message and check that all looks well
@@ -163,7 +163,7 @@ def test_append(client):
     assert 'def' in msginfo['FLAGS']
 
     # Message body should match
-    assert msginfo['RFC822'] == body
+    assert msginfo['RFC822'] == SIMPLE_MESSAGE
 
 
 def test_flags(client):
@@ -221,6 +221,24 @@ def test_search(client):
     assert len(client.search(['NOT DELETED', 'SUBJECT "c"'])) == 0
 
 
+def test_copy(client):
+    clear_folders(client)
+    clear_folder(client, 'INBOX')
+
+    client.select_folder('INBOX')
+    client.append('INBOX', SIMPLE_MESSAGE)
+    client.create_folder('target')
+    msg_id = client.search()[0]
+    
+    client.copy(msg_id, 'target')
+
+    client.select_folder('target')
+    msgs = client.search()
+    assert len(msgs) == 1
+    msg_id = msgs[0]
+    assert 'something' in client.fetch(msg_id, ['RFC822'])[msg_id]['RFC822']
+
+
 def assert_raises(exception_class, func, *args, **kwargs):
     try:
         func(*args, **kwargs)
@@ -244,6 +262,8 @@ def runtests(client):
     test_append(client)
     test_flags(client)
     test_search(client)
+    test_copy(client)
+
 
 def clear_folder(client, folder):
     client.select_folder(folder)
