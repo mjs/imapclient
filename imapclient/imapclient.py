@@ -466,7 +466,12 @@ class IMAPClient(object):
 
 
     def copy(self, messages, folder):
-        """XXX
+        """Copy one or more messages from the current folder to another folder
+
+        @param messages: Message IDs to fetch.
+        @param folder: Folder name to append to.
+        @return: The COPY command response message returned by the
+          server.
         """
         msg_list = messages_to_str(messages)
         folder = self._encode_folder_name(folder)
