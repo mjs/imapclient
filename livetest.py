@@ -14,6 +14,17 @@ import imapclient
 
 SIMPLE_MESSAGE = 'Subject: something\r\n\r\nFoo\r\n'
 
+def is_gmail(client):
+    return client._imap.host == 'imap.gmail.com'
+
+def extract_folder_names(dat):
+    ret = []
+    for _, _, folder_name in dat:
+        # gmail's "special" folders start with '['
+        if not folder_name.startswith('['):
+            ret.append(folder_name)
+    return ret
+
 def test_capabilities(client):
     caps = client.capabilities()
     assert isinstance(caps, tuple)
@@ -28,7 +39,7 @@ def test_list_folders(client):
     for name in some_folders:
         client.create_folder(name)
 
-    folders = client.list_folders()
+    folders = extract_folder_names(client.list_folders())
     assert len(folders) > 0, 'No folders visible on server'
     assert 'INBOX' in [f.upper() for f in folders], 'INBOX not returned'
 
@@ -36,6 +47,22 @@ def test_list_folders(client):
         assert name in folders
     #TODO: test wildcards
 
+    caps = client.capabilities()
+    if is_gmail(client):
+        assert "XLIST" in caps, caps
+    if 'XLIST' in caps:
+        info = client.xlist_folders()
+        folders = extract_folder_names(info)
+        assert len(folders) > 0, 'No folders visible on server'
+        for flags, _, _  in info:
+            if '\\INBOX' in [flag.upper() for flag in flags]:
+                break
+        else:
+            raise AssertionError('INBOX not returned', info)
+
+    for name in some_folders:
+        assert name in folders
+        
 
 def test_select_and_close(client):
     resp = client.select_folder('INBOX')
@@ -51,7 +78,7 @@ def test_subscriptions(client):
     # Start with a clean slate
     clear_folders(client)
 
-    for folder in client.list_sub_folders():
+    for folder in extract_folder_names(client.list_sub_folders()):
         client.unsubscribe_folder(folder)
 
     test_folders = ['foobar',
@@ -61,16 +88,16 @@ def test_subscriptions(client):
     for folder in test_folders:
         client.create_folder(folder)
 
-    all_folders = sorted(client.list_folders())
+    all_folders = sorted(extract_folder_names(client.list_folders()))
 
     for folder in all_folders:
         client.subscribe_folder(folder)
 
-    assert all_folders == sorted(client.list_sub_folders())
+    assert all_folders == sorted(extract_folder_names(client.list_sub_folders()))
 
     for folder in all_folders:
         client.unsubscribe_folder(folder)
-    assert client.list_sub_folders() == []
+    assert extract_folder_names(client.list_sub_folders()) == []
 
     assert_raises(imapclient.IMAPClient.Error,
                   client.subscribe_folder,
@@ -95,7 +122,7 @@ def test_folders(client):
         client.create_folder(folder)
 
         assert client.folder_exists(folder)
-        assert folder in client.list_folders()
+        assert folder in extract_folder_names(client.list_folders())
 
         client.select_folder(folder)
         client.close_folder()
@@ -114,17 +141,18 @@ def test_status(client):
     client.create_folder(new_folder)
     try:
         status = client.folder_status(new_folder)
-        assert status['MESSAGES'] == 0
-        assert status['RECENT'] == 0
-        assert status['UNSEEN'] == 0
+        assert status['MESSAGES'] == 0, status
+        assert status['RECENT'] == 0, status
+        assert status['UNSEEN'] == 0, status
 
         # Add a message to the folder, it should show up now.
         client.append(new_folder, SIMPLE_MESSAGE)
 
         status = client.folder_status(new_folder)
-        assert status['MESSAGES'] == 1
-        assert status['RECENT'] == 1
-        assert status['UNSEEN'] == 1
+        assert status['MESSAGES'] == 1, status
+        if not is_gmail(client):
+            assert status['RECENT'] == 1, status
+        assert status['UNSEEN'] == 1, status
 
     finally:
         client.delete_folder(new_folder)
@@ -206,12 +234,17 @@ def test_search(client):
         client.append('INBOX', msg, flags)
 
     messages_all = client.search('ALL')
-    assert len(messages_all) == len(subjects)   # Check we see all messages
+    if is_gmail(client):
+        # gmail seems to never return deleted items.
+        assert len(messages_all) == len(subjects)-1   # Check we see all messages
+    else:
+        assert len(messages_all) == len(subjects)   # Check we see all messages
     assert client.search() == messages_all      # Check default
 
     # Single criteria
-    assert len(client.search('DELETED')) == 1
-    assert len(client.search('NOT DELETED')) == len(subjects) - 1
+    if not is_gmail(client):
+        assert len(client.search('DELETED')) == 1
+        assert len(client.search('NOT DELETED')) == len(subjects) - 1
     assert client.search('NOT DELETED') == client.search(['NOT DELETED'])
 
     # Multiple criteria
@@ -273,7 +306,7 @@ def clear_folder(client, folder):
 
 def clear_folders(client):
     client.folder_encode = False
-    for folder in client.list_folders():
+    for folder in extract_folder_names(client.list_folders()):
         if folder.upper() != 'INBOX':
             client.delete_folder(folder)
     client.folder_encode = True
