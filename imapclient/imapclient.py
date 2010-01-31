@@ -16,6 +16,10 @@ __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT',
 
 from response_parser import parse_response, parse_fetch_response
 
+# We also offer the gmail-specific XLIST command...
+if 'XLIST' not in imaplib.Commands:
+  imaplib.Commands['XLIST'] = imaplib.Commands['LIST']
+
 
 # System flags
 DELETED = r'\Deleted'
@@ -66,8 +70,6 @@ class IMAPClient(object):
     ReadOnlyError = imaplib.IMAP4.readonly
 
     re_sep = re.compile('^\(\("[^"]*" "([^"]+)"\)\)')
-#     re_folder = re.compile('\([^)]*\) "[^"]+" "?([^"]+)"?')
-    re_folder = re.compile(r'\([^)]*\) "[^"]+" (?P<qqq>"?)(?P<folder>.+)(?P=qqq)')
     re_status = re.compile(r'^\s*"?(?P<folder>[^"]+)"?\s+'
                            r'\((?P<status_items>.*)\)$')
 
@@ -146,7 +148,6 @@ class IMAPClient(object):
         else:
             raise self.Error('could not determine folder separator')
 
-
     def list_folders(self, directory="", pattern="*"):
         """Get a listing of folders on the server.
 
@@ -156,15 +157,31 @@ class IMAPClient(object):
         @param directory: The base directory to look for folders from.
         @param pattern: A pattern to match against folder names. Only folder
             names matching this pattern will be returned. Wildcards accepted.
-        @return: A list of folder names. Each folder name will be either a
-            string or a unicode string (if the folder on the server required
-            decoding). If the folder_encode attribute is False, no decoding
-            will be performed and only ordinary strings will be returned.
+        @return: A list of (flags, delim, folder_name). Each folder name will
+            be either a string or a unicode string (if the folder on the
+            server required decoding). If the folder_encode attribute is
+            False, no decoding will be performed and only ordinary strings
+            will be returned.
         """
-        typ, data = self._imap.list(directory, pattern)
-        self._checkok('list', typ, data)
-        return self._proc_folder_list(data)
+        return self._do_list('LIST', directory, pattern)
 
+    def xlist_folders(self, directory="", pattern="*"):
+        """A gmail-specific IMAP extension.
+        
+        This method returns special flags for each folder and a localized name
+        for certain folders (eg, the name of the 'inbox' may be localized as the
+        flags can be used to determine the actual inbox, even if the name has
+        been localized.  It is the responsibility of the caller to either check
+        for 'XLIST' in the server capabilites, or to handle the error if the
+        server doesn't support this externsion.
+
+        @param directory: The base directory to look for folders from.
+        @param pattern: A pattern to match against folder names. Only folder
+            names matching this pattern will be returned. Wildcards accepted.
+        @return: A list of (flags, delim, folder_name). As per the return of
+            list_folders().
+        """
+        return self._do_list('XLIST', directory, pattern)
 
     def list_sub_folders(self, directory="", pattern="*"):
         """Get a listing of subscribed folders on the server.
@@ -175,32 +192,32 @@ class IMAPClient(object):
         @param directory: The base directory to look for folders from.
         @param pattern: A pattern to match against folder names. Only folder
             names matching this pattern will be returned. Wildcards accepted.
-        @return: A list of folder names. As per the return of list_folders().
+        @return: A list of (flags, delim, folder_name). As per the return of
+            list_folders().
         """
-        typ, data = self._imap.lsub(directory, pattern)
-        self._checkok('lsub', typ, data)
-        return self._proc_folder_list(data)
+        return self._do_list('LSUB', directory, pattern)
 
+    def _do_list(self, cmd, directory, pattern):
+        typ, dat = self._imap._simple_command(cmd, directory, pattern)
+        self._checkok(cmd, typ, dat)
+        typ, dat = self._imap._untagged_response(typ, dat, cmd)
+        return self._proc_folder_list(dat)
 
     def _proc_folder_list(self, folder_data):
-        folders = []
-        for line in folder_data:
-            #TODO can the FetchParser code be adapted for use here?
-            folder_text = None
-            if isinstance(line, tuple):
-                folder_text = line[-1]
-            elif line:
-                match = self.re_folder.match(line)
-                if match:
-                    folder_text = match.group('folder')
-                    folder_text = folder_text.replace(r'\"', '"')
-                    folder_text = folder_text.replace(r'\\', '\\')
-            if folder_text is not None:
-                folders.append(self._decode_folder_name(folder_text))
-        return folders
-        
+        # appears to be a special case - no 'untagged' responses (ie, no
+        # folders) returns [None]
+        if folder_data == [None]:
+            return []
+        ret = []
+        parsed = parse_response(folder_data)
+        while parsed:
+            raw_flags, delim, raw_name = parsed[:3]
+            parsed = parsed[3:]
+            flags = [imap_utf7.decode(flag) for flag in raw_flags]
+            ret.append((flags, delim, self._decode_folder_name(raw_name)))
+        return ret
 
-    def select_folder(self, folder):
+    def select_folder(self, folder, readonly=False):
         """Select the current folder on the server. Future calls to methods
         such as search and fetch will act on the selected folder.
 
@@ -216,7 +233,7 @@ class IMAPClient(object):
              'UIDNEXT': 11,
              'UIDVALIDITY': 1239278212}
         """
-        typ, data = self._imap.select(self._encode_folder_name(folder))
+        typ, data = self._imap.select(self._encode_folder_name(folder), readonly)
         self._checkok('select', typ, data)
         return self._process_select_response(self._imap.untagged_responses)
 
