@@ -204,10 +204,11 @@ class IMAPClient(object):
         return self._proc_folder_list(dat)
 
     def _proc_folder_list(self, folder_data):
-        # appears to be a special case - no 'untagged' responses (ie, no
-        # folders) returns [None]
-        if folder_data == [None]:
-            return []
+        # Filter out empty strings and None's.
+        # This also deals with the special case of - no 'untagged'
+        # responses (ie, no folders). This comes back as [None].
+        folder_data = [item for item in folder_data if item not in ('', None)]
+
         ret = []
         parsed = parse_response(folder_data)
         while parsed:

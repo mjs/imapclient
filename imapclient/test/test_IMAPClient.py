@@ -96,11 +96,13 @@ class TestListFolders(IMAPClientTest):
                                    (['\\HasNoChildren'], '/', 'Left\"Right'),
                                    (['\\HasNoChildren'], '/', r'Left\Right')])
 
+    def test_empty_response(self):
+        self.assertEqual(self.client._proc_folder_list([None]), [])
+
+
     def test_blanks(self):
-        folders = self.client._proc_folder_list(['', None, 
-                                                 r'(\\HasNoChildren) "/" "last"',
-                                                ])
-        self.assert_(folders == ['last'], 'got %r' % folders)
+        folders = self.client._proc_folder_list(['', None, r'(\HasNoChildren) "/" "last"'])
+        self.assertEqual(folders, [([r'\HasNoChildren'], '/', 'last')])
 
 
 class TestAppend(IMAPClientTest):
