@@ -42,7 +42,7 @@ Here is the second part.
 def is_gmail(client):
     return client._imap.host == 'imap.gmail.com'
 
-def extract_folder_names(dat):
+def extract_normal_folders(dat):
     ret = []
     for _, _, folder_name in dat:
         # gmail's "special" folders start with '['
@@ -58,13 +58,14 @@ def test_capabilities(client):
         assert client.has_capability(cap)
     assert not client.has_capability('WONT EXIST')
 
+
 def test_list_folders(client):
     clear_folders(client)
     some_folders = ['simple', r'foo\bar', r'test"folder"']
     for name in some_folders:
         client.create_folder(name)
 
-    folders = extract_folder_names(client.list_folders())
+    folders = extract_normal_folders(client.list_folders())
     assert len(folders) > 0, 'No folders visible on server'
     assert 'INBOX' in [f.upper() for f in folders], 'INBOX not returned'
 
@@ -72,22 +73,26 @@ def test_list_folders(client):
         assert name in folders
     #TODO: test wildcards
 
+
+def test_xlist(client):
+    clear_folders(client)
+
     caps = client.capabilities()
     if is_gmail(client):
-        assert "XLIST" in caps, caps
-    if 'XLIST' in caps:
-        info = client.xlist_folders()
-        folders = extract_folder_names(info)
-        assert len(folders) > 0, 'No folders visible on server'
-        for flags, _, _  in info:
-            if '\\INBOX' in [flag.upper() for flag in flags]:
-                break
+        assert "XLIST" in caps, "expected XLIST in Gmail's capabilities but only got %r" % caps
+
+    if not 'XLIST' in caps:
+        print "Skipping XLIST tests, server doesn't support XLIST"
+        return
+
+    info = client.xlist_folders()
+    assert len(info) > 0, 'No folders returned by XLIST'
+    for flags, _, _  in info:
+        if '\\INBOX' in [flag.upper() for flag in flags]:
+            break
         else:
             raise AssertionError('INBOX not returned', info)
 
-    for name in some_folders:
-        assert name in folders
-        
 
 def test_select_and_close(client):
     resp = client.select_folder('INBOX')
@@ -103,7 +108,7 @@ def test_subscriptions(client):
     # Start with a clean slate
     clear_folders(client)
 
-    for folder in extract_folder_names(client.list_sub_folders()):
+    for folder in extract_normal_folders(client.list_sub_folders()):
         client.unsubscribe_folder(folder)
 
     test_folders = ['foobar',
@@ -113,16 +118,16 @@ def test_subscriptions(client):
     for folder in test_folders:
         client.create_folder(folder)
 
-    all_folders = sorted(extract_folder_names(client.list_folders()))
+    all_folders = sorted(extract_normal_folders(client.list_folders()))
 
     for folder in all_folders:
         client.subscribe_folder(folder)
 
-    assert all_folders == sorted(extract_folder_names(client.list_sub_folders()))
+    assert all_folders == sorted(extract_normal_folders(client.list_sub_folders()))
 
     for folder in all_folders:
         client.unsubscribe_folder(folder)
-    assert extract_folder_names(client.list_sub_folders()) == []
+    assert extract_normal_folders(client.list_sub_folders()) == []
 
     assert_raises(imapclient.IMAPClient.Error,
                   client.subscribe_folder,
@@ -147,7 +152,7 @@ def test_folders(client):
         client.create_folder(folder)
 
         assert client.folder_exists(folder)
-        assert folder in extract_folder_names(client.list_folders())
+        assert folder in extract_normal_folders(client.list_folders())
 
         client.select_folder(folder)
         client.close_folder()
@@ -341,6 +346,7 @@ def runtests(client):
     # The ordering of these tests is important (but shouldn't be!)
     test_capabilities(client)
     test_list_folders(client)
+    test_xlist(client)
     test_select_and_close(client)
     test_subscriptions(client)
     test_folders(client)
@@ -360,7 +366,7 @@ def clear_folder(client, folder):
 
 def clear_folders(client):
     client.folder_encode = False
-    for folder in extract_folder_names(client.list_folders()):
+    for folder in extract_normal_folders(client.list_folders()):
         if folder.upper() != 'INBOX':
             client.delete_folder(folder)
     client.folder_encode = True
