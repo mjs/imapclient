@@ -263,12 +263,13 @@ def test_search(client):
             flags = ()
         client.append('INBOX', msg, flags)
 
+    # Check we see all messages
     messages_all = client.search('ALL')
     if is_gmail(client):
-        # gmail seems to never return deleted items.
-        assert len(messages_all) == len(subjects)-1   # Check we see all messages
+        # Gmail seems to never return deleted items.
+        assert len(messages_all) == len(subjects) - 1 
     else:
-        assert len(messages_all) == len(subjects)   # Check we see all messages
+        assert len(messages_all) == len(subjects)
     assert client.search() == messages_all      # Check default
 
     # Single criteria
