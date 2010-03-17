@@ -10,9 +10,34 @@ from datetime import datetime
 from optparse import OptionParser
 import imapclient
 
-#TODO: more fetch() testing
 
 SIMPLE_MESSAGE = 'Subject: something\r\n\r\nFoo\r\n'
+
+MULTIPART_MESSAGE = """\
+From: Bob Smith <bob@smith.com>
+To: Some One <some@one.com>
+Date: Tue, 16 Mar 2010 16:45:32 +0000
+Message-ID: <1A472770E042064698CB5ADC83A12ACD39455AAB@ABC>
+MIME-Version: 1.0
+Subject: A multipart message
+Content-Type: multipart/mixed; boundary="===============1534046211=="
+
+--===============1534046211==
+Content-Type: text/html; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+
+<html><body>
+Here is the first part.
+</body></html>
+
+--===============1534046211==
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+
+Here is the second part.
+
+--===============1534046211==--
+""".replace('\n', '\r\n')
 
 def is_gmail(client):
     return client._imap.host == 'imap.gmail.com'
@@ -272,6 +297,34 @@ def test_copy(client):
     assert 'something' in client.fetch(msg_id, ['RFC822'])[msg_id]['RFC822']
 
 
+def test_fetch(client):
+    clear_folder(client, 'INBOX')
+
+    client.select_folder('INBOX')
+    client.append('INBOX', MULTIPART_MESSAGE)
+
+    fields = ['RFC822', 'FLAGS', 'INTERNALDATE', 'ENVELOPE']
+    msg_id = client.search()[0]
+    resp = client.fetch(msg_id, fields)
+
+    assert len(resp) == 1
+    msginfo = resp[msg_id]
+
+    assert set(msginfo.keys()) == set(fields + ['SEQ'])
+    assert msginfo['SEQ'] == 1
+    assert msginfo['RFC822'] == MULTIPART_MESSAGE
+    assert isinstance(msginfo['INTERNALDATE'], datetime)
+    assert isinstance(msginfo['FLAGS'], tuple)
+    assert msginfo['ENVELOPE'] == ('Tue, 16 Mar 2010 16:45:32 +0000',
+                                   'A multipart message',
+                                   (('Bob Smith', None, 'bob', 'smith.com'),),
+                                   (('Bob Smith', None, 'bob', 'smith.com'),),
+                                   (('Bob Smith', None, 'bob', 'smith.com'),),
+                                   (('Some One', None, 'some', 'one.com'),),
+                                   None, None, None,
+                                   '<1A472770E042064698CB5ADC83A12ACD39455AAB@ABC>')
+    
+
 def assert_raises(exception_class, func, *args, **kwargs):
     try:
         func(*args, **kwargs)
@@ -285,7 +338,7 @@ def assert_raises(exception_class, func, *args, **kwargs):
 def runtests(client):
     '''Run a sequence of tests against the IMAP server
     '''
-    # The ordering of these tests is important
+    # The ordering of these tests is important (but shouldn't be!)
     test_capabilities(client)
     test_list_folders(client)
     test_select_and_close(client)
@@ -295,6 +348,7 @@ def runtests(client):
     test_append(client)
     test_flags(client)
     test_search(client)
+    test_fetch(client)
     test_copy(client)
 
 
