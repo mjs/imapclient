@@ -329,7 +329,24 @@ def test_fetch(client):
                                    (('Some One', None, 'some', 'one.com'),),
                                    None, None, None,
                                    '<1A472770E042064698CB5ADC83A12ACD39455AAB@ABC>')
-    
+
+
+def test_partial_fetch(client):
+    clear_folder(client, 'INBOX')
+    client.append('INBOX', MULTIPART_MESSAGE)
+    client.select_folder('INBOX')
+    msg_id = client.search()[0]
+
+    resp = client.fetch(msg_id, ['BODY[]<0.20>'])
+    body = resp[msg_id]['BODY[]<0>']
+    assert len(body) == 20
+    assert body.startswith('From: Bob Smith')
+
+    resp = client.fetch(msg_id, ['BODY[]<2.25>'])
+    body = resp[msg_id]['BODY[]<2>']
+    assert len(body) == 25
+    assert body.startswith('om: Bob Smith')
+
 
 def assert_raises(exception_class, func, *args, **kwargs):
     try:
@@ -356,6 +373,7 @@ def runtests(client):
     test_flags(client)
     test_search(client)
     test_fetch(client)
+    test_partial_fetch(client)
     test_copy(client)
 
 
