@@ -405,9 +405,6 @@ def command_line():
     p.add_option('', '--clobber', dest='clobber', action='store_true',
                  default=False, help='These tests are destructive. Use this '
                  'option to bypass the confirmation prompt.')
-    p.add_option('', '--interact', dest='interact', action='store_true',
-                 default=False,
-                 help='Instead of running tests, set up the connection & drop into a shell')
 
     options, args = p.parse_args()
 
@@ -445,13 +442,8 @@ def main():
         print '-'*60
         client = imapclient.IMAPClient(options.host, use_uid=use_uid, ssl=options.ssl)
         client.login(options.username, options.password)
-        if options.interact:
-            import code
-            code.interact('HAI! IMAPClient instance is "c"', local=dict(c=client))
-            break
-        else:
-            runtests(client)
-            print 'SUCCESS'
+        runtests(client)
+        print 'SUCCESS'
 
 if __name__ == '__main__':
     main()

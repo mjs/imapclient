@@ -62,6 +62,18 @@ See examples/example.py for a simple example of how to use IMAPClient.
 
 The code is well documented. See the docstrings for more usage information.
 
+
+interact.py
+-----------
+This script connects an IMAPClient instance using the command line
+args given and starts an interactive session. This is useful for
+exploring the IMAPClient API and testing things out, avoiding the
+steps required to set up an IMAPClient instance.
+
+The IPython shell is used if it is installed. Otherwise the
+code.interact() function from the standard library is used.
+
+
 livetest.py
 -----------
 This is a standalone Python script which exercises IMAPClient against a live

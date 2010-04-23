@@ -8,6 +8,10 @@ problems when interacting with Gmail and MS Exchange (#1).
 [API CHANGE] select_folder now returns a dictionary with the full
 SELECT command response instead of just the message count (#24).
 
+Added interact.py, a script for interactive IMAPClient
+sessions. Useful for debugging and exploration. Uses IPython if
+installed.
+
 
 Version 0.5.2
 -------------
