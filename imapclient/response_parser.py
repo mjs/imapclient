@@ -207,8 +207,6 @@ def atom(src, token):
             raise ParseError('Expecting literal of size %d, got %d' % (
                                 literal_len, len(literal_text)))
         return literal_text
-    elif token.startswith('"'):
-        return token[1:-1]
     elif token.isdigit():
         return int(token)
     else:

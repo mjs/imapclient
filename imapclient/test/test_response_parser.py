@@ -132,6 +132,7 @@ class TestParseResponse(unittest.TestCase):
 
 
     def test_quoted_specials(self):
+        self._test(r'"\"foo bar\""', '"foo bar"')
         self._test(r'"foo \"bar\""', 'foo "bar"')
         self._test(r'"foo\\bar"', r'foo\bar')
 
@@ -156,10 +157,8 @@ class TestParseResponse(unittest.TestCase):
         if not isinstance(to_parse, list):
             to_parse = [to_parse]
         output = parse_response(to_parse)
-        self.assert_(
-                output == expected,
-                format_error(to_parse, output, expected),
-            )
+        self.assert_(output == expected,
+                     format_error(to_parse, output, expected))
 
     def _test_parse_error(self, to_parse, expected_msg):
         try:
