@@ -140,16 +140,22 @@ class LiteralHandlingReader:
             self.literal = None
 
     def read(self, n):
-        # We also hack into the lexer so we get special treatment for '\\'
-        # chars - they are only special inside a quoted string.
+        # Two additional hacks:
+        # 1. Hack into the lexer so we get special treatment for backslash
+        #    chars - they are only special inside a quoted string.
+        # 2. For quoted strings return the quotes around the string so
+        #    that atom() can distinguish numbers from strings. Eg. "123" vs 123.
+        #    These are stripped off before returning them to the user.
         assert n==1
         if self.pushed is not None:
             ret = self.pushed
             self.pushed = None
         else:
             ret = self.src.read(n)
-            if ret=="\\" and self.lexer.state not in '"\\':
+            if ret == "\\" and self.lexer.state not in '"\\':
                 self.pushed = "\\"
+            elif ret == '"' and self.lexer.state != '\\':
+                self.lexer.token += '"'
         return ret
 
     def close(self):
@@ -207,6 +213,8 @@ def atom(src, token):
             raise ParseError('Expecting literal of size %d, got %d' % (
                                 literal_len, len(literal_text)))
         return literal_text
+    elif len(token) >= 2 and (token[0] == token[-1] == '"'):
+        return token[1:-1]
     elif token.isdigit():
         return int(token)
     else:

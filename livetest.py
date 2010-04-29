@@ -146,7 +146,8 @@ def test_folders(client):
                     '"foobar"',
                     'foo "bar"',
                     'stuff & things',
-                    u'test & \u2622']
+                    u'test & \u2622',
+                    '123']
 
     for folder in test_folders:
         assert not client.folder_exists(folder)
