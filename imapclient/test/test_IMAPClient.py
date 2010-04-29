@@ -116,9 +116,9 @@ class TestAppend(IMAPClientTest):
         self.client._imap.append.return_value = ('OK', ['Good'])
 
         self.client.append('foobar', sentinel.msg, ['FLAG', 'WAVE'], None)
-                           
+
         self.assert_(self.client._imap.method_calls ==
-                     [('append', ('foobar',
+                     [('append', ('"foobar"',
                                   '(FLAG WAVE)',
                                   None,
                                   sentinel.msg),
@@ -135,7 +135,7 @@ class TestAppend(IMAPClientTest):
 
         self.assert_(datetime_to_imap.called)
         self.assert_(self.client._imap.method_calls ==
-                     [('append', ('foobar',
+                     [('append', ('"foobar"',
                                   '(FLAG WAVE)',
                                   '"somedate"',
                                   sentinel.msg),

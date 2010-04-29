@@ -328,6 +328,7 @@ class IMAPClient(object):
         """
         typ, data = self._imap.list('', self._encode_folder_name(folder))
         self._checkok('list', typ, data)
+        data = [x for x in data if x]
         return len(data) == 1 and data[0] != None
 
 
@@ -628,8 +629,17 @@ class IMAPClient(object):
 
     def _encode_folder_name(self, name):
         if self.folder_encode:
-            return imap_utf7.encode(name)
-        return name
+            name = imap_utf7.encode(name)
+        # imaplib assumes that if a command argument (in this case a
+        # folder name) has double quotes around it, then it doesn't
+        # need quoting. This "feature" prevents creation of folders
+        # with names that start and end with double quotes.
+        #
+        # To work around this IMAPClient performs the quoting
+        # itself. This adds start and end double quotes which also
+        # serves to fool IMAP4._checkquote into not attempting further
+        # quoting. A hack but it works.
+        return _quote_arg(name)
 
 
 def messages_to_str(messages):
@@ -670,3 +680,7 @@ def datetime_to_imap(dt):
     return dt.strftime("%d-%b-%Y %H:%M:%S %z")
 
 
+def _quote_arg(arg):
+  arg = arg.replace('\\', '\\\\')
+  arg = arg.replace('"', '\\"')
+  return '"%s"' % arg

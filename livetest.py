@@ -143,6 +143,8 @@ def test_folders(client):
     assert not client.folder_exists('this is very unlikely to exist')
 
     test_folders = ['foobar',
+                    '"foobar"',
+                    'foo "bar"',
                     'stuff & things',
                     u'test & \u2622']
 
@@ -152,7 +154,7 @@ def test_folders(client):
         client.create_folder(folder)
 
         assert client.folder_exists(folder)
-        assert folder in extract_normal_folders(client.list_folders())
+        assert folder in extract_normal_folders(client.list_folders()), repr(folder)
 
         client.select_folder(folder)
         client.close_folder()
