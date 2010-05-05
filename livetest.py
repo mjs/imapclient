@@ -61,7 +61,7 @@ def test_capabilities(client):
 
 def test_list_folders(client):
     clear_folders(client)
-    some_folders = ['simple', r'foo\bar', r'test"folder"']
+    some_folders = ['simple', r'foo\bar', r'test"folder"', u'L\xffR']
     for name in some_folders:
         client.create_folder(name)
 

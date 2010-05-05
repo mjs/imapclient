@@ -23,7 +23,15 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+class FolderNameError(ValueError):
+    pass
+
+
 def encode(s):
+    if isinstance(s, str) and sum(n for n in (ord(c) for c in s) if n > 127):
+        raise FolderNameError("%r contains characters not valid in a str folder name. "
+                              "Convert to unicode first?" % s)
+
     r = []
     _in = []
     for c in s:

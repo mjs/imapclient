@@ -22,7 +22,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from imapclient.imap_utf7 import decode, encode
+from imapclient.imap_utf7 import decode, encode, FolderNameError
 import unittest
 
 
@@ -37,6 +37,7 @@ class IMAP4UTF7TestCase(unittest.TestCase):
         [u'\xff\xfe\xfd\xfc', '&AP8A,gD9APw-'],
         [u'~peter/mail/\u65e5\u672c\u8a9e/\u53f0\u5317',
          '~peter/mail/&ZeVnLIqe-/&U,BTFw-'], # example from RFC 2060
+        ['\x00foo', '&AAA-foo'],
     ]
 
     def test_encode(self):
@@ -47,6 +48,20 @@ class IMAP4UTF7TestCase(unittest.TestCase):
     def test_decode(self):
         for (input, output) in self.tests:
             self.assertEquals(input, decode(output))
+
+
+    def test_illegal_chars(self):
+        not_valid_as_str = [
+            'blah' + chr(0x80) + 'sne',
+            chr(0xaa) + 'foo',
+            'blah' + chr(0xff) + 'sne']
+
+        for name in not_valid_as_str:
+            self.assertRaises(FolderNameError, encode, name)
+
+        unicode_names = [unicode(name, 'latin-1') for name in not_valid_as_str]
+        for name in unicode_names:
+            assert isinstance(encode(name), str)
 
 
     def test_printableSingletons(self):
@@ -60,6 +75,11 @@ class IMAP4UTF7TestCase(unittest.TestCase):
             self.failUnlessEqual(chr(o), decode(chr(o)))
         self.failUnlessEqual(encode('&'), '&-')
         self.failUnlessEqual(decode('&-'), '&')
+
+
+    def test_FolderNameError_super(self):
+        self.assert_(issubclass(FolderNameError, ValueError))
+
 
 if __name__ == '__main__':
     unittest.main()
