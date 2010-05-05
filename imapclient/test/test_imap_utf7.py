@@ -28,6 +28,9 @@ import unittest
 
 class IMAP4UTF7TestCase(unittest.TestCase):
     tests = [
+        ['Foo', 'Foo'],
+        ['Foo Bar', 'Foo Bar'],
+        ['Stuff & Things', 'Stuff &- Things'],
         [u'Hello world', 'Hello world'],
         [u'Hello & world', 'Hello &- world'],
         [u'Hello\xffworld', 'Hello&AP8-world'],
