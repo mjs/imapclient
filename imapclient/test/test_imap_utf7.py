@@ -47,7 +47,9 @@ class IMAP4UTF7TestCase(unittest.TestCase):
 
     def test_decode(self):
         for (input, output) in self.tests:
-            self.assertEquals(input, decode(output))
+            decoded = decode(output)
+            self.assertEquals(input, decoded) 
+            self.assert_(isinstance(decoded, unicode))
 
 
     def test_illegal_chars(self):

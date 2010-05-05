@@ -70,7 +70,11 @@ def decode(s):
             r.append(c)
     if decode:
         r.append(modified_unbase64(''.join(decode[1:])))
-    return ''.join(r)
+    out = ''.join(r)
+
+    if not isinstance(out, unicode):
+        out = unicode(out, 'latin-1')
+    return out
 
 
 def modified_base64(s):

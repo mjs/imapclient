@@ -83,8 +83,8 @@ class TestListFolders(IMAPClientTest):
         folders = self.client._proc_folder_list([('(\\NoInferiors \\UnMarked) "/" {5}', 'bang\xff'),
                                                  '',
                                                  '(\\HasNoChildren \\UnMarked) "/" "INBOX"'])
-        self.assertEqual(folders, [(['\\NoInferiors', '\\UnMarked'], "/", 'bang\xff'),
-                                   (['\\HasNoChildren', '\\UnMarked'], "/", 'INBOX')])
+        self.assertEqual(folders, [(['\\NoInferiors', '\\UnMarked'], "/", u'bang\xff'),
+                                   (['\\HasNoChildren', '\\UnMarked'], "/", u'INBOX')])
 
 
     def test_quoted_specials(self):
