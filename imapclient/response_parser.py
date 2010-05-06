@@ -8,8 +8,7 @@ Intially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 #TODO more exact error reporting
 
 import imaplib
-import shlex
-from cStringIO import StringIO
+import response_lexer
 from datetime import datetime
 from fixed_offset import FixedOffset
 
@@ -26,13 +25,21 @@ def parse_response(text):
 
     Returns nested tuples of appropriately typed objects.
     """
+    return tuple(gen_parsed_response(text))
+
+
+def gen_parsed_response(text):
+    if not text:
+        return
     src = ResponseTokeniser(text)
+    token = None
     try:
-        return tuple(atom(src, token) for token in src)
+        for token in src:
+            yield atom(src, token)
     except ParseError:
         raise
     except ValueError, err:
-        raise ParseError("%s: %s" % (str(err), src.lex.token))
+        raise ParseError("%s: %s" % (str(err), token))
 
 
 def parse_fetch_response(text):
@@ -41,7 +48,7 @@ def parse_fetch_response(text):
     Returns a dictionary, keyed by message ID. Each value a dictionary
     keyed by FETCH field type (eg."RFC822").
     """
-    response = iter(parse_response(text))
+    response = gen_parsed_response(text)
 
     parsed_response = {}
     while True:
@@ -123,7 +130,7 @@ EOF = object()
 # So: we have a special file-like object for each of these records.  When
 # a string literal is finally processed, we peek into this file-like object
 # to grab the literal.
-class LiteralHandlingReader:
+class LiteralHandlingIter:
     def __init__(self, lexer, resp_record):
         self.pushed = None
         self.lexer = lexer
@@ -132,81 +139,43 @@ class LiteralHandlingReader:
             # the literal itself.
             src_text, self.literal = resp_record
             assert src_text.endswith("}"), src_text
-            # add a token-sep after the text.
-            self.src = StringIO(src_text + " ")
+            self.src_text = src_text
         else:
             # just a line with no literals.
-            self.src = StringIO(resp_record)
+            self.src_text = resp_record
             self.literal = None
 
-    def read(self, n):
-        # Two additional hacks:
-        # 1. Hack into the lexer so we get special treatment for backslash
-        #    chars - they are only special inside a quoted string.
-        # 2. For quoted strings return the quotes around the string so
-        #    that atom() can distinguish numbers from strings. Eg. "123" vs 123.
-        #    These are stripped off before returning them to the user.
-        assert n==1
-        if self.pushed is not None:
-            ret = self.pushed
-            self.pushed = None
-        else:
-            ret = self.src.read(n)
-            if ret == "\\" and self.lexer.state not in '"\\':
-                self.pushed = "\\"
-            elif ret == '"' and self.lexer.state != '\\':
-                self.lexer.token += '"'
-        return ret
-
-    def close(self):
-        self.src.close()
-        self.src = None
-        self.literal = None
+    def __iter__(self):
+        return iter(self.src_text)
 
 
 class ResponseTokeniser(object):
-
-    CTRL_CHARS = ''.join([chr(ch) for ch in range(32)])
-    SPECIALS = r'()%"' + CTRL_CHARS
-    ALL_CHARS = [chr(ch) for ch in range(256)]
-    NON_SPECIALS = [ch for ch in ALL_CHARS if ch not in SPECIALS]
-
     def __init__(self, resp_chunks):
         # initialize the lexer with all the chunks we read.
-        self.lex = shlex.shlex('', posix=True)
-        for chunk in reversed(resp_chunks):
-            self.lex.push_source(LiteralHandlingReader(self.lex, chunk))
-
-        self.lex.quotes = '"'
-        self.lex.commenters = ''
-        self.lex.wordchars = self.NON_SPECIALS
+        sources = (LiteralHandlingIter(lex, chunk) for chunk in resp_chunks)
+        lex = response_lexer.Lexer(sources)
+        self.tok_src = iter(lex)
+        self.lex = lex
 
     def __iter__(self):
-        return iter(self.lex)
-
-    def next(self):
-        try:
-            return self.lex.next()
-        except StopIteration:
-            return EOF
+        return self.tok_src
 
 
 def atom(src, token):
     if token == "(":
         out = []
-        while True:
-            token = src.next()
+        for token in src:
             if token == ")":
                 return tuple(out)
-            if token == EOF:
-                preceeding = ' '.join(str(val) for val in out)
-                raise ParseError('Tuple incomplete before "(%s"' % preceeding)
             out.append(atom(src, token))
+        # oops - no terminator!
+        preceeding = ' '.join(str(val) for val in out)
+        raise ParseError('Tuple incomplete before "(%s"' % preceeding)
     elif token == 'NIL':
         return None
-    elif token.startswith('{'):
+    elif token[0] == '{':
         literal_len = int(token[1:-1])
-        literal_text = src.lex.instream.literal
+        literal_text = src.lex.current_source.literal
         if literal_text is None:
            raise ParseError('No literal corresponds to %r' % token)
         if len(literal_text) != literal_len:

@@ -4,7 +4,7 @@
 
 import re
 import imaplib
-import shlex
+import response_lexer
 #imaplib.Debug = 5
 
 import imap_utf7
@@ -552,7 +552,7 @@ class IMAPClient(object):
         typ, data = self._imap.getacl(folder)
         self._checkok('getacl', typ, data)
 
-        parts = shlex.split(data[0])
+        parts = list(response_lexer.Lexer([data[0]]))
         parts = parts[1:]       # First item is folder name
 
         out = []
