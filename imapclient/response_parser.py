@@ -8,9 +8,9 @@ Intially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 #TODO more exact error reporting
 
 import imaplib
-import response_lexer
 from datetime import datetime
 from fixed_offset import FixedOffset
+from response_lexer import Lexer
 
 
 __all__ = ['parse_response', 'ParseError']
@@ -31,7 +31,8 @@ def parse_response(text):
 def gen_parsed_response(text):
     if not text:
         return
-    src = ResponseTokeniser(text)
+    src = Lexer.create_token_source(text)
+    
     token = None
     try:
         for token in src:
@@ -117,50 +118,6 @@ def _convert_INTERNALDATE(date_string):
     return dt.astimezone(FixedOffset.for_system()).replace(tzinfo=None)
 
 
-EOF = object()
-
-# imaplib has poor handling of 'literals' - it both fails to remove the
-# {size} marker, and fails to keep responses grouped into the same logical
-# 'line'.  What we end up with is a list of response 'records', where each
-# record is either a simple string, or tuple of (str_with_lit, literal) -
-# where str_with_lit is a string with the {xxx} marker at its end.  Note
-# that each elt of this list does *not* correspond 1:1 with the untagged
-# responses.
-# (http://bugs.python.org/issue5045 also has comments about this)
-# So: we have a special file-like object for each of these records.  When
-# a string literal is finally processed, we peek into this file-like object
-# to grab the literal.
-class LiteralHandlingIter:
-    def __init__(self, lexer, resp_record):
-        self.pushed = None
-        self.lexer = lexer
-        if isinstance(resp_record, tuple):
-            # A 'record' with a string which includes a literal marker, and
-            # the literal itself.
-            src_text, self.literal = resp_record
-            assert src_text.endswith("}"), src_text
-            self.src_text = src_text
-        else:
-            # just a line with no literals.
-            self.src_text = resp_record
-            self.literal = None
-
-    def __iter__(self):
-        return iter(self.src_text)
-
-
-class ResponseTokeniser(object):
-    def __init__(self, resp_chunks):
-        # initialize the lexer with all the chunks we read.
-        sources = (LiteralHandlingIter(lex, chunk) for chunk in resp_chunks)
-        lex = response_lexer.Lexer(sources)
-        self.tok_src = iter(lex)
-        self.lex = lex
-
-    def __iter__(self):
-        return self.tok_src
-
-
 def atom(src, token):
     if token == "(":
         out = []
@@ -175,7 +132,7 @@ def atom(src, token):
         return None
     elif token[0] == '{':
         literal_len = int(token[1:-1])
-        literal_text = src.lex.current_source.literal
+        literal_text = src.current_literal
         if literal_text is None:
            raise ParseError('No literal corresponds to %r' % token)
         if len(literal_text) != literal_len:

@@ -19,7 +19,7 @@ class Lexer(object):
     def __init__(self, sources):
         self.wordchars = set(self.NON_SPECIALS)
         self.whitespace = set((' \t\r\n'))
-        self.sources = sources
+        self.sources = (LiteralHandlingIter(self, chunk) for chunk in sources)
         self.current_source = None
 
     def parse_quote(self, stream_i, quoted, token):
@@ -99,8 +99,58 @@ class Lexer(object):
                 break
 
     def __iter__(self):
-        "Generate a token"
+        "Generate tokens"
         for source in self.sources:
             self.current_source = source
             for tok in self.read_token_stream(iter(source)):
                 yield tok
+
+    @classmethod
+    def create_token_source(cls, text):
+        lex = cls(text)
+        return TokenIterator(lex)
+
+
+class TokenIterator(object):
+
+    def __init__(self, lex):
+        self.lex = lex
+        self.src = iter(lex)
+
+    @property
+    def current_literal(self):
+        return self.lex.current_source.literal
+
+    def __iter__(self):
+        return self.src
+    
+
+# imaplib has poor handling of 'literals' - it both fails to remove the
+# {size} marker, and fails to keep responses grouped into the same logical
+# 'line'.  What we end up with is a list of response 'records', where each
+# record is either a simple string, or tuple of (str_with_lit, literal) -
+# where str_with_lit is a string with the {xxx} marker at its end.  Note
+# that each elt of this list does *not* correspond 1:1 with the untagged
+# responses.
+# (http://bugs.python.org/issue5045 also has comments about this)
+# So: we have a special file-like object for each of these records.  When
+# a string literal is finally processed, we peek into this file-like object
+# to grab the literal.
+class LiteralHandlingIter:
+    def __init__(self, lexer, resp_record):
+        self.pushed = None
+        self.lexer = lexer
+        if isinstance(resp_record, tuple):
+            # A 'record' with a string which includes a literal marker, and
+            # the literal itself.
+            src_text, self.literal = resp_record
+            assert src_text.endswith("}"), src_text
+            self.src_text = self.literal
+        else:
+            # just a line with no literals.
+            self.src_text = resp_record
+            self.literal = None
+
+    def __iter__(self):
+        return iter(self.src_text)
+
