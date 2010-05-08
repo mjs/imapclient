@@ -1,4 +1,9 @@
-"""A lexical analyzer class for IMAP responses."""
+"""
+A lexical analyzer class for IMAP responses.
+
+Although Lexer does all the work, TokenSource is probably the class to
+use for external callers.
+"""
 
 # This was heavily inspired by (ie, ripped off from) python 2.6's shlex
 # module with further inspiration from the patch in
@@ -8,6 +13,26 @@
 __all__ = ["Lexer"]
 
 
+class TokenSource(object):
+    """
+    A simple iterator for the Lexer class that also provides access to
+    the current IMAP literal.
+    """
+
+    def __init__(self, text):
+        lex = Lexer()
+        lex.sources = (LiteralHandlingIter(lex, chunk) for chunk in text)
+        self.lex = lex
+        self.src = iter(lex)
+
+    @property
+    def current_literal(self):
+        return self.lex.current_source.literal
+
+    def __iter__(self):
+        return self.src
+    
+
 class Lexer(object):
     "A lexical analyzer class for IMAP"
 
@@ -16,10 +41,10 @@ class Lexer(object):
     ALL_CHARS = [chr(ch) for ch in range(256)]
     NON_SPECIALS = [ch for ch in ALL_CHARS if ch not in SPECIALS]
 
-    def __init__(self, sources):
+    def __init__(self):
         self.wordchars = set(self.NON_SPECIALS)
         self.whitespace = set((' \t\r\n'))
-        self.sources = (LiteralHandlingIter(self, chunk) for chunk in sources)
+        self.sources = None
         self.current_source = None
 
     def parse_quote(self, stream_i, quoted, token):
@@ -105,25 +130,6 @@ class Lexer(object):
             for tok in self.read_token_stream(iter(source)):
                 yield tok
 
-    @classmethod
-    def create_token_source(cls, text):
-        lex = cls(text)
-        return TokenIterator(lex)
-
-
-class TokenIterator(object):
-
-    def __init__(self, lex):
-        self.lex = lex
-        self.src = iter(lex)
-
-    @property
-    def current_literal(self):
-        return self.lex.current_source.literal
-
-    def __iter__(self):
-        return self.src
-    
 
 # imaplib has poor handling of 'literals' - it both fails to remove the
 # {size} marker, and fails to keep responses grouped into the same logical
@@ -145,7 +151,7 @@ class LiteralHandlingIter:
             # the literal itself.
             src_text, self.literal = resp_record
             assert src_text.endswith("}"), src_text
-            self.src_text = self.literal
+            self.src_text = src_text
         else:
             # just a line with no literals.
             self.src_text = resp_record

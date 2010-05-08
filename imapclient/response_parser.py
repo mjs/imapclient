@@ -10,7 +10,7 @@ Intially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 import imaplib
 from datetime import datetime
 from fixed_offset import FixedOffset
-from response_lexer import Lexer
+from response_lexer import TokenSource
 
 
 __all__ = ['parse_response', 'ParseError']
@@ -31,7 +31,7 @@ def parse_response(text):
 def gen_parsed_response(text):
     if not text:
         return
-    src = Lexer.create_token_source(text)
+    src = TokenSource(text)
     
     token = None
     try:
