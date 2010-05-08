@@ -39,11 +39,10 @@ class Lexer(object):
     CTRL_CHARS = ''.join([chr(ch) for ch in range(32)])
     SPECIALS = r' ()%"' + CTRL_CHARS
     ALL_CHARS = [chr(ch) for ch in range(256)]
-    NON_SPECIALS = [ch for ch in ALL_CHARS if ch not in SPECIALS]
+    NON_SPECIALS = frozenset([ch for ch in ALL_CHARS if ch not in SPECIALS])
+    WHITESPACE = frozenset(' \t\r\n')
 
     def __init__(self):
-        self.wordchars = set(self.NON_SPECIALS)
-        self.whitespace = set((' \t\r\n'))
         self.sources = None
         self.current_source = None
 
@@ -67,8 +66,8 @@ class Lexer(object):
         return quoted + token + quoted
 
     def read_token_stream(self, stream_i):
-        whitespace = self.whitespace
-        wordchars = self.wordchars
+        whitespace = self.WHITESPACE
+        wordchars = self.NON_SPECIALS
         parse_quote = self.parse_quote
 
         while True:
