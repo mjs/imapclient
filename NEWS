@@ -22,7 +22,7 @@ installed.
 count. (#24)
 
 [API CHANGE] the return value from list_folders(), list_sub_folders()
-and xlist_folders not include the IMAP folder flags and
+and xlist_folders() now include the IMAP folder flags and
 delimiter. (#24)
 
 [API CHANGE] Bytes that are greater than 0x7f in folder names are will
