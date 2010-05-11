@@ -1,5 +1,7 @@
-Version 0.6 (in development)
+Version 0.6
 -----------
+#XXX tickets IDs
+
 Command response parsing code rewritten from stratch to deal with
 various bugs that surfaced when dealing with more complex responses
 (eg. BODYSTRUCTURE and ENVELOPE). This change also fixes various
@@ -8,9 +10,25 @@ problems when interacting with Gmail and MS Exchange (#1).
 [API CHANGE] select_folder now returns a dictionary with the full
 SELECT command response instead of just the message count (#24).
 
+[API CHANGE] XXX folder lists return folder flags and delimiter.
+
+[API CHANGE] Folder names are now always returned as unicode objects.
+
+[API CHANGE] XXX Bytes in folder names that are greater than 0x7f are
+rejected by methods that accept folder name arguments. Convert these
+to unicode objects first.
+
+XXX COPY command
+
+XXX XLIST command support
+
 Added interact.py, a script for interactive IMAPClient
 sessions. Useful for debugging and exploration. Uses IPython if
 installed.
+
+XXX Bug fix: numeric folder names breaks list_folders()
+
+XXX check through rev logs
 
 
 Version 0.5.2
