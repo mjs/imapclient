@@ -1,43 +1,51 @@
 Version 0.6
 -----------
-#XXX tickets IDs
+Command response lexing and parsing code rewritten from stratch to
+deal with various bugs that surfaced when dealing with more complex
+responses (eg. BODYSTRUCTURE and ENVELOPE). This change also fixes
+various problems when interacting with Gmail and MS Exchange. 
+(#1, #45)
 
-Command response parsing code rewritten from stratch to deal with
-various bugs that surfaced when dealing with more complex responses
-(eg. BODYSTRUCTURE and ENVELOPE). This change also fixes various
-problems when interacting with Gmail and MS Exchange (#1).
+[NEW] XLIST extension support. Where the server supports it,
+xlist_folders() will return a mapping of various common folder names
+to the actual server folder names. Gmail's IMAP server supports
+this. (#25)
 
-[API CHANGE] select_folder now returns a dictionary with the full
-SELECT command response instead of just the message count (#24).
+[NEW] Added COPY command support (copy() method). (#36)
 
-[API CHANGE] XXX folder lists return folder flags and delimiter.
-
-[API CHANGE] Folder names are now always returned as unicode objects.
-
-[API CHANGE] XXX Bytes in folder names that are greater than 0x7f are
-rejected by methods that accept folder name arguments. Convert these
-to unicode objects first.
-
-XXX COPY command
-
-XXX XLIST command support
-
-Added interact.py, a script for interactive IMAPClient
+[NEW] Added interact.py, a script for interactive IMAPClient
 sessions. Useful for debugging and exploration. Uses IPython if
 installed.
 
-XXX Bug fix: numeric folder names breaks list_folders()
+[API CHANGE] select_folder() now returns a dictionary with the full
+(parsed) SELECT command response instead of just the message
+count. (#24)
 
-XXX check through rev logs
+[API CHANGE] the return value from list_folders(), list_sub_folders()
+and xlist_folders not include the IMAP folder flags and
+delimiter. (#24)
+
+[API CHANGE] Bytes that are greater than 0x7f in folder names are will
+cause an exception when passed to methods that accept folder name
+arguments because there is no unambigous way to handle these. Encode
+these to unicode objects first. (#21)
+
+[API CHANGE] Folder names are now always returned as unicode objects. (#21)
+
+[API CHANGE] Fetch responses now include a "SEQ" element which gives
+the message (non-UID) sequence number. This allows mapping between
+UIDs and standard sequence IDs.
+
+[FIX] Various folder name handling bugs fixed. (#28, #42)
 
 
 Version 0.5.2
 -------------
 Correctly handle double quotes and backslashes in folder names when
-parsing LIST and LSUB responses (#28).
+parsing LIST and LSUB responses. (#28)
 
 Fixed problem with parsing responses where a literal followed another
-literal (#33).
+literal. (#33)
 
 
 Version 0.5.1
