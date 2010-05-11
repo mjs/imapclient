@@ -5,7 +5,7 @@ with no dependencies outside the Python standard library.
 
 Features:
 - Arguments and return values are natural Python types. 
-- IMAP server responses are fully parsed and readily useable. 
+- IMAP server responses are fully parsed and readily usable. 
 - IMAP unique message IDs (UIDs) are handled transparently. There is no
   need to call different methods to use UIDs.
 - Escaping for internationalised mailbox names is transparently handled.

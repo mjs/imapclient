@@ -18,7 +18,7 @@ IMAPClient aims to be a easy-to-use, Pythonic and complete IMAP client library w
 
 Features:
     * Arguments and return values are natural Python types.
-    * IMAP server responses are fully parsed and readily useable.
+    * IMAP server responses are fully parsed and readily usable.
     * IMAP unique message IDs (UIDs) are handled transparently.
     * Internationalised mailbox names are transparently handled.
     * Time zones are correctly handled.
