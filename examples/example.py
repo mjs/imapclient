@@ -3,12 +3,13 @@ from imapclient import IMAPClient
 HOST = 'imap.host.com'
 USERNAME = 'someuser'
 PASSWORD = 'secret'
+ssl = False
 
-server = IMAPClient(HOST, use_uid=True)
+server = IMAPClient(HOST, use_uid=True, ssl=ssl)
 server.login(USERNAME, PASSWORD)
 
-number_msgs = server.select_folder('INBOX')
-print '%d messages in INBOX' % number_msgs
+select_info = server.select_folder('INBOX')
+print '%d messages in INBOX' % select_info['EXISTS']
 
 messages = server.search(['NOT DELETED'])
 print "%d messages that aren't deleted" % len(messages)
