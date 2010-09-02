@@ -1,53 +1,65 @@
 Introduction
 ------------
-IMAPClient aims to be a easy-to-use, Pythonic and complete IMAP client library
-with no dependencies outside the Python standard library. 
+IMAPClient aims to be a easy-to-use, Pythonic and complete IMAP client
+library with no dependencies outside the Python standard library.
 
 Features:
 - Arguments and return values are natural Python types. 
 - IMAP server responses are fully parsed and readily usable. 
-- IMAP unique message IDs (UIDs) are handled transparently. There is no
-  need to call different methods to use UIDs.
-- Escaping for internationalised mailbox names is transparently handled.
-  Unicode mailbox names may be passed as input wherever a folder name is
-  accepted.
-- Time zones are transparently handled including when the server and client
-  are in different zones.
+- IMAP unique message IDs (UIDs) are handled transparently. There is
+  no need to call different methods to use UIDs.
+- Escaping for internationalised mailbox names is transparently
+  handled.  Unicode mailbox names may be passed as input wherever a
+  folder name is accepted.
+- Time zones are transparently handled including when the server and
+  client are in different zones.
 - Convenience methods are provided for commonly used functionality.
 - Exceptions are raised when errors occur.
 
+
 Why IMAPClient?
 ---------------
-You may ask: "why create another IMAP client library for Python? Doesn't the
-Python standard library already have imaplib?". 
+You may ask: "why create another IMAP client library for Python?
+Doesn't the Python standard library already have imaplib?".
 
-The problem with imaplib is that it's very low-level. It expects string values
-where lists or tuples would be more appropriate and returns server responses
-almost unparsed. As IMAP server responses can be quite complex this means
-everyone using imaplib ends up writing their own flimsy parsing routines which
-break easily. 
+The problem with imaplib is that it's very low-level. It expects
+string values where lists or tuples would be more appropriate and
+returns server responses almost unparsed. As IMAP server responses can
+be quite complex this means everyone using imaplib ends up writing
+their own flimsy parsing routines which break easily.
 
-Also, imaplib doesn't make good use of exceptions. This means you need to check
-the return value of each call to imaplib to see if what you just did was
-successful.
+Also, imaplib doesn't make good use of exceptions. This means you need
+to check the return value of each call to imaplib to see if what you
+just did was successful.
 
-IMAPClient actually uses imaplib internally. This may change at some point in
-the future.
+IMAPClient actually uses imaplib internally. This may change at some
+point in the future.
+
 
 Current Status
 --------------
-IMAPClient is currently under development. It is incomplete and some API's may
-change in the near future. There's still a significant amount of IMAP
-functionality that the IMAPClient class doesn't cover yet.  That said, what's
-there now is documented, has been tested and should be fairly solid. 
+IMAPClient is currently under development but it is unlikely that
+the existing API will change in backwards-incompatible ways. Changes
+planned for the near future will only add extra functionality to the
+API.
 
-The project's home page is a Trac instance at http://imapclient.freshfoo.com/.
-Details about upcoming versions and planned features/fixes can be found there.
+You should feel confident using IMAPClient for production
+purposes. Any problems found will be fixed quickly once reported.
+
+The project's home page is a Trac instance at:
+
+    http://imapclient.freshfoo.com/.  
+
+Details about upcoming versions and planned features/fixes can be
+found there.
+
 
 Using IMAPClient
 ----------------
-IMAPClient uses setuptools. To install directly from PyPI use the easy_install
-tool:
+IMAPClient is listed on the PyPI (Python Package Index). To install
+via PyPI use the pip or easy_install tools:
+
+    pip install imapclient
 
     easy_install IMAPClient
 
@@ -55,12 +67,13 @@ To install from the source distribution:
 
     python setup.py install
 
-The usual setuptools installation options are available. See 
+The usual setuptools installation options are available. See
 http://peak.telecommunity.com/DevCenter/EasyInstall for more info.
 
 See examples/example.py for a simple example of how to use IMAPClient.
 
-The code is well documented. See the docstrings for more usage information.
+The code is well documented. See the docstrings for more usage
+information.
 
 
 interact.py
@@ -76,25 +89,29 @@ code.interact() function from the standard library is used.
 
 livetest.py
 -----------
-This is a standalone Python script which exercises IMAPClient against a live
-IMAP account. It performs operations and then attempts to confirm that these
-have been successful.
+This is a standalone Python script which exercises IMAPClient against
+a live IMAP account. It performs operations and then attempts to
+confirm that these have been successful.
 
-It must be used with an account that has an INBOX folder and write access to
-the account. The folders and contents of the account don't matter.
+It must be used with an account that has an INBOX folder and write
+access to the account. The folders and contents of the account don't
+matter.
 
-WARNING: The operations performed by livetest.py are destructive. Emails and
-folders in the test account WILL BE DELETED. Please only run against a dummy
-account that you don't care about.
+WARNING: The operations performed by livetest.py are
+destructive. Emails and folders in the test account WILL BE
+DELETED. Please only run against a dummy account that you don't care
+about.
 
 Run livetest.py with the --help option to see usage.
 
-Please send me the output of livetest.py if it fails to run successfully
-against a particular IMAP server. Reports of successful runs are also welcome.
-Send the type and version of the IMAP server.
+Please send me the output of livetest.py if it fails to run
+successfully against a particular IMAP server. Reports of successful
+runs are also welcome.  Please include the type and version of the
+IMAP server.
+
 
 Unit Tests
 ----------
-There are fairly comprehensive unit tests for the FETCH response parser and
-a growing number of other parts of the code. These tests use unittest and can
-be run using "python setup.py test" or "python run_tests.py".
+There are comprehensive unit tests for the FETCH response parser and a
+growing number of other parts of the code. These tests use unittest
+and can be run using "python setup.py test" or "python run_tests.py".
