@@ -1,3 +1,11 @@
+Version 0.6.1
+-------------
+Automatically patch a bug in imaplib which can cause hangs when using
+SSL (Python Issue 5949). The patch is only applied when the running
+Python version is known to be affected by the problem.
+
+Updated the README to better reflect the current state of the project.
+
 Version 0.6
 -----------
 Command response lexing and parsing code rewritten from stratch to
