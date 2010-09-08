@@ -262,14 +262,14 @@ class TestParseFetchResponse(unittest.TestCase):
             expected_dt = datetime_to_native(expected_dt)
             self.assert_(actual_dt == expected_dt, '%s != %s' % (actual_dt, expected_dt))
 
-        dt = check(' 9-Feb-2007 17:08:08 -0430',
-                   datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30)))
+        check(' 9-Feb-2007 17:08:08 -0430',
+              datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30)))
  
-        dt = check('12-Feb-2007 17:08:08 +0200',
-                   datetime(2007, 2, 12, 17, 8, 8, 0, FixedOffset(2*60)))
+        check('12-Feb-2007 17:08:08 +0200',
+              datetime(2007, 2, 12, 17, 8, 8, 0, FixedOffset(2*60)))
  
-        dt = check(' 9-Dec-2007 17:08:08 +0000',
-                   datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
+        check(' 9-Dec-2007 17:08:08 +0000',
+              datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
 
 
     def test_mixed_types(self):
