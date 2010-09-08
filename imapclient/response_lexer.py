@@ -46,34 +46,34 @@ class Lexer(object):
         self.sources = None
         self.current_source = None
 
-    def parse_quote(self, stream_i, quoted, token):
+    def read_until(self, stream_i, end_char, escape=True):
+        token = ''
         try:
             for nextchar in stream_i:
-                if nextchar == "\\":
+                if escape and nextchar == "\\":
                     escaper = nextchar
                     nextchar = stream_i.next()
-                    if nextchar != escaper and nextchar != quoted:
+                    if nextchar != escaper and nextchar != end_char:
                         token += escaper
-                elif nextchar == quoted:
+                elif nextchar == end_char:
                     break
                 token += nextchar
             else:
-                raise ValueError("No closing quotation")
+                raise ValueError("No closing %r" % end_char)
         except StopIteration:
-            # escaped char...
-            raise ValueError("No closing quotation")
-
-        return quoted + token + quoted
+            raise ValueError("No closing %r" % end_char)
+        return token + end_char
 
     def read_token_stream(self, stream_i):
         whitespace = self.WHITESPACE
         wordchars = self.NON_SPECIALS
-        parse_quote = self.parse_quote
+        read_until = self.read_until
 
         while True:
 
             token = ''
 
+            # process whitespace
             for nextchar in stream_i:
                 if nextchar in whitespace:
                     continue
@@ -83,10 +83,8 @@ class Lexer(object):
                     token = nextchar
 
                 elif nextchar == '"':
-                    chunk = parse_quote(stream_i, nextchar, token)
-                    token += chunk
-                    yield token
-                    token = ''
+                    assert not token
+                    yield nextchar + read_until(stream_i, nextchar)
                     continue
 
                 else:
@@ -98,6 +96,10 @@ class Lexer(object):
 
             # non whitespace appending
             for nextchar in stream_i:
+                if nextchar == '[':
+                    yield token + nextchar + read_until(stream_i, ']', escape=False)
+                    break
+
                 if nextchar in wordchars:
                     token += nextchar
                     continue
@@ -107,9 +109,8 @@ class Lexer(object):
                     break
 
                 elif nextchar == '"':
-                    chunk = parse_quote(stream_i, nextchar, token)
-                    token = chunk
-                    yield token
+                    assert not token
+                    yield nextchar + read_until(stream_i, nextchar)
                     break
 
                 else:

@@ -147,7 +147,7 @@ class TestParseResponse(unittest.TestCase):
 
 
     def test_bad_quoting(self):
-        self._test_parse_error('"abc next', 'No closing quotation:')
+        self._test_parse_error('"abc next', "No closing '\"'")
 
 
     def _test(self, to_parse, expected, wrap=True):
@@ -255,7 +255,7 @@ class TestParseFetchResponse(unittest.TestCase):
     def test_BODY_HEADER_FIELDS(self):
         header_text = 'Subject: A subject\r\nFrom: Some one <someone@mail.com>\r\n\r\n'
         self.assertEquals(parse_fetch_response(
-            [('123 (UID 31710 BODY[HEADER.FIELDS (FROM SUBJECT)] {57}', header_text), ')']),
+            [('123 (UID 31710 BODY[HEADER.FIELDS (from subject)] {57}', header_text), ')']),
             { 31710: {'BODY[HEADER.FIELDS (FROM SUBJECT)]': header_text,
                       'SEQ': 123}})
               
