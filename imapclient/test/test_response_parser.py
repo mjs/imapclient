@@ -136,6 +136,12 @@ class TestParseResponse(unittest.TestCase):
         self._test(r'"foo \"bar\""', 'foo "bar"')
         self._test(r'"foo\\bar"', r'foo\bar')
 
+    def test_square_brackets(self):
+        self._test('foo[bar rrr]', 'foo[bar rrr]')
+        self._test('"foo[bar rrr]"', 'foo[bar rrr]')
+        self._test('[foo bar]', '[foo bar]')  # Square brackets at start
+        self._test('(foo [bar rrr])', ('foo', '[bar rrr]'))
+        self._test('(foo foo[bar rrr])', ('foo', 'foo[bar rrr]'))
 
     def test_incomplete_tuple(self):
         self._test_parse_error('abc (1 2', 'Tuple incomplete before "(1 2"')
