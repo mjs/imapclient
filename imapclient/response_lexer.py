@@ -37,7 +37,7 @@ class Lexer(object):
     "A lexical analyzer class for IMAP"
 
     CTRL_CHARS = ''.join([chr(ch) for ch in range(32)])
-    SPECIALS = r' ()%"' + CTRL_CHARS
+    SPECIALS = r' ()%"[' + CTRL_CHARS
     ALL_CHARS = [chr(ch) for ch in range(256)]
     NON_SPECIALS = frozenset([ch for ch in ALL_CHARS if ch not in SPECIALS])
     WHITESPACE = frozenset(' \t\r\n')
@@ -70,53 +70,30 @@ class Lexer(object):
         read_until = self.read_until
 
         while True:
+            # whitespace
+            for nextchar in stream_i:
+                if nextchar not in whitespace:
+                    stream_i.push(nextchar)
+                    break    # done skipping over the whitespace
 
+            # non whitespace
             token = ''
-
-            # process whitespace
             for nextchar in stream_i:
-                if nextchar in whitespace:
-                    continue
-
-                # IMAP doesn't have escapes anywhere but strings.
-                elif nextchar in wordchars:
-                    token = nextchar
-
-                elif nextchar == '"':
-                    assert not token
-                    yield nextchar + read_until(stream_i, nextchar)
-                    continue
-
-                else:
-                    # punctuation...
-                    yield nextchar
-                    continue
-                # and... we're done processing the whitespace.
-                break
-
-            # non whitespace appending
-            for nextchar in stream_i:
-                if nextchar == '[':
-                    yield token + nextchar + read_until(stream_i, ']', escape=False)
-                    break
-
                 if nextchar in wordchars:
                     token += nextchar
-                    continue
-
-                if nextchar in whitespace:
-                    yield token
-                    break
-
-                elif nextchar == '"':
-                    assert not token
-                    yield nextchar + read_until(stream_i, nextchar)
-                    break
-
                 else:
-                    assert token
-                    yield token
-                    yield nextchar # now yield the punctuation...
+                    if nextchar == '[':
+                        yield token + nextchar + read_until(stream_i, ']', escape=False)
+                    elif nextchar in whitespace:
+                        yield token
+                    elif nextchar == '"':
+                        assert not token
+                        yield nextchar + read_until(stream_i, nextchar)
+                    else:
+                        # Other punctuation, eg. "("
+                        if token:
+                            yield token
+                        yield nextchar    # yield the punctuation
                     break
             else:
                 if token:
@@ -144,7 +121,6 @@ class Lexer(object):
 # to grab the literal.
 class LiteralHandlingIter:
     def __init__(self, lexer, resp_record):
-        self.pushed = None
         self.lexer = lexer
         if isinstance(resp_record, tuple):
             # A 'record' with a string which includes a literal marker, and
@@ -158,5 +134,22 @@ class LiteralHandlingIter:
             self.literal = None
 
     def __iter__(self):
-        return iter(self.src_text)
+        return PushableIterator(self.src_text)
 
+
+class PushableIterator(object):
+
+    def __init__(self, it):
+        self.it = iter(it)
+        self.pushed = []
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        if self.pushed:
+            return self.pushed.pop()
+        return self.it.next()
+
+    def push(self, item):
+        self.pushed.append(item)
