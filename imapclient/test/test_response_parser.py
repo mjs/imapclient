@@ -139,7 +139,7 @@ class TestParseResponse(unittest.TestCase):
     def test_square_brackets(self):
         self._test('foo[bar rrr]', 'foo[bar rrr]')
         self._test('"foo[bar rrr]"', 'foo[bar rrr]')
-        self._test('[foo bar]', '[foo bar]')  # Square brackets at start
+        self._test('[foo bar]def', '[foo bar]def')
         self._test('(foo [bar rrr])', ('foo', '[bar rrr]'))
         self._test('(foo foo[bar rrr])', ('foo', 'foo[bar rrr]'))
 
@@ -264,7 +264,15 @@ class TestParseFetchResponse(unittest.TestCase):
             [('123 (UID 31710 BODY[HEADER.FIELDS (from subject)] {57}', header_text), ')']),
             { 31710: {'BODY[HEADER.FIELDS (FROM SUBJECT)]': header_text,
                       'SEQ': 123}})
-              
+
+
+    def test_partial_fetch(self):
+        body = '01234567890123456789'
+        self.assertEquals(parse_fetch_response(
+            [('123 (UID 367 BODY[]<0> {20}', body), ')']),
+            { 367: {'BODY[]<0>': body,
+                    'SEQ': 123}})
+                    
 
     def test_INTERNALDATE(self):
         def check(date_str, expected_dt):

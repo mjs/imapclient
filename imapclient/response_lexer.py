@@ -81,10 +81,10 @@ class Lexer(object):
             for nextchar in stream_i:
                 if nextchar in wordchars:
                     token += nextchar
+                elif nextchar == '[':
+                    token += nextchar + read_until(stream_i, ']', escape=False)
                 else:
-                    if nextchar == '[':
-                        yield token + nextchar + read_until(stream_i, ']', escape=False)
-                    elif nextchar in whitespace:
+                    if nextchar in whitespace:
                         yield token
                     elif nextchar == '"':
                         assert not token
