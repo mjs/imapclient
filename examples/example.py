@@ -18,7 +18,6 @@ print
 print "Messages:"
 response = server.fetch(messages, ['FLAGS', 'RFC822.SIZE'])
 for msgid, data in response.iteritems():
-    print '   ID %d: %d bytes, flags=%s' % (
-            msgid,
-            data['RFC822.SIZE'],
-            ','.join(data['FLAGS']))
+    print '   ID %d: %d bytes, flags=%s' % (msgid,
+                                            data['RFC822.SIZE'],
+                                            data['FLAGS'])
