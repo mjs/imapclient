@@ -6,10 +6,11 @@
 
 
 # bootstrap setuptools if necessary
-from ez_setup import use_setuptools
-use_setuptools()
+import distribute_setup
+distribute_setup.use_setuptools()
 
-from setuptools import setup
+from setuptools import setup, find_packages
+
 import imapclient
 version = imapclient.__version__
 
@@ -28,29 +29,26 @@ Features:
 IMAPClient includes units tests for more complex functionality and a automated functional test that can be run against a live IMAP server.
 """
 
-setup(
-        name='IMAPClient',
-        version=version,
-        author="Menno Smits",
-        author_email="menno@freshfoo.com",
-        license="http://en.wikipedia.org/wiki/BSD_licenses",
-        url="http://imapclient.freshfoo.com/",
-        download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.tar.gz' % version,
-        packages=['imapclient', 'imapclient.test'],
-        test_suite='imapclient.test.load_suite',
-        py_modules=[],
-        install_requires=[],
-        description="Easy-to-use, Pythonic and complete IMAP client library with "
-            "no dependencies outside the Python standard library.",
-        long_description=desc,
-        classifiers=[
-            'Development Status :: 5 - Production/Stable',
-            'Intended Audience :: Developers',
-            'License :: OSI Approved :: BSD License',
-            'Operating System :: OS Independent',
-            'Natural Language :: English',
-            'Programming Language :: Python',
-            'Topic :: Communications :: Email :: Post-Office :: IMAP',
-            'Topic :: Internet',
-            'Topic :: Software Development :: Libraries :: Python Modules',
-            'Topic :: System :: Networking'])
+#XXX put "test" command support back in
+setup(name='IMAPClient',
+      version=version,
+      author="Menno Smits",
+      author_email="menno@freshfoo.com",
+      license="http://en.wikipedia.org/wiki/BSD_licenses",
+      url="http://imapclient.freshfoo.com/",
+      download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.tar.gz' % version,
+      packages=find_packages(),
+      description="Easy-to-use, Pythonic and complete IMAP client library with "
+          "no dependencies outside the Python standard library.",
+      long_description=desc,
+      classifiers=[
+          'Development Status :: 5 - Production/Stable',
+          'Intended Audience :: Developers',
+          'License :: OSI Approved :: BSD License',
+          'Operating System :: OS Independent',
+          'Natural Language :: English',
+          'Programming Language :: Python',
+          'Topic :: Communications :: Email :: Post-Office :: IMAP',
+          'Topic :: Internet',
+          'Topic :: Software Development :: Libraries :: Python Modules',
+          'Topic :: System :: Networking'])
