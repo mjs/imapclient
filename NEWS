@@ -1,3 +1,15 @@
+Version 0.6.2
+-------------
+Square brackets in responses are now parsed correctly. This fixes
+response handling for FETCH items such as "BODY[HEADER.FIELDS (from
+subject)]". (#55)
+
+The example has been moved to imapclient/examples directory and is
+included when the IMAPClient is installed from PyPI. (#56)
+
+The project is now packaged using Distribute instead of
+setuptools. There should be no real functional change. (#57)
+
 Version 0.6.1
 -------------
 Automatically patch a bug in imaplib which can cause hangs when using
