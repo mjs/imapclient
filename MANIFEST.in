@@ -1,7 +1,7 @@
-include README COPYING AUTHORS THANKS
+include README COPYING AUTHORS THANKS NEWS
 include run_tests.py
 include livetest.py
-include ez_setup.py
-include make_release.py
-recursive-include examples *
+include distribute_setup.py
+include interact.py
+recursive-include imapclient/examples *
 
