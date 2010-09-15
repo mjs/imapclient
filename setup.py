@@ -29,7 +29,6 @@ Features:
 IMAPClient includes units tests for more complex functionality and a automated functional test that can be run against a live IMAP server.
 """
 
-#XXX put "test" command support back in
 setup(name='IMAPClient',
       version=version,
       author="Menno Smits",
@@ -38,6 +37,7 @@ setup(name='IMAPClient',
       url="http://imapclient.freshfoo.com/",
       download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.tar.gz' % version,
       packages=find_packages(),
+      package_data=dict(imapclient=['examples/*.py']),
       description="Easy-to-use, Pythonic and complete IMAP client library with "
           "no dependencies outside the Python standard library.",
       long_description=desc,
