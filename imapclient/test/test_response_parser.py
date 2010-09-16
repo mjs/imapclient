@@ -64,6 +64,10 @@ class TestParseResponse(unittest.TestCase):
         self._test('(123 "foo" ((0 1 2) "more" NIL) 66)',
                    (123, "foo", ((0, 1, 2), "more", None), 66))
 
+    def test_backed_up_tuples(self):
+        self._test('((12 "foo")(34 NIL 0) "foo")',
+                   ([(12, "foo"), (34, None, 0)], "foo"))
+
     def test_complex_mixed(self):
         self._test('((FOO "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 1152 23)'
                    '("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "cc.diff") '
