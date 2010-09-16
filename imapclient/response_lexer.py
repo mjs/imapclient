@@ -93,7 +93,10 @@ class Lexer(object):
                         # Other punctuation, eg. "("
                         if token:
                             yield token
-                        yield nextchar    # yield the punctuation
+                        if nextchar == ')' and stream_i.peek() == '(':
+                            yield ')('
+                        else:
+                            yield nextchar    # yield the punctuation
                     break
             else:
                 if token:
@@ -139,6 +142,8 @@ class LiteralHandlingIter:
 
 class PushableIterator(object):
 
+    NO_MORE = object()
+
     def __init__(self, it):
         self.it = iter(it)
         self.pushed = []
@@ -153,3 +158,11 @@ class PushableIterator(object):
 
     def push(self, item):
         self.pushed.append(item)
+
+    def peek(self, default=NO_MORE):
+        if not self.pushed:
+            try:
+                self.pushed.append(self.it.next())
+            except StopIteration:
+                return default
+        return self.pushed[-1]
