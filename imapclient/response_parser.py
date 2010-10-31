@@ -120,11 +120,24 @@ def _convert_INTERNALDATE(date_string):
 
 def atom(src, token):
     if token == "(":
-        out = []
+        #XXX names, use separate func?
+        out = target = []
         for token in src:
             if token == ")":
+                if target is not out:
+                    out[-1] = tuple(out[-1])
+                    return out
                 return tuple(out)
-            out.append(atom(src, token))
+            elif token == ')(':
+                if target is out:
+                    target = []
+                    out = [tuple(out), target]
+                else:
+                    out[-1] = tuple(out[-1])
+                    target = []
+                    out.append(target)
+            else:
+                target.append(atom(src, token))
         # oops - no terminator!
         preceeding = ' '.join(str(val) for val in out)
         raise ParseError('Tuple incomplete before "(%s"' % preceeding)

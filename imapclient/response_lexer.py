@@ -94,6 +94,8 @@ class Lexer(object):
                         if token:
                             yield token
                         if nextchar == ')' and stream_i.peek() == '(':
+                            #XXX might be cleaner just to push                                     
+                            stream_i.next()
                             yield ')('
                         else:
                             yield nextchar    # yield the punctuation
