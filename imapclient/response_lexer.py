@@ -94,8 +94,7 @@ class Lexer(object):
                         if token:
                             yield token
                         if nextchar == ')' and stream_i.peek() == '(':
-                            #XXX might be cleaner just to push                                     
-                            stream_i.next()
+                            stream_i.next()     # Read the '('
                             yield ')('
                         else:
                             yield nextchar    # yield the punctuation
@@ -168,3 +167,6 @@ class PushableIterator(object):
             except StopIteration:
                 return default
         return self.pushed[-1]
+
+        
+        

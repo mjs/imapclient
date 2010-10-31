@@ -120,27 +120,7 @@ def _convert_INTERNALDATE(date_string):
 
 def atom(src, token):
     if token == "(":
-        #XXX names, use separate func?
-        out = target = []
-        for token in src:
-            if token == ")":
-                if target is not out:
-                    out[-1] = tuple(out[-1])
-                    return out
-                return tuple(out)
-            elif token == ')(':
-                if target is out:
-                    target = []
-                    out = [tuple(out), target]
-                else:
-                    out[-1] = tuple(out[-1])
-                    target = []
-                    out.append(target)
-            else:
-                target.append(atom(src, token))
-        # oops - no terminator!
-        preceeding = ' '.join(str(val) for val in out)
-        raise ParseError('Tuple incomplete before "(%s"' % preceeding)
+        return parse_tuple(src)
     elif token == 'NIL':
         return None
     elif token[0] == '{':
@@ -158,3 +138,36 @@ def atom(src, token):
         return int(token)
     else:
         return token
+
+
+def parse_tuple(src):
+    out = []
+    for token in src:
+        if token == ")":
+            return tuple(out)
+        elif token == ')(':
+            return parse_juxtaposed_tuples(src, out)
+        else:
+            out.append(atom(src, token))
+    # oops - no terminator!
+    preceeding = ' '.join(str(val) for val in out)
+    raise ParseError('Tuple incomplete before "(%s"' % preceeding)
+
+
+def parse_juxtaposed_tuples(src, init):
+    out = [tuple(init)]
+    current = []
+    for token in src:
+        if token in (')', ')('):
+            out.append(tuple(current))
+            if token == ')':
+                return out
+            current = []
+        else:
+            current.append(atom(src, token))
+    # oops - no terminator!
+    preceeding_items = out
+    if current:
+        preceeding_items.append(tuple(current))
+    preceeding = ''.join(str(val) for val in preceeding_items)
+    raise ParseError('Juxtaposed tuples incomplete before "(%s"' % preceeding)
