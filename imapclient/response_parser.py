@@ -149,9 +149,8 @@ def parse_tuple(src):
             return parse_juxtaposed_tuples(src, out)
         else:
             out.append(atom(src, token))
-    # oops - no terminator!
-    preceeding = ' '.join(str(val) for val in out)
-    raise ParseError('Tuple incomplete before "(%s"' % preceeding)
+    # no terminator
+    raise ParseError('Tuple incomplete before "(%s"' % _fmt_tuple(out))
 
 
 def parse_juxtaposed_tuples(src, init):
@@ -165,9 +164,14 @@ def parse_juxtaposed_tuples(src, init):
             current = []
         else:
             current.append(atom(src, token))
-    # oops - no terminator!
-    preceeding_items = out
+
+    # no terminator
+    preceeding = ''.join('(' + _fmt_tuple(t) + ')' for t in out)
     if current:
-        preceeding_items.append(tuple(current))
-    preceeding = ''.join(str(val) for val in preceeding_items)
-    raise ParseError('Juxtaposed tuples incomplete before "(%s"' % preceeding)
+        preceeding += '(' + _fmt_tuple(current)
+    raise ParseError('Juxtaposed tuples incomplete before "%s"' % preceeding)
+
+
+def _fmt_tuple(t):
+    return ' '.join(str(item) for item in t)
+

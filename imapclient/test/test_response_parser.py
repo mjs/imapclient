@@ -67,12 +67,18 @@ class TestParseResponse(unittest.TestCase):
     def test_juxtatposed_tuples(self):
         # Tuples with no whitespace between them should be returned as
         # a list of tuples
+        self._test('(12 "foo")(34 NIL 0)',
+                   [(12, "foo"), (34, None, 0)])
+        self._test('(12 "foo")(34 NIL 0)(5 66)',
+                   [(12, "foo"), (34, None, 0), (5, 66)])
         self._test('((12 "foo")(34 NIL 0) "foo")',
                    ([(12, "foo"), (34, None, 0)], "foo"))
         self._test('((12 "foo")(34 NIL 0)(4 55 6) "foo")',
                    ([(12, "foo"), (34, None, 0), (4, 55, 6)], "foo"))
         self._test('((12 "foo")(34 (NIL 1 2) 0)(4 55 6) "foo")',
                    ([(12, "foo"), (34, (None, 1, 2), 0), (4, 55, 6)], "foo"))
+        self._test('(12 "foo")(34 NIL ("a" "b")("c" "d"))',
+                   [(12, "foo"), (34, None, [('a', 'b'), ('c', 'd')])])
 
     def test_complex_mixed(self):
         self._test('((FOO "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 1152 23) '
@@ -156,6 +162,9 @@ class TestParseResponse(unittest.TestCase):
     def test_incomplete_tuple(self):
         self._test_parse_error('abc (1 2', 'Tuple incomplete before "(1 2"')
 
+    def test_incomplete_juxtaposed_tuples(self):
+        self._test_parse_error('(1 2)(3 4',
+                               'Juxtaposed tuples incomplete before "(1 2)(3 4"')
 
     def test_bad_literal(self):
         self._test_parse_error([('{99}', 'abc')],
@@ -177,12 +186,15 @@ class TestParseResponse(unittest.TestCase):
                      format_error(to_parse, output, expected))
 
     def _test_parse_error(self, to_parse, expected_msg):
+        if not isinstance(to_parse, list):
+            to_parse = [to_parse]
         try:
             parse_response(to_parse)
             self.fail("didn't raise an exception")
         except ParseError, err:
-            self.assert_(expected_msg == str(err)[:len(expected_msg)],
-                         'got ParseError with wrong msg: %r' % str(err))
+            actual_msg = str(err)
+            self.assert_(expected_msg == actual_msg[:len(expected_msg)],
+                         'got ParseError with wrong msg: %r' % actual_msg)
 
 
 
