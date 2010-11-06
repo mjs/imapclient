@@ -31,13 +31,8 @@ RECENT = r'\Recent'         # This flag is read-only
 
 
 class IMAPClient(object):
+    #XXX concepts to cover: UIDs, message lists, folder encoding, exceptions
     """
-    A Pythonic, easy-to-use IMAP client class.
-
-    Unlike imaplib, arguments and returns values are Pythonic and readily
-    usable. Exceptions are raised when problems occur (no error checking of
-    return values is required).
-
     Message unique identifiers (UID) can be used with any call. The use_uid
     argument to the constructor and the use_uid attribute control whether UIDs
     are used.
@@ -97,7 +92,8 @@ class IMAPClient(object):
 
    
     def login(self, username, password):
-        """Perform a simple login
+        """Login using *username* and *password*, returning the
+        server response.
         """
         typ, data = self._imap.login(username, password)
         self._checkok('login', typ, data)
@@ -105,7 +101,7 @@ class IMAPClient(object):
 
 
     def logout(self):
-        """Perform a logout
+        """Logout, returning the server response.
         """
         typ, data = self._imap.logout()
         self._checkbye('logout', typ, data)
@@ -113,15 +109,13 @@ class IMAPClient(object):
 
 
     def capabilities(self):
-        """Returns the server capability list
+        """Returns the server capability list.
         """
         return self._imap.capabilities
 
 
     def has_capability(self, capability):
-        """Checks if the server has the given capability.
-
-        @param capability: capability to test (eg 'SORT')
+        """Return True if the server has the *capability* specified.
         """
         # FIXME: this will not detect capabilities that are backwards
         # compatible with the current level. For instance the SORT
@@ -134,10 +128,7 @@ class IMAPClient(object):
             return False
 
     def get_folder_delimiter(self):
-        """Determine the folder separator used by the IMAP server.
-
-        @return: The folder separator.
-        @rtype: string
+        """Return the folder separator used by the IMAP server (eg. "/").
         """
         typ, data = self._imap.namespace()
         self._checkok('namespace', typ, data)
@@ -149,51 +140,56 @@ class IMAPClient(object):
             raise self.Error('could not determine folder separator')
 
     def list_folders(self, directory="", pattern="*"):
-        """Get a listing of folders on the server.
+        """Get a listing of folders on the server as a list of
+        ``(flags, delimiter, name)`` tuples.
 
-        The default behaviour (no args) will list all folders for the logged in
-        user.
+        Calling list_folders with no arguments will list all
+        folders.
 
-        @param directory: The base directory to look for folders from.
-        @param pattern: A pattern to match against folder names. Only folder
-            names matching this pattern will be returned. Wildcards accepted.
-        @return: A list of (flags, delim, folder_name). Each folder name will
-            be either a string or a unicode string (if the folder on the
-            server required decoding). If the folder_encode attribute is
-            False, no decoding will be performed and only ordinary strings
-            will be returned.
+        Specifying *directory* will limit returned folders to that
+        base directory. Specifying *pattern* will limit returned
+        folders to those with matching names. Wildcards (``*`` and
+        ``?``) are supported in *pattern*.
+
+        #XXX check wildcard facts
+
+        Each folder name will be either a string or a unicode string
+        (if the folder on the server required decoding). If the
+        folder_encode attribute is False, no decoding will be
+        performed and only ordinary strings will be returned.
+
+        #XXX check the above is still true
         """
         return self._do_list('LIST', directory, pattern)
 
     def xlist_folders(self, directory="", pattern="*"):
-        """A gmail-specific IMAP extension.
-        
-        This method returns special flags for each folder and a localized name
-        for certain folders (eg, the name of the 'inbox' may be localized as the
-        flags can be used to determine the actual inbox, even if the name has
-        been localized.  It is the responsibility of the caller to either check
-        for 'XLIST' in the server capabilites, or to handle the error if the
-        server doesn't support this externsion.
+        """Execute the XLIST command, returning``(flags, delimiter,
+        name)`` tuples.
 
-        @param directory: The base directory to look for folders from.
-        @param pattern: A pattern to match against folder names. Only folder
-            names matching this pattern will be returned. Wildcards accepted.
-        @return: A list of (flags, delim, folder_name). As per the return of
-            list_folders().
+        This method returns special flags for each folder and a
+        localized name for certain folders (e.g. the name of the
+        'inbox' may be localized and the flags can be used to
+        determine the actual inbox, even if the name has been
+        localized.
+
+        XXX example response
+                                            
+        This is a Gmail-specific IMAP extension. It is the
+        responsibility of the caller to either check for 'XLIST' in
+        the server capabilites, or to handle the error if the server
+        doesn't support this externsion.
+
+        The *directory* and *pattern* arguments are as per
+        list_folders().
         """
         return self._do_list('XLIST', directory, pattern)
 
     def list_sub_folders(self, directory="", pattern="*"):
-        """Get a listing of subscribed folders on the server.
+        """Return a list of subscribed folders on the server as
+        ``(flags, delimiter, name)`` tuples.
 
-        The default behaviour (no args) will list all subscribed folders for the
-        logged in user.
-
-        @param directory: The base directory to look for folders from.
-        @param pattern: A pattern to match against folder names. Only folder
-            names matching this pattern will be returned. Wildcards accepted.
-        @return: A list of (flags, delim, folder_name). As per the return of
-            list_folders().
+        The default behaviour will list all subscribed folders. The
+        *directory* and *pattern* arguments are as per list_folders().
         """
         return self._do_list('LSUB', directory, pattern)
 
@@ -257,14 +253,14 @@ class IMAPClient(object):
 
 
     def folder_status(self, folder, what=None):
-        """Requests the status from folder.
+        """Return the status of *folder*.
 
-        @param folder: The folder name.
-        @param what: A sequence of status items to query. Defaults to
-            ('MESSAGES', 'RECENT', 'UIDNEXT', 'UIDVALIDITY', 'UNSEEN').
-        @return: Dictionary of the status items for the folder. The keys match
-            the items specified in the what parameter.
-        @rtype: dict
+        *what* should be a sequence of status items to query. This
+        defaults to ``('MESSAGES', 'RECENT', 'UIDNEXT', 'UIDVALIDITY',
+        'UNSEEN')``.
+
+        Returns a dictionary of the status items for the folder with
+        keys matching *what*.
         """
         if what is None:
             what = ('MESSAGES', 'RECENT', 'UIDNEXT', 'UIDVALIDITY', 'UNSEEN')
@@ -289,72 +285,54 @@ class IMAPClient(object):
 
 
     def close_folder(self):
-        """Close the currently selected folder.
-
-        @return: Server response.
+        """Close the currently selected folder, returning the server
+        response string.
         """
         typ, data = self._imap.close()
         self._checkok('close', typ, data)
         return data[0]
 
-
     def create_folder(self, folder):
-        """Create a new folder on the server.
-
-        @param folder: The folder name.
-        @return: Server response.
+        """Create *folder* on the server returning the server response string.
         """
         typ, data = self._imap.create(self._encode_folder_name(folder))
         self._checkok('create', typ, data)
         return data[0]
 
-
     def delete_folder(self, folder):
-        """Delete a new folder on the server.
-
-        @param folder: Folder name to delete.
-        @return: Server response.
+        """Delete *folder* on the server returning the server response string.
         """
         typ, data = self._imap.delete(self._encode_folder_name(folder))
         self._checkok('delete', typ, data)
         return data[0]
 
-
     def folder_exists(self, folder):
-        """Determine if a folder exists on the server.
-
-        @param folder: Full folder name to look for.
-        @return: True if the folder exists. False otherwise.
+        """Return True if *folder* exists on the server.
         """
         typ, data = self._imap.list('', self._encode_folder_name(folder))
         self._checkok('list', typ, data)
         data = [x for x in data if x]
         return len(data) == 1 and data[0] != None
 
-
     def subscribe_folder(self, folder):
-        """Subscribe to a folder.
-
-        @param folder: Folder name to subscribe to.
-        @return: Server response message.
+        """Subscribe to *folder*, returning the server response string.
         """
         typ, data = self._imap.subscribe(self._encode_folder_name(folder))
         self._checkok('subscribe', typ, data)
         return data
 
-
     def unsubscribe_folder(self, folder):
-        """Unsubscribe a folder.
-
-        @param folder: Folder name to unsubscribe.
-        @return: Server response message.
+        """Unsubscribe to *folder*, returning the server response string.
         """
         typ, data = self._imap.unsubscribe(self._encode_folder_name(folder))
         self._checkok('unsubscribe', typ, data)
         return data
 
-
     def search(self, criteria='ALL', charset=None):
+        """Return a list of messages ids matching *criteria*.
+
+        XXX more detail
+        """
         if not criteria:
             raise ValueError('no criteria specified')
 
@@ -379,10 +357,16 @@ class IMAPClient(object):
 
 
     def sort(self, sort_criteria, criteria='ALL', charset='UTF-8' ):
-        """Returns a list of messages sorted by sort_criteria.
+        """Return a list of message ids sorted by *sort_criteria* and
+        optionally filtered by *criteria*.
+
+        The *critera* are as per search().  
 
         Note that this is an extension to the IMAP4:
         http://www.ietf.org/internet-drafts/draft-ietf-imapext-sort-19.txt
+
+        XXX needs more detail
+        XXX explain charset
         """
         if not criteria:
             raise ValueError('no criteria specified')
@@ -408,52 +392,47 @@ class IMAPClient(object):
 
 
     def get_flags(self, messages):
-        """Return the flags set for messages
-
-        @param messages: Message IDs to check flags for
-        @return: As for add_f
-            { msgid1: [flag1, flag2, ... ], }
+        """Returns the flags set for each message in *messages* as a
+        dictionary structured like this:
+          ``{ msgid1: [flag1, flag2, ... ], }``.
         """
         response = self.fetch(messages, ['FLAGS'])
         return self._flatten_dict(response)
 
 
     def add_flags(self, messages, flags):
-        """Add one or more flags to messages
+        """Add *flags* to *messages*.
 
-        @param messages: Message IDs to add flags to
-        @param flags: Sequence of flags to add
-        @return: The flags set for each message ID as a dictionary
-            { msgid1: [flag1, flag2, ... ], }
+        *flags* should be a sequence of strings. Returns the flags set
+         for each modified message (see *get_flags*).
         """
         return self._store('+FLAGS', messages, flags)
 
 
     def remove_flags(self, messages, flags):
-        """Remove one or more flags from messages
+        """Remove one or more *flags* from *messages*.
 
-        @param messages: Message IDs to remove flags from
-        @param flags: Sequence of flags to remove
-        @return: As for get_flags.
+        *flags* should be a sequence of strings. Returns the flags set
+         for each modified message (see *get_flags*).
         """
         return self._store('-FLAGS', messages, flags)
 
 
     def set_flags(self, messages, flags):
-        """Set the flags for messages
+        """Set the *flags* for *messages*.
 
-        @param messages: Message IDs to set flags for
-        @param flags: Sequence of flags to set
-        @return: As for get_flags.
+        *flags* should be a sequence of strings. Returns the flags set
+         for each modified message (see *get_flags*).
         """
         return self._store('FLAGS', messages, flags)
 
 
     def delete_messages(self, messages):
-        """Short-hand method for deleting one or more messages
+        """Delete one or more *messages* from the currently selected
+        folder.
 
-        @param messages: Message IDs to mark for deletion.
-        @return: Same as for get_flags.
+        Returns the flags set for each modified message (see
+        *get_flags*).
         """
         return self.add_flags(messages, DELETED)
 
@@ -488,21 +467,22 @@ class IMAPClient(object):
 
         return parse_fetch_response(data)
 
-
     def append(self, folder, msg, flags=(), msg_time=None):
-        """Append a message to a folder
+        """Append a message to *folder*.
 
-        @param folder: Folder name to append to.
-        @param msg: Message body as a string.
-        @param flags: Sequnce of message flags to set. If not specified no
-            flags will be set.
-        @param msg_time: Optional date and time to set for the message. The
-            server will set a time if it isn't specified. If msg_time contains
-            timezone information (tzinfo), this will be honoured. Otherwise the
-            local machine's time zone sent to the server.
-        @type msg_time: datetime.datetime
-        @return: The append response returned by the server.
-        @rtype: str
+        *msg* should be a string contains the full message including
+        headers.
+
+        *flags* should be a sequence of message flags to set. If not
+        specified no flags will be set.
+
+        *msg_time* is an optional datetime instance specifying the
+        date and time to set on the message. The server will set a
+        time if it isn't specified. If *msg_time* contains timezone
+        information (tzinfo), this will be honoured. Otherwise the
+        local machine's time zone sent to the server.
+
+        Returns the APPEND response as returned by the server.
         """
         if msg_time:
             time_val = '"%s"' % datetime_to_imap(msg_time)
@@ -517,14 +497,10 @@ class IMAPClient(object):
 
         return data[0]
 
-
     def copy(self, messages, folder):
-        """Copy one or more messages from the current folder to another folder
-
-        @param messages: Message IDs to fetch.
-        @param folder: Folder name to append to.
-        @return: The COPY command response message returned by the
-          server.
+        """Copy one or more messages from the current folder to
+        *folder*. Returns the COPY response string returned by the
+        server.
         """
         msg_list = messages_to_str(messages)
         folder = self._encode_folder_name(folder)
@@ -536,18 +512,19 @@ class IMAPClient(object):
         self._checkok('copy', typ, data)
         return data[0]
 
-
     def expunge(self):
+        """Remove any messaages from the server that have the \Deleted
+        flag set.
+
+        XXX check if this is just for the current folder
+        """
         typ, data = self._imap.expunge()
         self._checkok('expunge', typ, data)
         #TODO: expunge response
 
-
     def getacl(self, folder):
-        """Get the ACL for a folder
-
-        @param folder: Folder name to get the ACL for.
-        @return: A list of (who, acl) tuples
+        """Returns a list of ``(who, acl)`` tuples describing the
+        access controls for *folder*.
         """
         typ, data = self._imap.getacl(folder)
         self._checkok('getacl', typ, data)
@@ -560,45 +537,34 @@ class IMAPClient(object):
             out.append((parts[i], parts[i+1]))
         return out
 
-
     def setacl(self, folder, who, what):
-        """Set an ACL for a folder
+        """Set an ACL (*what*) for user (*who*) for a folder.
 
-        @param folder: Folder name to set an ACL for.
-        @param who: User or group ID for the ACL.
-        @param what: A string describing the ACL. Set to '' to remove an ACL.
-        @return: Server response string.
+        Set *what* to an empty string to remove an ACL. Returns the
+        server response string.
         """
         typ, data = self._imap.setacl(folder, who, what)
         self._checkok('setacl', typ, data)
         return data[0]
 
-
     def _check_resp(self, expected, command, typ, data):
         """Check command responses for errors.
 
-        @raise: Error if a command failed.
+        Raises IMAPClient.Error if the command fails.
         """
         if typ != expected:
             raise self.Error('%s failed: %r' % (command, data[0]))
 
-
     def _checkok(self, command, typ, data):
         self._check_resp('OK', command, typ, data)
-
 
     def _checkbye(self, command, typ, data):
         self._check_resp('BYE', command, typ, data)
 
-
     def _store(self, cmd, messages, flags):
-        """Worker function for flag manipulation functions
+        """Worker function for the various flag manipulation methods.
 
-        @param cmd: STORE command to use (eg. '+FLAGS')
-        @param messages: Sequence of message IDs
-        @param flags: Sequence of flags to set.
-        @return: The flags set for each message ID as a dictionary
-            { msgid1: [flag1, flag2, ... ], }
+        *cmd* is the STORE command to use (eg. '+FLAGS').
         """
         if not messages:
             return {}
@@ -614,7 +580,6 @@ class IMAPClient(object):
 
         return self._flatten_dict(parse_fetch_response((data)))
 
-
     def _flatten_dict(self, fetch_dict):
         return dict([
             (msgid, data.values()[0])
@@ -625,7 +590,6 @@ class IMAPClient(object):
         if self.folder_encode:
             return imap_utf7.decode(name)
         return name
-
 
     def _encode_folder_name(self, name):
         if self.folder_encode:
@@ -643,12 +607,8 @@ class IMAPClient(object):
 
 
 def messages_to_str(messages):
-    """Convert a sequence of messages ids or a single message id into an
-    message ID list for use with IMAP commands.
-
-    @param messages: A sequence of messages IDs or a single message ID.
-        (eg. [1,4,5,7,8])
-    @return: Message list string (eg. "1,4,5,6,8")
+    """Convert a sequence of messages ids or a single integer message id
+    into an id list string for use with IMAP commands
     """
     if isinstance(messages, (str, int, long)):
         messages = (messages,)
@@ -658,10 +618,8 @@ def messages_to_str(messages):
 
 
 def seq_to_parenlist(flags):
-    """Convert a sequence into parenthised list for use with IMAP commands
-
-    @param flags: Sequence to process (eg. ['abc', 'def'])
-    @return: IMAP parenthenised list (eg. '(abc def)')
+    """Convert a sequence of strings into parenthised list string for
+    use with IMAP commands.
     """
     if isinstance(flags, str):
         flags = (flags,)
@@ -671,9 +629,10 @@ def seq_to_parenlist(flags):
 
 
 def datetime_to_imap(dt):
-    """Convert a datetime instance to a IMAP datetime string
+    """Convert a datetime instance to a IMAP datetime string.
 
-    If timezone information is missing the current system timezone is used.
+    If timezone information is missing the current system
+    timezone is used.
     """
     if not dt.tzinfo:
         dt = dt.replace(tzinfo=FixedOffset.for_system())

@@ -11,11 +11,17 @@ IMAPClient
 
 Introduction
 ------------
-XXX
+A Pythonic, easy-to-use IMAP client class.
+
+Unlike imaplib, arguments and returns values are Pythonic and readily
+usable. Exceptions are raised when problems occur (no error checking
+of return values is required).
 
 A Simple Example
 ----------------
 .. literalinclude:: ../imapclient/examples/example.py
+
+XXX include some simple output
 
 IMAPClient Class Reference
 --------------------------
