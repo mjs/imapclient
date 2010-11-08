@@ -79,6 +79,8 @@ def parse_fetch_response(text):
                 msg_id = _int_or_error(value, 'invalid UID')
             elif word == 'INTERNALDATE':
                 msg_data[word] = _convert_INTERNALDATE(value)
+            elif word in ('BODY', 'BODYSTRUCTURE'):
+                msg_data[word] = BodyData(value)
             else:
                 msg_data[word] = value
 
@@ -93,6 +95,13 @@ def _int_or_error(value, error_text):
     except (TypeError, ValueError):
         raise ParseError('%s: %s' % (error_text, repr(value)))
 
+
+class BodyData(tuple):
+
+    @property
+    def is_multipart(self):
+        return isinstance(self[0], list)
+    
 
 def _convert_INTERNALDATE(date_string):
     mo = imaplib.InternalDate.match('INTERNALDATE "%s"' % date_string)

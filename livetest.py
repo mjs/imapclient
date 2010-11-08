@@ -365,19 +365,22 @@ def test_BODYSTRUCTURE(client):
     # will return.
 
     expected = ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 5, 1)
-    check_BODYSTRUCTURE(expected, fetched[msgs[0]]['BODY'])
-    check_BODYSTRUCTURE(expected, fetched[msgs[0]]['BODYSTRUCTURE'])
+    check_BODYSTRUCTURE(expected, fetched[msgs[0]]['BODY'], multipart=False)
+    check_BODYSTRUCTURE(expected, fetched[msgs[0]]['BODYSTRUCTURE'], multipart=False)
 
     expected = ([('text', 'html', ('charset', 'us-ascii'), None, None, 'quoted-printable', 55, 3),
                  ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 26, 1),
                  ],
                 'mixed',
                 ('boundary', '===============1534046211=='))
-    check_BODYSTRUCTURE(expected, fetched[msgs[1]]['BODY'])
-    check_BODYSTRUCTURE(expected, fetched[msgs[1]]['BODYSTRUCTURE'])
+    check_BODYSTRUCTURE(expected, fetched[msgs[1]]['BODY'], multipart=True)
+    check_BODYSTRUCTURE(expected, fetched[msgs[1]]['BODYSTRUCTURE'], multipart=True)
 
 
-def check_BODYSTRUCTURE(expected, actual):
+def check_BODYSTRUCTURE(expected, actual, multipart=None):
+    if multipart is not None:
+        assert actual.is_multipart == multipart
+
     # BODYSTRUCTURE lengths can various according to the server so
     # compare up until what is returned
     for e, a in zip(expected, actual):
