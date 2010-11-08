@@ -8,6 +8,7 @@
 import sys
 from datetime import datetime
 from optparse import OptionParser
+from pprint import pformat
 import imapclient
 
 
@@ -350,6 +351,46 @@ def test_partial_fetch(client):
     assert len(body) == 25
     assert body.startswith('om: Bob Smith')
 
+def test_BODYSTRUCTURE(client):
+    clear_folder(client, 'INBOX')
+    client.select_folder('INBOX')
+    client.append('INBOX', SIMPLE_MESSAGE)
+    client.append('INBOX', MULTIPART_MESSAGE)
+    msgs = client.search()
+
+    fetched = client.fetch(msgs, ['BODY', 'BODYSTRUCTURE'])
+
+    # The expected test data is the same for BODY and BODYSTRUCTURE
+    # since we can't predicate what the server we're testing against
+    # will return.
+
+    expected = ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 5, 1)
+    check_BODYSTRUCTURE(expected, fetched[msgs[0]]['BODY'], multipart=False)
+    check_BODYSTRUCTURE(expected, fetched[msgs[0]]['BODYSTRUCTURE'], multipart=False)
+
+    expected = ([('text', 'html', ('charset', 'us-ascii'), None, None, 'quoted-printable', 55, 3),
+                 ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 26, 1),
+                 ],
+                'mixed',
+                ('boundary', '===============1534046211=='))
+    check_BODYSTRUCTURE(expected, fetched[msgs[1]]['BODY'], multipart=True)
+    check_BODYSTRUCTURE(expected, fetched[msgs[1]]['BODYSTRUCTURE'], multipart=True)
+
+
+def check_BODYSTRUCTURE(expected, actual, multipart=None):
+    if multipart is not None:
+        assert actual.is_multipart == multipart
+
+    # BODYSTRUCTURE lengths can various according to the server so
+    # compare up until what is returned
+    for e, a in zip(expected, actual):
+        if isinstance(e, list) and isinstance(a, list):
+            for e2, a2, in zip(e, a): 
+                check_BODYSTRUCTURE(e2, a2)
+        else:
+            assert a == e, "%r != %r\ngot = %s\nexpected = %s" \
+                   % (a, e, pformat(actual), pformat(expected))
+        
 
 def assert_raises(exception_class, func, *args, **kwargs):
     try:
@@ -377,6 +418,7 @@ def runtests(client):
     test_search(client)
     test_fetch(client)
     test_partial_fetch(client)
+    test_BODYSTRUCTURE(client)
     test_copy(client)
 
 
