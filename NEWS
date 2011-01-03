@@ -1,3 +1,38 @@
+Dev
+---
+[API CHANGE] (#58) The response values for BODY and BODYSTRUCTURE
+responses may include a sequence of tuples which are not separated by
+whitespace. These should be treated as a single item (a list of
+multiple arbitrarily nested tuples) but IMAPClient was treating them
+as separate items. IMAPClient now returns these tuples in a list to
+allow for consistent parsing.
+
+A BODYSTRUCTURE response for a multipart email with 2 parts would have
+previously looked something like this::
+
+  (('text', 'html', ('charset', 'us-ascii'), None, None, 'quoted-printable', 55, 3),
+   ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 26, 1), 
+   'mixed', ('boundary', '===============1534046211=='))
+
+The response is now returned like this::
+
+  ([
+     ('text', 'html', ('charset', 'us-ascii'), None, None, 'quoted-printable', 55, 3),
+     ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 26, 1) 
+   ], 
+   'mixed', ('boundary', '===============1534046211=='))
+
+The behaviour for single part messages is unchanged. In this case the
+first element of the tuple is a string specifying the major content
+type of the message (eg "text"). 
+
+An is_multipart boolean property now exists on BODY and BODYSTRUCTURE
+responses to allow the caller to easily determine whether the response
+is for a multipart message.
+
+Code that expects the previous response handling behaviour needs to be
+updated.
+
 Version 0.6.2
 -------------
 Square brackets in responses are now parsed correctly. This fixes
