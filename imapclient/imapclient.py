@@ -458,11 +458,12 @@ class IMAPClient(object):
         return self.add_flags(messages, DELETED)
 
 
-    def fetch(self, messages, parts):
+    def fetch(self, messages, parts, modifiers=None):
         """Retrieve selected data items for one or more messages.
 
         @param messages: Message IDs to fetch.
         @param parts: A sequence of data items to retrieve.
+        @param modifiers: An optional sequence of modifiers.
         @return: A dictionary indexed by message number. Each item is itself a
             dictionary containing the requested message parts.
             INTERNALDATE parts will be returned as datetime objects converted
@@ -473,11 +474,14 @@ class IMAPClient(object):
 
         msg_list = messages_to_str(messages)
         parts_list = seq_to_parenlist([p.upper() for p in parts])
+        modifiers_list = None
+        if modifiers is not None:
+          modifiers_list = seq_to_parenlist([m.upper() for m in modifiers])
 
         if self.use_uid:
-            tag = self._imap._command('UID', 'FETCH', msg_list, parts_list)
+            tag = self._imap._command('UID', 'FETCH', msg_list, parts_list, modifiers_list)
         else:
-            tag = self._imap._command('FETCH', msg_list, parts_list)
+            tag = self._imap._command('FETCH', msg_list, parts_list, modifiers_list)
         typ, data = self._imap._command_complete('FETCH', tag)
         self._checkok('fetch', typ, data)
         typ, data = self._imap._untagged_response(typ, data, 'FETCH')
