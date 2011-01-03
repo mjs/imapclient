@@ -376,7 +376,19 @@ def test_BODYSTRUCTURE(client):
     check_BODYSTRUCTURE(expected, fetched[msgs[1]]['BODY'], multipart=True)
     check_BODYSTRUCTURE(expected, fetched[msgs[1]]['BODYSTRUCTURE'], multipart=True)
 
+def lower_if_str(val):
+    if isinstance(val, basestring):
+        return val.lower()
+    return val
 
+def have_matching_types(a, b, type_or_types):
+    """True if a and b are instances of the same type and that type is
+    one of type_or_types.
+    """
+    if not isinstance(a, type_or_types):
+        return False
+    return isinstance(b, type(a))
+        
 def check_BODYSTRUCTURE(expected, actual, multipart=None):
     if multipart is not None:
         assert actual.is_multipart == multipart
@@ -384,12 +396,17 @@ def check_BODYSTRUCTURE(expected, actual, multipart=None):
     # BODYSTRUCTURE lengths can various according to the server so
     # compare up until what is returned
     for e, a in zip(expected, actual):
-        if isinstance(e, list) and isinstance(a, list):
-            for e2, a2, in zip(e, a): 
-                check_BODYSTRUCTURE(e2, a2)
+        if have_matching_types(e, a, (list, tuple)):
+            for expected_and_actual in zip(e, a): 
+                check_BODYSTRUCTURE(*expected_and_actual)
         else:
-            assert a == e, "%r != %r\ngot = %s\nexpected = %s" \
-                   % (a, e, pformat(actual), pformat(expected))
+            if e == ('charset', 'us-ascii') and a is None:
+                pass  # Some servers (eg. Gmail) don't return a charset when it's us-ascii
+            else:
+                a = lower_if_str(a)
+                e = lower_if_str(e)
+                assert a == e, "%r != %r\ngot = %s\nexpected = %s" \
+                       % (a, e, pformat(actual), pformat(expected))
         
 
 def assert_raises(exception_class, func, *args, **kwargs):
