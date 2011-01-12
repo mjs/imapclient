@@ -5,11 +5,19 @@
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 
+import imapclient
 import sys
+import unittest2
 from datetime import datetime
 from optparse import OptionParser
 from pprint import pformat
-import imapclient
+
+# TODO create the class dynamically, closing over the configuration?
+# TODO helper to try stdlib unittest first (for Python 2.7/3.2)
+# TODO read config from ini file
+# TODO specify verbosity and failFast from the command line
+# TODO avoid class name in verbose output
+# TODO just give up on first authentication failure
 
 
 SIMPLE_MESSAGE = 'Subject: something\r\n\r\nFoo\r\n'
@@ -40,342 +48,356 @@ Here is the second part.
 --===============1534046211==--
 """.replace('\n', '\r\n')
 
-def is_gmail(client):
-    return client._imap.host == 'imap.gmail.com'
+options = None
 
-def extract_normal_folders(dat):
-    ret = []
-    for _, _, folder_name in dat:
-        # gmail's "special" folders start with '['
-        if not folder_name.startswith('['):
-            ret.append(folder_name)
-    return ret
+class LiveServerTest(unittest2.TestCase):
 
-def test_capabilities(client):
-    caps = client.capabilities()
-    assert isinstance(caps, tuple)
-    assert len(caps) > 1
-    for cap in caps:
-        assert client.has_capability(cap)
-    assert not client.has_capability('WONT EXIST')
+    def setUp(self):
+        self.client = imapclient.IMAPClient(options.host, use_uid=options.use_uid,
+                                            ssl=options.ssl)
+        self.client.login(options.username, options.password)
+        self.clear_folders()
+        self.unsub_all_folders()
+        self.client.select_folder('INBOX')
+
+    def tearDown(self):
+        self.client.logout()
+
+    def just_folder_names(self, dat):
+        ret = []
+        for _, _, folder_name in dat:
+            # gmail's "special" folders start with '['
+            if not folder_name.startswith('['):
+                ret.append(folder_name)
+        return ret
+
+    def all_folder_names(self):
+        return self.just_folder_names(self.client.list_folders())
+                                          
+    def all_sub_folder_names(self):
+        return self.just_folder_names(self.client.list_sub_folders())
+
+    def clear_folders(self):
+        self.client.folder_encode = False
+        for folder in self.all_folder_names():
+            if folder.upper() != 'INBOX':
+                self.client.delete_folder(folder)
+        self.client.folder_encode = True
+        self.clear_folder('INBOX')
+
+    def clear_folder(self, folder):
+        self.client.select_folder(folder)
+        self.client.delete_messages(self.client.search())
+        self.client.expunge()
+
+    def unsub_all_folders(self):
+        for folder in self.all_sub_folder_names():
+            self.client.unsubscribe_folder(folder)
+
+    def is_gmail(self):
+        return self.client._imap.host == 'imap.gmail.com'
+
+    def test_capabilities(self):
+        caps = self.client.capabilities()
+        self.assertIsInstance(caps, tuple)
+        self.assertGreater(len(caps), 1)
+        for cap in caps:
+            self.assertTrue(self.client.has_capability(cap))
+        self.assertFalse(self.client.has_capability('WONT EXIST'))
+
+    def test_select_and_close(self):
+        resp = self.client.select_folder('INBOX')
+        self.assertIsInstance(resp['EXISTS'], int)
+        self.assertEqual(resp['EXISTS'], 0)
+        self.assertIsInstance(resp['RECENT'], int)
+        self.assertIsInstance(resp['FLAGS'], tuple)
+        self.assertGreater(len(resp['FLAGS']), 1)
+        self.client.close_folder()
+
+    def test_list_folders(self):
+        some_folders = ['simple', r'foo\bar', r'test"folder"', u'L\xffR']
+        for name in some_folders:
+            self.client.create_folder(name)
+
+        folders = self.all_folder_names()
+        self.assertGreater(len(folders), 1, 'No folders visible on server')
+        self.assertIn('INBOX', [f.upper() for f in folders], 'INBOX not seen')
+
+        for name in some_folders:
+            self.assertIn(name, folders)
+
+        #TODO: test LIST with wildcards
+
+    def test_gmail_xlist(self):
+        caps = self.client.capabilities()
+        if self.is_gmail():
+            self.assertIn("XLIST", caps, "expected XLIST in Gmail's capabilities")
+
+    def test_xlist(self):
+        if not self.client.has_capability('XLIST'):
+            return self.skipTest("Server doesn't support XLIST")
+
+        result = self.client.xlist_folders()
+        self.assertGreater(len(result), 0, 'No folders returned by XLIST')
+        for flags, _, _  in result:
+            if '\\INBOX' in [flag.upper() for flag in flags]:
+                break
+            else:
+                self.fail('INBOX not returned in XLIST output')
+
+    def test_subscriptions(self):
+        test_folders = ['foobar',
+                        'stuff & things',
+                        u'test & \u2622']
+
+        for folder in test_folders:
+            self.client.create_folder(folder)
+
+        all_folders = sorted(self.all_folder_names())
+
+        for folder in all_folders:
+            self.client.subscribe_folder(folder)
+
+        self.assertListEqual(all_folders, sorted(self.all_sub_folder_names()))
+
+        for folder in all_folders:
+            self.client.unsubscribe_folder(folder)
+        self.assertListEqual(self.all_sub_folder_names(), [])
+
+        self.assertRaises(imapclient.IMAPClient.Error,
+                          self.client.subscribe_folder,
+                          'this folder is not likely to exist')
 
 
-def test_list_folders(client):
-    clear_folders(client)
-    some_folders = ['simple', r'foo\bar', r'test"folder"', u'L\xffR']
-    for name in some_folders:
-        client.create_folder(name)
+    def test_folders(self):
+        self.assertTrue(self.client.folder_exists('INBOX'))
+        self.assertFalse(self.client.folder_exists('this is very unlikely to exist'))
 
-    folders = extract_normal_folders(client.list_folders())
-    assert len(folders) > 0, 'No folders visible on server'
-    assert 'INBOX' in [f.upper() for f in folders], 'INBOX not returned'
+        test_folders = ['foobar',
+                        '"foobar"',
+                        'foo "bar"',
+                        'stuff & things',
+                        u'test & \u2622',
+                        '123']
 
-    for name in some_folders:
-        assert name in folders
-    #TODO: test wildcards
+        for folder in test_folders:
+            self.assertFalse(self.client.folder_exists(folder))
+
+            self.client.create_folder(folder)
+
+            self.assertTrue(self.client.folder_exists(folder))
+            self.assertIn(folder, self.all_folder_names())
+
+            self.client.select_folder(folder)
+            self.client.close_folder()
+
+            self.client.delete_folder(folder)
+            self.assertFalse(self.client.folder_exists(folder))
 
 
-def test_xlist(client):
-    clear_folders(client)
+    def test_status(self):
+        # Default behaviour should return 5 keys
+        self.assertEqual(len(self.client.folder_status('INBOX')), 5)
 
-    caps = client.capabilities()
-    if is_gmail(client):
-        assert "XLIST" in caps, "expected XLIST in Gmail's capabilities but only got %r" % caps
+        new_folder = u'test \u2622'
+        self.client.create_folder(new_folder)
+        try:
+            status = self.client.folder_status(new_folder)
+            self.assertEqual(status['MESSAGES'], 0)
+            self.assertEqual(status['RECENT'], 0)
+            self.assertEqual(status['UNSEEN'], 0)
 
-    if not 'XLIST' in caps:
-        print "Skipping XLIST tests, server doesn't support XLIST"
-        return
+            # Add a message to the folder, it should show up now.
+            self.client.append(new_folder, SIMPLE_MESSAGE)
 
-    info = client.xlist_folders()
-    assert len(info) > 0, 'No folders returned by XLIST'
-    for flags, _, _  in info:
-        if '\\INBOX' in [flag.upper() for flag in flags]:
-            break
+            status = self.client.folder_status(new_folder)
+            self.assertEqual(status['MESSAGES'], 1)
+            if not self.is_gmail():
+                self.assertEqual(status['RECENT'], 1)
+            self.assertEqual(status['UNSEEN'], 1)
+        finally:
+            self.client.delete_folder(new_folder)
+
+    def test_append(self):
+        # Message time microseconds are set to 0 because the server will return
+        # time with only seconds precision.
+        msg_time = datetime.now().replace(microsecond=0)
+
+        # Append message
+        resp = self.client.append('INBOX', SIMPLE_MESSAGE, ('abc', 'def'), msg_time)
+        self.assertIsInstance(resp, str)
+
+        # Retrieve the just added message and check that all looks well
+        self.assertEqual(self.client.select_folder('INBOX')['EXISTS'], 1)
+
+        resp = self.client.fetch(self.client.search()[0], ('RFC822', 'FLAGS', 'INTERNALDATE'))
+
+        self.assertEqual(len(resp), 1)
+        msginfo = resp.values()[0]
+
+        # Time should match the time we specified
+        returned_msg_time = msginfo['INTERNALDATE']
+        self.assertIsNone(returned_msg_time.tzinfo)
+        self.assertEqual(returned_msg_time, msg_time)
+
+        # Flags should be the same
+        self.assertIn('abc', msginfo['FLAGS'])
+        self.assertIn('def', msginfo['FLAGS'])
+
+        # Message body should match
+        self.assertEqual(msginfo['RFC822'], SIMPLE_MESSAGE)
+
+
+    def test_flags(self):
+        self.client.append('INBOX', SIMPLE_MESSAGE)
+        msgid = self.client.search()[0]
+
+        def _flagtest(func, args, expected_flags):
+            answer = func(msgid, *args)
+            self.assertTrue(answer.has_key(msgid))
+            answer_flags = set(answer[msgid])
+            answer_flags.discard(r'\Recent')  # Might be present but don't care
+            self.assertSetEqual(answer_flags, set(expected_flags))
+
+        base_flags = ['abc', 'def']
+        _flagtest(self.client.set_flags, [base_flags], base_flags)
+        _flagtest(self.client.get_flags, [], base_flags)
+        _flagtest(self.client.add_flags, ['boo'], base_flags + ['boo'])
+        _flagtest(self.client.remove_flags, ['boo'], base_flags)
+
+    def test_search(self):
+        # Add some test messages
+        msg_tmpl = 'Subject: %s\r\n\r\nBody'
+        subjects = ('a', 'b', 'c')
+        for subject in subjects:
+            msg = msg_tmpl % subject
+            if subject == 'c':
+                flags = (imapclient.DELETED,)
+            else:
+                flags = ()
+            self.client.append('INBOX', msg, flags)
+
+        # Check we see all messages
+        messages_all = self.client.search('ALL')
+        if self.is_gmail():
+            # Gmail seems to never return deleted items.
+            self.assertEqual(len(messages_all), len(subjects) - 1)
         else:
-            raise AssertionError('INBOX not returned', info)
-
-
-def test_select_and_close(client):
-    resp = client.select_folder('INBOX')
-    assert isinstance(resp['EXISTS'], int)
-    assert resp['EXISTS'] > 0
-    assert isinstance(resp['RECENT'], int)
-    assert isinstance(resp['FLAGS'], tuple)
-    assert len(resp['FLAGS']) > 1
-    client.close_folder()
-
-
-def test_subscriptions(client):
-    # Start with a clean slate
-    clear_folders(client)
-
-    for folder in extract_normal_folders(client.list_sub_folders()):
-        client.unsubscribe_folder(folder)
-
-    test_folders = ['foobar',
-                    'stuff & things',
-                    u'test & \u2622']
-
-    for folder in test_folders:
-        client.create_folder(folder)
-
-    all_folders = sorted(extract_normal_folders(client.list_folders()))
-
-    for folder in all_folders:
-        client.subscribe_folder(folder)
-
-    assert all_folders == sorted(extract_normal_folders(client.list_sub_folders()))
-
-    for folder in all_folders:
-        client.unsubscribe_folder(folder)
-    assert extract_normal_folders(client.list_sub_folders()) == []
-
-    assert_raises(imapclient.IMAPClient.Error,
-                  client.subscribe_folder,
-                  'this folder is not likely to exist')
-
-
-def test_folders(client):
-    '''Test folder manipulation
-    '''
-    clear_folders(client)
-
-    assert client.folder_exists('INBOX')
-    assert not client.folder_exists('this is very unlikely to exist')
-
-    test_folders = ['foobar',
-                    '"foobar"',
-                    'foo "bar"',
-                    'stuff & things',
-                    u'test & \u2622',
-                    '123']
-
-    for folder in test_folders:
-        assert not client.folder_exists(folder)
-
-        client.create_folder(folder)
-
-        assert client.folder_exists(folder)
-        assert folder in extract_normal_folders(client.list_folders()), repr(folder)
-
-        client.select_folder(folder)
-        client.close_folder()
-
-        client.delete_folder(folder)
-        assert not client.folder_exists(folder)
-
-
-def test_status(client):
-    clear_folders(client)
-
-    # Default behaviour should return 5 keys
-    assert len(client.folder_status('INBOX')) == 5
-
-    new_folder = u'test \u2622'
-    client.create_folder(new_folder)
-    try:
-        status = client.folder_status(new_folder)
-        assert status['MESSAGES'] == 0, status
-        assert status['RECENT'] == 0, status
-        assert status['UNSEEN'] == 0, status
-
-        # Add a message to the folder, it should show up now.
-        client.append(new_folder, SIMPLE_MESSAGE)
-
-        status = client.folder_status(new_folder)
-        assert status['MESSAGES'] == 1, status
-        if not is_gmail(client):
-            assert status['RECENT'] == 1, status
-        assert status['UNSEEN'] == 1, status
-
-    finally:
-        client.delete_folder(new_folder)
-
-def test_append(client):
-    '''Test that appending a message works correctly
-    '''
-    clear_folder(client, 'INBOX')
-
-    # Message time microseconds are set to 0 because the server will return
-    # time with only seconds precision.
-    msg_time = datetime.now().replace(microsecond=0)
-
-    # Append message
-    resp = client.append('INBOX', SIMPLE_MESSAGE, ('abc', 'def'), msg_time)
-    assert isinstance(resp, str)
-
-    # Retrieve the just added message and check that all looks well
-    assert client.select_folder('INBOX')['EXISTS'] == 1
-
-    resp = client.fetch(
-            client.search()[0],
-            ('RFC822', 'FLAGS', 'INTERNALDATE')
-            )
-
-    assert len(resp) == 1
-    msginfo = resp.values()[0]
-
-    # Time should match the time we specified
-    returned_msg_time = msginfo['INTERNALDATE']
-    assert returned_msg_time.tzinfo is None
-    assert returned_msg_time == msg_time
-
-    # Flags should be the same
-    assert 'abc' in msginfo['FLAGS']
-    assert 'def' in msginfo['FLAGS']
-
-    # Message body should match
-    assert msginfo['RFC822'] == SIMPLE_MESSAGE
-
-
-def test_flags(client):
-    '''Test flag manipulations
-    '''
-    client.select_folder('INBOX')
-    msgid = client.search()[0]
-
-    def _flagtest(func, args, expected_flags):
-        answer = func(msgid, *args)
-
-        assert answer.has_key(msgid)
-        answer_flags = list(answer[msgid])
-
-        # This is required because the order of the returned flags isn't
-        # guaranteed
-        answer_flags.sort()
-        expected_flags.sort()
-
-        assert answer_flags == expected_flags
-
-    base_flags = ['abc', 'def']
-    _flagtest(client.set_flags, [base_flags], base_flags)
-    _flagtest(client.get_flags, [], base_flags)
-    _flagtest(client.add_flags, ['boo'], base_flags + ['boo'])
-    _flagtest(client.remove_flags, ['boo'], base_flags)
-
-def test_search(client):
-    clear_folder(client, 'INBOX')
-
-    # Add some test messages
-    msg_tmpl = 'Subject: %s\r\n\r\nBody'
-    subjects = ('a', 'b', 'c')
-    for subject in subjects:
-        msg = msg_tmpl % subject
-        if subject == 'c':
-            flags = (imapclient.DELETED,)
-        else:
-            flags = ()
-        client.append('INBOX', msg, flags)
-
-    # Check we see all messages
-    messages_all = client.search('ALL')
-    if is_gmail(client):
-        # Gmail seems to never return deleted items.
-        assert len(messages_all) == len(subjects) - 1 
-    else:
-        assert len(messages_all) == len(subjects)
-    assert client.search() == messages_all      # Check default
-
-    # Single criteria
-    if not is_gmail(client):
-        assert len(client.search('DELETED')) == 1
-        assert len(client.search('NOT DELETED')) == len(subjects) - 1
-    assert client.search('NOT DELETED') == client.search(['NOT DELETED'])
-
-    # Multiple criteria
-    assert len(client.search(['NOT DELETED', 'SMALLER 100'])) == \
-            len(subjects) - 1
-    assert len(client.search(['NOT DELETED', 'SUBJECT "a"'])) == 1
-    assert len(client.search(['NOT DELETED', 'SUBJECT "c"'])) == 0
-
-
-def test_copy(client):
-    clear_folders(client)
-    clear_folder(client, 'INBOX')
-
-    client.select_folder('INBOX')
-    client.append('INBOX', SIMPLE_MESSAGE)
-    client.create_folder('target')
-    msg_id = client.search()[0]
-    
-    client.copy(msg_id, 'target')
-
-    client.select_folder('target')
-    msgs = client.search()
-    assert len(msgs) == 1
-    msg_id = msgs[0]
-    assert 'something' in client.fetch(msg_id, ['RFC822'])[msg_id]['RFC822']
-
-
-def test_fetch(client):
-    clear_folder(client, 'INBOX')
-
-    client.select_folder('INBOX')
-    client.append('INBOX', MULTIPART_MESSAGE)
-
-    fields = ['RFC822', 'FLAGS', 'INTERNALDATE', 'ENVELOPE']
-    msg_id = client.search()[0]
-    resp = client.fetch(msg_id, fields)
-
-    assert len(resp) == 1
-    msginfo = resp[msg_id]
-
-    assert set(msginfo.keys()) == set(fields + ['SEQ'])
-    assert msginfo['SEQ'] == 1
-    assert msginfo['RFC822'] == MULTIPART_MESSAGE
-    assert isinstance(msginfo['INTERNALDATE'], datetime)
-    assert isinstance(msginfo['FLAGS'], tuple)
-    assert msginfo['ENVELOPE'] == ('Tue, 16 Mar 2010 16:45:32 +0000',
-                                   'A multipart message',
-                                   (('Bob Smith', None, 'bob', 'smith.com'),),
-                                   (('Bob Smith', None, 'bob', 'smith.com'),),
-                                   (('Bob Smith', None, 'bob', 'smith.com'),),
-                                   (('Some One', None, 'some', 'one.com'),),
-                                   None, None, None,
-                                   '<1A472770E042064698CB5ADC83A12ACD39455AAB@ABC>')
-
-
-def test_partial_fetch(client):
-    clear_folder(client, 'INBOX')
-    client.append('INBOX', MULTIPART_MESSAGE)
-    client.select_folder('INBOX')
-    msg_id = client.search()[0]
-
-    resp = client.fetch(msg_id, ['BODY[]<0.20>'])
-    body = resp[msg_id]['BODY[]<0>']
-    assert len(body) == 20
-    assert body.startswith('From: Bob Smith')
-
-    resp = client.fetch(msg_id, ['BODY[]<2.25>'])
-    body = resp[msg_id]['BODY[]<2>']
-    assert len(body) == 25
-    assert body.startswith('om: Bob Smith')
-
-def test_BODYSTRUCTURE(client):
-    clear_folder(client, 'INBOX')
-    client.select_folder('INBOX')
-    client.append('INBOX', SIMPLE_MESSAGE)
-    client.append('INBOX', MULTIPART_MESSAGE)
-    msgs = client.search()
-
-    fetched = client.fetch(msgs, ['BODY', 'BODYSTRUCTURE'])
-
-    # The expected test data is the same for BODY and BODYSTRUCTURE
-    # since we can't predicate what the server we're testing against
-    # will return.
-
-    expected = ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 5, 1)
-    check_BODYSTRUCTURE(expected, fetched[msgs[0]]['BODY'], multipart=False)
-    check_BODYSTRUCTURE(expected, fetched[msgs[0]]['BODYSTRUCTURE'], multipart=False)
-
-    expected = ([('text', 'html', ('charset', 'us-ascii'), None, None, 'quoted-printable', 55, 3),
-                 ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 26, 1),
-                 ],
-                'mixed',
-                ('boundary', '===============1534046211=='))
-    check_BODYSTRUCTURE(expected, fetched[msgs[1]]['BODY'], multipart=True)
-    check_BODYSTRUCTURE(expected, fetched[msgs[1]]['BODYSTRUCTURE'], multipart=True)
-
+            self.assertEqual(len(messages_all), len(subjects))
+        self.assertListEqual(self.client.search(), messages_all)      # Check default
+
+        # Single criteria
+        if not self.is_gmail():
+            self.assertEqual(len(self.client.search('DELETED')), 1)
+            self.assertEqual(len(self.client.search('NOT DELETED')), len(subjects) - 1)
+        self.assertListEqual(self.client.search('NOT DELETED'), self.client.search(['NOT DELETED']))
+
+        # Multiple criteria
+        self.assertEqual(len(self.client.search(['NOT DELETED', 'SMALLER 100'])), len(subjects) - 1)
+        self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "a"'])), 1)
+        self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "c"'])), 0)
+
+
+    def test_copy(self):
+        self.client.select_folder('INBOX')
+        self.client.append('INBOX', SIMPLE_MESSAGE)
+        self.client.create_folder('target')
+        msg_id = self.client.search()[0]
+
+        self.client.copy(msg_id, 'target')
+
+        self.client.select_folder('target')
+        msgs = self.client.search()
+        self.assertEqual(len(msgs), 1)
+        msg_id = msgs[0]
+        self.assertIn('something', self.client.fetch(msg_id, ['RFC822'])[msg_id]['RFC822'])
+
+
+    def test_fetch(self):
+        self.client.select_folder('INBOX')
+        self.client.append('INBOX', MULTIPART_MESSAGE)
+
+        fields = ['RFC822', 'FLAGS', 'INTERNALDATE', 'ENVELOPE']
+        msg_id = self.client.search()[0]
+        resp = self.client.fetch(msg_id, fields)
+
+        self.assertEqual(len(resp), 1)
+        msginfo = resp[msg_id]
+
+        self.assertSetEqual(set(msginfo.keys()), set(fields + ['SEQ']))
+        self.assertEqual(msginfo['SEQ'], 1)
+        self.assertMultiLineEqual(msginfo['RFC822'], MULTIPART_MESSAGE)
+        self.assertIsInstance(msginfo['INTERNALDATE'], datetime)
+        self.assertIsInstance(msginfo['FLAGS'], tuple)
+        self.assertTupleEqual(msginfo['ENVELOPE'],
+                              ('Tue, 16 Mar 2010 16:45:32 +0000',
+                               'A multipart message',
+                               (('Bob Smith', None, 'bob', 'smith.com'),),
+                               (('Bob Smith', None, 'bob', 'smith.com'),),
+                               (('Bob Smith', None, 'bob', 'smith.com'),),
+                               (('Some One', None, 'some', 'one.com'),),
+                               None, None, None,
+                               '<1A472770E042064698CB5ADC83A12ACD39455AAB@ABC>'))
+
+
+    def test_partial_fetch(self):
+        self.client.append('INBOX', MULTIPART_MESSAGE)
+        self.client.select_folder('INBOX')
+        msg_id = self.client.search()[0]
+
+        resp = self.client.fetch(msg_id, ['BODY[]<0.20>'])
+        body = resp[msg_id]['BODY[]<0>']
+        self.assertEqual(len(body), 20)
+        self.assertTrue(body.startswith('From: Bob Smith'))
+
+        resp = self.client.fetch(msg_id, ['BODY[]<2.25>'])
+        body = resp[msg_id]['BODY[]<2>']
+        self.assertEqual(len(body), 25)
+        self.assertTrue(body.startswith('om: Bob Smith'))
+
+    def test_BODYSTRUCTURE(self):
+        self.client.select_folder('INBOX')
+        self.client.append('INBOX', SIMPLE_MESSAGE)
+        self.client.append('INBOX', MULTIPART_MESSAGE)
+        msgs = self.client.search()
+
+        fetched = self.client.fetch(msgs, ['BODY', 'BODYSTRUCTURE'])
+
+        # The expected test data is the same for BODY and BODYSTRUCTURE
+        # since we can't predicate what the server we're testing against
+        # will return.
+
+        expected = ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 5, 1)
+        self.check_BODYSTRUCTURE(expected, fetched[msgs[0]]['BODY'], multipart=False)
+        self.check_BODYSTRUCTURE(expected, fetched[msgs[0]]['BODYSTRUCTURE'], multipart=False)
+
+        expected = ([('text', 'html', ('charset', 'us-ascii'), None, None, 'quoted-printable', 55, 3),
+                     ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 26, 1),
+                     ],
+                    'mixed',
+                    ('boundary', '===============1534046211=='))
+        self.check_BODYSTRUCTURE(expected, fetched[msgs[1]]['BODY'], multipart=True)
+        self.check_BODYSTRUCTURE(expected, fetched[msgs[1]]['BODYSTRUCTURE'], multipart=True)
+
+    def check_BODYSTRUCTURE(self, expected, actual, multipart=None):
+        if multipart is not None:
+            self.assertEqual(actual.is_multipart, multipart)
+
+        # BODYSTRUCTURE lengths can various according to the server so
+        # compare up until what is returned
+        for e, a in zip(expected, actual):
+            if have_matching_types(e, a, (list, tuple)):
+                for expected_and_actual in zip(e, a): 
+                    self.check_BODYSTRUCTURE(*expected_and_actual)
+            else:
+                if e == ('charset', 'us-ascii') and a is None:
+                    pass  # Some servers (eg. Gmail) don't return a charset when it's us-ascii
+                else:
+                    a = lower_if_str(a)
+                    e = lower_if_str(e)
+                    self.assertEqual(a, e, "%r != %r\ngot = %s\nexpected = %s"
+                                     % (a, e, pformat(actual), pformat(expected)))
+        
 def lower_if_str(val):
     if isinstance(val, basestring):
         return val.lower()
@@ -389,68 +411,7 @@ def have_matching_types(a, b, type_or_types):
         return False
     return isinstance(b, type(a))
         
-def check_BODYSTRUCTURE(expected, actual, multipart=None):
-    if multipart is not None:
-        assert actual.is_multipart == multipart
 
-    # BODYSTRUCTURE lengths can various according to the server so
-    # compare up until what is returned
-    for e, a in zip(expected, actual):
-        if have_matching_types(e, a, (list, tuple)):
-            for expected_and_actual in zip(e, a): 
-                check_BODYSTRUCTURE(*expected_and_actual)
-        else:
-            if e == ('charset', 'us-ascii') and a is None:
-                pass  # Some servers (eg. Gmail) don't return a charset when it's us-ascii
-            else:
-                a = lower_if_str(a)
-                e = lower_if_str(e)
-                assert a == e, "%r != %r\ngot = %s\nexpected = %s" \
-                       % (a, e, pformat(actual), pformat(expected))
-        
-
-def assert_raises(exception_class, func, *args, **kwargs):
-    try:
-        func(*args, **kwargs)
-    except exception_class:
-        return
-    except Exception, e:
-        raise AssertionError('expected %r but got %s instead' % (exception_class, type(e)))
-    raise AssertionError('no exception raised, expected %r' % exception_class)
-
-
-def runtests(client):
-    '''Run a sequence of tests against the IMAP server
-    '''
-    # The ordering of these tests is important (but shouldn't be!)
-    test_capabilities(client)
-    test_list_folders(client)
-    test_xlist(client)
-    test_select_and_close(client)
-    test_subscriptions(client)
-    test_folders(client)
-    test_status(client)
-    test_append(client)
-    test_flags(client)
-    test_search(client)
-    test_fetch(client)
-    test_partial_fetch(client)
-    test_BODYSTRUCTURE(client)
-    test_copy(client)
-
-
-def clear_folder(client, folder):
-    client.select_folder(folder)
-    client.delete_messages(client.search())
-    client.expunge()
-
-
-def clear_folders(client):
-    client.folder_encode = False
-    for folder in extract_normal_folders(client.list_folders()):
-        if folder.upper() != 'INBOX':
-            client.delete_folder(folder)
-    client.folder_encode = True
 
 def command_line():
     p = OptionParser()
@@ -490,22 +451,21 @@ Email in the specified account will be lost!
         print "Aborting tests."
         sys.exit()
 
-
 def main():
+    global options
     options = command_line()
 
     if not options.clobber:
         user_confirm()
 
-    # Test with use_uid on and off
+    runner = unittest2.TextTestRunner(verbosity=2)
     for use_uid in (True, False):
-        print '-'*60
-        print "Testing with use_uid=%r, ssl=%r..." % (use_uid, options.ssl)
-        print '-'*60
-        client = imapclient.IMAPClient(options.host, use_uid=use_uid, ssl=options.ssl)
-        client.login(options.username, options.password)
-        runtests(client)
-        print 'SUCCESS'
+        print '='*60
+        print "Testing with use_uid=%r" % use_uid
+        print '='*60
+        options.use_uid = use_uid
+        suite = unittest2.TestLoader().loadTestsFromTestCase(LiveServerTest)
+        runner.run(suite)
 
 if __name__ == '__main__':
     main()
