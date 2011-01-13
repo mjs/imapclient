@@ -442,11 +442,10 @@ def parse_argv():
     args = sys.argv[1:]
     if not args:
         argv_error('Please specify a host configuration file. See livetest-sample.ini for an example.')
-    ini_path = sys.argv[1]
+    ini_path = sys.argv.pop(1)  # 2nd arg should be the INI file
     if not os.path.isfile(ini_path):
         argv_error('%r is not a livetest INI file' % ini_path)
     host_config = parse_config_file(ini_path)
-    sys.argv = sys.argv[:1] + sys.argv[2:]
     return host_config
 
 def main():
