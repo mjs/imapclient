@@ -204,6 +204,10 @@ class TestParseFetchResponse(unittest.TestCase):
         self.assertEquals(parse_fetch_response('4 ()'), {4: {'SEQ': 4}})
 
 
+    def test_none_special_case(self):
+        self.assertEquals(parse_fetch_response([None]), {})
+
+
     def test_bad_msgid(self):
         self.assertRaises(ParseError, parse_fetch_response, ['abc ()'])
 

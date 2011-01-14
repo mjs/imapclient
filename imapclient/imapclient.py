@@ -507,11 +507,6 @@ class IMAPClient(object):
         typ, data = self._imap._command_complete('FETCH', tag)
         self._checkok('fetch', typ, data)
         typ, data = self._imap._untagged_response(typ, data, 'FETCH')
-        # appears to be a special case - no 'untagged' responses (ie, no
-        # folders) results in [None]
-        if data == [None]:
-          return {}
-
         return parse_fetch_response(data)
 
 
@@ -637,7 +632,6 @@ class IMAPClient(object):
         else:
             typ, data = self._imap.store(msg_list, cmd, flag_list)
         self._checkok('store', typ, data)
-
         return self._flatten_dict(parse_fetch_response((data)))
 
 
