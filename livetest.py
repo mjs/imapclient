@@ -16,7 +16,6 @@ import imapclient
 
 # TODO helper to try stdlib unittest first (for Python 2.7/3.2)
 # TODO cleaner verbose output: avoid "__main__" and separater between classes
-# TODO just give up on first authentication failure to avoid slow ERROR on every test (probe?)
 
 
 SIMPLE_MESSAGE = 'Subject: something\r\n\r\nFoo\r\n'
@@ -48,7 +47,7 @@ Here is the second part.
 """.replace('\n', '\r\n')
 
 
-def createLiveTestClass(host, username, password, port, ssl, use_uid):
+def createLiveTestClass(host, username, password, port, ssl, use_uid, namespace):
 
     class LiveTest(unittest2.TestCase):
 
@@ -89,12 +88,21 @@ def createLiveTestClass(host, username, password, port, ssl, use_uid):
             self.client.delete_messages(self.client.search())
             self.client.expunge()
 
+        def add_namespace(self, folder):
+            return namespace[0] + folder
+
+        def add_namespace_to_list(self, folders):
+            return [self.add_namespace(folder) for folder in folders]
+            
         def unsub_all_folders(self):
             for folder in self.all_sub_folder_names():
                 self.client.unsubscribe_folder(folder)
 
         def is_gmail(self):
             return self.client._imap.host == 'imap.gmail.com'
+
+        def is_fastmail(self):
+            return self.client._imap.host == 'mail.messagingengine.com'
 
         def test_capabilities(self):
             caps = self.client.capabilities()
@@ -131,7 +139,10 @@ def createLiveTestClass(host, username, password, port, ssl, use_uid):
             self.client.close_folder()
 
         def test_list_folders(self):
-            some_folders = ['simple', r'foo\bar', r'test"folder"', u'L\xffR']
+            some_folders = ['simple', u'L\xffR']
+            if not self.is_fastmail():
+                some_folders.extend([r'test"folder"', r'foo\bar'])
+            some_folders = self.add_namespace_to_list(some_folders)
             for name in some_folders:
                 self.client.create_folder(name)
 
@@ -162,9 +173,10 @@ def createLiveTestClass(host, username, password, port, ssl, use_uid):
                     self.fail('INBOX not returned in XLIST output')
 
         def test_subscriptions(self):
-            test_folders = ['foobar',
-                            'stuff & things',
-                            u'test & \u2622']
+            test_folders = self.add_namespace_to_list([
+                'foobar',
+                'stuff & things',
+                u'test & \u2622'])
 
             for folder in test_folders:
                 self.client.create_folder(folder)
@@ -190,11 +202,15 @@ def createLiveTestClass(host, username, password, port, ssl, use_uid):
             self.assertFalse(self.client.folder_exists('this is very unlikely to exist'))
 
             test_folders = ['foobar',
-                            '"foobar"',
-                            'foo "bar"',
                             'stuff & things',
                             u'test & \u2622',
                             '123']
+
+            if not self.is_fastmail():
+                # Fastmail doesn't appear like double quotes in folder names
+                test_folders.extend(['"foobar"', 'foo "bar"'])
+
+            test_folders = self.add_namespace_to_list(test_folders)
 
             for folder in test_folders:
                 self.assertFalse(self.client.folder_exists(folder))
@@ -215,7 +231,7 @@ def createLiveTestClass(host, username, password, port, ssl, use_uid):
             # Default behaviour should return 5 keys
             self.assertEqual(len(self.client.folder_status('INBOX')), 5)
 
-            new_folder = u'test \u2622'
+            new_folder = self.add_namespace(u'test \u2622')
             self.client.create_folder(new_folder)
             try:
                 status = self.client.folder_status(new_folder)
@@ -317,12 +333,13 @@ def createLiveTestClass(host, username, password, port, ssl, use_uid):
         def test_copy(self):
             self.client.select_folder('INBOX')
             self.client.append('INBOX', SIMPLE_MESSAGE)
-            self.client.create_folder('target')
+            target_folder = self.add_namespace('target')
+            self.client.create_folder(target_folder)
             msg_id = self.client.search()[0]
 
-            self.client.copy(msg_id, 'target')
+            self.client.copy(msg_id, target_folder)
 
-            self.client.select_folder('target')
+            self.client.select_folder(target_folder)
             msgs = self.client.search()
             self.assertEqual(len(msgs), 1)
             msg_id = msgs[0]
@@ -465,8 +482,20 @@ def parse_argv():
     host_config = parse_config_file(ini_path)
     return host_config
 
+def probe_host(host, port, ssl, username, password):
+    client = imapclient.IMAPClient(host, port=port, ssl=ssl)
+    client.login(username, password)
+    ns = client.namespace()
+    client.logout()
+    if not ns.personal:
+        raise RuntimeError('Can\'t run tests: IMAP account has no personal namespace')
+    return ns.personal[0]   # Use first personal namespace
+
 def main():
     host_config = parse_argv()
+
+    namespace = probe_host(**host_config)
+    host_config['namespace'] = namespace
 
     live_test_mod = imp.new_module('livetests')
     sys.modules['livetests'] = live_test_mod
