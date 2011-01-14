@@ -104,6 +104,23 @@ def createLiveTestClass(host, username, password, port, ssl, use_uid):
                 self.assertTrue(self.client.has_capability(cap))
             self.assertFalse(self.client.has_capability('WONT EXIST'))
 
+        def test_namespace(self):
+            if not self.client.has_capability('NAMESPACE'):
+                return self.skipTest("Server doesn't support NAMESPACE")
+
+            def assertNoneOrTuple(val):
+                assert val is None or isinstance(val, tuple), \
+                       "unexpected namespace value %r" % val
+
+            ns = self.client.namespace()
+            self.assertEqual(len(ns), 3)
+            assertNoneOrTuple(ns.personal)
+            assertNoneOrTuple(ns.other)
+            assertNoneOrTuple(ns.shared)
+            self.assertEqual(ns.personal, ns[0])
+            self.assertEqual(ns.other, ns[1])
+            self.assertEqual(ns.shared, ns[2])
+
         def test_select_and_close(self):
             resp = self.client.select_folder('INBOX')
             self.assertIsInstance(resp['EXISTS'], int)

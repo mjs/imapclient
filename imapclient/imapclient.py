@@ -5,6 +5,7 @@
 import re
 import imaplib
 import response_lexer
+from operator import itemgetter
 #imaplib.Debug = 5
 
 import imap_utf7
@@ -28,6 +29,14 @@ ANSWERED = r'\Answered'
 FLAGGED = r'\Flagged'
 DRAFT = r'\Draft'
 RECENT = r'\Recent'         # This flag is read-only
+
+class Namespace(tuple):
+    def __new__(cls, personal, other, shared):
+        return tuple.__new__(cls, (personal, other, shared)) 
+
+    personal = property(itemgetter(0))
+    other = property(itemgetter(1))
+    shared = property(itemgetter(2))
 
 
 class IMAPClient(object):
@@ -69,7 +78,6 @@ class IMAPClient(object):
     AbortError = imaplib.IMAP4.abort
     ReadOnlyError = imaplib.IMAP4.readonly
 
-    re_sep = re.compile('^\(\("[^"]*" "([^"]+)"\)\)')
     re_status = re.compile(r'^\s*"?(?P<folder>[^"]+)"?\s+'
                            r'\((?P<status_items>.*)\)$')
 
@@ -132,6 +140,22 @@ class IMAPClient(object):
             return True
         else:
             return False
+
+    def namespace(self):
+        """Return the namespace for the account as a (personal, other, shared) tuple.
+
+        Each element may be None if no namespace of that type exists,
+        or a sequence of (prefix, separator) pairs.
+
+        For convenience the tuple elements may be accessed
+        positionally or attributes named "personal", "other" and
+        "shared".
+
+        See RFC 2342 for more details.
+        """
+        typ, data = self._imap.namespace()
+        self._checkok('namespace', typ, data)
+        return Namespace(*parse_response(data))
 
     def get_folder_delimiter(self):
         """Determine the folder separator used by the IMAP server.

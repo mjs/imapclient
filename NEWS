@@ -50,6 +50,10 @@ IMAP account parameters are now read using a configuration file
 instead of command line arguments. See livetest-sample.ini for an
 example.
 
+Added NAMESPACE support (#63)
+-----------------------------
+See the namespace() method. 
+
 ===============
  Version 0.6.2
 ===============
