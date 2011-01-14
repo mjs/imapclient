@@ -6,6 +6,7 @@ import re
 import imaplib
 import response_lexer
 from operator import itemgetter
+import warnings
 #imaplib.Debug = 5
 
 import imap_utf7
@@ -160,17 +161,18 @@ class IMAPClient(object):
     def get_folder_delimiter(self):
         """Determine the folder separator used by the IMAP server.
 
+        WARNING: The implementation just picks the first folder
+        separator from the first namespace returned. This is not
+        particularly sensible. Use namespace instead().
+
         @return: The folder separator.
         @rtype: string
         """
-        typ, data = self._imap.namespace()
-        self._checkok('namespace', typ, data)
-
-        match = self.re_sep.match(data[0])
-        if match:
-            return match.group(1)
-        else:
-            raise self.Error('could not determine folder separator')
+        warnings.warn(DeprecationWarning('get_folder_delimiter is going away. Use namespace() instead.'))
+        for part in self.namespace():
+            for ns in part:
+                return ns[1]
+        raise self.Error('could not determine folder separator')
 
     def list_folders(self, directory="", pattern="*"):
         """Get a listing of folders on the server.

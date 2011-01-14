@@ -52,7 +52,7 @@ example.
 
 Added NAMESPACE support (#63)
 -----------------------------
-See the namespace() method. 
+namespace() method added and get_folder_delimiter() has been deprecated.
 
 ===============
  Version 0.6.2
