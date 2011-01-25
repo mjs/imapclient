@@ -7,8 +7,7 @@ from imapclient.fixed_offset import FixedOffset
 from imapclient.imapclient import datetime_to_imap
 from imapclient.test.mock import patch, sentinel, Mock
 from imapclient.test.testable_imapclient import TestableIMAPClient as IMAPClient
-import unittest
-
+from imapclient.test.util import unittest
 
 class IMAPClientTest(unittest.TestCase):
 

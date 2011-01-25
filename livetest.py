@@ -8,13 +8,12 @@
 import imp
 import os
 import sys
-import unittest2
 from datetime import datetime
 from ConfigParser import SafeConfigParser, NoOptionError
 
 import imapclient
+from imapclient.test.util import unittest
 
-# TODO helper to try stdlib unittest first (for Python 2.7/3.2)
 # TODO cleaner verbose output: avoid "__main__" and separater between classes
 
 
@@ -49,7 +48,7 @@ Here is the second part.
 
 def createLiveTestClass(host, username, password, port, ssl, use_uid, namespace):
 
-    class LiveTest(unittest2.TestCase):
+    class LiveTest(unittest.TestCase):
 
         def setUp(self):
             self.client = imapclient.IMAPClient(host, port=port, use_uid=use_uid, ssl=ssl)
@@ -469,7 +468,7 @@ def parse_config_file(path):
 def argv_error(msg):
     print >> sys.stderr, msg
     print >> sys.stderr
-    print >> sys.stderr, "usage: %s <livetest.ini> [ optional unittest2 arguments ]" % sys.argv[0]
+    print >> sys.stderr, "usage: %s <livetest.ini> [ optional unittest arguments ]" % sys.argv[0]
     sys.exit(1)
 
 def parse_argv():
@@ -507,7 +506,7 @@ def main():
     add_test_class('TestWithUIDs', createLiveTestClass(use_uid=True, **host_config))
     add_test_class('TestWithoutUIDs', createLiveTestClass(use_uid=False, **host_config))
 
-    unittest2.main(module='livetests')
+    unittest.main(module='livetests')
 
 if __name__ == '__main__':
     main()

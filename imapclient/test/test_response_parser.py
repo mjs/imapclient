@@ -20,9 +20,9 @@ Unit tests for the FetchTokeniser and FetchParser classes
 
 from datetime import datetime
 from textwrap import dedent
-import unittest
-from imapclient.response_parser import parse_response, parse_fetch_response, ParseError
 from imapclient.fixed_offset import FixedOffset
+from imapclient.response_parser import parse_response, parse_fetch_response, ParseError
+from imapclient.test.util import unittest
 from pprint import pformat
 
 #TODO: tokenising tests
