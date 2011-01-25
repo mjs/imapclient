@@ -23,7 +23,6 @@ from textwrap import dedent
 from imapclient.fixed_offset import FixedOffset
 from imapclient.response_parser import parse_response, parse_fetch_response, ParseError
 from imapclient.test.util import unittest
-from pprint import pformat
 
 #TODO: tokenising tests
 #TODO: test invalid dates and times
@@ -160,11 +159,11 @@ class TestParseResponse(unittest.TestCase):
         self._test('(foo foo[bar rrr])', ('foo', 'foo[bar rrr]'))
 
     def test_incomplete_tuple(self):
-        self._test_parse_error('abc (1 2', 'Tuple incomplete before "(1 2"')
+        self._test_parse_error('abc (1 2', 'Tuple incomplete before "\(1 2"')
 
     def test_incomplete_juxtaposed_tuples(self):
         self._test_parse_error('(1 2)(3 4',
-                               'Juxtaposed tuples incomplete before "(1 2)(3 4"')
+                               'Juxtaposed tuples incomplete before "\(1 2\)\(3 4"')
 
     def test_bad_literal(self):
         self._test_parse_error([('{99}', 'abc')],
@@ -172,7 +171,7 @@ class TestParseResponse(unittest.TestCase):
 
 
     def test_bad_quoting(self):
-        self._test_parse_error('"abc next', "No closing '\"'")
+        self._test_parse_error('"abc next', """No closing '"'""")
 
 
     def _test(self, to_parse, expected, wrap=True):
@@ -182,20 +181,13 @@ class TestParseResponse(unittest.TestCase):
         if not isinstance(to_parse, list):
             to_parse = [to_parse]
         output = parse_response(to_parse)
-        self.assert_(output == expected,
-                     format_error(to_parse, output, expected))
+        self.assertSequenceEqual(output, expected)
 
     def _test_parse_error(self, to_parse, expected_msg):
         if not isinstance(to_parse, list):
             to_parse = [to_parse]
-        try:
-            parse_response(to_parse)
-            self.fail("didn't raise an exception")
-        except ParseError, err:
-            actual_msg = str(err)
-            self.assert_(expected_msg == actual_msg[:len(expected_msg)],
-                         'got ParseError with wrong msg: %r' % actual_msg)
-
+        self.assertRaisesRegexp(ParseError, expected_msg,
+                                parse_response, to_parse)
 
 
 class TestParseFetchResponse(unittest.TestCase):
@@ -331,14 +323,6 @@ class TestParseFetchResponse(unittest.TestCase):
                                'SEQ': 1}})
 
 
-
-def format_error(input_, output, expected):
-    return 'failed for:\n%s\ngot:\n%s\nexpected:\n%s' % (
-                pformat(input_),
-                pformat(output),
-                pformat(expected))
-
-
 def add_crlf(text):
     return CRLF.join(text.splitlines()) + CRLF
 
@@ -348,5 +332,3 @@ def datetime_to_native(dt):
     return dt.astimezone(system_offset).replace(tzinfo=None)
 
 
-if __name__ == '__main__':
-    unittest.main()
