@@ -489,7 +489,8 @@ class IMAPClient(object):
 
         @param messages: Message IDs to fetch.
         @param parts: A sequence of data items to retrieve.
-        @param modifiers: An optional sequence of modifiers.
+        @param modifiers: An optional sequence of modifiers (where
+            supported by the server, eg. ['CHANGEDSINCE 123']).
         @return: A dictionary indexed by message number. Each item is itself a
             dictionary containing the requested message parts.
             INTERNALDATE parts will be returned as datetime objects converted

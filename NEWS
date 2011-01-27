@@ -1,3 +1,5 @@
+.. -*-Mode: rst; -*-
+
 =====
  Dev
 =====
@@ -50,9 +52,15 @@ IMAP account parameters are now read using a configuration file
 instead of command line arguments. See livetest-sample.ini for an
 example.
 
-Added NAMESPACE support (#63)
------------------------------
+Added NAMESPACE support (#63) [API CHANGE]
+------------------------------------------
 namespace() method added and get_folder_delimiter() has been deprecated.
+
+Added support for FETCH modifiers (#62) [NEW]
+---------------------------------------------
+The fetch method now takes optional modifiers as the last
+argument. These are required for extensions such as RFC 4551
+(conditional store). Thanks to Thomas Jost for the patch.
 
 ===============
  Version 0.6.2

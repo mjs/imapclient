@@ -387,6 +387,26 @@ def createLiveTestClass(host, username, password, port, ssl, use_uid, namespace)
             self.assertEqual(len(body), 25)
             self.assertTrue(body.startswith('om: Bob Smith'))
 
+
+        def test_fetch_modifiers(self):
+            # CONDSTORE (RFC 4551) provides a good way to use FETCH
+            # modifiers but it isn't commonly available.
+            if not self.client.has_capability('CONDSTORE'):
+                return self.skipTest("Server doesn't support CONDSTORE")
+
+            maxModSeq = int(self.client.select_folder('INBOX')['HIGHESTMODSEQ'][0])
+            self.client.append('INBOX', SIMPLE_MESSAGE)
+            msg_id = self.client.search()[0]
+
+            resp = self.client.fetch(msg_id, ['FLAGS'], ['CHANGEDSINCE %d' % maxModSeq])
+            msg_info = resp[msg_id]
+            self.assertIn('MODSEQ', msg_info)
+
+            # Prove that the modifier is actually being used
+            resp = self.client.fetch(msg_id, ['FLAGS'], ['CHANGEDSINCE %d' % (maxModSeq + 1)])
+            self.assertFalse(resp)
+            
+
         def test_BODYSTRUCTURE(self):
             self.client.select_folder('INBOX')
             self.client.append('INBOX', SIMPLE_MESSAGE)
