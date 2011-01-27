@@ -36,6 +36,24 @@ is for a multipart message.
 Code that expects the previous response handling behaviour needs to be
 updated.
 
+Live tests converted to use unittest2 (#4)
+------------------------------------------
+livetest.py now uses the unittest2 package to run the tests. This
+provides much more flexibility that the custom approach that was used
+before. Dependencies between tests are gone - each test uses a fresh
+IMAP connection and is preceeded by the same setup.
+
+unittest2.main() is used to provide a number of useful command line
+options and the ability to run a subset of tests.
+
+IMAP account parameters are now read using a configuration file
+instead of command line arguments. See livetest-sample.ini for an
+example.
+
+Added NAMESPACE support (#63)
+-----------------------------
+namespace() method added and get_folder_delimiter() has been deprecated.
+
 ===============
  Version 0.6.2
 ===============

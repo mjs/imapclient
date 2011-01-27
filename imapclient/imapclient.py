@@ -5,6 +5,8 @@
 import re
 import imaplib
 import response_lexer
+from operator import itemgetter
+import warnings
 #imaplib.Debug = 5
 
 import imap_utf7
@@ -28,6 +30,14 @@ ANSWERED = r'\Answered'
 FLAGGED = r'\Flagged'
 DRAFT = r'\Draft'
 RECENT = r'\Recent'         # This flag is read-only
+
+class Namespace(tuple):
+    def __new__(cls, personal, other, shared):
+        return tuple.__new__(cls, (personal, other, shared)) 
+
+    personal = property(itemgetter(0))
+    other = property(itemgetter(1))
+    shared = property(itemgetter(2))
 
 
 class IMAPClient(object):
@@ -69,7 +79,6 @@ class IMAPClient(object):
     AbortError = imaplib.IMAP4.abort
     ReadOnlyError = imaplib.IMAP4.readonly
 
-    re_sep = re.compile('^\(\("[^"]*" "([^"]+)"\)\)')
     re_status = re.compile(r'^\s*"?(?P<folder>[^"]+)"?\s+'
                            r'\((?P<status_items>.*)\)$')
 
@@ -133,20 +142,37 @@ class IMAPClient(object):
         else:
             return False
 
+    def namespace(self):
+        """Return the namespace for the account as a (personal, other, shared) tuple.
+
+        Each element may be None if no namespace of that type exists,
+        or a sequence of (prefix, separator) pairs.
+
+        For convenience the tuple elements may be accessed
+        positionally or attributes named "personal", "other" and
+        "shared".
+
+        See RFC 2342 for more details.
+        """
+        typ, data = self._imap.namespace()
+        self._checkok('namespace', typ, data)
+        return Namespace(*parse_response(data))
+
     def get_folder_delimiter(self):
         """Determine the folder separator used by the IMAP server.
+
+        WARNING: The implementation just picks the first folder
+        separator from the first namespace returned. This is not
+        particularly sensible. Use namespace instead().
 
         @return: The folder separator.
         @rtype: string
         """
-        typ, data = self._imap.namespace()
-        self._checkok('namespace', typ, data)
-
-        match = self.re_sep.match(data[0])
-        if match:
-            return match.group(1)
-        else:
-            raise self.Error('could not determine folder separator')
+        warnings.warn(DeprecationWarning('get_folder_delimiter is going away. Use namespace() instead.'))
+        for part in self.namespace():
+            for ns in part:
+                return ns[1]
+        raise self.Error('could not determine folder separator')
 
     def list_folders(self, directory="", pattern="*"):
         """Get a listing of folders on the server.
@@ -485,11 +511,6 @@ class IMAPClient(object):
         typ, data = self._imap._command_complete('FETCH', tag)
         self._checkok('fetch', typ, data)
         typ, data = self._imap._untagged_response(typ, data, 'FETCH')
-        # appears to be a special case - no 'untagged' responses (ie, no
-        # folders) results in [None]
-        if data == [None]:
-          return {}
-
         return parse_fetch_response(data)
 
 
@@ -615,7 +636,6 @@ class IMAPClient(object):
         else:
             typ, data = self._imap.store(msg_list, cmd, flag_list)
         self._checkok('store', typ, data)
-
         return self._flatten_dict(parse_fetch_response((data)))
 
 

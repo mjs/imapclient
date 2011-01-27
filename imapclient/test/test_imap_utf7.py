@@ -23,8 +23,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 from imapclient.imap_utf7 import decode, encode, FolderNameError
-import unittest
-
+from imapclient.test.util import unittest
 
 class IMAP4UTF7TestCase(unittest.TestCase):
     tests = [

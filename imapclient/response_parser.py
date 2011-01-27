@@ -49,6 +49,8 @@ def parse_fetch_response(text):
     Returns a dictionary, keyed by message ID. Each value a dictionary
     keyed by FETCH field type (eg."RFC822").
     """
+    if text == [None]:
+        return {}
     response = gen_parsed_response(text)
 
     parsed_response = {}
