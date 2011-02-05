@@ -1,3 +1,7 @@
+# Copyright (c) 2011, Menno Smits
+# Released subject to the New BSD License
+# Please see http://en.wikipedia.org/wiki/BSD_licenses
+
 def find_unittest2():
     import unittest
     if hasattr(unittest, 'skip') and hasattr(unittest, 'loader'):
