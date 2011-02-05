@@ -1,8 +1,8 @@
 .. -*-Mode: rst; -*-
 
-=====
- Dev
-=====
+=============
+ Version 0.7
+=============
 
 BODY and BODYSTRUCTURE parsing fixes (#58) [API CHANGE]
 -------------------------------------------------------
@@ -54,7 +54,8 @@ example.
 
 Added NAMESPACE support (#63) [API CHANGE]
 ------------------------------------------
-namespace() method added and get_folder_delimiter() has been deprecated.
+namespace() method added and get_folder_delimiter() has been
+deprecated.
 
 Added support for FETCH modifiers (#62) [NEW]
 ---------------------------------------------
