@@ -1,98 +1,216 @@
-Version 0.6.2
--------------
-Square brackets in responses are now parsed correctly. This fixes
-response handling for FETCH items such as "BODY[HEADER.FIELDS (from
-subject)]". (#55)
+.. -*-Mode: rst; -*-
 
+=============
+ Version 0.7
+=============
+
+BODY and BODYSTRUCTURE parsing fixes (#58) [API CHANGE]
+-------------------------------------------------------
+The response values for BODY and BODYSTRUCTURE responses may include a
+sequence of tuples which are not separated by whitespace. These should
+be treated as a single item (a list of multiple arbitrarily nested
+tuples) but IMAPClient was treating them as separate items. IMAPClient
+now returns these tuples in a list to allow for consistent parsing.
+
+A BODYSTRUCTURE response for a multipart email with 2 parts would have
+previously looked something like this::
+
+  (('text', 'html', ('charset', 'us-ascii'), None, None, 'quoted-printable', 55, 3),
+   ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 26, 1), 
+   'mixed', ('boundary', '===============1534046211=='))
+
+The response is now returned like this::
+
+  ([
+     ('text', 'html', ('charset', 'us-ascii'), None, None, 'quoted-printable', 55, 3),
+     ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 26, 1) 
+   ], 
+   'mixed', ('boundary', '===============1534046211=='))
+
+The behaviour for single part messages is unchanged. In this case the
+first element of the tuple is a string specifying the major content
+type of the message (eg "text"). 
+
+An is_multipart boolean property now exists on BODY and BODYSTRUCTURE
+responses to allow the caller to easily determine whether the response
+is for a multipart message.
+
+Code that expects the previous response handling behaviour needs to be
+updated.
+
+Live tests converted to use unittest2 (#4)
+------------------------------------------
+livetest.py now uses the unittest2 package to run the tests. This
+provides much more flexibility that the custom approach that was used
+before. Dependencies between tests are gone - each test uses a fresh
+IMAP connection and is preceeded by the same setup.
+
+unittest2.main() is used to provide a number of useful command line
+options and the ability to run a subset of tests.
+
+IMAP account parameters are now read using a configuration file
+instead of command line arguments. See livetest-sample.ini for an
+example.
+
+Added NAMESPACE support (#63) [API CHANGE]
+------------------------------------------
+namespace() method added and get_folder_delimiter() has been
+deprecated.
+
+Added support for FETCH modifiers (#62) [NEW]
+---------------------------------------------
+The fetch method now takes optional modifiers as the last
+argument. These are required for extensions such as RFC 4551
+(conditional store). Thanks to Thomas Jost for the patch.
+
+===============
+ Version 0.6.2
+===============
+
+Square brackets in responses now parsed correctly (#55)
+-------------------------------------------------------
+This fixes response handling for FETCH items such as 
+``BODY[HEADER.FIELDS (from subject)]``.
+
+Example moved (#56)
+-------------------
 The example has been moved to imapclient/examples directory and is
-included when the IMAPClient is installed from PyPI. (#56)
+included when the IMAPClient is installed from PyPI.
 
+Distribute (#57)
+----------------
 The project is now packaged using Distribute instead of
-setuptools. There should be no real functional change. (#57)
+setuptools. There should be no real functional change.
 
-Version 0.6.1
--------------
+===============
+ Version 0.6.1
+===============
+
+Python SSL bug patch
+--------------------
 Automatically patch a bug in imaplib which can cause hangs when using
 SSL (Python Issue 5949). The patch is only applied when the running
 Python version is known to be affected by the problem.
 
+Doc update
+----------
 Updated the README to better reflect the current state of the project.
 
-Version 0.6
------------
+=============
+ Version 0.6
+=============
+
+New response parser (#1, #45)
+-----------------------------
 Command response lexing and parsing code rewritten from stratch to
 deal with various bugs that surfaced when dealing with more complex
 responses (eg. BODYSTRUCTURE and ENVELOPE). This change also fixes
 various problems when interacting with Gmail and MS Exchange. 
-(#1, #45)
 
-[NEW] XLIST extension support. Where the server supports it,
-xlist_folders() will return a mapping of various common folder names
-to the actual server folder names. Gmail's IMAP server supports
-this. (#25)
+XLIST extension support (#25) [NEW]
+-----------------------------------
+Where the server supports it, xlist_folders() will return a mapping of
+various common folder names to the actual server folder names. Gmail's
+IMAP server supports this.
 
-[NEW] Added COPY command support (copy() method). (#36)
+Added COPY command support (#36) [NEW]
+--------------------------------------
+New copy() method.
+ 
+Added interact.py [NEW]
+-----------------------
+A script for interactive IMAPClient sessions. Useful for debugging and
+exploration. Uses IPython if installed.
 
-[NEW] Added interact.py, a script for interactive IMAPClient
-sessions. Useful for debugging and exploration. Uses IPython if
-installed.
+Full SELECT response (#24) [API CHANGE]
+---------------------------------------
+select_folder() now returns a dictionary with the full (parsed) SELECT
+command response instead of just the message count.
 
-[API CHANGE] select_folder() now returns a dictionary with the full
-(parsed) SELECT command response instead of just the message
-count. (#24)
+Full list responses (#24) [API CHANGE]
+--------------------------------------
+The return value from list_folders(), list_sub_folders() and
+xlist_folders() now include the IMAP folder flags and delimiter.
 
-[API CHANGE] the return value from list_folders(), list_sub_folders()
-and xlist_folders() now include the IMAP folder flags and
-delimiter. (#24)
+Folder name character encoding (#21) [API CHANGE]
+-------------------------------------------------
+Bytes that are greater than 0x7f in folder names are will cause an
+exception when passed to methods that accept folder name arguments
+because there is no unambigous way to handle these. Callers should
+encode such folder names to unicode objects first.
 
-[API CHANGE] Bytes that are greater than 0x7f in folder names are will
-cause an exception when passed to methods that accept folder name
-arguments because there is no unambigous way to handle these. Encode
-these to unicode objects first. (#21)
+Folder names are now always returned as unicode objects.
 
-[API CHANGE] Folder names are now always returned as unicode objects. (#21)
+Message sequence number now always returned in FETCH responses
+--------------------------------------------------------------
+Fetch responses now include a "SEQ" element which gives the message
+(non-UID) sequence number. This allows for easy mapping between UIDs
+and standard sequence IDs.
 
-[API CHANGE] Fetch responses now include a "SEQ" element which gives
-the message (non-UID) sequence number. This allows mapping between
-UIDs and standard sequence IDs.
-
-[FIX] Various folder name handling bugs fixed. (#28, #42)
+Folder name handling fixes (#28, #42)
+-------------------------------------
+Various folder name handling bugs fixed.
 
 
-Version 0.5.2
--------------
+===============
+ Version 0.5.2
+===============
+
+Folder name quoting and escaping fixes (#28)
+--------------------------------------------
 Correctly handle double quotes and backslashes in folder names when
-parsing LIST and LSUB responses. (#28)
+parsing LIST and LSUB responses.
 
+Fixed fetch literal handling (#33)
+----------------------------------
 Fixed problem with parsing responses where a literal followed another
-literal. (#33)
+literal.
 
 
-Version 0.5.1
--------------
+===============
+ Version 0.5.1
+===============
+
+License change
+--------------
 Changed license from GPL to new BSD.
 
+=============
+ Version 0.5
+=============
 
-Version 0.5
+SSL support
 -----------
-Support for SSL based connections.
+Support for SSL based connections by passing ssl=True when
+constructing an IMAPClient instance.
 
-Folder names are now encoded and decoded transparently if required (using
-modified UTF-7). This means that any methods that return folder names may
-return unicode objects as well as normal strings [API CHANGE]. Additionally,
-any method that takes a folder name now accepts unicode object too. Use the
-folder_encode attribute to control whether encode/decoding is performed.
+Transparent folder encoding
+---------------------------
+Folder names are now encoded and decoded transparently if required
+(using modified UTF-7). This means that any methods that return folder
+names may return unicode objects as well as normal strings [API
+CHANGE]. Additionally, any method that takes a folder name now accepts
+unicode object too. Use the folder_encode attribute to control whether
+encode/decoding is performed.
 
-Unquoted folder names in server responses are now handled correctly. Thanks
-to Neil Martinsen-Burrell for reporting this bug.
+Unquoted folder name handling fix
+---------------------------------
+Unquoted folder names in server responses are now handled
+correctly. Thanks to Neil Martinsen-Burrell for reporting this bug.
 
+Fixed handling of unusual characters in folder names
+----------------------------------------------------
 Fixed a bug with handling of unusual characters in folder names.
 
+Timezone handling [API CHANGE]
+------------------------------
 Timezones are now handled correctly for datetimes passed as input and for
 server responses. This fixes a number of bugs with timezones. Returned
-datetimes are always in the client's local timezone [API CHANGE].
+datetimes are always in the client's local timezone.
 
-Many more unit tests, some using Michael Foord's excellent mock.py.
-(http://www.voidspace.org.uk/python/mock/)
+More unit tests
+---------------
+Many more unit tests added, some using Michael Foord's excellent
+mock.py.  (http://www.voidspace.org.uk/python/mock/)
 
 

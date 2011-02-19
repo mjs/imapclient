@@ -1,10 +1,12 @@
-# Copyright (c) 2010, Menno Smits
+# Copyright (c) 2011, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 import re
 import imaplib
 import response_lexer
+from operator import itemgetter
+import warnings
 #imaplib.Debug = 5
 
 import imap_utf7
@@ -29,6 +31,14 @@ FLAGGED = r'\Flagged'
 DRAFT = r'\Draft'
 RECENT = r'\Recent'         # This flag is read-only
 
+class Namespace(tuple):
+    def __new__(cls, personal, other, shared):
+        return tuple.__new__(cls, (personal, other, shared)) 
+
+    personal = property(itemgetter(0))
+    other = property(itemgetter(1))
+    shared = property(itemgetter(2))
+
 
 class IMAPClient(object):
     """
@@ -48,7 +58,6 @@ class IMAPClient(object):
     AbortError = imaplib.IMAP4.abort
     ReadOnlyError = imaplib.IMAP4.readonly
 
-    re_sep = re.compile('^\(\("[^"]*" "([^"]+)"\)\)')
     re_status = re.compile(r'^\s*"?(?P<folder>[^"]+)"?\s+'
                            r'\((?P<status_items>.*)\)$')
 
@@ -104,17 +113,37 @@ class IMAPClient(object):
         else:
             return False
 
-    def get_folder_delimiter(self):
-        """Return the folder separator used by the IMAP server (eg. "/").
+    def namespace(self):
+        """Return the namespace for the account as a (personal, other, shared) tuple.
+
+        Each element may be None if no namespace of that type exists,
+        or a sequence of (prefix, separator) pairs.
+
+        For convenience the tuple elements may be accessed
+        positionally or attributes named "personal", "other" and
+        "shared".
+
+        See RFC 2342 for more details.
         """
         typ, data = self._imap.namespace()
         self._checkok('namespace', typ, data)
+        return Namespace(*parse_response(data))
 
-        match = self.re_sep.match(data[0])
-        if match:
-            return match.group(1)
-        else:
-            raise self.Error('could not determine folder separator')
+    def get_folder_delimiter(self):
+        """Determine the folder separator used by the IMAP server.
+
+        WARNING: The implementation just picks the first folder
+        separator from the first namespace returned. This is not
+        particularly sensible. Use namespace instead().
+
+        @return: The folder separator.
+        @rtype: string
+        """
+        warnings.warn(DeprecationWarning('get_folder_delimiter is going away. Use namespace() instead.'))
+        for part in self.namespace():
+            for ns in part:
+                return ns[1]
+        raise self.Error('could not determine folder separator')
 
     def list_folders(self, directory="", pattern="*"):
         """Get a listing of folders on the server as a list of
@@ -414,11 +443,13 @@ class IMAPClient(object):
         return self.add_flags(messages, DELETED)
 
 
-    def fetch(self, messages, parts):
+    def fetch(self, messages, parts, modifiers=None):
         """Retrieve selected data items for one or more messages.
 
         @param messages: Message IDs to fetch.
         @param parts: A sequence of data items to retrieve.
+        @param modifiers: An optional sequence of modifiers (where
+            supported by the server, eg. ['CHANGEDSINCE 123']).
         @return: A dictionary indexed by message number. Each item is itself a
             dictionary containing the requested message parts.
             INTERNALDATE parts will be returned as datetime objects converted
@@ -429,19 +460,17 @@ class IMAPClient(object):
 
         msg_list = messages_to_str(messages)
         parts_list = seq_to_parenlist([p.upper() for p in parts])
+        modifiers_list = None
+        if modifiers is not None:
+          modifiers_list = seq_to_parenlist([m.upper() for m in modifiers])
 
         if self.use_uid:
-            tag = self._imap._command('UID', 'FETCH', msg_list, parts_list)
+            tag = self._imap._command('UID', 'FETCH', msg_list, parts_list, modifiers_list)
         else:
-            tag = self._imap._command('FETCH', msg_list, parts_list)
+            tag = self._imap._command('FETCH', msg_list, parts_list, modifiers_list)
         typ, data = self._imap._command_complete('FETCH', tag)
         self._checkok('fetch', typ, data)
         typ, data = self._imap._untagged_response(typ, data, 'FETCH')
-        # appears to be a special case - no 'untagged' responses (ie, no
-        # folders) results in [None]
-        if data == [None]:
-          return {}
-
         return parse_fetch_response(data)
 
     def append(self, folder, msg, flags=(), msg_time=None):
@@ -554,7 +583,6 @@ class IMAPClient(object):
         else:
             typ, data = self._imap.store(msg_list, cmd, flag_list)
         self._checkok('store', typ, data)
-
         return self._flatten_dict(parse_fetch_response((data)))
 
     def _flatten_dict(self, fetch_dict):

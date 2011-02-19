@@ -1,18 +1,6 @@
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Library General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-
-# Copyright 2010 Menno Smits
+# Copyright (c) 2011, Menno Smits
+# Released subject to the New BSD License
+# Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 '''
 Unit tests for the FetchTokeniser and FetchParser classes
@@ -20,10 +8,9 @@ Unit tests for the FetchTokeniser and FetchParser classes
 
 from datetime import datetime
 from textwrap import dedent
-import unittest
-from imapclient.response_parser import parse_response, parse_fetch_response, ParseError
 from imapclient.fixed_offset import FixedOffset
-from pprint import pformat
+from imapclient.response_parser import parse_response, parse_fetch_response, ParseError
+from imapclient.test.util import unittest
 
 #TODO: tokenising tests
 #TODO: test invalid dates and times
@@ -64,8 +51,24 @@ class TestParseResponse(unittest.TestCase):
         self._test('(123 "foo" ((0 1 2) "more" NIL) 66)',
                    (123, "foo", ((0, 1, 2), "more", None), 66))
 
+    def test_juxtatposed_tuples(self):
+        # Tuples with no whitespace between them should be returned as
+        # a list of tuples
+        self._test('(12 "foo")(34 NIL 0)',
+                   [(12, "foo"), (34, None, 0)])
+        self._test('(12 "foo")(34 NIL 0)(5 66)',
+                   [(12, "foo"), (34, None, 0), (5, 66)])
+        self._test('((12 "foo")(34 NIL 0) "foo")',
+                   ([(12, "foo"), (34, None, 0)], "foo"))
+        self._test('((12 "foo")(34 NIL 0)(4 55 6) "foo")',
+                   ([(12, "foo"), (34, None, 0), (4, 55, 6)], "foo"))
+        self._test('((12 "foo")(34 (NIL 1 2) 0)(4 55 6) "foo")',
+                   ([(12, "foo"), (34, (None, 1, 2), 0), (4, 55, 6)], "foo"))
+        self._test('(12 "foo")(34 NIL ("a" "b")("c" "d"))',
+                   [(12, "foo"), (34, None, [('a', 'b'), ('c', 'd')])])
+
     def test_complex_mixed(self):
-        self._test('((FOO "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 1152 23)'
+        self._test('((FOO "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 1152 23) '
                    '("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "cc.diff") '
                    '"<hi.there>" "foo" "BASE64" 4554 73) "MIXED")',
                    (('FOO', 'PLAIN', ('CHARSET', 'US-ASCII'), None, None, '7BIT', 1152, 23),
@@ -144,8 +147,11 @@ class TestParseResponse(unittest.TestCase):
         self._test('(foo foo[bar rrr])', ('foo', 'foo[bar rrr]'))
 
     def test_incomplete_tuple(self):
-        self._test_parse_error('abc (1 2', 'Tuple incomplete before "(1 2"')
+        self._test_parse_error('abc (1 2', 'Tuple incomplete before "\(1 2"')
 
+    def test_incomplete_juxtaposed_tuples(self):
+        self._test_parse_error('(1 2)(3 4',
+                               'Juxtaposed tuples incomplete before "\(1 2\)\(3 4"')
 
     def test_bad_literal(self):
         self._test_parse_error([('{99}', 'abc')],
@@ -153,7 +159,7 @@ class TestParseResponse(unittest.TestCase):
 
 
     def test_bad_quoting(self):
-        self._test_parse_error('"abc next', "No closing '\"'")
+        self._test_parse_error('"abc next', """No closing '"'""")
 
 
     def _test(self, to_parse, expected, wrap=True):
@@ -163,23 +169,23 @@ class TestParseResponse(unittest.TestCase):
         if not isinstance(to_parse, list):
             to_parse = [to_parse]
         output = parse_response(to_parse)
-        self.assert_(output == expected,
-                     format_error(to_parse, output, expected))
+        self.assertSequenceEqual(output, expected)
 
     def _test_parse_error(self, to_parse, expected_msg):
-        try:
-            parse_response(to_parse)
-            self.fail("didn't raise an exception")
-        except ParseError, err:
-            self.assert_(expected_msg == str(err)[:len(expected_msg)],
-                         'got ParseError with wrong msg: %r' % str(err))
-
+        if not isinstance(to_parse, list):
+            to_parse = [to_parse]
+        self.assertRaisesRegexp(ParseError, expected_msg,
+                                parse_response, to_parse)
 
 
 class TestParseFetchResponse(unittest.TestCase):
 
     def test_basic(self):
         self.assertEquals(parse_fetch_response('4 ()'), {4: {'SEQ': 4}})
+
+
+    def test_none_special_case(self):
+        self.assertEquals(parse_fetch_response([None]), {})
 
 
     def test_bad_msgid(self):
@@ -305,14 +311,6 @@ class TestParseFetchResponse(unittest.TestCase):
                                'SEQ': 1}})
 
 
-
-def format_error(input_, output, expected):
-    return 'failed for:\n%s\ngot:\n%s\nexpected:\n%s' % (
-                pformat(input_),
-                pformat(output),
-                pformat(expected))
-
-
 def add_crlf(text):
     return CRLF.join(text.splitlines()) + CRLF
 
@@ -322,5 +320,3 @@ def datetime_to_native(dt):
     return dt.astimezone(system_offset).replace(tzinfo=None)
 
 
-if __name__ == '__main__':
-    unittest.main()

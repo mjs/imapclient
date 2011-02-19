@@ -1,9 +1,9 @@
-# Copyright (c) 2010, Menno Smits
+# Copyright (c) 2011, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-import unittest
 from datetime import timedelta
+from imapclient.test.util import unittest
 from imapclient.fixed_offset import FixedOffset
 from imapclient.test.mock import patch
 

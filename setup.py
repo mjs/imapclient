@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2010, Menno Smits
+# Copyright (c) 2011, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -35,7 +35,7 @@ setup(name='IMAPClient',
       author_email="menno@freshfoo.com",
       license="http://en.wikipedia.org/wiki/BSD_licenses",
       url="http://imapclient.freshfoo.com/",
-      download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.tar.gz' % version,
+      download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.zip' % version,
       packages=find_packages(),
       package_data=dict(imapclient=['examples/*.py']),
       description="Easy-to-use, Pythonic and complete IMAP client library with "

@@ -1,3 +1,7 @@
+# Copyright (c) 2011, Menno Smits
+# Released subject to the New BSD License
+# Please see http://en.wikipedia.org/wiki/BSD_licenses
+
 """
 Parsing for IMAP command responses with focus on FETCH responses as
 returned by imaplib.
@@ -49,6 +53,8 @@ def parse_fetch_response(text):
     Returns a dictionary, keyed by message ID. Each value a dictionary
     keyed by FETCH field type (eg."RFC822").
     """
+    if text == [None]:
+        return {}
     response = gen_parsed_response(text)
 
     parsed_response = {}
@@ -79,6 +85,8 @@ def parse_fetch_response(text):
                 msg_id = _int_or_error(value, 'invalid UID')
             elif word == 'INTERNALDATE':
                 msg_data[word] = _convert_INTERNALDATE(value)
+            elif word in ('BODY', 'BODYSTRUCTURE'):
+                msg_data[word] = BodyData(value)
             else:
                 msg_data[word] = value
 
@@ -93,6 +101,13 @@ def _int_or_error(value, error_text):
     except (TypeError, ValueError):
         raise ParseError('%s: %s' % (error_text, repr(value)))
 
+
+class BodyData(tuple):
+
+    @property
+    def is_multipart(self):
+        return isinstance(self[0], list)
+    
 
 def _convert_INTERNALDATE(date_string):
     mo = imaplib.InternalDate.match('INTERNALDATE "%s"' % date_string)
@@ -120,14 +135,7 @@ def _convert_INTERNALDATE(date_string):
 
 def atom(src, token):
     if token == "(":
-        out = []
-        for token in src:
-            if token == ")":
-                return tuple(out)
-            out.append(atom(src, token))
-        # oops - no terminator!
-        preceeding = ' '.join(str(val) for val in out)
-        raise ParseError('Tuple incomplete before "(%s"' % preceeding)
+        return parse_tuple(src)
     elif token == 'NIL':
         return None
     elif token[0] == '{':
@@ -145,3 +153,40 @@ def atom(src, token):
         return int(token)
     else:
         return token
+
+
+def parse_tuple(src):
+    out = []
+    for token in src:
+        if token == ")":
+            return tuple(out)
+        elif token == ')(':
+            return parse_juxtaposed_tuples(src, out)
+        else:
+            out.append(atom(src, token))
+    # no terminator
+    raise ParseError('Tuple incomplete before "(%s"' % _fmt_tuple(out))
+
+
+def parse_juxtaposed_tuples(src, init):
+    out = [tuple(init)]
+    current = []
+    for token in src:
+        if token in (')', ')('):
+            out.append(tuple(current))
+            if token == ')':
+                return out
+            current = []
+        else:
+            current.append(atom(src, token))
+
+    # no terminator
+    preceeding = ''.join('(' + _fmt_tuple(t) + ')' for t in out)
+    if current:
+        preceeding += '(' + _fmt_tuple(current)
+    raise ParseError('Juxtaposed tuples incomplete before "%s"' % preceeding)
+
+
+def _fmt_tuple(t):
+    return ' '.join(str(item) for item in t)
+

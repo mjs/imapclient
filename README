@@ -103,13 +103,11 @@ code.interact() function from the standard library is used.
 
 livetest.py
 -----------
-This is a standalone Python script which exercises IMAPClient against
-a live IMAP account. It performs operations and then attempts to
-confirm that these have been successful.
-
-It must be used with an account that has an INBOX folder and write
-access to the account. The folders and contents of the account don't
-matter.
+This script contains a series of functional tests which exercise
+IMAPClient against a live IMAP account. It is useful for ensuring
+compatibility with a given IMAP server implementation. livetest.py
+must be used with an account that has an INBOX folder and write access
+to the account.
 
 WARNING: The operations performed by livetest.py are
 destructive. Emails and folders in the test account WILL BE
@@ -118,15 +116,27 @@ about.
 
 Run livetest.py with the --help option to see usage.
 
-Please send me the output of livetest.py if it fails to run
-successfully against a particular IMAP server. Reports of successful
-runs are also welcome.  Please include the type and version of the
-IMAP server.
+Please send the output of livetest.py to the mailing list if it fails
+to run successfully against a particular IMAP server. Reports of
+successful runs are also welcome.  Please include the type and version
+of the IMAP server.
 
 
 Unit Tests
 ----------
 There are comprehensive unit tests for the FETCH response parser and a
 growing number of other parts of the code. These tests use the
-unittest package from the standard library and can be run using
-"python run_tests.py".
+unittest2 package which is also included as the standard unittest
+package in Python 2.7 and 3.2.
+
+Where unittest2 is included in the standard library (eg. Python 2.7
+and 3.2) you can run all unit tests like this (starting from the root
+directory of the IMAPClient source):
+
+     python -m unittest discover
+
+Alternatively, if unittest2 is installed separately use the unit2
+script (for Unix-like systems) or the unit2.py script:
+
+     unit2 discover
+     unit2.py discover
