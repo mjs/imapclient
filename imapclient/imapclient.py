@@ -31,33 +31,17 @@ RECENT = r'\Recent'         # This flag is read-only
 
 
 class IMAPClient(object):
-    #XXX concepts to cover: UIDs, message lists, folder encoding, exceptions
     """
-    Message unique identifiers (UID) can be used with any call. The use_uid
-    argument to the constructor and the use_uid attribute control whether UIDs
-    are used.
+    A connection to the IMAP server specified by *host* is made when
+    the class is instantiated.
 
-    Any method that accepts message id's takes either a sequence containing
-    message IDs (eg. [1,2,3]) or a single message ID as an integer.
+    *port* defaults to 143, or 993 if *ssl* is ``True``.
 
-    Any method that accepts message flags takes either a sequence containing
-    message flags (eg. [DELETED, 'foo', 'Bar']) or a single message flag (eg.
-    'Foo'). See the constants at the top of this file for commonly used flags.
+    If *use_uid* is ``True`` unique message UIDs be used for all calls
+    that accept message ids (defaults to ``True``).
 
-    Any method that takes a folder name will accept a standard string or a
-    unicode string. Unicode strings will be transparently encoded using
-    modified UTF-7 as specified by RFC-2060. Such folder names will be returned
-    as unicode strings by methods that return folder names.
-
-    Transparent folder name encoding can be enabled or disabled with the
-    folder_encode attribute. It defaults to True.
-
-    The IMAP related exceptions that will be raised by this class are:
-        IMAPClient.Error
-        IMAPClient.AbortError
-        IMAPClient.ReadOnlyError
-    These are aliases for the imaplib.IMAP4 exceptions of the same name. Socket
-    errors may also be raised in the case of network errors.
+    If *ssl* is ``True`` an SSL connection will be made (defaults to
+    ``False``).
     """
 
     Error = imaplib.IMAP4.error
@@ -69,13 +53,6 @@ class IMAPClient(object):
                            r'\((?P<status_items>.*)\)$')
 
     def __init__(self, host, port=None, use_uid=True, ssl=False):
-        """Initialise object instance and connect to the remote IMAP server.
-
-        @param host: The IMAP server address/hostname to connect to.
-        @param port: The port number to use (default is 143, 993 for SSL).
-        @param use_uid: Should message UIDs be used (default is True).
-        @param ssl: Make an SSL connection (default is False)
-        """
         if ssl:
             ImapClass = imaplib.IMAP4_SSL
             default_port = 993
@@ -115,7 +92,7 @@ class IMAPClient(object):
 
 
     def has_capability(self, capability):
-        """Return True if the server has the *capability* specified.
+        """Return ``True`` if the IMAP server has the given *capability*.
         """
         # FIXME: this will not detect capabilities that are backwards
         # compatible with the current level. For instance the SORT
