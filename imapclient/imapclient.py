@@ -130,14 +130,11 @@ class IMAPClient(object):
         return Namespace(*parse_response(data))
 
     def get_folder_delimiter(self):
-        """Determine the folder separator used by the IMAP server.
+        """Return the folder separator used by the IMAP server.
 
         WARNING: The implementation just picks the first folder
         separator from the first namespace returned. This is not
         particularly sensible. Use namespace instead().
-
-        @return: The folder separator.
-        @rtype: string
         """
         warnings.warn(DeprecationWarning('get_folder_delimiter is going away. Use namespace() instead.'))
         for part in self.namespace():
@@ -154,34 +151,40 @@ class IMAPClient(object):
 
         Specifying *directory* will limit returned folders to that
         base directory. Specifying *pattern* will limit returned
-        folders to those with matching names. Wildcards (``*`` and
-        ``?``) are supported in *pattern*.
+        folders to those with matching names. The wildcards are
+        supported in *pattern*. ``*`` matches zero or more of any
+        character and ``%`` matches 0 or more characters except the
+        folder delimiter.
 
-        #XXX check wildcard facts
-
-        Each folder name will be either a string or a unicode string
-        (if the folder on the server required decoding). If the
-        folder_encode attribute is False, no decoding will be
-        performed and only ordinary strings will be returned.
-
-        #XXX check the above is still true
+        Folder names are always returned as unicode strings except if
+        folder_decode is not set.
         """
         return self._do_list('LIST', directory, pattern)
 
     def xlist_folders(self, directory="", pattern="*"):
-        """Execute the XLIST command, returning``(flags, delimiter,
+        """Execute the XLIST command, returning ``(flags, delimiter,
         name)`` tuples.
 
         This method returns special flags for each folder and a
         localized name for certain folders (e.g. the name of the
-        'inbox' may be localized and the flags can be used to
+        inbox may be localized and the flags can be used to
         determine the actual inbox, even if the name has been
         localized.
 
-        XXX example response
-                                            
+        A ``XLIST`` response could look something like::
+
+            [([u'\\HasNoChildren', u'\\Inbox'], '/', u'Inbox'),
+             ([u'\\Noselect', u'\\HasChildren'], '/', u'[Gmail]'),
+             ([u'\\HasNoChildren', u'\\AllMail'], '/', u'[Gmail]/All Mail'),
+             ([u'\\HasNoChildren', u'\\Drafts'], '/', u'[Gmail]/Drafts'),
+             ([u'\\HasNoChildren', u'\\Important'], '/', u'[Gmail]/Important'),
+             ([u'\\HasNoChildren', u'\\Sent'], '/', u'[Gmail]/Sent Mail'),
+             ([u'\\HasNoChildren', u'\\Spam'], '/', u'[Gmail]/Spam'),
+             ([u'\\HasNoChildren', u'\\Starred'], '/', u'[Gmail]/Starred'),
+             ([u'\\HasNoChildren', u'\\Trash'], '/', u'[Gmail]/Trash')]
+
         This is a Gmail-specific IMAP extension. It is the
-        responsibility of the caller to either check for 'XLIST' in
+        responsibility of the caller to either check for ``XLIST`` in
         the server capabilites, or to handle the error if the server
         doesn't support this externsion.
 
@@ -221,13 +224,15 @@ class IMAPClient(object):
         return ret
 
     def select_folder(self, folder, readonly=False):
-        """Select the current folder on the server. Future calls to methods
-        such as search and fetch will act on the selected folder.
+        """Set the current folder on the server.
 
-        @param folder: The folder name.
-        @return: A dictionary containing the SELECT response
-          values. At least the EXISTS, FLAGS and RECENT keys are
-          guaranteed to exist. Example:
+        Future calls to methods such as search and fetch will act on
+        the selected folder.
+
+        Returns a dictionary containing the ``SELECT`` response. At least
+        the ``EXISTS``, ``FLAGS`` and ``RECENT`` keys are guaranteed
+        to exist. An example::
+
             {'EXISTS': 3,
              'FLAGS': ('\\Answered', '\\Flagged', '\\Deleted', ... ),
              'RECENT': 0,
@@ -409,8 +414,10 @@ class IMAPClient(object):
     def add_flags(self, messages, flags):
         """Add *flags* to *messages*.
 
-        *flags* should be a sequence of strings. Returns the flags set
-         for each modified message (see *get_flags*).
+        *flags* should be a sequence of strings.
+
+        Returns the flags set for each modified message (see
+        *get_flags*).
         """
         return self._store('+FLAGS', messages, flags)
 
@@ -443,31 +450,47 @@ class IMAPClient(object):
         return self.add_flags(messages, DELETED)
 
 
-    def fetch(self, messages, parts, modifiers=None):
-        """Retrieve selected data items for one or more messages.
+    def fetch(self, messages, data, modifiers=None):
+        """Retrieve selected *data* associated with one or more *messages*.
 
-        @param messages: Message IDs to fetch.
-        @param parts: A sequence of data items to retrieve.
-        @param modifiers: An optional sequence of modifiers (where
-            supported by the server, eg. ['CHANGEDSINCE 123']).
-        @return: A dictionary indexed by message number. Each item is itself a
-            dictionary containing the requested message parts.
-            INTERNALDATE parts will be returned as datetime objects converted
-            to the local machine's time zone.
+        *data* should be specified as a sequnce of strings, one item
+        per data selector, for example ``['INTERNALDATE',
+        'RFC822']``.
+
+        *modifiers* are required for some extensions to the IMAP
+        protocol (eg. RFC 4551). These should be a sequnce of strings
+        if specified, for example ``['CHANGEDSINCE 123']``.
+
+        A dictionary is returned, indexed by message number. Each item
+        in this dictionary is also a dictionary, with an entry
+        corresponding to each item in *data*.
+
+        XXX document SEQ
+
+        Example::
+
+            >> c.fetch([3293, 3230], ['INTERNALDATE', 'FLAGS'])
+            {3230: {'FLAGS': ('\\Seen',),
+                    'INTERNALDATE': datetime.datetime(2011, 1, 30, 13, 32, 9),
+                    'SEQ': 84},
+             3293: {'FLAGS': (),
+                    'INTERNALDATE': datetime.datetime(2011, 2, 24, 19, 30, 36),
+                    'SEQ': 110}}
+
         """
         if not messages:
             return {}
 
         msg_list = messages_to_str(messages)
-        parts_list = seq_to_parenlist([p.upper() for p in parts])
+        data_list = seq_to_parenlist([p.upper() for p in data])
         modifiers_list = None
         if modifiers is not None:
           modifiers_list = seq_to_parenlist([m.upper() for m in modifiers])
 
         if self.use_uid:
-            tag = self._imap._command('UID', 'FETCH', msg_list, parts_list, modifiers_list)
+            tag = self._imap._command('UID', 'FETCH', msg_list, data_list, modifiers_list)
         else:
-            tag = self._imap._command('FETCH', msg_list, parts_list, modifiers_list)
+            tag = self._imap._command('FETCH', msg_list, data_list, modifiers_list)
         typ, data = self._imap._command_complete('FETCH', tag)
         self._checkok('fetch', typ, data)
         typ, data = self._imap._untagged_response(typ, data, 'FETCH')
@@ -519,10 +542,8 @@ class IMAPClient(object):
         return data[0]
 
     def expunge(self):
-        """Remove any messaages from the server that have the \Deleted
-        flag set.
-
-        XXX check if this is just for the current folder
+        """Remove any messages from the currently selected folder that
+        have the ``\\Deleted`` flag set.
         """
         typ, data = self._imap.expunge()
         self._checkok('expunge', typ, data)

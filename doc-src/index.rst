@@ -90,11 +90,6 @@ IMAPClient instance.
    :members:
 
 
-More Examples
--------------
-XXX
-
-
 Indices and tables
 ==================
 
