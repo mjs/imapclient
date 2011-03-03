@@ -114,14 +114,15 @@ class IMAPClient(object):
             return False
 
     def namespace(self):
-        """Return the namespace for the account as a (personal, other, shared) tuple.
+        """Return the namespace for the account as a (personal, other,
+        shared) tuple.
 
         Each element may be None if no namespace of that type exists,
         or a sequence of (prefix, separator) pairs.
 
         For convenience the tuple elements may be accessed
-        positionally or attributes named "personal", "other" and
-        "shared".
+        positionally or using attributes named *personal*, *other* and
+        *shared*.
 
         See RFC 2342 for more details.
         """
@@ -318,7 +319,7 @@ class IMAPClient(object):
         return data[0]
 
     def folder_exists(self, folder):
-        """Return True if *folder* exists on the server.
+        """Return ``True`` if *folder* exists on the server.
         """
         typ, data = self._imap.list('', self._encode_folder_name(folder))
         self._checkok('list', typ, data)
@@ -425,8 +426,10 @@ class IMAPClient(object):
     def remove_flags(self, messages, flags):
         """Remove one or more *flags* from *messages*.
 
-        *flags* should be a sequence of strings. Returns the flags set
-         for each modified message (see *get_flags*).
+        *flags* should be a sequence of strings.
+
+        Returns the flags set for each modified message (see
+        *get_flags*).
         """
         return self._store('-FLAGS', messages, flags)
 
@@ -434,8 +437,10 @@ class IMAPClient(object):
     def set_flags(self, messages, flags):
         """Set the *flags* for *messages*.
 
-        *flags* should be a sequence of strings. Returns the flags set
-         for each modified message (see *get_flags*).
+        *flags* should be a sequence of strings.
+
+        Returns the flags set for each modified message (see
+        *get_flags*).
         """
         return self._store('FLAGS', messages, flags)
 
@@ -465,7 +470,11 @@ class IMAPClient(object):
         in this dictionary is also a dictionary, with an entry
         corresponding to each item in *data*.
 
-        XXX document SEQ
+        In addition to an element for each *data* item, the dict
+        returned for each message also contains a *SEQ* key containing
+        the sequence number for the message. This allows for mapping
+        between the UID and sequence number (when the *use_uid*
+        property is ``True``).
 
         Example::
 
