@@ -473,7 +473,7 @@ def parse_config_file(path):
     assert parser.sections() == [section], 'Only expected a [main] section'
 
     try:
-        port = parser.getint(section, 'port'),
+        port = parser.getint(section, 'port')
     except NoOptionError:
         port = None
         
