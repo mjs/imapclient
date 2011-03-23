@@ -16,6 +16,11 @@ except ImportError:
     
 #imaplib.Debug = 5
     
+try:
+    import oauth2
+except ImportError:
+    oauth2 = None
+
 import imap_utf7
 from fixed_offset import FixedOffset
 
@@ -119,6 +124,26 @@ class IMAPClient(object):
         self._checkok('login', typ, data)
         return data[0]
 
+    def oauth_login(self, url, oauth_token, oauth_token_secret,
+                    consumer_key='anonymous', consumer_secret='anonymous'):
+        """Authenticate using oauth.
+
+        @param url: The OAuth request URL.
+        @param oauth_token: An OAuth key.
+        @param oauth_token_secret: An OAuth secret.
+        @param consumer_key: An OAuth consumer key (defaults to 'anonymous').
+        @param consumer_secret: An OAuth consumer secret (defaults to 'anonymous').
+        """
+        if oauth2:
+            token = oauth2.Token(oauth_token, oauth_token_secret)
+            consumer = oauth2.Consumer(consumer_key, consumer_secret)
+            xoauth_callable = lambda x: oauth2.build_xoauth_string(url, consumer, token)
+            
+            typ, data = self._imap.authenticate('XOAUTH', xoauth_callable)
+            self._checkok('authenticate', typ, data)
+            return data[0]
+        else:
+            raise self.Error('The optional oauth2 dependency is needed for oauth authentication')
 
     def logout(self):
         """Perform a logout
