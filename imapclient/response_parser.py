@@ -11,11 +11,15 @@ Intially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 
 #TODO more exact error reporting
 
-import imaplib
 from datetime import datetime
 from fixed_offset import FixedOffset
 from response_lexer import TokenSource
 
+try:
+    import imaplib2 as imaplib
+except ImportError:
+    imaplib2 = None
+    import imaplib
 
 __all__ = ['parse_response', 'ParseError']
 

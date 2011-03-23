@@ -3,12 +3,19 @@
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 import re
-import imaplib
 import response_lexer
 from operator import itemgetter
 import warnings
-#imaplib.Debug = 5
 
+try:
+    import imaplib2 as imaplib
+    imaplib2 = True
+except ImportError:
+    imaplib2 = False
+    import imaplib
+    
+#imaplib.Debug = 5
+    
 import imap_utf7
 from fixed_offset import FixedOffset
 
@@ -262,8 +269,20 @@ class IMAPClient(object):
         """
         typ, data = self._imap.select(self._encode_folder_name(folder), readonly)
         self._checkok('select', typ, data)
-        return self._process_select_response(self._imap.untagged_responses)
+        if imaplib2:
+            untagged_responses = self._response_to_dict(self._imap.untagged_responses)
+        else:
+            untagged_responses = self._imap.untagged_responses
+        return self._process_select_response(untagged_responses)
 
+    def _response_to_dict(self, resp):
+        dictresp = {}
+
+        if len(resp) > 0:
+            for item in resp:
+                dictresp[item[0]] = item[1]
+
+        return dictresp
 
     def _process_select_response(self, resp):
         out = {}
@@ -281,7 +300,38 @@ class IMAPClient(object):
             out[key] = value
         return out
 
+    def idle(self, timeout=None, **kwargs):
+        """Put server into IDLE mode.
 
+        IDLE mode will end when the server notifies of a change, the sever
+        reaches the timeout, or another IMAP4 command is scheduled.
+        
+        @param timeout: timeout for the IDLE command in seconds (default: 29 mins)
+        @param callback: Function to be called when IDLE mode ends. If a callback
+            is supplied the idle function will be asynchronous, returning immediately.
+        @param cb_arg: An optional argument that will be passed to the callback function.
+        @return: Server response. (None if callback is specified).
+        """
+        if imaplib2:
+            if 'callback' in kwargs:
+                callback = kwargs.pop('callback')
+                def _wrapped_callback(resp):
+                    typ, data = resp[0]
+                    self._checkok('idle', typ, data)
+                    # if there's a cb_arg, pass it along
+                    cb_arg = resp[1]
+                    if cb_arg:
+                        callback(data[0], cb_arg)
+                    else:
+                        callback(data[0])
+                self._imap.idle(timeout, callback=_wrapped_callback, **kwargs)
+            else:
+                typ, data = self._imap.idle(timeout)
+                self._checkok('idle', typ, data)
+                return data[0]
+        else:
+            raise self.Error('The imaplib2 module is required to use IDLE')
+                
     def folder_status(self, folder, what=None):
         """Requests the status from folder.
 
@@ -509,7 +559,10 @@ class IMAPClient(object):
             tag = self._imap._command('UID', 'FETCH', msg_list, parts_list, modifiers_list)
         else:
             tag = self._imap._command('FETCH', msg_list, parts_list, modifiers_list)
-        typ, data = self._imap._command_complete('FETCH', tag)
+        if imaplib2:
+            typ, data = self._imap._command_complete(tag, 'FETCH')
+        else:
+            typ, data = self._imap._command_complete('FETCH', tag)
         self._checkok('fetch', typ, data)
         typ, data = self._imap._untagged_response(typ, data, 'FETCH')
         return parse_fetch_response(data)
