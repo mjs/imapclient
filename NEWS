@@ -1,6 +1,17 @@
 .. -*-Mode: rst; -*-
 
 =============
+ Development
+=============
+
+OAUTH Support (#54) [NEW]
+-------------------------
+OAUTH authentication is now supported using the oauth_login
+method. This requires the 3rd party oauth2 package is
+installed. Thanks to Johannes Heckel for contributing the patch to
+this.
+
+=============
  Version 0.7
 =============
 

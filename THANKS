@@ -23,6 +23,8 @@ Mark Hammond (mhammond _AT_ skipinet.com.au)
 Thomas Jost (schnouki _AT_ schnouki.net)
     FETCH modifiers patch.
 
+Johannes Heckel
+     OAUTH and IDLE support. 
 
 Bug Reports
 ------------
