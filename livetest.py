@@ -46,13 +46,13 @@ Here is the second part.
 """.replace('\n', '\r\n')
 
 
-def createLiveTestClass(host, username, password, port, ssl, use_uid, namespace):
+def createLiveTestClass(conf, use_uid):
 
     class LiveTest(unittest.TestCase):
 
         def setUp(self):
-            self.client = imapclient.IMAPClient(host, port=port, use_uid=use_uid, ssl=ssl)
-            self.client.login(username, password)
+            self.client = create_client_from_config(conf)
+            self.client.use_uid = use_uid
             self.clear_folders()
             self.unsub_all_folders()
             self.client.select_folder('INBOX')
@@ -88,7 +88,7 @@ def createLiveTestClass(host, username, password, port, ssl, use_uid, namespace)
             self.client.expunge()
 
         def add_namespace(self, folder):
-            return namespace[0] + folder
+            return conf.namespace[0] + folder
 
         def add_namespace_to_list(self, folders):
             return [self.add_namespace(folder) for folder in folders]
@@ -464,8 +464,25 @@ def have_matching_types(a, b, type_or_types):
         return False
     return isinstance(b, type(a))
 
+class Bunch(dict):
+
+    def __getattr__(self, k):
+        try:
+            return self[k]
+        except KeyError:
+            raise AttributeError
+
+    def __setattr__(self, k, v):
+        self[k] = v
+
 def parse_config_file(path):
-    parser = SafeConfigParser(dict(ssl='false'))
+    parser = SafeConfigParser(dict(ssl='false',
+                                   username=None,
+                                   password=None,
+                                   oauth='false',
+                                   oauth_url=None,
+                                   oauth_token=None,
+                                   oauth_token_secret=None))
     fh = file(path)
     parser.readfp(fh)
     fh.close()
@@ -477,12 +494,16 @@ def parse_config_file(path):
     except NoOptionError:
         port = None
         
-    return dict(
+    return Bunch(
         host=parser.get(section, 'host'),
         port=port,
         ssl=parser.getboolean(section, 'ssl'),
         username=parser.get(section, 'username'),
         password=parser.get(section, 'password'),
+        oauth=parser.getboolean(section, 'oauth'),
+        oauth_url=parser.get(section, 'oauth_url'),
+        oauth_token=parser.get(section, 'oauth_token'),
+        oauth_token_secret=parser.get(section, 'oauth_token_secret'),
     )
 
 def argv_error(msg):
@@ -501,9 +522,19 @@ def parse_argv():
     host_config = parse_config_file(ini_path)
     return host_config
 
-def probe_host(host, port, ssl, username, password):
-    client = imapclient.IMAPClient(host, port=port, ssl=ssl)
-    client.login(username, password)
+def create_client_from_config(conf):
+    client = imapclient.IMAPClient(conf.host, port=conf.port, ssl=conf.ssl)
+    if conf.oauth:
+        client.oauth_login(conf.oauth_url,
+                           conf.oauth_token,
+                           conf.oauth_token_secret)
+    else:
+        client.login(conf.username, conf.password)
+    return client
+    
+
+def probe_host(config):
+    client = create_client_from_config(config)
     ns = client.namespace()
     client.logout()
     if not ns.personal:
@@ -513,8 +544,8 @@ def probe_host(host, port, ssl, username, password):
 def main():
     host_config = parse_argv()
 
-    namespace = probe_host(**host_config)
-    host_config['namespace'] = namespace
+    namespace = probe_host(host_config)
+    host_config.namespace = namespace
 
     live_test_mod = imp.new_module('livetests')
     sys.modules['livetests'] = live_test_mod
@@ -523,8 +554,8 @@ def main():
        klass.__name__ = name
        setattr(live_test_mod, name, klass)
 
-    add_test_class('TestWithUIDs', createLiveTestClass(use_uid=True, **host_config))
-    add_test_class('TestWithoutUIDs', createLiveTestClass(use_uid=False, **host_config))
+    add_test_class('TestWithUIDs', createLiveTestClass(host_config, use_uid=True))
+    add_test_class('TestWithoutUIDs', createLiveTestClass(host_config, use_uid=False))
 
     unittest.main(module='livetests')
 
