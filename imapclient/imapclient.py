@@ -656,13 +656,9 @@ class IMAPClient(object):
         typ, data = self._imap.getacl(folder)
         self._checkok('getacl', typ, data)
 
-        parts = list(response_lexer.Lexer([data[0]]))
+        parts = list(response_lexer.TokenSource(data))
         parts = parts[1:]       # First item is folder name
-
-        out = []
-        for i in xrange(0, len(parts), 2):
-            out.append((parts[i], parts[i+1]))
-        return out
+        return [(parts[i], parts[i+1]) for i in xrange(0, len(parts), 2)]
 
 
     def setacl(self, folder, who, what):

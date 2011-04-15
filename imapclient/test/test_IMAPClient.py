@@ -156,6 +156,13 @@ class TestDateTimeToImap(unittest.TestCase):
         self.assert_(datetime_to_imap(dt) == '02-Jan-2009 03:04:05 -0500')
 
 
+class TestAclMethods(IMAPClientTest):
+
+    def test_getacl(self):
+        self.client._imap.getacl.return_value = ('OK', ['INBOX Fred rwipslda Sally rwip'])
+        acl = self.client.getacl('INBOX')
+        self.assertSequenceEqual(acl, [('Fred', 'rwipslda'), ('Sally', 'rwip')])
+
 
 if __name__ == '__main__':
     unittest.main()
