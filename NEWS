@@ -11,6 +11,11 @@ method. This requires the 3rd party oauth2 package is
 installed. Thanks to Johannes Heckel for contributing the patch to
 this.
 
+Small Bug Fixes
+---------------
+getacl() was using wrong lexing class (#85) (Thanks josephhh)
+
+
 =============
  Version 0.7
 =============
