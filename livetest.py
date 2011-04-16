@@ -8,6 +8,8 @@
 import imp
 import os
 import sys
+import time
+import threading
 from datetime import datetime
 from ConfigParser import SafeConfigParser, NoOptionError
 
@@ -448,6 +450,39 @@ def createLiveTestClass(conf, use_uid):
                         a = lower_if_str(a)
                         e = lower_if_str(e)
                         self.assertEqual(a, e)
+        
+        def test_idle(self):
+            if not imapclient.using_imaplib2:
+                return self.skipTest("imaplib2 is not installed")
+            
+            idle_event = threading.Event()
+            cb_data = {}
+            def cb(success, response, cb_arg):
+                idle_event.set()
+                cb_data['success'] = success
+                cb_data['idle_response'] = response
+                cb_data['cb_arg'] = cb_arg
+
+            # Start main connection idling
+            self.client.select_folder('INBOX')
+            self.client.idle(timeout=20, callback=cb, cb_arg='foo')
+
+            # Start a new connection and upload a new message
+            client2 = create_client_from_config(conf)
+            client2.select_folder('INBOX')
+            client2.append('INBOX', SIMPLE_MESSAGE)
+            client2.logout()
+
+            idle_event.wait(15)    # Wait for IDLE callback to trigger
+
+            self.assertTrue(idle_event.is_set())
+            self.assertTrue(cb_data['success'])
+            idle_status, idle_text = cb_data['idle_response']
+            self.assertEqual(idle_status, 'OK')
+            # Can't be too specific as different servers return different text
+            self.assertIn('idle', idle_text.lower())     
+            self.assertEqual(cb_data['cb_arg'], 'foo')
+            
     return LiveTest
 
         
