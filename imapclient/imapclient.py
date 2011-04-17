@@ -315,17 +315,17 @@ class IMAPClient(object):
     def idle(self):
         """Put server into IDLE mode.
 
-        IDLE mode will end when the server notifies of a change, the server
-        reaches the timeout, or another IMAP4 command is scheduled.
-        
-        @param timeout: timeout for the IDLE command in seconds (default: 29 mins)
-        @param callback: Function to be called when IDLE mode ends. If a callback
-            is supplied the idle function will be asynchronous, returning immediately.
-        @param cb_arg: An optional argument that will be passed to the callback function.
-        @return: Server response. (None if callback is specified).
+        In this mode the server will return unsolicited responses
+        about changes to the selected mailbox.
 
-        #XXX update documentation
-        #XXX what about finding out what the IDLE data was?
+        This method returns immediately. Use idle_check() to check for
+        IDLE responses and idle_done() to stop IDLE mode.
+
+        Note: Any other commmands issued while the server is in IDLE
+        mode will fail.
+
+        See RFC 2177 for more information about the IDLE extension.
+        http://tools.ietf.org/html/rfc2177
         """
         self._idle_tag = self._imap._command('IDLE')
         resp = self._imap._get_response()
@@ -333,19 +333,43 @@ class IMAPClient(object):
             raise self.Error('Unexpected IDLE response: %s' % resp)
 
     def idle_check(self, timeout=None):
-        """XXX
+        """Check for any IDLE responses sent by the server.
+
+        This method should only be called if the server is in IDLE
+        mode (see idle()).
+
+        By default, this method will block until an IDLE response is
+        received. If timeout is provided, the call will block for at
+        most this number of seconds (approximately) while waiting for
+        an IDLE response.
+
+        The return value is a list of received IDLE responses. These
+        will be parsed with values converted to appropriate types. For
+        example:
+
+        [(1, 'EXISTS'),
+         ('OK', 'Still here'), 
+         (1, 'FETCH', ('FLAGS', ('\NotJunk',))), 
+         (0, 'EXPUNGE')]
+
+        An attempt is made to group responses that were sent together
+        by the server by waiting for a little longer after the first
+        IDLE response is received.
         """
         timeouts = 0
         resps = []
         start_t = time.time()
-        def done():
-            if timeout is None:
-                if resps and timeouts > 1:
-                    return True
-            else:
-                if time.time() - start_t >= timeout:
-                    return True
-            return False
+
+        def blocking_done():
+            # Wait for one timed out read to try group IDLE responses
+            # that were sent together
+            return resps and timeouts > 1
+
+        if timeout is None:
+            done = blocking_done
+        else:
+            def done():
+                return blocking_done() or (time.time() - start_t >= timeout)
         
         # make the socket non-blocking so the timeout can be
         # implemented for this call
@@ -363,10 +387,19 @@ class IMAPClient(object):
             self._imap.sock.settimeout(None)
 
     def idle_done(self):
-        """XXX
+        """Take the server out of IDLE mode.
+
+        This method should only be called if the server is in IDLE mode.
+
+        The return value is (command_text, idle_responses) where
+        command_text is the text sent by the server when the IDLE
+        command finished (eg. 'Idle terminated') and idle_responses is
+        a list of parsed idle responses received since the last call
+        to idle_check() (if any). These are returned in parsed form as
+        per idle_check().
         """
         self._imap.send('DONE\r\n')
-        # Slurp up any remaining IDLE data until the IDLE is done
+        # Slurp up any remaining IDLE responses until the IDLE is done
         tag = self._idle_tag
         tagged_commands = self._imap.tagged_commands
         resps = []

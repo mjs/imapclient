@@ -1,5 +1,7 @@
+# This example is a lot more interesting if you have an active client
+# connected to the same IMAP account!
+
 from imapclient import IMAPClient
-import time
 
 HOST = 'imap.host.com'
 USERNAME = 'someuser'
@@ -7,32 +9,19 @@ PASSWORD = 'password'
 ssl = True
 
 server = IMAPClient(HOST, use_uid=True, ssl=ssl)
-
 server.login(USERNAME, PASSWORD)
+server.select_folder('INBOX')
 
-select_info = server.select_folder('INBOX')
-print select_info
-print
+# Start IDLE mode
+server.idle()     
 
-idling = True
+# Wait for up to 30 seconds for an IDLE response
+responses = server.idle_check(timeout=30)
+print responses
 
-def callback(resp, arg):
-    global idling
-    
-    print "Something happened, or timeout was reached"
-    print
-    print "Callback response:"
-    print resp
-    print
-    print "The callback function received arg: ", arg
-    print
-    idling = False
-
-server.idle(timeout=5, callback=callback, cb_arg="Hello future self!")
-print "Began idling"
-
-while idling:
-    print "..still idling.."
-    time.sleep(1)
+# Come out of IDLE mode
+text, responses = server.idle_done()
+print 'IDLE done. Server said %r' % text
+print 'Final responses: ', responses
     
 print server.logout()

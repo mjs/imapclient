@@ -11,6 +11,12 @@ method. This requires the 3rd party oauth2 package is
 installed. Thanks to Johannes Heckel for contributing the patch to
 this.
 
+IDLE Support (#50) [NEW]
+------------------------
+The IDLE extension is now supported through the new idle(),
+idle_check() and idle_done() methods. See the example in
+imapclient/examples/idle_example.py.
+
 Small Bug Fixes
 ---------------
 getacl() was using wrong lexing class (#85) (Thanks josephhh)
