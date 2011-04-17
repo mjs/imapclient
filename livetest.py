@@ -8,6 +8,7 @@
 import imp
 import os
 import sys
+import time
 import threading
 from datetime import datetime
 from ConfigParser import SafeConfigParser, NoOptionError
@@ -454,10 +455,6 @@ def createLiveTestClass(conf, use_uid):
             if not self.client.has_capability('IDLE'):
                 return self.skipTest("Server doesn't support IDLE")
 
-            #XXX update the example too
-            #XXX timeout check
-            #XXX out of order and interrupted idle
-
             # Start main connection idling
             self.client.select_folder('INBOX')
             self.client.idle()
@@ -466,16 +463,22 @@ def createLiveTestClass(conf, use_uid):
             client2 = create_client_from_config(conf)
             client2.select_folder('INBOX')
             client2.append('INBOX', SIMPLE_MESSAGE)
-            client2.logout()
 
             # Check for the idle data
             responses = self.client.idle_check(timeout=1)
             text, more_responses = self.client.idle_done()
-
             self.assertIn((1, 'EXISTS'), responses)
             self.assertIn('idle', text.lower())     
             self.assertIsInstance(more_responses, list)
             
+            self.client.idle()
+            client2.append('INBOX', SIMPLE_MESSAGE)
+            time.sleep(1)
+
+            text, responses = self.client.idle_done()
+            self.assertIn((2, 'EXISTS'), responses)
+            self.assertIn('idle', text.lower())     
+
     return LiveTest
 
         
