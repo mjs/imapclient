@@ -2,6 +2,9 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+import itertools
+import socket
+import time
 from datetime import datetime
 from imapclient.fixed_offset import FixedOffset
 from imapclient.imapclient import datetime_to_imap
@@ -163,6 +166,84 @@ class TestAclMethods(IMAPClientTest):
         acl = self.client.getacl('INBOX')
         self.assertSequenceEqual(acl, [('Fred', 'rwipslda'), ('Sally', 'rwip')])
 
+
+class TestIdle(IMAPClientTest):
+
+    def test_idle(self):
+        self.client._imap._command.return_value = sentinel.tag
+        self.client._imap._get_response.return_value = None
+
+        self.client.idle()
+
+        self.client._imap._command.assert_called_with('IDLE')
+        self.assertEqual(self.client._idle_tag, sentinel.tag)
+
+    def test_idle_check_blocking(self):
+        self.client._imap.sock = Mock()
+        counter = itertools.count()
+        def fake_get_line():
+            count = counter.next()
+            if count == 0:
+                return '* 1 EXISTS'
+            elif count == 1:
+                return '* 0 EXPUNGE'
+            else:
+                raise socket.timeout
+        self.client._imap._get_line = fake_get_line
+
+        responses = self.client.idle_check()
+        self.assertListEqual([(1, 'EXISTS'), (0, 'EXPUNGE')], responses)
+
+    def test_idle_check_timeout(self):
+        self.client._imap.sock = Mock()
+        def fake_get_line():
+            time.sleep(0.1)
+            raise socket.timeout
+        self.client._imap._get_line = fake_get_line
+
+        t0 = time.time()
+        responses = self.client.idle_check(timeout=0.5)
+        t1 = time.time()
+
+        self.assertListEqual([], responses)
+        self.assertLess(t1 - t0, 0.8)
+
+    def test_idle_check_with_data(self):
+        self.client._imap.sock = Mock()
+
+        counter = itertools.count()
+        def fake_get_line():
+            count = counter.next()
+            if count == 0:
+                return '* 99 EXISTS'
+            else:
+                raise socket.timeout
+        self.client._imap._get_line = fake_get_line
+            
+        t0 = time.time()
+        responses = self.client.idle_check()
+        t1 = time.time()
+
+        self.assertListEqual([(99, 'EXISTS')], responses)
+        self.assertLess(t1 - t0, 0.4)
+
+    def test_idle_done(self):
+        self.client._idle_tag = sentinel.tag
+        self.client._imap.tagged_commands = {sentinel.tag: None}
+
+        counter = itertools.count()
+        def fake_get_response():
+            count = counter.next()
+            if count == 0:
+                return '* 99 EXISTS'
+            self.client._imap.tagged_commands[sentinel.tag] = ('OK', ['Idle done'])
+        self.client._imap._get_response = fake_get_response
+            
+        text, responses = self.client.idle_done()
+
+        self.assertEqual(self.client._imap.tagged_commands, {})
+        self.assertEqual(text, 'Idle done')
+        self.assertListEqual([(99, 'EXISTS')], responses)
 
 if __name__ == '__main__':
     unittest.main()
