@@ -5,15 +5,11 @@
 import re
 import response_lexer
 from operator import itemgetter
+import socket
+import time
 import warnings
 
-try:
-    import imaplib2 as imaplib
-    using_imaplib2 = True
-except ImportError:
-    using_imaplib2 = False
-    import imaplib
-    
+import imaplib
 #imaplib.Debug = 5
     
 try:
@@ -25,14 +21,17 @@ import imap_utf7
 from fixed_offset import FixedOffset
 
 
-__all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT',
-    'RECENT', 'using_imaplib2']
+__all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT', 'RECENT']
 
 from response_parser import parse_response, parse_fetch_response
 
 # We also offer the gmail-specific XLIST command...
 if 'XLIST' not in imaplib.Commands:
   imaplib.Commands['XLIST'] = imaplib.Commands['LIST']
+
+# ...and IDLE
+if 'IDLE' not in imaplib.Commands:
+  imaplib.Commands['IDLE'] = imaplib.Commands['APPEND']
 
 
 # System flags
@@ -115,6 +114,7 @@ class IMAPClient(object):
         self._imap = ImapClass(host, port)
         self.use_uid = use_uid
         self.folder_encode = True
+        self._idle_tag = None
 
    
     def login(self, username, password):
@@ -294,20 +294,7 @@ class IMAPClient(object):
         """
         typ, data = self._imap.select(self._encode_folder_name(folder), readonly)
         self._checkok('select', typ, data)
-        if using_imaplib2:
-            untagged_responses = self._response_to_dict(self._imap.untagged_responses)
-        else:
-            untagged_responses = self._imap.untagged_responses
-        return self._process_select_response(untagged_responses)
-
-    def _response_to_dict(self, resp):
-        dictresp = {}
-
-        if len(resp) > 0:
-            for item in resp:
-                dictresp[item[0]] = item[1]
-
-        return dictresp
+        return self._process_select_response(self._imap.untagged_responses)
 
     def _process_select_response(self, resp):
         out = {}
@@ -325,7 +312,7 @@ class IMAPClient(object):
             out[key] = value
         return out
 
-    def idle(self, timeout=None, callback=None, **kwargs):
+    def idle(self):
         """Put server into IDLE mode.
 
         IDLE mode will end when the server notifies of a change, the server
@@ -340,30 +327,59 @@ class IMAPClient(object):
         #XXX update documentation
         #XXX what about finding out what the IDLE data was?
         """
-        if not using_imaplib2:
-            raise self.Error('The imaplib2 module is required to use IDLE')
+        self._idle_tag = self._imap._command('IDLE')
+        resp = self._imap._get_response()
+        if resp is not None:
+            raise self.Error('Unexpected IDLE response: %s' % resp)
 
-        if callback:
-            cb_arg_was_given = 'cb_arg' in kwargs
-            def _wrapped_cb(resp):
-                if resp[0]:
-                    success = True
-                    typ, data = resp[0]
-                    response = (typ, data[0])
+    def idle_check(self, timeout=None):
+        """XXX
+        """
+        timeouts = 0
+        resps = []
+        start_t = time.time()
+        def done():
+            if timeout is None:
+                if resps and timeouts > 1:
+                    return True
+            else:
+                if time.time() - start_t >= timeout:
+                    return True
+            return False
+        
+        # make the socket non-blocking so the timeout can be
+        # implemented for this call
+        self._imap.sock.settimeout(0.1)   
+        try:
+            while not done():
+                try:
+                    line = self._imap._get_line()
+                except socket.timeout:
+                    timeouts += 1
                 else:
-                    success = False
-                    response = resp[2]
-                if cb_arg_was_given:
-                    cb_arg = resp[1]
-                    callback(success, response, cb_arg)
-                else:
-                    callback(success, response)
-            self._imap.idle(timeout, callback=_wrapped_cb, cb_arg=kwargs.get('cb_arg'))
-        else:
-            typ, data = self._imap.idle(timeout)
-            self._checkok('idle', typ, data)
-            return data[0]
-                
+                    resps.append(_parse_idle_response(line))
+            return resps
+        finally:
+            self._imap.sock.settimeout(None)
+
+    def idle_done(self):
+        """XXX
+        """
+        self._imap.send('DONE\r\n')
+        # Slurp up any remaining IDLE data until the IDLE is done
+        tag = self._idle_tag
+        tagged_commands = self._imap.tagged_commands
+        resps = []
+        while True:
+            line = self._imap._get_response()
+            if tagged_commands[tag]:
+                break
+            resps.append(_parse_idle_response(line))
+        self._idle_tag = None
+        typ, data = tagged_commands.pop(tag)
+        self._checkok('idle', typ, data)
+        return data[0], resps
+
     def folder_status(self, folder, what=None):
         """Requests the status from folder.
 
@@ -591,10 +607,7 @@ class IMAPClient(object):
             tag = self._imap._command('UID', 'FETCH', msg_list, parts_list, modifiers_list)
         else:
             tag = self._imap._command('FETCH', msg_list, parts_list, modifiers_list)
-        if using_imaplib2:
-            typ, data = self._imap._command_complete(tag, 'FETCH')
-        else:
-            typ, data = self._imap._command_complete('FETCH', tag)
+        typ, data = self._imap._command_complete('FETCH', tag)
         self._checkok('fetch', typ, data)
         typ, data = self._imap._untagged_response(typ, data, 'FETCH')
         return parse_fetch_response(data)
@@ -790,3 +803,12 @@ def _quote_arg(arg):
   arg = arg.replace('\\', '\\\\')
   arg = arg.replace('"', '\\"')
   return '"%s"' % arg
+
+
+def _parse_idle_response(text):
+    assert text.startswith('* ')
+    text = text[2:]
+    if text.startswith(('OK ', 'NO ')):
+        return tuple(text.split(' ', 1))
+    return parse_response([text]) 
+                
