@@ -5,8 +5,8 @@
 import re
 import response_lexer
 from operator import itemgetter
+import select
 import socket
-import time
 import warnings
 
 import imaplib
@@ -111,9 +111,10 @@ class IMAPClient(object):
         if port is None:
             port = default_port
 
-        self._imap = ImapClass(host, port)
         self.use_uid = use_uid
+        self.ssl = ssl
         self.folder_encode = True
+        self._imap = ImapClass(host, port)
         self._idle_tag = None
 
    
@@ -340,51 +341,37 @@ class IMAPClient(object):
 
         By default, this method will block until an IDLE response is
         received. If timeout is provided, the call will block for at
-        most this number of seconds (approximately) while waiting for
-        an IDLE response.
+        most this number of seconds while waiting for an IDLE response.
 
         The return value is a list of received IDLE responses. These
         will be parsed with values converted to appropriate types. For
         example:
 
-        [(1, 'EXISTS'),
-         ('OK', 'Still here'), 
-         (1, 'FETCH', ('FLAGS', ('\NotJunk',))), 
-         (0, 'EXPUNGE')]
-
-        An attempt is made to group responses that were sent together
-        by the server by waiting for a little longer after the first
-        IDLE response is received.
+        [('OK', 'Still here'),
+         (1, 'EXISTS'),
+         (1, 'FETCH', ('FLAGS', ('\\NotJunk',)))]
         """
-        timeouts = 0
-        resps = []
-        start_t = time.time()
-
-        def blocking_done():
-            # Wait for one timed out read to try group IDLE responses
-            # that were sent together
-            return resps and timeouts > 1
-
-        if timeout is None:
-            done = blocking_done
-        else:
-            def done():
-                return blocking_done() or (time.time() - start_t >= timeout)
-        
         # make the socket non-blocking so the timeout can be
         # implemented for this call
-        self._imap.sock.settimeout(0.1)   
+        if self.ssl:
+            sock = self._imap.sslobj
+        else:
+            sock = self._imap.sock
+        sock.setblocking(0)
         try:
-            while not done():
-                try:
-                    line = self._imap._get_line()
-                except socket.timeout:
-                    timeouts += 1
-                else:
-                    resps.append(_parse_idle_response(line))
+            resps = []
+            rs, _, _ = select.select([sock], [], [], timeout)
+            if rs:
+                while True:
+                    try:
+                        line = self._imap._get_line()
+                    except (socket.timeout, socket.error):
+                        break
+                    else:
+                        resps.append(_parse_idle_response(line))
             return resps
         finally:
-            self._imap.sock.settimeout(None)
+            sock.setblocking(1)
 
     def idle_done(self):
         """Take the server out of IDLE mode.

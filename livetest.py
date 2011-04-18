@@ -9,7 +9,6 @@ import imp
 import os
 import sys
 import time
-import threading
 from datetime import datetime
 from ConfigParser import SafeConfigParser, NoOptionError
 
@@ -465,19 +464,24 @@ def createLiveTestClass(conf, use_uid):
             client2.append('INBOX', SIMPLE_MESSAGE)
 
             # Check for the idle data
-            responses = self.client.idle_check(timeout=1)
+            responses = self.client.idle_check(timeout=5)
             text, more_responses = self.client.idle_done()
             self.assertIn((1, 'EXISTS'), responses)
-            self.assertIn('idle', text.lower())     
-            self.assertIsInstance(more_responses, list)
-            
+            self.assertTrue(isinstance(text, str))
+            self.assertGreater(len(text), 0)
+            self.assertTrue(isinstance(more_responses, list))
+
+            # Check for IDLE data returned by idle_done()
             self.client.idle()
+            client2.select_folder('INBOX')
             client2.append('INBOX', SIMPLE_MESSAGE)
-            time.sleep(1)
+            time.sleep(2)    # Allow some time for the IDLE response to be sent
 
             text, responses = self.client.idle_done()
             self.assertIn((2, 'EXISTS'), responses)
-            self.assertIn('idle', text.lower())     
+            self.assertTrue(isinstance(text, str))
+            self.assertGreater(len(text), 0)
+
 
     return LiveTest
 
