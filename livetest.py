@@ -10,12 +10,12 @@ import os
 import sys
 import time
 from datetime import datetime
-from ConfigParser import SafeConfigParser, NoOptionError
 
 import imapclient
 from imapclient.test.util import unittest
+from imapclient.config import parse_config_file, create_client_from_config
 
-# TODO cleaner verbose output: avoid "__main__" and separater between classes
+# TODO cleaner verbose output: avoid "__main__" and separator between classes
 
 
 SIMPLE_MESSAGE = 'Subject: something\r\n\r\nFoo\r\n'
@@ -499,48 +499,6 @@ def have_matching_types(a, b, type_or_types):
         return False
     return isinstance(b, type(a))
 
-class Bunch(dict):
-
-    def __getattr__(self, k):
-        try:
-            return self[k]
-        except KeyError:
-            raise AttributeError
-
-    def __setattr__(self, k, v):
-        self[k] = v
-
-def parse_config_file(path):
-    parser = SafeConfigParser(dict(ssl='false',
-                                   username=None,
-                                   password=None,
-                                   oauth='false',
-                                   oauth_url=None,
-                                   oauth_token=None,
-                                   oauth_token_secret=None))
-    fh = file(path)
-    parser.readfp(fh)
-    fh.close()
-    section = 'main'
-    assert parser.sections() == [section], 'Only expected a [main] section'
-
-    try:
-        port = parser.getint(section, 'port')
-    except NoOptionError:
-        port = None
-        
-    return Bunch(
-        host=parser.get(section, 'host'),
-        port=port,
-        ssl=parser.getboolean(section, 'ssl'),
-        username=parser.get(section, 'username'),
-        password=parser.get(section, 'password'),
-        oauth=parser.getboolean(section, 'oauth'),
-        oauth_url=parser.get(section, 'oauth_url'),
-        oauth_token=parser.get(section, 'oauth_token'),
-        oauth_token_secret=parser.get(section, 'oauth_token_secret'),
-    )
-
 def argv_error(msg):
     print >> sys.stderr, msg
     print >> sys.stderr
@@ -557,15 +515,6 @@ def parse_argv():
     host_config = parse_config_file(ini_path)
     return host_config
 
-def create_client_from_config(conf):
-    client = imapclient.IMAPClient(conf.host, port=conf.port, ssl=conf.ssl)
-    if conf.oauth:
-        client.oauth_login(conf.oauth_url,
-                           conf.oauth_token,
-                           conf.oauth_token_secret)
-    else:
-        client.login(conf.username, conf.password)
-    return client
     
 
 def probe_host(config):
