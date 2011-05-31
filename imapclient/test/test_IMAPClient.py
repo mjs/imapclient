@@ -4,8 +4,10 @@
 
 import itertools
 import socket
+import sys
 import time
 from datetime import datetime
+from StringIO import StringIO
 from imapclient.fixed_offset import FixedOffset
 from imapclient.imapclient import datetime_to_imap
 from imapclient.test.mock import patch, sentinel, Mock
@@ -244,6 +246,25 @@ class TestIdle(IMAPClientTest):
         self.assertEqual(self.client._imap.tagged_commands, {})
         self.assertEqual(text, 'Idle done')
         self.assertListEqual([(99, 'EXISTS')], responses)
+
+
+class TestDebugLogging(IMAPClientTest):
+
+    def test_default_is_stderr(self):
+        self.assertIs(self.client.log_file, sys.stderr)
+
+    def test_IMAP_is_patched(self):
+        log = StringIO()
+        self.client.log_file = log
+
+        self.client._log('one')
+        self.client._imap._mesg('two')
+
+        output = log.getvalue()
+        self.assertIn('one', output)
+        self.assertIn('two', output)
+        
+
 
 if __name__ == '__main__':
     unittest.main()

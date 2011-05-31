@@ -3,14 +3,16 @@
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 import re
-import response_lexer
-from operator import itemgetter
 import select
 import socket
+import sys
 import warnings
+from datetime import datetime
+from operator import itemgetter
 
 import imaplib
-#imaplib.Debug = 5
+import response_lexer
+
     
 try:
     import oauth2
@@ -101,23 +103,25 @@ class IMAPClient(object):
         @param use_uid: Should message UIDs be used (default is True).
         @param ssl: Make an SSL connection (default is False)
         """
-        if ssl:
-            ImapClass = imaplib.IMAP4_SSL
-            default_port = 993
-        else:
-            ImapClass = imaplib.IMAP4
-            default_port = 143
-
         if port is None:
-            port = default_port
+            port = ssl and 993 or 143
 
-        self.use_uid = use_uid
+        self.host = host
+        self.port = port
         self.ssl = ssl
+        self.use_uid = use_uid
         self.folder_encode = True
-        self._imap = ImapClass(host, port)
+        self.log_file = sys.stderr
+
+        self._imap = self._create_IMAP4()
+        self._imap._mesg = self._log    # patch in custom debug log method
         self._idle_tag = None
 
-   
+    def _create_IMAP4(self):
+        # Create the IMAP instance in a separate method to make unit tests easier
+        ImapClass = self.ssl and imaplib.IMAP4_SSL or imaplib.IMAP4
+        return ImapClass(self.host, self.port)
+
     def login(self, username, password):
         """Perform a simple login
         """
@@ -780,6 +784,25 @@ class IMAPClient(object):
         # quoting. A hack but it works.
         return _quote_arg(name)
 
+    def __debug_get(self):
+        return self._imap.debug
+
+    def __debug_set(self, level):
+        if level is True:
+            level = 4
+        elif level is False:
+            level = 0
+        self._imap.debug = level
+
+    debug = property(__debug_get, __debug_set,
+                     doc="Set debug level. Integers from 0 to 5 or, True and " \
+                         "False can be used. True specifies debug level 4. " \
+                         "Debug output goes to stderr.")
+
+    def _log(self, text):
+        self.log_file.write('%s %s\n' % (datetime.now().strftime('%M:%S.%f'), text))
+        self.log_file.flush()
+        
 
 def messages_to_str(messages):
     """Convert a sequence of messages ids or a single message id into an

@@ -20,6 +20,7 @@ imapclient/examples/idle_example.py.
 Minor Features
 --------------
 interact.py can now read livetest.py INI files (#66)
+Added "debug" propety and setting of a log file (#90)
 
 Small Bug Fixes
 ---------------

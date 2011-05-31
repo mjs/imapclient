@@ -8,7 +8,7 @@ from imapclient.test.mock import Mock
 class TestableIMAPClient(IMAPClient):
 
     def __init__(self):
-        self._imap = Mock()
-        self.use_uid = True
-        self.folder_encode = True
+        super(TestableIMAPClient, self).__init__('somehost')
 
+    def _create_IMAP4(self):
+        return Mock()
