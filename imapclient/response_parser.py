@@ -111,11 +111,18 @@ class BodyData(tuple):
     @classmethod
     def create(cls, response):
         # In case of multipart messages we will see at least 2 tuples
-        # at the start. Restructure these in to a list so that the
-        # returned response tuple always has a consistent number of
-        # items regardless of whether the message is multipart or not.
-        raise NotImplementedError
-    
+        # at the start. Nest these in to a list so that the returned
+        # response tuple always has a consistent number of elements
+        # regardless of whether the message is multipart or not.
+        if isinstance(response[0], tuple):
+            # Multipart, find where the message part tuples stop
+            for i, part in enumerate(response):
+                if isinstance(part, basestring):
+                    break
+            return cls((list(response[:i]),) + response[i:])
+        else:
+            return cls(response)
+            
     @property
     def is_multipart(self):
         return isinstance(self[0], list)

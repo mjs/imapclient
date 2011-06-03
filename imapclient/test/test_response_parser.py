@@ -258,22 +258,24 @@ class TestParseFetchResponse(unittest.TestCase):
          self.check_BODYish_multipart('BODYSTRUCTURE')
     
     def check_BODYish_single_part(self, respType):
-        resp =  '123 (UID 317 %s ("TEXT" "PLAIN" ("CHARSET" "us-ascii") NIL NIL "7BIT" 16 1))' % respType
-        self.assertEquals(parse_fetch_response([resp]),
-            { 317: {respType: ('TEXT', 'PLAIN', ('CHARSET', 'us-ascii'), None, None, '7BIT', 16, 1),
-                    'SEQ': 123 }
-            })
+        text =  '123 (UID 317 %s ("TEXT" "PLAIN" ("CHARSET" "us-ascii") NIL NIL "7BIT" 16 1))' % respType
+        parsed = parse_fetch_response([text])
+        self.assertEquals(parsed, {317: {respType: ('TEXT', 'PLAIN', ('CHARSET', 'us-ascii'), None, None, '7BIT', 16, 1),
+                                         'SEQ': 123 }
+                                         })
+        self.assertFalse(parsed[317][respType].is_multipart)
 
     def check_BODYish_multipart(self, respType):
-        resp = '123 (UID 269 %s (("TEXT" "HTML" ("CHARSET" "us-ascii") NIL NIL "QUOTED-PRINTABLE" 55 3)' \
+        text = '123 (UID 269 %s (("TEXT" "HTML" ("CHARSET" "us-ascii") NIL NIL "QUOTED-PRINTABLE" 55 3)' \
                                 '("TEXT" "PLAIN" ("CHARSET" "us-ascii") NIL NIL "7BIT" 26 1) "MIXED"))' \
                                 % respType
-        self.assertEquals(parse_fetch_response([resp]),
-             {269: {respType: ([('TEXT', 'HTML', ('CHARSET', 'us-ascii'), None, None, 'QUOTED-PRINTABLE', 55, 3),
-                                ('TEXT', 'PLAIN', ('CHARSET', 'us-ascii'), None, None, '7BIT', 26, 1)],
-                                'MIXED'),
-                    'SEQ': 123}
-            })
+        parsed = parse_fetch_response([text])
+        self.assertEquals(parsed, {269: {respType: ([('TEXT', 'HTML', ('CHARSET', 'us-ascii'), None, None, 'QUOTED-PRINTABLE', 55, 3),
+                                                     ('TEXT', 'PLAIN', ('CHARSET', 'us-ascii'), None, None, '7BIT', 26, 1)],
+                                                     'MIXED'),
+                                        'SEQ': 123}
+                                        })
+        self.assertTrue(parsed[269][respType].is_multipart)
 
     def test_partial_fetch(self):
         body = '01234567890123456789'
