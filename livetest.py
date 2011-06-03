@@ -20,9 +20,11 @@ from imapclient.config import parse_config_file, create_client_from_config
 
 SIMPLE_MESSAGE = 'Subject: something\r\n\r\nFoo\r\n'
 
+# Simple address in To header triggers interesting Fastmail.fm
+# behaviour with ENVELOPE responses.
 MULTIPART_MESSAGE = """\
 From: Bob Smith <bob@smith.com>
-To: Some One <some@one.com>
+To: Some One <some@one.com>, foo@foo.com
 Date: Tue, 16 Mar 2010 16:45:32 +0000
 Message-ID: <1A472770E042064698CB5ADC83A12ACD39455AAB@ABC>
 MIME-Version: 1.0
@@ -368,7 +370,7 @@ def createLiveTestClass(conf, use_uid):
                                    (('Bob Smith', None, 'bob', 'smith.com'),),
                                    (('Bob Smith', None, 'bob', 'smith.com'),),
                                    (('Bob Smith', None, 'bob', 'smith.com'),),
-                                   (('Some One', None, 'some', 'one.com'),),
+                                   (('Some One', None, 'some', 'one.com'), (None, None, 'foo', 'foo.com')),
                                    None, None, None,
                                    '<1A472770E042064698CB5ADC83A12ACD39455AAB@ABC>'))
 
