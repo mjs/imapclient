@@ -94,14 +94,10 @@ class Lexer(object):
                         assert not token
                         yield nextchar + read_until(stream_i, nextchar)
                     else:
-                        # Other punctuation, eg. "("
+                        # Other punctuation, eg. "(". This ends the current token.
                         if token:
                             yield token
-                        if nextchar == ')' and stream_i.peek() == '(':
-                            stream_i.next()     # Read the '('
-                            yield ')('
-                        else:
-                            yield nextchar    # yield the punctuation
+                        yield nextchar
                     break
             else:
                 if token:
@@ -163,14 +159,6 @@ class PushableIterator(object):
 
     def push(self, item):
         self.pushed.append(item)
-
-    def peek(self, default=NO_MORE):
-        if not self.pushed:
-            try:
-                self.pushed.append(self.it.next())
-            except StopIteration:
-                return default
-        return self.pushed[-1]
 
         
         
