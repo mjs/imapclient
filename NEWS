@@ -19,13 +19,16 @@ imapclient/examples/idle_example.py.
 
 Minor Features
 --------------
-interact.py can now read livetest.py INI files (#66)
-Added "debug" propety and setting of a log file (#90)
+* interact.py can now read livetest.py INI files (#66)
+* Added "debug" propety and setting of a log file (#90)
 
 Small Bug Fixes
 ---------------
-getacl() was using wrong lexing class (#85) (Thanks josephhh)
-
+* getacl() was using wrong lexing class (#85) (Thanks josephhh)
+* Removed special handling for response tuples without whitespace
+  between them.  Post-process BODY/BODYSTRUCTURE responses
+  instead. This should not affect the external API. (#91) (Thanks
+  daishi)
 
 =============
  Version 0.7
