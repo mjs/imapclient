@@ -5,7 +5,7 @@ IMAPClient
    :maxdepth: 1
 
 :Author: `Menno Smits <http://freshfoo.com>`_
-:Version: |version| / |release|
+:Version: |release|
 :Date: |today|
 :Homepage: http://imapclient.freshfoo.com
 :Download: http://pypi.python.org/pypi/IMAPClient/
