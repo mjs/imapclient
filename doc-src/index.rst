@@ -15,7 +15,7 @@ values are full parsed, readily usable and use sensible Python
 types. Exceptions are raised when problems occur (no error checking of
 return values is required).
 
-MAPClient is straight forward it use, but it can be useful to have at
+IMAPClient is straight forward it use, but it can be useful to have at
 least a general understanding of the IMAP protocol. `RFC3501
 <http://www.faqs.org/rfcs/rfc3501.html>`_ explains IMAP in
 detail. Other RFCs also apply to various extensions to the base
@@ -24,9 +24,37 @@ relevant.
 
 A Simple Example
 ----------------
+The core of the IMAPClient API is the IMAPClient class. Instantiating
+this class, creates a connection to an IMAP account. Calling methods
+on the IMAPClient instance interacts with the server.
+
+The following example shows a simple interaction with an IMAP
+server. It displays the message ID, size and IMAP flags of all
+non-deleted messages in the INBOX folder.
+
 .. literalinclude:: ../imapclient/examples/example.py
 
-XXX include some simple output
+The output from this example could look something like this
+
+::
+
+    96 messages in INBOX
+    75 messages that aren't deleted
+
+    Messages:
+       ID 38273: 1775 bytes, flags=('NonJunk',)
+       ID 36459: 2833 bytes, flags=('\\Flagged', '\\Seen')
+       ID 34693: 2874 bytes, flags=('\\Flagged', '\\Seen')
+       ID 38066: 5368 bytes, flags=('\\Flagged', '\\Seen')
+       ID 38154: 9079 bytes, flags=('\\Seen', 'NonJunk')
+       ID 14099: 3322 bytes, flags=('\\Flagged', '\\Seen', '$Label1')
+       ID 34196: 9163 bytes, flags=('\\Answered', '\\Seen')
+       ID 35349: 4266 bytes, flags=('\\Flagged', '\\Seen')
+       ID 29335: 5617 bytes, flags=('\\Flagged', '\\Seen', 'NonJunk')
+       ID 38041: 7649 bytes, flags=('\\Seen', 'NonJunk')
+       ID 22310: 976108 bytes, flags=('\\Flagged', '\\Seen', '$Label1')
+       ID 6439: 3792 bytes, flags=('\\Flagged', '\\Seen', '$Label1', 'Junk')
+
 
 Concepts
 --------
