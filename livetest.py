@@ -10,6 +10,7 @@ import os
 import sys
 import time
 from datetime import datetime
+from email.utils import make_msgid
 
 import imapclient
 from imapclient.test.util import unittest
@@ -26,7 +27,6 @@ MULTIPART_MESSAGE = """\
 From: Bob Smith <bob@smith.com>
 To: Some One <some@one.com>, foo@foo.com
 Date: Tue, 16 Mar 2010 16:45:32 +0000
-Message-ID: <1A472770E042064698CB5ADC83A12ACD39455AAB@ABC>
 MIME-Version: 1.0
 Subject: A multipart message
 Content-Type: multipart/mixed; boundary="===============1534046211=="
@@ -54,6 +54,7 @@ def createLiveTestClass(conf, use_uid):
     class LiveTest(unittest.TestCase):
 
         def setUp(self):
+            self.maxDiff = None
             self.client = create_client_from_config(conf)
             self.client.use_uid = use_uid
             self.clear_folders()
@@ -349,8 +350,15 @@ def createLiveTestClass(conf, use_uid):
 
 
         def test_fetch(self):
+            # Generate a fresh message-id each time because Gmail is
+            # clever and will treat appends of messages with
+            # previously seen message-ids as the same message. This
+            # breaks our tests when the test message is updated.
+            msg_id_header = make_msgid()
+            msg = ('Message-ID: %s\r\n' % msg_id_header) + MULTIPART_MESSAGE
+
             self.client.select_folder('INBOX')
-            self.client.append('INBOX', MULTIPART_MESSAGE)
+            self.client.append('INBOX', msg)
 
             fields = ['RFC822', 'FLAGS', 'INTERNALDATE', 'ENVELOPE']
             msg_id = self.client.search()[0]
@@ -361,7 +369,7 @@ def createLiveTestClass(conf, use_uid):
 
             self.assertSetEqual(set(msginfo.keys()), set(fields + ['SEQ']))
             self.assertEqual(msginfo['SEQ'], 1)
-            self.assertMultiLineEqual(msginfo['RFC822'], MULTIPART_MESSAGE)
+            self.assertMultiLineEqual(msginfo['RFC822'], msg)
             self.assertIsInstance(msginfo['INTERNALDATE'], datetime)
             self.assertIsInstance(msginfo['FLAGS'], tuple)
             self.assertTupleEqual(msginfo['ENVELOPE'],
@@ -371,8 +379,7 @@ def createLiveTestClass(conf, use_uid):
                                    (('Bob Smith', None, 'bob', 'smith.com'),),
                                    (('Bob Smith', None, 'bob', 'smith.com'),),
                                    (('Some One', None, 'some', 'one.com'), (None, None, 'foo', 'foo.com')),
-                                   None, None, None,
-                                   '<1A472770E042064698CB5ADC83A12ACD39455AAB@ABC>'))
+                                   None, None, None, msg_id_header))
 
 
         def test_partial_fetch(self):
