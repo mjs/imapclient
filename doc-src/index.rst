@@ -22,6 +22,8 @@ detail. Other RFCs also apply to various extensions to the base
 protocol. These are referred to in the documentation below where
 relevant.
 
+XXX include canonical details of website author, mailing list, PyPI etc
+
 A Simple Example
 ----------------
 The core of the IMAPClient API is the IMAPClient class. Instantiating
@@ -68,34 +70,60 @@ are numbered from 1 to N where N is the number of messages. These
 numbers don't persist between sessions and may be reassigned after
 some operations such as a folder expunge.
 
-XXX explain UIDs
+A more convenient approach is Unique Identifiers (UIDs). Unique
+Identifiers are integer assigned to each message by the IMAP server
+that will persist across sessions. They do not change when folders are
+expunged.
 
-XXX rework below
-Message unique identifiers (UID) can be used with any call. The use_uid
-argument to the constructor and the use_uid attribute control whether UIDs
-are used.
+Each call to the IMAP server can use either message sequence numbers
+or UIDs in the command arguments and return values. The client
+specifies to the server which type of identifier should be
+used. IMAPClient uses UIDs by default.
 
-Any method that accepts message id's takes either a sequence containing
-message IDs (eg. [1,2,3]) or a single message ID as an integer.
+Any method that accepts message ids takes either a sequence containing
+message ids (eg. ``[1,2,3]``) or a single message id integer. Whether
+these are interpreted as message sequence numbers or UIDs depends on
+the *use_uid* argument used when the IMAPClient instance is created
+and the *use_uid* attribute. The *use_uid* attribute can be used to
+change the message id type between calls to the server.
 
 Message Flags
 ~~~~~~~~~~~~~
-Any method that accepts message flags takes either a sequence containing
-message flags (eg. [DELETED, 'foo', 'Bar']) or a single message flag (eg.
-'Foo'). See the constants at the top of this file for commonly used flags.
+An IMAP server keeps zero or more flags for each message. These
+indicate certain properties of the message or can be used by IMAP
+clients to keep track of data related to a message.
+
+The IMAPClient package has constants for a number of commmonly used flags::
+
+    DELETED = r'\Deleted'
+    SEEN = r'\Seen'
+    ANSWERED = r'\Answered'
+    FLAGGED = r'\Flagged'
+    DRAFT = r'\Draft'
+    RECENT = r'\Recent'         # This flag is read-only
+
+Any method that accepts message flags takes either a sequence
+containing message flags (eg. ``[DELETED, 'foo', 'Bar']``) or a single
+message flag (eg.  ``'Foo'``).
 
 Folder Name Encoding
 ~~~~~~~~~~~~~~~~~~~~
-XXX 
 Any method that takes a folder name will accept a standard string or a
 unicode string. Unicode strings will be transparently encoded using
-modified UTF-7 as specified by RFC-2060. Such folder names will be returned
-as unicode strings by methods that return folder names.
+modified UTF-7 as specified by `RFC-3501
+<http://tools.ietf.org/html/rfc3501#section-5.1.3>`_.  This allows for
+arbitrary unicode characters (eg. non-English characters) to be used
+in folder names.
 
-Transparent folder name encoding can be enabled or disabled with the
-folder_encode attribute. It defaults to True.
+All folder names returned by IMAPClient are always returned as unicode
+strings.
 
-XXX check FPNP for more ideas on what should go in here
+The ampersand character ("&") has special meaning in IMAP folder
+names. IMAPClient automatically escapes and unescapes this character
+so that the caller doesn't have to.
+
+Automatic folder name encoding and decoding can be enabled or disabled
+with the *folder_encode* attribute. It defaults to True.
 
 Exceptions
 ~~~~~~~~~~
