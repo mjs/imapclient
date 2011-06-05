@@ -4,9 +4,18 @@ IMAPClient
 .. toctree::
    :maxdepth: 1
 
+:Author: `Menno Smits <http://freshfoo.com>`_
+:Version: |release|
+:Date: 2011/06/05
+:Homepage: http://imapclient.freshfoo.com
+:Download: http://pypi.python.org/pypi/IMAPClient/
+:Documentation: http://freshfoo.com/projects/imapclient/docs/
+:License: `New BSD License <http://en.wikipedia.org/wiki/BSD_licenses>`_
+:Support: `Mailing List <http://librelist.com/browser/imapclient/>`_
+
 Introduction
 ------------
-A Pythonic, easy-to-use IMAP client package.
+IMAPClient is a a Pythonic, easy-to-use IMAP client package.
 
 Although IMAPClient actually uses the imaplib module from the Python
 standard library under the hood, it provides a different API. Instead
@@ -21,8 +30,6 @@ least a general understanding of the IMAP protocol. `RFC3501
 detail. Other RFCs also apply to various extensions to the base
 protocol. These are referred to in the documentation below where
 relevant.
-
-XXX include canonical details of website author, mailing list, PyPI etc
 
 A Simple Example
 ----------------
