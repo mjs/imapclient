@@ -14,7 +14,7 @@ Jp Calderone
     functionality was written by Jp Calderone.
 
 Michael Foord
-    IMAPClient is distributed with Michael's excellent mock.py 
+    IMAPClient is distributed with Michael's excellent Mock library.
     (http://www.voidspace.org.uk/python/mock/)
 
 Mark Hammond (mhammond _AT_ skipinet.com.au)
