@@ -5,11 +5,11 @@ IMAPClient
    :maxdepth: 1
 
 :Author: `Menno Smits <http://freshfoo.com>`_
-:Version: |release|
-:Date: 2011/06/05
+:Version: |version| / |release|
+:Date: |today|
 :Homepage: http://imapclient.freshfoo.com
 :Download: http://pypi.python.org/pypi/IMAPClient/
-:Documentation: http://freshfoo.com/projects/imapclient/docs/
+:Documentation: http://imapclient.readthedocs.org/
 :License: `New BSD License <http://en.wikipedia.org/wiki/BSD_licenses>`_
 :Support: `Mailing List <http://librelist.com/browser/imapclient/>`_
 
@@ -25,7 +25,7 @@ types. Exceptions are raised when problems occur (no error checking of
 return values is required).
 
 IMAPClient is straight forward it use, but it can be useful to have at
-least a general understanding of the IMAP protocol. `RFC3501
+least a general understanding of the IMAP protocol. `RFC 3501
 <http://www.faqs.org/rfcs/rfc3501.html>`_ explains IMAP in
 detail. Other RFCs also apply to various extensions to the base
 protocol. These are referred to in the documentation below where
@@ -117,7 +117,7 @@ Folder Name Encoding
 ~~~~~~~~~~~~~~~~~~~~
 Any method that takes a folder name will accept a standard string or a
 unicode string. Unicode strings will be transparently encoded using
-modified UTF-7 as specified by `RFC-3501 section 5.1.3
+modified UTF-7 as specified by `RFC 3501 section 5.1.3
 <http://tools.ietf.org/html/rfc3501#section-5.1.3>`_.  This allows for
 arbitrary unicode characters (eg. non-English characters) to be used
 in folder names.

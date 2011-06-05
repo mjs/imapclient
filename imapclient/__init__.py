@@ -2,7 +2,7 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-__version__ = '0.8'
+__version__ = '0.8-dev'
 __author__ = 'Menno Smits <menno@freshfoo.com>'
 
 from imapclient import *

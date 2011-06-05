@@ -167,7 +167,7 @@ class IMAPClient(object):
         positionally or using attributes named *personal*, *other* and
         *shared*.
 
-        See `RFC-2342 <http://tools.ietf.org/html/rfc2342>`_ for more details.
+        See `RFC 2342 <http://tools.ietf.org/html/rfc2342>`_ for more details.
         """
         typ, data = self._imap.namespace()
         self._checkok('namespace', typ, data)
@@ -487,7 +487,7 @@ class IMAPClient(object):
         *charset* specifies the character set of the strings in the
         criteria. It defaults to US-ASCII.
 
-        See `RFC-3501 section 6.4.4 <http://tools.ietf.org/html/rfc3501#section-6.4.4>`_
+        See `RFC 3501 section 6.4.4 <http://tools.ietf.org/html/rfc3501#section-6.4.4>`_
         for more details.
         """
         if not criteria:
@@ -524,7 +524,7 @@ class IMAPClient(object):
             SUBJECT
 
         The *criteria* argument is as per search(). 
-        See `RFC-5256 <http://tools.ietf.org/html/rfc5256>`_ for full details.
+        See `RFC 5256 <http://tools.ietf.org/html/rfc5256>`_ for full details.
 
         Note that SORT is an extension to the IMAP4 standard so it may
         not be supported by all IMAP servers.
