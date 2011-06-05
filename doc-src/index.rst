@@ -110,7 +110,7 @@ Folder Name Encoding
 ~~~~~~~~~~~~~~~~~~~~
 Any method that takes a folder name will accept a standard string or a
 unicode string. Unicode strings will be transparently encoded using
-modified UTF-7 as specified by `RFC-3501
+modified UTF-7 as specified by `RFC-3501 section 5.1.3
 <http://tools.ietf.org/html/rfc3501#section-5.1.3>`_.  This allows for
 arbitrary unicode characters (eg. non-English characters) to be used
 in folder names.

@@ -133,9 +133,11 @@ class IMAPClient(object):
     def get_folder_delimiter(self):
         """Return the folder separator used by the IMAP server.
 
-        WARNING: The implementation just picks the first folder
-        separator from the first namespace returned. This is not
-        particularly sensible. Use namespace instead().
+        .. warning::
+
+            The implementation just picks the first folder separator
+            from the first namespace returned. This is not
+            particularly sensible. Use namespace instead().
         """
         warnings.warn(DeprecationWarning('get_folder_delimiter is going away. Use namespace() instead.'))
         for part in self.namespace():
@@ -343,7 +345,19 @@ class IMAPClient(object):
     def search(self, criteria='ALL', charset=None):
         """Return a list of messages ids matching *criteria*.
 
-        XXX more detail
+        *criteria* should be a list of of one or more criteria
+        specifications or a single critera string. Example values
+        include::
+
+             'NOT DELETED'
+             'UNSEEN'
+             'SINCE 1-Feb-2011'
+
+        *charset* specifies the character set of the strings in the
+        criteria. It defaults to US-ASCII.
+
+        See `RFC-3501 section 6.4.4 <http://tools.ietf.org/html/rfc3501#section-6.4.4>`_
+        for more details.
         """
         if not criteria:
             raise ValueError('no criteria specified')
@@ -368,17 +382,21 @@ class IMAPClient(object):
         return [ long(i) for i in data[0].split() ]
 
 
-    def sort(self, sort_criteria, criteria='ALL', charset='UTF-8' ):
+    def sort(self, sort_criteria, criteria='ALL', charset='UTF-8'):
         """Return a list of message ids sorted by *sort_criteria* and
         optionally filtered by *criteria*.
 
-        The *critera* are as per search().  
+        Example values for *sort_criteria* include::
 
-        Note that this is an extension to the IMAP4:
-        http://www.ietf.org/internet-drafts/draft-ietf-imapext-sort-19.txt
+            ARRIVAL
+            REVERSE SIZE
+            SUBJECT
 
-        XXX needs more detail
-        XXX explain charset
+        The *criteria* argument is as per search(). 
+        See `RFC-5256 <http://tools.ietf.org/html/rfc5256>`_ for full details.
+
+        Note that SORT is an extension to the IMAP4 standard so it may
+        not be supported by all IMAP servers.
         """
         if not criteria:
             raise ValueError('no criteria specified')
@@ -400,13 +418,14 @@ class IMAPClient(object):
 
         self._checkok('sort', typ, data)
 
-        return [ long(i) for i in data[0].split() ]
+        return [long(i) for i in data[0].split()]
 
 
     def get_flags(self, messages):
-        """Returns the flags set for each message in *messages* as a
-        dictionary structured like this:
-          ``{ msgid1: [flag1, flag2, ... ], }``.
+        """Return the flags set for each message in *messages*.
+
+        The return value is a dictionary structured like this: ``{
+        msgid1: [flag1, flag2, ... ], }``.
         """
         response = self.fetch(messages, ['FLAGS'])
         return self._flatten_dict(response)
