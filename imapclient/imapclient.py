@@ -3,24 +3,37 @@
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 import re
+import select
+import socket
+import sys
+import warnings
+from datetime import datetime
+from operator import itemgetter
+
 import imaplib
 import response_lexer
-from operator import itemgetter
-import warnings
-#imaplib.Debug = 5
+
+    
+try:
+    import oauth2
+except ImportError:
+    oauth2 = None
 
 import imap_utf7
 from fixed_offset import FixedOffset
 
 
-__all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT',
-    'RECENT']
+__all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT', 'RECENT']
 
 from response_parser import parse_response, parse_fetch_response
 
 # We also offer the gmail-specific XLIST command...
 if 'XLIST' not in imaplib.Commands:
   imaplib.Commands['XLIST'] = imaplib.Commands['LIST']
+
+# ...and IDLE
+if 'IDLE' not in imaplib.Commands:
+  imaplib.Commands['IDLE'] = imaplib.Commands['APPEND']
 
 
 # System flags
@@ -62,21 +75,25 @@ class IMAPClient(object):
                            r'\((?P<status_items>.*)\)$')
 
     def __init__(self, host, port=None, use_uid=True, ssl=False):
-        if ssl:
-            ImapClass = imaplib.IMAP4_SSL
-            default_port = 993
-        else:
-            ImapClass = imaplib.IMAP4
-            default_port = 143
-
         if port is None:
-            port = default_port
+            port = ssl and 993 or 143
 
-        self._imap = ImapClass(host, port)
+        self.host = host
+        self.port = port
+        self.ssl = ssl
         self.use_uid = use_uid
         self.folder_encode = True
+        self.log_file = sys.stderr
 
-   
+        self._imap = self._create_IMAP4()
+        self._imap._mesg = self._log    # patch in custom debug log method
+        self._idle_tag = None
+
+    def _create_IMAP4(self):
+        # Create the IMAP instance in a separate method to make unit tests easier
+        ImapClass = self.ssl and imaplib.IMAP4_SSL or imaplib.IMAP4
+        return ImapClass(self.host, self.port)
+
     def login(self, username, password):
         """Login using *username* and *password*, returning the
         server response.
@@ -85,6 +102,26 @@ class IMAPClient(object):
         self._checkok('login', typ, data)
         return data[0]
 
+    def oauth_login(self, url, oauth_token, oauth_token_secret,
+                    consumer_key='anonymous', consumer_secret='anonymous'):
+        """Authenticate using oauth.
+
+        @param url: The OAuth request URL.
+        @param oauth_token: An OAuth key.
+        @param oauth_token_secret: An OAuth secret.
+        @param consumer_key: An OAuth consumer key (defaults to 'anonymous').
+        @param consumer_secret: An OAuth consumer secret (defaults to 'anonymous').
+        """
+        if oauth2:
+            token = oauth2.Token(oauth_token, oauth_token_secret)
+            consumer = oauth2.Consumer(consumer_key, consumer_secret)
+            xoauth_callable = lambda x: oauth2.build_xoauth_string(url, consumer, token)
+            
+            typ, data = self._imap.authenticate('XOAUTH', xoauth_callable)
+            self._checkok('authenticate', typ, data)
+            return data[0]
+        else:
+            raise self.Error('The optional oauth2 dependency is needed for oauth authentication')
 
     def logout(self):
         """Logout, returning the server response.
@@ -248,7 +285,6 @@ class IMAPClient(object):
         self._checkok('select', typ, data)
         return self._process_select_response(self._imap.untagged_responses)
 
-
     def _process_select_response(self, resp):
         out = {}
         for key, value in resp.iteritems():
@@ -265,6 +301,92 @@ class IMAPClient(object):
             out[key] = value
         return out
 
+    def idle(self):
+        """Put server into IDLE mode.
+
+        In this mode the server will return unsolicited responses
+        about changes to the selected mailbox.
+
+        This method returns immediately. Use idle_check() to check for
+        IDLE responses and idle_done() to stop IDLE mode.
+
+        Note: Any other commmands issued while the server is in IDLE
+        mode will fail.
+
+        See RFC 2177 for more information about the IDLE extension.
+        http://tools.ietf.org/html/rfc2177
+        """
+        self._idle_tag = self._imap._command('IDLE')
+        resp = self._imap._get_response()
+        if resp is not None:
+            raise self.Error('Unexpected IDLE response: %s' % resp)
+
+    def idle_check(self, timeout=None):
+        """Check for any IDLE responses sent by the server.
+
+        This method should only be called if the server is in IDLE
+        mode (see idle()).
+
+        By default, this method will block until an IDLE response is
+        received. If timeout is provided, the call will block for at
+        most this number of seconds while waiting for an IDLE response.
+
+        The return value is a list of received IDLE responses. These
+        will be parsed with values converted to appropriate types. For
+        example:
+
+        [('OK', 'Still here'),
+         (1, 'EXISTS'),
+         (1, 'FETCH', ('FLAGS', ('\\NotJunk',)))]
+        """
+        # make the socket non-blocking so the timeout can be
+        # implemented for this call
+        if self.ssl:
+            sock = self._imap.sslobj
+        else:
+            sock = self._imap.sock
+        sock.setblocking(0)
+        try:
+            resps = []
+            rs, _, _ = select.select([sock], [], [], timeout)
+            if rs:
+                while True:
+                    try:
+                        line = self._imap._get_line()
+                    except (socket.timeout, socket.error):
+                        break
+                    else:
+                        resps.append(_parse_idle_response(line))
+            return resps
+        finally:
+            sock.setblocking(1)
+
+    def idle_done(self):
+        """Take the server out of IDLE mode.
+
+        This method should only be called if the server is in IDLE mode.
+
+        The return value is (command_text, idle_responses) where
+        command_text is the text sent by the server when the IDLE
+        command finished (eg. 'Idle terminated') and idle_responses is
+        a list of parsed idle responses received since the last call
+        to idle_check() (if any). These are returned in parsed form as
+        per idle_check().
+        """
+        self._imap.send('DONE\r\n')
+        # Slurp up any remaining IDLE responses until the IDLE is done
+        tag = self._idle_tag
+        tagged_commands = self._imap.tagged_commands
+        resps = []
+        while True:
+            line = self._imap._get_response()
+            if tagged_commands[tag]:
+                break
+            resps.append(_parse_idle_response(line))
+        self._idle_tag = None
+        typ, data = tagged_commands.pop(tag)
+        self._checkok('idle', typ, data)
+        return data[0], resps
 
     def folder_status(self, folder, what=None):
         """Return the status of *folder*.
@@ -584,13 +706,9 @@ class IMAPClient(object):
         typ, data = self._imap.getacl(folder)
         self._checkok('getacl', typ, data)
 
-        parts = list(response_lexer.Lexer([data[0]]))
+        parts = list(response_lexer.TokenSource(data))
         parts = parts[1:]       # First item is folder name
-
-        out = []
-        for i in xrange(0, len(parts), 2):
-            out.append((parts[i], parts[i+1]))
-        return out
+        return [(parts[i], parts[i+1]) for i in xrange(0, len(parts), 2)]
 
     def setacl(self, folder, who, what):
         """Set an ACL (*what*) for user (*who*) for a folder.
@@ -659,6 +777,25 @@ class IMAPClient(object):
         # quoting. A hack but it works.
         return _quote_arg(name)
 
+    def __debug_get(self):
+        return self._imap.debug
+
+    def __debug_set(self, level):
+        if level is True:
+            level = 4
+        elif level is False:
+            level = 0
+        self._imap.debug = level
+
+    debug = property(__debug_get, __debug_set,
+                     doc="Set debug level. Integers from 0 to 5 or, True and " \
+                         "False can be used. True specifies debug level 4. " \
+                         "Debug output goes to stderr.")
+
+    def _log(self, text):
+        self.log_file.write('%s %s\n' % (datetime.now().strftime('%M:%S.%f'), text))
+        self.log_file.flush()
+        
 
 def messages_to_str(messages):
     """Convert a sequence of messages ids or a single integer message id
@@ -697,3 +834,12 @@ def _quote_arg(arg):
   arg = arg.replace('\\', '\\\\')
   arg = arg.replace('"', '\\"')
   return '"%s"' % arg
+
+
+def _parse_idle_response(text):
+    assert text.startswith('* ')
+    text = text[2:]
+    if text.startswith(('OK ', 'NO ')):
+        return tuple(text.split(' ', 1))
+    return parse_response([text]) 
+                

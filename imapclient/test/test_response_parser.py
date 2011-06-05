@@ -51,22 +51,6 @@ class TestParseResponse(unittest.TestCase):
         self._test('(123 "foo" ((0 1 2) "more" NIL) 66)',
                    (123, "foo", ((0, 1, 2), "more", None), 66))
 
-    def test_juxtatposed_tuples(self):
-        # Tuples with no whitespace between them should be returned as
-        # a list of tuples
-        self._test('(12 "foo")(34 NIL 0)',
-                   [(12, "foo"), (34, None, 0)])
-        self._test('(12 "foo")(34 NIL 0)(5 66)',
-                   [(12, "foo"), (34, None, 0), (5, 66)])
-        self._test('((12 "foo")(34 NIL 0) "foo")',
-                   ([(12, "foo"), (34, None, 0)], "foo"))
-        self._test('((12 "foo")(34 NIL 0)(4 55 6) "foo")',
-                   ([(12, "foo"), (34, None, 0), (4, 55, 6)], "foo"))
-        self._test('((12 "foo")(34 (NIL 1 2) 0)(4 55 6) "foo")',
-                   ([(12, "foo"), (34, (None, 1, 2), 0), (4, 55, 6)], "foo"))
-        self._test('(12 "foo")(34 NIL ("a" "b")("c" "d"))',
-                   [(12, "foo"), (34, None, [('a', 'b'), ('c', 'd')])])
-
     def test_complex_mixed(self):
         self._test('((FOO "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 1152 23) '
                    '("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "cc.diff") '
@@ -149,18 +133,12 @@ class TestParseResponse(unittest.TestCase):
     def test_incomplete_tuple(self):
         self._test_parse_error('abc (1 2', 'Tuple incomplete before "\(1 2"')
 
-    def test_incomplete_juxtaposed_tuples(self):
-        self._test_parse_error('(1 2)(3 4',
-                               'Juxtaposed tuples incomplete before "\(1 2\)\(3 4"')
-
     def test_bad_literal(self):
         self._test_parse_error([('{99}', 'abc')],
                                'Expecting literal of size 99, got 3')
 
-
     def test_bad_quoting(self):
         self._test_parse_error('"abc next', """No closing '"'""")
-
 
     def _test(self, to_parse, expected, wrap=True):
         if wrap:
@@ -271,6 +249,33 @@ class TestParseFetchResponse(unittest.TestCase):
             { 31710: {'BODY[HEADER.FIELDS (FROM SUBJECT)]': header_text,
                       'SEQ': 123}})
 
+    def test_BODY(self):
+         self.check_BODYish_single_part('BODY')
+         self.check_BODYish_multipart('BODY')
+
+    def test_BODYSTRUCTURE(self):
+         self.check_BODYish_single_part('BODYSTRUCTURE')
+         self.check_BODYish_multipart('BODYSTRUCTURE')
+    
+    def check_BODYish_single_part(self, respType):
+        text =  '123 (UID 317 %s ("TEXT" "PLAIN" ("CHARSET" "us-ascii") NIL NIL "7BIT" 16 1))' % respType
+        parsed = parse_fetch_response([text])
+        self.assertEquals(parsed, {317: {respType: ('TEXT', 'PLAIN', ('CHARSET', 'us-ascii'), None, None, '7BIT', 16, 1),
+                                         'SEQ': 123 }
+                                         })
+        self.assertFalse(parsed[317][respType].is_multipart)
+
+    def check_BODYish_multipart(self, respType):
+        text = '123 (UID 269 %s (("TEXT" "HTML" ("CHARSET" "us-ascii") NIL NIL "QUOTED-PRINTABLE" 55 3)' \
+                                '("TEXT" "PLAIN" ("CHARSET" "us-ascii") NIL NIL "7BIT" 26 1) "MIXED"))' \
+                                % respType
+        parsed = parse_fetch_response([text])
+        self.assertEquals(parsed, {269: {respType: ([('TEXT', 'HTML', ('CHARSET', 'us-ascii'), None, None, 'QUOTED-PRINTABLE', 55, 3),
+                                                     ('TEXT', 'PLAIN', ('CHARSET', 'us-ascii'), None, None, '7BIT', 26, 1)],
+                                                     'MIXED'),
+                                        'SEQ': 123}
+                                        })
+        self.assertTrue(parsed[269][respType].is_multipart)
 
     def test_partial_fetch(self):
         body = '01234567890123456789'

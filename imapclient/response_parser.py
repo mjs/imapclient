@@ -11,11 +11,15 @@ Intially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 
 #TODO more exact error reporting
 
-import imaplib
 from datetime import datetime
 from fixed_offset import FixedOffset
 from response_lexer import TokenSource
 
+try:
+    import imaplib2 as imaplib
+except ImportError:
+    imaplib2 = None
+    import imaplib
 
 __all__ = ['parse_response', 'ParseError']
 
@@ -86,7 +90,7 @@ def parse_fetch_response(text):
             elif word == 'INTERNALDATE':
                 msg_data[word] = _convert_INTERNALDATE(value)
             elif word in ('BODY', 'BODYSTRUCTURE'):
-                msg_data[word] = BodyData(value)
+                msg_data[word] = BodyData.create(value)
             else:
                 msg_data[word] = value
 
@@ -104,6 +108,21 @@ def _int_or_error(value, error_text):
 
 class BodyData(tuple):
 
+    @classmethod
+    def create(cls, response):
+        # In case of multipart messages we will see at least 2 tuples
+        # at the start. Nest these in to a list so that the returned
+        # response tuple always has a consistent number of elements
+        # regardless of whether the message is multipart or not.
+        if isinstance(response[0], tuple):
+            # Multipart, find where the message part tuples stop
+            for i, part in enumerate(response):
+                if isinstance(part, basestring):
+                    break
+            return cls((list(response[:i]),) + response[i:])
+        else:
+            return cls(response)
+            
     @property
     def is_multipart(self):
         return isinstance(self[0], list)
@@ -160,31 +179,9 @@ def parse_tuple(src):
     for token in src:
         if token == ")":
             return tuple(out)
-        elif token == ')(':
-            return parse_juxtaposed_tuples(src, out)
-        else:
-            out.append(atom(src, token))
+        out.append(atom(src, token))
     # no terminator
     raise ParseError('Tuple incomplete before "(%s"' % _fmt_tuple(out))
-
-
-def parse_juxtaposed_tuples(src, init):
-    out = [tuple(init)]
-    current = []
-    for token in src:
-        if token in (')', ')('):
-            out.append(tuple(current))
-            if token == ')':
-                return out
-            current = []
-        else:
-            current.append(atom(src, token))
-
-    # no terminator
-    preceeding = ''.join('(' + _fmt_tuple(t) + ')' for t in out)
-    if current:
-        preceeding += '(' + _fmt_tuple(current)
-    raise ParseError('Juxtaposed tuples incomplete before "%s"' % preceeding)
 
 
 def _fmt_tuple(t):

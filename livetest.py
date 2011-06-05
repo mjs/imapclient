@@ -8,22 +8,25 @@
 import imp
 import os
 import sys
+import time
 from datetime import datetime
-from ConfigParser import SafeConfigParser, NoOptionError
+from email.utils import make_msgid
 
 import imapclient
 from imapclient.test.util import unittest
+from imapclient.config import parse_config_file, create_client_from_config
 
-# TODO cleaner verbose output: avoid "__main__" and separater between classes
+# TODO cleaner verbose output: avoid "__main__" and separator between classes
 
 
 SIMPLE_MESSAGE = 'Subject: something\r\n\r\nFoo\r\n'
 
+# Simple address in To header triggers interesting Fastmail.fm
+# behaviour with ENVELOPE responses.
 MULTIPART_MESSAGE = """\
 From: Bob Smith <bob@smith.com>
-To: Some One <some@one.com>
+To: Some One <some@one.com>, foo@foo.com
 Date: Tue, 16 Mar 2010 16:45:32 +0000
-Message-ID: <1A472770E042064698CB5ADC83A12ACD39455AAB@ABC>
 MIME-Version: 1.0
 Subject: A multipart message
 Content-Type: multipart/mixed; boundary="===============1534046211=="
@@ -46,13 +49,14 @@ Here is the second part.
 """.replace('\n', '\r\n')
 
 
-def createLiveTestClass(host, username, password, port, ssl, use_uid, namespace):
+def createLiveTestClass(conf, use_uid):
 
     class LiveTest(unittest.TestCase):
 
         def setUp(self):
-            self.client = imapclient.IMAPClient(host, port=port, use_uid=use_uid, ssl=ssl)
-            self.client.login(username, password)
+            self.maxDiff = None
+            self.client = create_client_from_config(conf)
+            self.client.use_uid = use_uid
             self.clear_folders()
             self.unsub_all_folders()
             self.client.select_folder('INBOX')
@@ -88,7 +92,7 @@ def createLiveTestClass(host, username, password, port, ssl, use_uid, namespace)
             self.client.expunge()
 
         def add_namespace(self, folder):
-            return namespace[0] + folder
+            return conf.namespace[0] + folder
 
         def add_namespace_to_list(self, folders):
             return [self.add_namespace(folder) for folder in folders]
@@ -346,8 +350,15 @@ def createLiveTestClass(host, username, password, port, ssl, use_uid, namespace)
 
 
         def test_fetch(self):
+            # Generate a fresh message-id each time because Gmail is
+            # clever and will treat appends of messages with
+            # previously seen message-ids as the same message. This
+            # breaks our tests when the test message is updated.
+            msg_id_header = make_msgid()
+            msg = ('Message-ID: %s\r\n' % msg_id_header) + MULTIPART_MESSAGE
+
             self.client.select_folder('INBOX')
-            self.client.append('INBOX', MULTIPART_MESSAGE)
+            self.client.append('INBOX', msg)
 
             fields = ['RFC822', 'FLAGS', 'INTERNALDATE', 'ENVELOPE']
             msg_id = self.client.search()[0]
@@ -358,7 +369,7 @@ def createLiveTestClass(host, username, password, port, ssl, use_uid, namespace)
 
             self.assertSetEqual(set(msginfo.keys()), set(fields + ['SEQ']))
             self.assertEqual(msginfo['SEQ'], 1)
-            self.assertMultiLineEqual(msginfo['RFC822'], MULTIPART_MESSAGE)
+            self.assertMultiLineEqual(msginfo['RFC822'], msg)
             self.assertIsInstance(msginfo['INTERNALDATE'], datetime)
             self.assertIsInstance(msginfo['FLAGS'], tuple)
             self.assertTupleEqual(msginfo['ENVELOPE'],
@@ -367,9 +378,8 @@ def createLiveTestClass(host, username, password, port, ssl, use_uid, namespace)
                                    (('Bob Smith', None, 'bob', 'smith.com'),),
                                    (('Bob Smith', None, 'bob', 'smith.com'),),
                                    (('Bob Smith', None, 'bob', 'smith.com'),),
-                                   (('Some One', None, 'some', 'one.com'),),
-                                   None, None, None,
-                                   '<1A472770E042064698CB5ADC83A12ACD39455AAB@ABC>'))
+                                   (('Some One', None, 'some', 'one.com'), (None, None, 'foo', 'foo.com')),
+                                   None, None, None, msg_id_header))
 
 
         def test_partial_fetch(self):
@@ -448,6 +458,40 @@ def createLiveTestClass(host, username, password, port, ssl, use_uid, namespace)
                         a = lower_if_str(a)
                         e = lower_if_str(e)
                         self.assertEqual(a, e)
+        
+        def test_idle(self):
+            if not self.client.has_capability('IDLE'):
+                return self.skipTest("Server doesn't support IDLE")
+
+            # Start main connection idling
+            self.client.select_folder('INBOX')
+            self.client.idle()
+
+            # Start a new connection and upload a new message
+            client2 = create_client_from_config(conf)
+            client2.select_folder('INBOX')
+            client2.append('INBOX', SIMPLE_MESSAGE)
+
+            # Check for the idle data
+            responses = self.client.idle_check(timeout=5)
+            text, more_responses = self.client.idle_done()
+            self.assertIn((1, 'EXISTS'), responses)
+            self.assertTrue(isinstance(text, str))
+            self.assertGreater(len(text), 0)
+            self.assertTrue(isinstance(more_responses, list))
+
+            # Check for IDLE data returned by idle_done()
+            self.client.idle()
+            client2.select_folder('INBOX')
+            client2.append('INBOX', SIMPLE_MESSAGE)
+            time.sleep(2)    # Allow some time for the IDLE response to be sent
+
+            text, responses = self.client.idle_done()
+            self.assertIn((2, 'EXISTS'), responses)
+            self.assertTrue(isinstance(text, str))
+            self.assertGreater(len(text), 0)
+
+
     return LiveTest
 
         
@@ -463,27 +507,6 @@ def have_matching_types(a, b, type_or_types):
     if not isinstance(a, type_or_types):
         return False
     return isinstance(b, type(a))
-
-def parse_config_file(path):
-    parser = SafeConfigParser(dict(ssl='false'))
-    fh = file(path)
-    parser.readfp(fh)
-    fh.close()
-    section = 'main'
-    assert parser.sections() == [section], 'Only expected a [main] section'
-
-    try:
-        port = parser.getint(section, 'port'),
-    except NoOptionError:
-        port = None
-        
-    return dict(
-        host=parser.get(section, 'host'),
-        port=port,
-        ssl=parser.getboolean(section, 'ssl'),
-        username=parser.get(section, 'username'),
-        password=parser.get(section, 'password'),
-    )
 
 def argv_error(msg):
     print >> sys.stderr, msg
@@ -501,9 +524,10 @@ def parse_argv():
     host_config = parse_config_file(ini_path)
     return host_config
 
-def probe_host(host, port, ssl, username, password):
-    client = imapclient.IMAPClient(host, port=port, ssl=ssl)
-    client.login(username, password)
+    
+
+def probe_host(config):
+    client = create_client_from_config(config)
     ns = client.namespace()
     client.logout()
     if not ns.personal:
@@ -513,8 +537,8 @@ def probe_host(host, port, ssl, username, password):
 def main():
     host_config = parse_argv()
 
-    namespace = probe_host(**host_config)
-    host_config['namespace'] = namespace
+    namespace = probe_host(host_config)
+    host_config.namespace = namespace
 
     live_test_mod = imp.new_module('livetests')
     sys.modules['livetests'] = live_test_mod
@@ -523,8 +547,8 @@ def main():
        klass.__name__ = name
        setattr(live_test_mod, name, klass)
 
-    add_test_class('TestWithUIDs', createLiveTestClass(use_uid=True, **host_config))
-    add_test_class('TestWithoutUIDs', createLiveTestClass(use_uid=False, **host_config))
+    add_test_class('TestWithUIDs', createLiveTestClass(host_config, use_uid=True))
+    add_test_class('TestWithoutUIDs', createLiveTestClass(host_config, use_uid=False))
 
     unittest.main(module='livetests')
 

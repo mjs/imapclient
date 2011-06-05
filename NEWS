@@ -1,6 +1,36 @@
 .. -*-Mode: rst; -*-
 
 =============
+ Development
+=============
+
+OAUTH Support (#54) [NEW]
+-------------------------
+OAUTH authentication is now supported using the oauth_login
+method. This requires the 3rd party oauth2 package is
+installed. Thanks to Johannes Heckel for contributing the patch to
+this.
+
+IDLE Support (#50) [NEW]
+------------------------
+The IDLE extension is now supported through the new idle(),
+idle_check() and idle_done() methods. See the example in
+imapclient/examples/idle_example.py.
+
+Minor Features
+--------------
+* interact.py can now read livetest.py INI files (#66)
+* Added "debug" propety and setting of a log file (#90)
+
+Small Bug Fixes
+---------------
+* getacl() was using wrong lexing class (#85) (Thanks josephhh)
+* Removed special handling for response tuples without whitespace
+  between them.  Post-process BODY/BODYSTRUCTURE responses
+  instead. This should not affect the external API. (#91) (Thanks
+  daishi)
+
+=============
  Version 0.7
 =============
 
