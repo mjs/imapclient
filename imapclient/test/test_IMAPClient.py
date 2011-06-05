@@ -180,8 +180,11 @@ class TestIdle(IMAPClientTest):
         self.client._imap._command.assert_called_with('IDLE')
         self.assertEqual(self.client._idle_tag, sentinel.tag)
 
-    def test_idle_check_blocking(self):
-        self.client._imap.sock = Mock()
+    @patch('imapclient.imapclient.select.select')
+    def test_idle_check_blocking(self, mock_select):
+        mock_sock = Mock()
+        self.client._imap.sock = mock_sock
+        mock_select.return_value = ([True], [], [])
         counter = itertools.count()
         def fake_get_line():
             count = counter.next()
@@ -194,25 +197,32 @@ class TestIdle(IMAPClientTest):
         self.client._imap._get_line = fake_get_line
 
         responses = self.client.idle_check()
+
+        mock_select.assert_called_once_with([mock_sock], [], [], None)
+        self.assertListEqual(mock_sock.method_calls,
+                             [('setblocking', (0,), {}),
+                              ('setblocking', (1,), {})])
         self.assertListEqual([(1, 'EXISTS'), (0, 'EXPUNGE')], responses)
 
-    def test_idle_check_timeout(self):
-        self.client._imap.sock = Mock()
-        def fake_get_line():
-            time.sleep(0.1)
-            raise socket.timeout
-        self.client._imap._get_line = fake_get_line
+    @patch('imapclient.imapclient.select.select')
+    def test_idle_check_timeout(self, mock_select):
+        mock_sock = Mock()
+        self.client._imap.sock = mock_sock
+        mock_select.return_value = ([], [], [])
 
-        t0 = time.time()
         responses = self.client.idle_check(timeout=0.5)
-        t1 = time.time()
 
+        mock_select.assert_called_once_with([mock_sock], [], [], 0.5)
+        self.assertListEqual(mock_sock.method_calls,
+                             [('setblocking', (0,), {}),
+                              ('setblocking', (1,), {})])
         self.assertListEqual([], responses)
-        self.assertLess(t1 - t0, 0.8)
 
-    def test_idle_check_with_data(self):
-        self.client._imap.sock = Mock()
-
+    @patch('imapclient.imapclient.select.select')
+    def test_idle_check_with_data(self, mock_select):
+        mock_sock = Mock()
+        self.client._imap.sock = mock_sock
+        mock_select.return_value = ([True], [], [])
         counter = itertools.count()
         def fake_get_line():
             count = counter.next()
@@ -222,12 +232,13 @@ class TestIdle(IMAPClientTest):
                 raise socket.timeout
         self.client._imap._get_line = fake_get_line
             
-        t0 = time.time()
         responses = self.client.idle_check()
-        t1 = time.time()
 
+        mock_select.assert_called_once_with([mock_sock], [], [], None)
+        self.assertListEqual(mock_sock.method_calls,
+                             [('setblocking', (0,), {}),
+                              ('setblocking', (1,), {})])
         self.assertListEqual([(99, 'EXISTS')], responses)
-        self.assertLess(t1 - t0, 0.4)
 
     def test_idle_done(self):
         self.client._idle_tag = sentinel.tag
