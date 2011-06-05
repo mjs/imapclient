@@ -65,6 +65,16 @@ class IMAPClient(object):
 
     If *ssl* is ``True`` an SSL connection will be made (defaults to
     ``False``).
+
+    The *debug* property can be used to enable debug logging. It can
+    be set to an integer from 0 to 5 where 0 disables debug output and
+    5 enables full output with wire logging and parsing logs. ``True``
+    and ``False`` can also be assigned where ``True`` sets debug level
+    4.
+
+    By default, debug output goes to stderr. The *log_file* attribute
+    can be assigned to an alternate file handle for writing debug
+    output to.
     """
 
     Error = imaplib.IMAP4.error
@@ -104,13 +114,9 @@ class IMAPClient(object):
 
     def oauth_login(self, url, oauth_token, oauth_token_secret,
                     consumer_key='anonymous', consumer_secret='anonymous'):
-        """Authenticate using oauth.
+        """Authenticate using the OAUTH method.
 
-        @param url: The OAuth request URL.
-        @param oauth_token: An OAuth key.
-        @param oauth_token_secret: An OAuth secret.
-        @param consumer_key: An OAuth consumer key (defaults to 'anonymous').
-        @param consumer_secret: An OAuth consumer secret (defaults to 'anonymous').
+        This only works with IMAP servers that support OAUTH (eg. Gmail).
         """
         if oauth2:
             token = oauth2.Token(oauth_token, oauth_token_secret)
@@ -161,7 +167,7 @@ class IMAPClient(object):
         positionally or using attributes named *personal*, *other* and
         *shared*.
 
-        See RFC 2342 for more details.
+        See `RFC-2342 <http://tools.ietf.org/html/rfc2342>`_ for more details.
         """
         typ, data = self._imap.namespace()
         self._checkok('namespace', typ, data)
@@ -302,19 +308,20 @@ class IMAPClient(object):
         return out
 
     def idle(self):
-        """Put server into IDLE mode.
+        """Put the server into IDLE mode.
 
         In this mode the server will return unsolicited responses
-        about changes to the selected mailbox.
+        about changes to the selected mailbox. This method returns
+        immediately. Use ``idle_check()`` to look for IDLE responses
+        and ``idle_done()`` to stop IDLE mode.
 
-        This method returns immediately. Use idle_check() to check for
-        IDLE responses and idle_done() to stop IDLE mode.
+        .. note::
 
-        Note: Any other commmands issued while the server is in IDLE
-        mode will fail.
+            Any other commmands issued while the server is in IDLE
+            mode will fail.
 
-        See RFC 2177 for more information about the IDLE extension.
-        http://tools.ietf.org/html/rfc2177
+        See `RFC 2177 <http://tools.ietf.org/html/rfc2177>`_ for more
+        information about the IDLE extension.
         """
         self._idle_tag = self._imap._command('IDLE')
         resp = self._imap._get_response()
@@ -325,19 +332,19 @@ class IMAPClient(object):
         """Check for any IDLE responses sent by the server.
 
         This method should only be called if the server is in IDLE
-        mode (see idle()).
+        mode (see ``idle()``).
 
         By default, this method will block until an IDLE response is
-        received. If timeout is provided, the call will block for at
-        most this number of seconds while waiting for an IDLE response.
+        received. If *timeout* is provided, the call will block for at
+        most this many seconds while waiting for an IDLE response.
 
         The return value is a list of received IDLE responses. These
         will be parsed with values converted to appropriate types. For
-        example:
+        example::
 
-        [('OK', 'Still here'),
-         (1, 'EXISTS'),
-         (1, 'FETCH', ('FLAGS', ('\\NotJunk',)))]
+            [('OK', 'Still here'),
+             (1, 'EXISTS'),
+             (1, 'FETCH', ('FLAGS', ('\\NotJunk',)))]
         """
         # make the socket non-blocking so the timeout can be
         # implemented for this call
@@ -364,14 +371,16 @@ class IMAPClient(object):
     def idle_done(self):
         """Take the server out of IDLE mode.
 
-        This method should only be called if the server is in IDLE mode.
+        This method should only be called if the server is already in
+        IDLE mode.
 
-        The return value is (command_text, idle_responses) where
-        command_text is the text sent by the server when the IDLE
-        command finished (eg. 'Idle terminated') and idle_responses is
-        a list of parsed idle responses received since the last call
-        to idle_check() (if any). These are returned in parsed form as
-        per idle_check().
+        The return value is of the form ``(command_text,
+        idle_responses)`` where *command_text* is the text sent by the
+        server when the IDLE command finished (eg. ``'Idle
+        terminated'``) and *idle_responses* is a list of parsed idle
+        responses received since the last call to ``idle_check()`` (if
+        any). These are returned in parsed form as per
+        ``idle_check()``.
         """
         self._imap.send('DONE\r\n')
         # Slurp up any remaining IDLE responses until the IDLE is done
@@ -787,10 +796,7 @@ class IMAPClient(object):
             level = 0
         self._imap.debug = level
 
-    debug = property(__debug_get, __debug_set,
-                     doc="Set debug level. Integers from 0 to 5 or, True and " \
-                         "False can be used. True specifies debug level 4. " \
-                         "Debug output goes to stderr.")
+    debug = property(__debug_get, __debug_set)
 
     def _log(self, text):
         self.log_file.write('%s %s\n' % (datetime.now().strftime('%M:%S.%f'), text))
