@@ -41,7 +41,7 @@ The following example shows a simple interaction with an IMAP
 server. It displays the message ID, size and IMAP flags of all
 non-deleted messages in the INBOX folder.
 
-.. literalinclude:: ../imapclient/examples/example.py
+.. literalinclude:: ../../imapclient/examples/example.py
 
 The output from this example could look something like this
 
