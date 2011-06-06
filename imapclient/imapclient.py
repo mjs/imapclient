@@ -232,7 +232,7 @@ class IMAPClient(object):
         This is a Gmail-specific IMAP extension. It is the
         responsibility of the caller to either check for ``XLIST`` in
         the server capabilites, or to handle the error if the server
-        doesn't support this externsion.
+        doesn't support this extension.
 
         The *directory* and *pattern* arguments are as per
         list_folders().
