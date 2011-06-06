@@ -17,6 +17,11 @@ The IDLE extension is now supported through the new idle(),
 idle_check() and idle_done() methods. See the example in
 imapclient/examples/idle_example.py.
 
+Sphinx Based Docs (#5) [NEW]
+----------------------------
+Full documentation is now available under doc/html in the source
+distribution and at http://imapclient.readthedocs.org/ online.
+
 Minor Features
 --------------
 * interact.py can now read livetest.py INI files (#66)

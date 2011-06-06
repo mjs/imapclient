@@ -54,16 +54,6 @@ Details about upcoming versions and planned features/fixes can be
 found there.
 
 
-Mailing List
-------------
-The IMAPClient mailing list can be used to ask IMAPClient related
-questions and report bugs. 
-
-* To send to the list and subscribe send an email to imapclient@librelist.com 
-* Archives of the list are available at http://librelist.com/browser/imapclient/ 
-* See http://librelist.com/help.html for more information about the mailing list
-
-
 Using IMAPClient
 ----------------
 IMAPClient is listed on the PyPI (Python Package Index). To install
@@ -81,13 +71,33 @@ The project is packaged using Distribute (mostly compatible with
 setuptools) and all the usual setup.py installation options are
 available. See http://packages.python.org/distribute/ for more info.
 
+
+Documentation
+-------------
+HTML documentation can be found at doc/html in the source
+distribution. The documentation is also available online at:
+
+    http://imapclient.readthedocs.org/
+
+The Sphinx source is at doc/src. If Sphinx is installed, the
+documentation can be rebuilt using:
+
+    python setup.py sphinx_build
+
 See imapclient/examples/example.py for a sample of how to use
 IMAPClient. If the IMAPClient was installed from PyPI the examples
-subdirectory can be found under whereever the imapclient package is
-installed.
+subdirectory can be found under the imapclient package installation
+directory.
 
-The code is well documented. See the docstrings for more usage
-information.
+
+Mailing List
+------------
+The IMAPClient mailing list can be used to ask IMAPClient related
+questions and report bugs. 
+
+* To send to the list and subscribe send an email to imapclient@librelist.com 
+* Archives of the list are available at http://librelist.com/browser/imapclient/ 
+* See http://librelist.com/help.html for more information about the mailing list
 
 
 interact.py
@@ -124,10 +134,10 @@ of the IMAP server.
 
 Unit Tests
 ----------
-There are comprehensive unit tests for the FETCH response parser and a
-growing number of other parts of the code. These tests use the
-unittest2 package which is also included as the standard unittest
-package in Python 2.7 and 3.2.
+There are comprehensive unit tests for the server response parser and
+a number of other parts of the code. These tests use the unittest2
+package which is also included as the standard unittest package in
+Python 2.7 and 3.2.
 
 Where unittest2 is included in the standard library (eg. Python 2.7
 and 3.2) you can run all unit tests like this (starting from the root
