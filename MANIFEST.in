@@ -1,7 +1,8 @@
 include README COPYING AUTHORS THANKS NEWS
-include run_tests.py
 include livetest.py
 include distribute_setup.py
 include interact.py
 recursive-include imapclient/examples *
+prune doc/doctrees/
+recursive-include doc *.txt *.py *.png *.css *.html
 

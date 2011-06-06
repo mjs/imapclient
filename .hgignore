@@ -1,4 +1,5 @@
 \.pyc$
 \.swp$
 IMAPClient.egg-info
-doc
+doc/doctrees/
+doc/html/
