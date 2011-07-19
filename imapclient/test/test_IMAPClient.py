@@ -5,7 +5,6 @@
 import itertools
 import socket
 import sys
-import time
 from datetime import datetime
 from StringIO import StringIO
 from imapclient.fixed_offset import FixedOffset
@@ -274,8 +273,26 @@ class TestDebugLogging(IMAPClientTest):
         output = log.getvalue()
         self.assertIn('one', output)
         self.assertIn('two', output)
-        
 
+class TestTimeNormalisation(IMAPClientTest):
+
+    def test_default(self):
+        self.assertTrue(self.client.normalise_times)
+
+    @patch('imapclient.imapclient.parse_fetch_response')
+    def test_pass_through(self, parse_fetch_response):
+        self.client._imap._command_complete.return_value = ('OK', sentinel.data)
+        self.client._imap._untagged_response.return_value = ('OK', sentinel.fetch_data)
+
+        def check(expected):
+            self.client.fetch(22, ['SOMETHING'])
+            parse_fetch_response.assert_called_with(sentinel.fetch_data, expected)
+
+        self.client.normalise_times = True
+        check(True)
+
+        self.client.normalise_times = False
+        check(False)
 
 if __name__ == '__main__':
     unittest.main()

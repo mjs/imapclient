@@ -66,6 +66,14 @@ class IMAPClient(object):
     If *ssl* is ``True`` an SSL connection will be made (defaults to
     ``False``).
 
+    The *normalise_times* attribute specifies whether datetimes
+    returned by ``fetch()`` are normalised to the local system time
+    and include no timezone information (native), or are datetimes
+    that include timezone information (aware). By default
+    *normalise_times* is True (times are normalised to the local
+    system time). This attribute can be changed between ``fetch()``
+    calls if required.
+
     The *debug* property can be used to enable debug logging. It can
     be set to an integer from 0 to 5 where 0 disables debug output and
     5 enables full output with wire logging and parsing logs. ``True``
@@ -94,6 +102,7 @@ class IMAPClient(object):
         self.use_uid = use_uid
         self.folder_encode = True
         self.log_file = sys.stderr
+        self.normalise_times = True
 
         self._imap = self._create_IMAP4()
         self._imap._mesg = self._log    # patch in custom debug log method
@@ -653,7 +662,7 @@ class IMAPClient(object):
         typ, data = self._imap._command_complete('FETCH', tag)
         self._checkok('fetch', typ, data)
         typ, data = self._imap._untagged_response(typ, data, 'FETCH')
-        return parse_fetch_response(data)
+        return parse_fetch_response(data, self.normalise_times)
 
     def append(self, folder, msg, flags=(), msg_time=None):
         """Append a message to *folder*.

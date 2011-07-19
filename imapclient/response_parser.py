@@ -51,7 +51,7 @@ def gen_parsed_response(text):
         raise ParseError("%s: %s" % (str(err), token))
 
 
-def parse_fetch_response(text):
+def parse_fetch_response(text, normalise_times=True):
     """Pull apart IMAP FETCH responses as returned by imaplib.
 
     Returns a dictionary, keyed by message ID. Each value a dictionary
@@ -88,7 +88,7 @@ def parse_fetch_response(text):
             if word == 'UID':
                 msg_id = _int_or_error(value, 'invalid UID')
             elif word == 'INTERNALDATE':
-                msg_data[word] = _convert_INTERNALDATE(value)
+                msg_data[word] = _convert_INTERNALDATE(value, normalise_times)
             elif word in ('BODY', 'BODYSTRUCTURE'):
                 msg_data[word] = BodyData.create(value)
             else:
@@ -128,7 +128,7 @@ class BodyData(tuple):
         return isinstance(self[0], list)
     
 
-def _convert_INTERNALDATE(date_string):
+def _convert_INTERNALDATE(date_string, normalise_times=True):
     mo = imaplib.InternalDate.match('INTERNALDATE "%s"' % date_string)
     if not mo:
         raise ValueError("couldn't parse date %r" % date_string)
@@ -148,8 +148,10 @@ def _convert_INTERNALDATE(date_string):
 
     dt = datetime(year, mon, day, hour, min, sec, 0, tz)
 
-    # Normalise to host system's timezone
-    return dt.astimezone(FixedOffset.for_system()).replace(tzinfo=None)
+    if normalise_times:
+        # Normalise to host system's timezone
+        return dt.astimezone(FixedOffset.for_system()).replace(tzinfo=None)
+    return dt
 
 
 def atom(src, token):

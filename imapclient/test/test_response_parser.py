@@ -285,15 +285,13 @@ class TestParseFetchResponse(unittest.TestCase):
                     'SEQ': 123}})
                     
 
-    def test_INTERNALDATE(self):
+    def test_INTERNALDATE_normalised(self):
         def check(date_str, expected_dt):
             output = parse_fetch_response(['3 (INTERNALDATE "%s")' % date_str])
-            self.assertEquals(output.keys(), [3])
-            self.assertEquals(set(output[3].keys()), set(['INTERNALDATE', 'SEQ']))
             actual_dt = output[3]['INTERNALDATE']
             self.assert_(actual_dt.tzinfo is None)   # Returned date should be in local timezone
             expected_dt = datetime_to_native(expected_dt)
-            self.assert_(actual_dt == expected_dt, '%s != %s' % (actual_dt, expected_dt))
+            self.assertEquals(actual_dt, expected_dt)
 
         check(' 9-Feb-2007 17:08:08 -0430',
               datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30)))
@@ -304,6 +302,20 @@ class TestParseFetchResponse(unittest.TestCase):
         check(' 9-Dec-2007 17:08:08 +0000',
               datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
 
+    def test_INTERNALDATE(self):
+        def check(date_str, expected_dt):
+            output = parse_fetch_response(['3 (INTERNALDATE "%s")' % date_str], normalise_times=False)
+            actual_dt = output[3]['INTERNALDATE']
+            self.assertEquals(actual_dt, expected_dt)
+
+        check(' 9-Feb-2007 17:08:08 -0430',
+              datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30)))
+ 
+        check('12-Feb-2007 17:08:08 +0200',
+              datetime(2007, 2, 12, 17, 8, 8, 0, FixedOffset(2*60)))
+ 
+        check(' 9-Dec-2007 17:08:08 +0000',
+              datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
 
     def test_mixed_types(self):
         self.assertEquals(parse_fetch_response([('1 (INTERNALDATE " 9-Feb-2007 17:08:08 +0100" RFC822 {21}',

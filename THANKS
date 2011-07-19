@@ -24,7 +24,10 @@ Thomas Jost (schnouki _AT_ schnouki.net)
     FETCH modifiers patch.
 
 Johannes Heckel
-     OAUTH and IDLE support. 
+    OAUTH and IDLE support. 
+
+Andrew Scheller
+    "normalise_times" support.     
 
 Bug Reports
 ------------

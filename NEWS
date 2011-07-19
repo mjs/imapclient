@@ -26,6 +26,9 @@ Minor Features
 --------------
 * interact.py can now read livetest.py INI files (#66)
 * Added "debug" propety and setting of a log file (#90)
+* "normalise_times" attribute allows caller to select whether
+  datetimes returned by fetch() are native or not (#96) (Thanks Andrew
+  Scheller)
 
 Small Bug Fixes
 ---------------
