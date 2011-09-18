@@ -22,6 +22,10 @@ Sphinx Based Docs (#5) [NEW]
 Full documentation is now available under doc/html in the source
 distribution and at http://imapclient.readthedocs.org/ online.
 
+Added rename_folder (#77) [NEW] 
+--------------------------------
+Renaming of folders was an obvious omission!
+
 Minor Features
 --------------
 * interact.py can now read livetest.py INI files (#66)

@@ -229,6 +229,21 @@ def createLiveTestClass(conf, use_uid):
                 self.client.delete_folder(folder)
                 self.assertFalse(self.client.folder_exists(folder))
 
+        def test_rename_folder(self):
+            test_folders = ['foobar',
+                            'stuff & things',
+                            u'test & \u2622',
+                            '123']
+            for folder in test_folders:
+                self.client.create_folder(folder)
+
+                new_folder = folder + 'x'
+                resp = self.client.rename_folder(folder, new_folder)
+                self.assertIsInstance(resp, str)
+                self.assertTrue(len(resp) > 0)
+
+                self.assertFalse(self.client.folder_exists(folder))
+                self.assertTrue(self.client.folder_exists(new_folder))
 
         def test_status(self):
             # Default behaviour should return 5 keys

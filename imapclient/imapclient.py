@@ -437,7 +437,6 @@ class IMAPClient(object):
             out[key] = value
         return out
 
-
     def close_folder(self):
         """Close the currently selected folder, returning the server
         response string.
@@ -453,6 +452,14 @@ class IMAPClient(object):
         self._checkok('create', typ, data)
         return data[0]
 
+    def rename_folder(self, old_name, new_name):
+        """Change the name of a folder on the server.
+        """
+        typ, data = self._imap.rename(self._encode_folder_name(old_name),
+                                      self._encode_folder_name(new_name))
+        self._checkok('rename', typ, data)
+        return data[0]
+        
     def delete_folder(self, folder):
         """Delete *folder* on the server returning the server response string.
         """
