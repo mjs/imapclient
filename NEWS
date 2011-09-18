@@ -29,6 +29,8 @@ Minor Features
 * "normalise_times" attribute allows caller to select whether
   datetimes returned by fetch() are native or not (#96) (Thanks Andrew
   Scheller)
+* Added imapclient.version_info - a tuple that contains the IMAPClient
+  version number broken down into it's parts.
 
 Small Bug Fixes
 ---------------
