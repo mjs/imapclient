@@ -8,7 +8,7 @@
 from getpass import getpass
 from optparse import OptionParser
 
-from imapclient.config import parse_config_file, create_client_from_config
+from config import parse_config_file, create_client_from_config
 
 def command_line():
     p = OptionParser()
@@ -44,8 +44,7 @@ def command_line():
         opts.oauth = False     # OAUTH not supported on command line
     return opts
 
-
-if __name__ == '__main__':
+def main():
     opts = command_line()
     print 'Connecting...'
     client = create_client_from_config(opts)
@@ -71,3 +70,6 @@ if __name__ == '__main__':
             break
         except ImportError:
             pass
+
+if __name__ == '__main__':
+    main()
