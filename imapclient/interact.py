@@ -23,7 +23,7 @@ def command_line():
     p.add_option('-s', '--ssl', dest='ssl', action='store_true', default=False,
                  help='Use SSL connection')
     p.add_option('-f', '--file', dest='file', action='store', default=None,
-                 help='Config file (same as livetest.py)')
+                 help='Config file (same as livetest)')
 
     opts, args = p.parse_args()
     if args:
