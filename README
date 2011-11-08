@@ -110,6 +110,12 @@ steps required to set up an IMAPClient instance.
 The IPython shell is used if it is installed. Otherwise the
 code.interact() function from the standard library is used.
 
+The interact functionality can also be accessed like this:
+
+    python -m imapclient.interact ...
+
+This works when IMAPClient has been installed from PyPI.
+
 
 livetest.py
 -----------
@@ -130,6 +136,12 @@ Please send the output of livetest.py to the mailing list if it fails
 to run successfully against a particular IMAP server. Reports of
 successful runs are also welcome.  Please include the type and version
 of the IMAP server.
+
+The livetest functionality can also be accessed like this:
+
+    python -m imapclient.livetest ...
+
+This works when IMAPClient has been installed from PyPI.
 
 
 Unit Tests

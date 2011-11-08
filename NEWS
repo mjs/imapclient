@@ -34,6 +34,10 @@ Renaming of folders was an obvious omission!
 Minor Features
 --------------
 * interact.py can now read livetest.py INI files (#66)
+* interact.py can now embed shells from ipython 0.10 and 0.11 (#98)
+* interact.py and livetest.py are now inside the imapclient package so
+  they can be used even when IMAClient has been installed from PyPI
+  (#82)
 * Added "debug" propety and setting of a log file (#90)
 * "normalise_times" attribute allows caller to select whether
   datetimes returned by fetch() are native or not (#96) (Thanks Andrew

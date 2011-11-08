@@ -152,4 +152,53 @@ IMAPClient instance.
 .. autoclass:: imapclient.IMAPClient
    :members:
 
+Interactive Sessions
+--------------------
+When developing program using IMAPClient is it sometimes useful to
+have an interactive shell to play with. IMAPClient ships with a module
+that lets you fire up an interactive shell with an IMAPClient instance
+connected to an IMAP server.
 
+Start a session like this::
+
+   python -m imapclient.interact -H <host> -u <user> ...
+
+Various options are available to specify the IMAP server details. See
+the help (--help) for more details. You'll be prompted for a username
+and password if one isn't provided on the command line.
+
+If installed, IPython will be used as the embedded shell. Otherwise
+the basic built-in Python shell will be used.
+
+Here's an example session::
+
+    $ python -m imapclient.interact -H <host> -u <user> ...
+    Connecting...
+    Connected.
+
+    IMAPClient instance is "c"
+    In [1]: c.select_folder('inbox')
+    Out[1]: 
+    {'EXISTS': 2,
+     'FLAGS': ('\\Answered',
+      '\\Flagged',
+      '\\Deleted',
+      '\\Seen',
+      '\\Draft'),
+     'PERMANENTFLAGS': ('\\Answered',
+      '\\Flagged',
+      '\\Deleted',
+      '\\Seen',
+      '\\Draft'),
+     'READ-WRITE': True,
+     'RECENT': 0,
+     'UIDNEXT': 1339,
+     'UIDVALIDITY': 1239278212}
+
+    In [2]: c.search()
+    Out[2]: [1123, 1233]
+
+    In [3]: c.logout()
+    Out[3]: 'Logging out'
+
+Note that the connected IMAPClient instance is available as the variable "c".
