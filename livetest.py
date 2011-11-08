@@ -506,6 +506,26 @@ def createLiveTestClass(conf, use_uid):
             self.assertTrue(isinstance(text, str))
             self.assertGreater(len(text), 0)
 
+        def test_noop(self):
+            self.client.select_folder('INBOX')
+
+            # Initially there should be no responses
+            text, resps = self.client.noop()
+            self.assertTrue(isinstance(text, str))
+            self.assertGreater(len(text), 0)
+            self.assertEquals(resps, [])
+
+            # Start a new connection and upload a new message
+            client2 = create_client_from_config(conf)
+            client2.select_folder('INBOX')
+            client2.append('INBOX', SIMPLE_MESSAGE)
+
+            # Check for this addition in the NOOP data
+            msg, resps = self.client.noop()
+            self.assertTrue(isinstance(text, str))
+            self.assertGreater(len(text), 0)
+            self.assertTrue(isinstance(resps, list))
+            self.assertIn((1, 'EXISTS'), resps)
 
     return LiveTest
 

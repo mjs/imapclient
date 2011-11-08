@@ -316,6 +316,25 @@ class IMAPClient(object):
             out[key] = value
         return out
 
+    def noop(self):
+        """Execute the NOOP command.
+
+        This command returns immediately, returning any server side
+        status updates. It can also be used to reset any auto-logout
+        timers.
+
+        The return value is the server command response message
+        followed by a list of status responses. For example::
+
+            ('NOOP completed.',
+             [(4, 'EXISTS'),
+              (3, 'FETCH', ('FLAGS', ('bar', 'sne'))),
+              (6, 'FETCH', ('FLAGS', ('sne',)))])
+
+        """
+        tag = self._imap._command('NOOP')
+        return self._consume_until_tagged_response(tag, 'NOOP')
+
     def idle(self):
         """Put the server into IDLE mode.
 
@@ -372,7 +391,7 @@ class IMAPClient(object):
                     except (socket.timeout, socket.error):
                         break
                     else:
-                        resps.append(_parse_idle_response(line))
+                        resps.append(_parse_untagged_response(line))
             return resps
         finally:
             sock.setblocking(1)
@@ -392,19 +411,7 @@ class IMAPClient(object):
         ``idle_check()``.
         """
         self._imap.send('DONE\r\n')
-        # Slurp up any remaining IDLE responses until the IDLE is done
-        tag = self._idle_tag
-        tagged_commands = self._imap.tagged_commands
-        resps = []
-        while True:
-            line = self._imap._get_response()
-            if tagged_commands[tag]:
-                break
-            resps.append(_parse_idle_response(line))
-        self._idle_tag = None
-        typ, data = tagged_commands.pop(tag)
-        self._checkok('idle', typ, data)
-        return data[0], resps
+        return self._consume_until_tagged_response(self._idle_tag, 'IDLE')
 
     def folder_status(self, folder, what=None):
         """Return the status of *folder*.
@@ -753,6 +760,18 @@ class IMAPClient(object):
         if typ != expected:
             raise self.Error('%s failed: %r' % (command, data[0]))
 
+    def _consume_until_tagged_response(self, tag, command):
+        tagged_commands = self._imap.tagged_commands
+        resps = []
+        while True:
+            line = self._imap._get_response()
+            if tagged_commands[tag]:
+                break
+            resps.append(_parse_untagged_response(line))
+        typ, data = tagged_commands.pop(tag)
+        self._checkok(command, typ, data)
+        return data[0], resps
+
     def _checkok(self, command, typ, data):
         self._check_resp('OK', command, typ, data)
 
@@ -858,7 +877,7 @@ def _quote_arg(arg):
   return '"%s"' % arg
 
 
-def _parse_idle_response(text):
+def _parse_untagged_response(text):
     assert text.startswith('* ')
     text = text[2:]
     if text.startswith(('OK ', 'NO ')):

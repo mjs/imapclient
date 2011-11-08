@@ -168,7 +168,7 @@ class TestAclMethods(IMAPClientTest):
         self.assertSequenceEqual(acl, [('Fred', 'rwipslda'), ('Sally', 'rwip')])
 
 
-class TestIdle(IMAPClientTest):
+class TestIdleAndNoop(IMAPClientTest):
 
     def test_idle(self):
         self.client._imap._command.return_value = sentinel.tag
@@ -241,23 +241,50 @@ class TestIdle(IMAPClientTest):
 
     def test_idle_done(self):
         self.client._idle_tag = sentinel.tag
-        self.client._imap.tagged_commands = {sentinel.tag: None}
+
+        mockSend = Mock()
+        self.client._imap.send = mockSend
+        mockConsume = Mock(return_value=sentinel.out)
+        self.client._consume_until_tagged_response = mockConsume
+
+        result = self.client.idle_done()
+
+        mockSend.assert_called_with('DONE\r\n')
+        mockConsume.assert_called_with(sentinel.tag, 'IDLE')
+        self.assertEquals(result, sentinel.out)
+
+    def test_noop(self):
+        mockCommand = Mock(return_value=sentinel.tag)
+        self.client._imap._command = mockCommand
+        mockConsume = Mock(return_value=sentinel.out)
+        self.client._consume_until_tagged_response = mockConsume
+
+        result = self.client.noop()
+
+        mockCommand.assert_called_with('NOOP')
+        mockConsume.assert_called_with(sentinel.tag, 'NOOP')
+        self.assertEquals(result, sentinel.out)
+
+    def test_consume_until_tagged_response(self):
+        client = self.client
+        client._imap.tagged_commands = {sentinel.tag: None}
 
         counter = itertools.count()
         def fake_get_response():
             count = counter.next()
             if count == 0:
                 return '* 99 EXISTS'
-            self.client._imap.tagged_commands[sentinel.tag] = ('OK', ['Idle done'])
-        self.client._imap._get_response = fake_get_response
+            client._imap.tagged_commands[sentinel.tag] = ('OK', ['Idle done'])
+        client._imap._get_response = fake_get_response
             
-        text, responses = self.client.idle_done()
-
-        self.assertEqual(self.client._imap.tagged_commands, {})
+        text, responses = client._consume_until_tagged_response(sentinel.tag,
+                                                                'IDLE')
+        self.assertEqual(client._imap.tagged_commands, {})
         self.assertEqual(text, 'Idle done')
         self.assertListEqual([(99, 'EXISTS')], responses)
 
 
+                         
 class TestDebugLogging(IMAPClientTest):
 
     def test_default_is_stderr(self):
