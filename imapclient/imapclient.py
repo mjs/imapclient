@@ -89,9 +89,6 @@ class IMAPClient(object):
     AbortError = imaplib.IMAP4.abort
     ReadOnlyError = imaplib.IMAP4.readonly
 
-    re_status = re.compile(r'^\s*"?(?P<folder>[^"]+)"?\s+'
-                           r'\((?P<status_items>.*)\)$')
-
     def __init__(self, host, port=None, use_uid=True, ssl=False):
         if port is None:
             port = ssl and 993 or 143
@@ -432,7 +429,7 @@ class IMAPClient(object):
         typ, data = self._imap.status(self._encode_folder_name(folder), what_)
         self._checkok('status', typ, data)
 
-        match = self.re_status.match(data[0])
+        match = _re_status.match(data[0])
         if not match:
             raise self.Error('Could not get the folder status')
 
@@ -901,3 +898,6 @@ def _parse_untagged_response(text):
         return tuple(text.split(' ', 1))
     return parse_response([text]) 
                 
+_re_status = re.compile(r'^\s*"?(?P<folder>[^"]+)"?\s+'
+                        r'\((?P<status_items>.*)\)$')
+
