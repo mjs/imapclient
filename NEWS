@@ -17,6 +17,11 @@ The IDLE extension is now supported through the new idle(),
 idle_check() and idle_done() methods. See the example in
 imapclient/examples/idle_example.py.
 
+NOOP Support (#74) [NEW]
+------------------------
+The NOOP command is now supported. It returns parsed untagged server
+responses in the same format as idle_check() and idle_done().
+
 Sphinx Based Docs (#5) [NEW]
 ----------------------------
 Full documentation is now available under doc/html in the source
