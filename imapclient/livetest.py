@@ -527,6 +527,28 @@ def createLiveTestClass(conf, use_uid):
             self.assertTrue(isinstance(resps, list))
             self.assertIn((1, 'EXISTS'), resps)
 
+        def test_expunge(self):
+            self.client.select_folder('INBOX')
+
+            # Test empty mailbox
+            text, resps = self.client.expunge()
+            self.assertTrue(isinstance(text, str))
+            self.assertGreater(len(text), 0)
+            self.assertEqual(resps, [])
+
+            # Now try with a message to expunge
+            self.client.append('INBOX', SIMPLE_MESSAGE, flags=[imapclient.DELETED])
+
+            msg, resps = self.client.expunge()
+
+            self.assertTrue(isinstance(text, str))
+            self.assertGreater(len(text), 0)
+            self.assertTrue(isinstance(resps, list))
+            if not self.is_gmail():
+                # GMail has an auto-expunge feature which might be
+                # on. EXPUNGE won't return anything in this case
+                self.assertIn((1, 'EXPUNGE'), resps)
+
     return LiveTest
 
         

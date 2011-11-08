@@ -726,10 +726,27 @@ class IMAPClient(object):
     def expunge(self):
         """Remove any messages from the currently selected folder that
         have the ``\\Deleted`` flag set.
+
+        The return value is the server response message
+        followed by a list of expunge responses. For example::
+
+            ('Expunge completed.',
+             [(2, 'EXPUNGE'),
+              (1, 'EXPUNGE'),
+              (0, 'RECENT')])
+
+        In this case, the responses indicate that the message with
+        sequence numbers 2 and 1 where deleted, leaving no recent
+        messages in the folder.
+
+        See `RFC 3501 section 6.4.3
+        <http://tools.ietf.org/html/rfc3501#section-6.4.3>`_ and
+        `RFC 3501 section 7.4.1
+        <http://tools.ietf.org/html/rfc3501#section-7.4.1>`_ for more
+        details.
         """
-        typ, data = self._imap.expunge()
-        self._checkok('expunge', typ, data)
-        #TODO: expunge response
+        tag = self._imap._command('EXPUNGE')
+        return self._consume_until_tagged_response(tag, 'EXPUNGE')
 
     def getacl(self, folder):
         """Returns a list of ``(who, acl)`` tuples describing the
