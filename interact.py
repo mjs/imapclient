@@ -5,7 +5,6 @@
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 
-import code
 from getpass import getpass
 from optparse import OptionParser
 
@@ -48,11 +47,27 @@ def command_line():
 
 if __name__ == '__main__':
     opts = command_line()
+    print 'Connecting...'
     client = create_client_from_config(opts)
+    print 'Connected.'
     banner = '\nIMAPClient instance is "c"'
-    try:
+
+    def ipython_011(c):
+        from IPython.frontend.terminal.embed import InteractiveShellEmbed
+        ipshell = InteractiveShellEmbed(banner1=banner)
+        ipshell('')
+
+    def ipython_010(c):
         from IPython.Shell import IPShellEmbed
-        c = client
         IPShellEmbed('', banner=banner)()
-    except ImportError:
-        code.interact(banner, local=dict(c=client))
+
+    def builtin(c):
+        import code
+        code.interact(banner, local=dict(c=c))
+    
+    for shell_attempt in (ipython_011, ipython_010, builtin):
+        try:
+            shell_attempt(client)
+            break
+        except ImportError:
+            pass
