@@ -197,16 +197,10 @@ class TestParseFetchResponse(unittest.TestCase):
                           {76: {'SEQ': 23}})
 
 
-    def test_repeated_UID(self):
-        self.assertEquals(parse_fetch_response(['23 (UID 76 FOO 123 UID 76 GOO 321)']),
-                          {76: {'FOO': 123,
-                                'GOO': 321,
+    def test_not_uid_is_key(self):
+        self.assertEquals(parse_fetch_response(['23 (UID 76)'], uid_is_key=False),
+                          {23: {'UID': 76,
                                 'SEQ': 23}})
-        self.assertEquals(parse_fetch_response(['23 (UID 76 FOO 123', 'UID 76 GOO 321)']),
-                          {76: {'FOO': 123,
-                                'GOO': 321,
-                                'SEQ': 23}})
-
 
     def test_bad_UID(self):
         self.assertRaises(ParseError, parse_fetch_response, '(UID X)')

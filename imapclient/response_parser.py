@@ -51,7 +51,7 @@ def gen_parsed_response(text):
         raise ParseError("%s: %s" % (str(err), token))
 
 
-def parse_fetch_response(text, normalise_times=True):
+def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
     """Pull apart IMAP FETCH responses as returned by imaplib.
 
     Returns a dictionary, keyed by message ID. Each value a dictionary
@@ -86,7 +86,11 @@ def parse_fetch_response(text, normalise_times=True):
             value = msg_response[i+1]
 
             if word == 'UID':
-                msg_id = _int_or_error(value, 'invalid UID')
+                uid = _int_or_error(value, 'invalid UID')
+                if uid_is_key:
+                    msg_id = uid
+                else:
+                    msg_data[word] = uid
             elif word == 'INTERNALDATE':
                 msg_data[word] = _convert_INTERNALDATE(value, normalise_times)
             elif word in ('BODY', 'BODYSTRUCTURE'):

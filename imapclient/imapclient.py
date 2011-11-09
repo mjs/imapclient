@@ -673,7 +673,7 @@ class IMAPClient(object):
         typ, data = self._imap._command_complete('FETCH', tag)
         self._checkok('fetch', typ, data)
         typ, data = self._imap._untagged_response(typ, data, 'FETCH')
-        return parse_fetch_response(data, self.normalise_times)
+        return parse_fetch_response(data, self.normalise_times, self.use_uid)
 
     def append(self, folder, msg, flags=(), msg_time=None):
         """Append a message to *folder*.
