@@ -202,8 +202,9 @@ class TestParseFetchResponse(unittest.TestCase):
                           {23: {'UID': 76,
                                 'SEQ': 23}})
 
+
     def test_bad_UID(self):
-        self.assertRaises(ParseError, parse_fetch_response, '(UID X)')
+        self.assertRaises(ParseError, parse_fetch_response, ['(UID X)'])
         
 
     def test_FLAGS(self):
