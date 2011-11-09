@@ -1,8 +1,8 @@
 .. -*-Mode: rst; -*-
 
-=============
- Development
-=============
+=====
+ 0.8
+=====
 
 OAUTH Support (#54) [NEW]
 -------------------------
@@ -52,6 +52,7 @@ Small Bug Fixes
   between them.  Post-process BODY/BODYSTRUCTURE responses
   instead. This should not affect the external API. (#91) (Thanks
   daishi)
+* Fix incorrect msg_id for UID fetch when use_uid is False (#99)
 
 =============
  Version 0.7
