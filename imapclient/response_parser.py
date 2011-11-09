@@ -64,7 +64,7 @@ def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
     parsed_response = {}
     while True:
         try:
-            msg_id = _int_or_error(response.next(), 'invalid message ID')
+            msg_id = seq = _int_or_error(response.next(), 'invalid message ID')
         except StopIteration:
             break
 
@@ -78,9 +78,9 @@ def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
         if len(msg_response) % 2:
             raise ParseError('uneven number of response items: %s' % repr(msg_response))
 
-        # always return the 'sequence' of the message, so it is available
+        # always return the sequence of the message, so it is available
         # even if we return keyed by UID.
-        msg_data = {'SEQ': msg_id}
+        msg_data = {'SEQ': seq}
         for i in xrange(0, len(msg_response), 2):
             word = msg_response[i].upper()
             value = msg_response[i+1]
