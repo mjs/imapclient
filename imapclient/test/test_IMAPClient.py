@@ -310,10 +310,13 @@ class TestTimeNormalisation(IMAPClientTest):
     def test_pass_through(self, parse_fetch_response):
         self.client._imap._command_complete.return_value = ('OK', sentinel.data)
         self.client._imap._untagged_response.return_value = ('OK', sentinel.fetch_data)
+        self.client.use_uid = sentinel.use_uid
 
         def check(expected):
             self.client.fetch(22, ['SOMETHING'])
-            parse_fetch_response.assert_called_with(sentinel.fetch_data, expected)
+            parse_fetch_response.assert_called_with(sentinel.fetch_data,
+                                                    expected,
+                                                    sentinel.use_uid)
 
         self.client.normalise_times = True
         check(True)
