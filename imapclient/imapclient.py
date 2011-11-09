@@ -664,7 +664,7 @@ class IMAPClient(object):
         data_list = seq_to_parenlist([p.upper() for p in data])
         modifiers_list = None
         if modifiers is not None:
-          modifiers_list = seq_to_parenlist([m.upper() for m in modifiers])
+            modifiers_list = seq_to_parenlist([m.upper() for m in modifiers])
 
         if self.use_uid:
             tag = self._imap._command('UID', 'FETCH', msg_list, data_list, modifiers_list)
