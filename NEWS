@@ -1,5 +1,16 @@
 .. -*-Mode: rst; -*-
 
+=======
+ 0.8.1
+=======
+
+* IMAPClient wasn't installing on Windows due to an extra trailing
+  slash in MANIFEST.in (#102). This is a bug in distutils.
+* MANIFEST.in was fixed so that the main documentation index file
+  is included the source distribution.
+* distribute_setup.py was updated to the 0.6.24 version.
+* This release also contains some small documentation fixes. 
+
 =====
  0.8
 =====
