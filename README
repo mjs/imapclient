@@ -82,7 +82,7 @@ distribution. The documentation is also available online at:
 The Sphinx source is at doc/src. If Sphinx is installed, the
 documentation can be rebuilt using:
 
-    python setup.py sphinx_build
+    python setup.py build_sphinx
 
 See imapclient/examples/example.py for a sample of how to use
 IMAPClient. If the IMAPClient was installed from PyPI the examples
