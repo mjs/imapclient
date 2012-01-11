@@ -70,7 +70,7 @@ Concepts
 
 Message Identifiers
 ~~~~~~~~~~~~~~~~~~~
-There are two ways to refer to messages using the IMAP protocol. 
+There are two ways to refer to messages using the IMAP protocol.
 
 One way is by message sequence number where the messages in a mailbox
 are numbered from 1 to N where N is the number of messages. These
@@ -78,7 +78,7 @@ numbers don't persist between sessions and may be reassigned after
 some operations such as a folder expunge.
 
 A more convenient approach is Unique Identifiers (UIDs). Unique
-Identifiers are integer assigned to each message by the IMAP server
+Identifiers are integers assigned to each message by the IMAP server
 that will persist across sessions. They do not change when folders are
 expunged.
 
@@ -88,11 +88,14 @@ specifies to the server which type of identifier should be
 used. IMAPClient uses UIDs by default.
 
 Any method that accepts message ids takes either a sequence containing
-message ids (eg. ``[1,2,3]``) or a single message id integer. Whether
-these are interpreted as message sequence numbers or UIDs depends on
-the *use_uid* argument used when the IMAPClient instance is created
-and the *use_uid* attribute. The *use_uid* attribute can be used to
-change the message id type between calls to the server.
+message ids (eg. ``[1,2,3]``), or a single message id integer, or a
+string representing sets and ranges of messages as supported by the
+IMAP protocol (e.g. ``'50-65'``, ``'2:*'`` or
+``'2,4:7,9,12:*'``). Whether these are interpreted as message sequence
+numbers or UIDs depends on the *use_uid* argument passed when an
+IMAPClient instance is created and the *use_uid* attribute. The
+*use_uid* attribute can be used to change the message id type between
+calls to the server.
 
 Message Flags
 ~~~~~~~~~~~~~
