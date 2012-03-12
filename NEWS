@@ -1,5 +1,13 @@
 .. -*-Mode: rst; -*-
 
+===========
+ 0.9 (dev)
+===========
+
+* New methods for interacting the Gmail's label API: get_gmail_labels,
+  add_gmail_labels, set_gmail_labels, remove_gmail_labels. Thanks to
+  Brian Neal for the patch.
+
 =======
  0.8.1
 =======
@@ -9,7 +17,7 @@
 * MANIFEST.in was fixed so that the main documentation index file
   is included the source distribution.
 * distribute_setup.py was updated to the 0.6.24 version.
-* This release also contains some small documentation fixes. 
+* This release also contains some small documentation fixes.
 
 =====
  0.8
