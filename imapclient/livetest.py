@@ -315,6 +315,27 @@ def createLiveTestClass(conf, use_uid):
             _flagtest(self.client.add_flags, ['boo'], base_flags + ['boo'])
             _flagtest(self.client.remove_flags, ['boo'], base_flags)
 
+
+        def test_labels(self):
+            if not self.client.has_capability('X-GM-EXT-1'):
+                return self.skipTest("Server doesn't support labels")
+
+            self.client.append('INBOX', SIMPLE_MESSAGE)
+            msgid = self.client.search()[0]
+
+            def _labeltest(func, args, expected_labels):
+                answer = func(msgid, *args)
+                self.assertTrue(answer.has_key(msgid))
+                answer_flags = set(answer[msgid])
+                self.assertSetEqual(answer_flags, set(expected_labels))
+
+            base_labels = ['foo', 'bar']
+            _labeltest(self.client.set_gmail_labels, [base_labels], base_labels)
+            _labeltest(self.client.get_gmail_labels, [], base_labels)
+            _labeltest(self.client.add_gmail_labels, ['baz'], base_labels + ['baz'])
+            _labeltest(self.client.remove_gmail_labels, ['baz'], base_labels)
+
+
         def test_search(self):
             # Add some test messages
             msg_tmpl = 'Subject: %s\r\n\r\nBody'
