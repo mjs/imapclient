@@ -324,5 +324,35 @@ class TestTimeNormalisation(IMAPClientTest):
         self.client.normalise_times = False
         check(False)
 
+
+class TestGmailLabels(IMAPClientTest):
+
+    def setUp(self):
+        super(TestGmailLabels, self).setUp()
+        self.client._store = Mock(return_value=sentinel.label_set)
+
+    def test_get(self):
+        self.client.fetch = Mock(return_value={123: {'X-GM-LABELS': ['foo', 'bar']},
+                                               444: {'X-GM-LABELS': ['foo']}})
+
+        out = self.client.get_gmail_labels(sentinel.messages)
+
+        self.client.fetch.assert_called_with(sentinel.messages, ['X-GM-LABELS'])
+        self.assertEquals(out, {123: ['foo', 'bar'],
+                                444: ['foo']})
+
+    def test_add(self):
+        self.client.add_gmail_labels(sentinel.messages, sentinel.labels)
+        self.client._store.assert_called_with('+X-GM-LABELS', sentinel.messages, sentinel.labels)
+
+    def test_remove(self):
+        self.client.remove_gmail_labels(sentinel.messages, sentinel.labels)
+        self.client._store.assert_called_with('-X-GM-LABELS', sentinel.messages, sentinel.labels)
+
+    def test_set(self):
+        self.client.set_gmail_labels(sentinel.messages, sentinel.labels)
+        self.client._store.assert_called_with('X-GM-LABELS', sentinel.messages, sentinel.labels)
+
+
 if __name__ == '__main__':
     unittest.main()
