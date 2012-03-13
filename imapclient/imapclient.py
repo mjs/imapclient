@@ -872,6 +872,11 @@ class IMAPClient(object):
             ])
 
     def _decode_folder_name(self, name):
+        if isinstance(name, int):
+            # Some IMAP implementations return integer folder names
+            # with quotes. These get parsed to ints so convert them
+            # back to strings.
+            return str(name)
         if self.folder_encode:
             return imap_utf7.decode(name)
         return name
