@@ -316,7 +316,7 @@ def createLiveTestClass(conf, use_uid):
             _flagtest(self.client.remove_flags, ['boo'], base_flags)
 
 
-        def test_labels(self):
+        def test_gmail_labels(self):
             if not self.client.has_capability('X-GM-EXT-1'):
                 return self.skipTest("Server doesn't support labels")
 
@@ -325,9 +325,9 @@ def createLiveTestClass(conf, use_uid):
 
             def _labeltest(func, args, expected_labels):
                 answer = func(msgid, *args)
-                self.assertTrue(answer.has_key(msgid))
-                answer_flags = set(answer[msgid])
-                self.assertSetEqual(answer_flags, set(expected_labels))
+                self.assertEquals(answer.keys(), [msgid])
+                actual_labels = set(answer[msgid])
+                self.assertSetEqual(actual_labels, set(expected_labels))
 
             base_labels = ['foo', 'bar']
             _labeltest(self.client.set_gmail_labels, [base_labels], base_labels)
