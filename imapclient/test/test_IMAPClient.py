@@ -329,17 +329,18 @@ class TestGmailLabels(IMAPClientTest):
 
     def setUp(self):
         super(TestGmailLabels, self).setUp()
-        self.client._store = Mock(return_value=sentinel.label_set)
+        patcher = patch.object(self.client, '_store', autospec=True, return_value=sentinel.label_set)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_get(self):
-        self.client.fetch = Mock(return_value={123: {'X-GM-LABELS': ['foo', 'bar']},
-                                               444: {'X-GM-LABELS': ['foo']}})
-
-        out = self.client.get_gmail_labels(sentinel.messages)
-
-        self.client.fetch.assert_called_with(sentinel.messages, ['X-GM-LABELS'])
-        self.assertEquals(out, {123: ['foo', 'bar'],
-                                444: ['foo']})
+        with patch.object(self.client, 'fetch', autospec=True,
+                          return_value={123: {'X-GM-LABELS': ['foo', 'bar']},
+                                        444: {'X-GM-LABELS': ['foo']}}):
+            out = self.client.get_gmail_labels(sentinel.messages)
+            self.client.fetch.assert_called_with(sentinel.messages, ['X-GM-LABELS'])
+            self.assertEquals(out, {123: ['foo', 'bar'],
+                                    444: ['foo']})
 
     def test_add(self):
         self.client.add_gmail_labels(sentinel.messages, sentinel.labels)
