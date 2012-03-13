@@ -71,6 +71,10 @@ class TestListFolders(IMAPClientTest):
                                    (['\\HasNoChildren'], '/', 'B'),
                                    (['\\HasNoChildren'], '/', 'C')])
 
+    def test_unquoted_numeric_folder_name(self):
+        # Some IMAP implementations do this
+        folders = self.client._proc_folder_list(['(\\HasNoChildren) "/" 123'])
+        self.assertEqual(folders, [(['\\HasNoChildren'], '/', '123')])
 
     def test_mixed(self):
         folders = self.client._proc_folder_list(['(\\HasNoChildren) "/" Alpha',
