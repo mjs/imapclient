@@ -234,10 +234,11 @@ def createLiveTestClass(conf, use_uid):
                 self.assertFalse(self.client.folder_exists(folder))
 
         def test_rename_folder(self):
-            test_folders = ['foobar',
-                            'stuff & things',
-                            u'test & \u2622',
-                            '123']
+            test_folders = self.add_namespace_to_list([
+                'foobar',
+                'stuff & things',
+                u'test & \u2622',
+                '123'])
             for folder in test_folders:
                 self.client.create_folder(folder)
 
@@ -590,10 +591,9 @@ def createLiveTestClass(conf, use_uid):
                 # on. EXPUNGE won't return anything in this case
                 self.assertIn((1, 'EXPUNGE'), resps)
 
-
     return LiveTest
 
-        
+
 def lower_if_str(val):
     if isinstance(val, basestring):
         return val.lower()
@@ -623,8 +623,6 @@ def parse_argv():
     host_config = parse_config_file(ini_path)
     return host_config
 
-    
-
 def probe_host(config):
     client = create_client_from_config(config)
     ns = client.namespace()
@@ -653,4 +651,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
