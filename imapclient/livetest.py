@@ -102,7 +102,7 @@ def createLiveTestClass(conf, use_uid):
 
         def add_namespace_to_list(self, folders):
             return [self.add_namespace(folder) for folder in folders]
-            
+
         def unsub_all_folders(self):
             for folder in self.all_sub_folder_names():
                 self.client.unsubscribe_folder(folder)
@@ -203,7 +203,6 @@ def createLiveTestClass(conf, use_uid):
                               self.client.subscribe_folder,
                               'this folder is not likely to exist')
 
-
         def test_folders(self):
             self.assertTrue(self.client.folder_exists('INBOX'))
             self.assertFalse(self.client.folder_exists('this is very unlikely to exist'))
@@ -302,7 +301,6 @@ def createLiveTestClass(conf, use_uid):
             # Message body should match
             self.assertEqual(msginfo['RFC822'], SIMPLE_MESSAGE)
 
-
         def test_flags(self):
             self.client.append('INBOX', SIMPLE_MESSAGE)
             msgid = self.client.search()[0]
@@ -319,7 +317,6 @@ def createLiveTestClass(conf, use_uid):
             _flagtest(self.client.get_flags, [], base_flags)
             _flagtest(self.client.add_flags, ['boo'], base_flags + ['boo'])
             _flagtest(self.client.remove_flags, ['boo'], base_flags)
-
 
         def test_gmail_labels(self):
             self.skip_unless_capable('X-GM-EXT-1', 'labels')
@@ -338,7 +335,6 @@ def createLiveTestClass(conf, use_uid):
             _labeltest(self.client.get_gmail_labels, [], base_labels)
             _labeltest(self.client.add_gmail_labels, ['baz'], base_labels + ['baz'])
             _labeltest(self.client.remove_gmail_labels, ['baz'], base_labels)
-
 
         def test_search(self):
             # Add some test messages
@@ -405,7 +401,6 @@ def createLiveTestClass(conf, use_uid):
             msg_id = msgs[0]
             self.assertIn('something', self.client.fetch(msg_id, ['RFC822'])[msg_id]['RFC822'])
 
-
         def test_fetch(self):
             # Generate a fresh message-id each time because Gmail is
             # clever and will treat appends of messages with
@@ -438,7 +433,6 @@ def createLiveTestClass(conf, use_uid):
                                    (('Some One', None, 'some', 'one.com'), (None, None, 'foo', 'foo.com')),
                                    None, None, None, msg_id_header))
 
-
         def test_partial_fetch(self):
             self.client.append('INBOX', MULTIPART_MESSAGE)
             self.client.select_folder('INBOX')
@@ -453,7 +447,6 @@ def createLiveTestClass(conf, use_uid):
             body = resp[msg_id]['BODY[]<2>']
             self.assertEqual(len(body), 25)
             self.assertTrue(body.startswith('om: Bob Smith'))
-
 
         def test_fetch_modifiers(self):
             # CONDSTORE (RFC 4551) provides a good way to use FETCH
@@ -472,7 +465,6 @@ def createLiveTestClass(conf, use_uid):
             # Prove that the modifier is actually being used
             resp = self.client.fetch(msg_id, ['FLAGS'], ['CHANGEDSINCE %d' % (maxModSeq + 1)])
             self.assertFalse(resp)
-            
 
         def test_BODYSTRUCTURE(self):
             self.client.select_folder('INBOX')
@@ -506,7 +498,7 @@ def createLiveTestClass(conf, use_uid):
             # compare up until what is returned
             for e, a in zip(expected, actual):
                 if have_matching_types(e, a, (list, tuple)):
-                    for expected_and_actual in zip(e, a): 
+                    for expected_and_actual in zip(e, a):
                         self.check_BODYSTRUCTURE(*expected_and_actual)
                 else:
                     if e == ('charset', 'us-ascii') and a is None:
@@ -515,7 +507,7 @@ def createLiveTestClass(conf, use_uid):
                         a = lower_if_str(a)
                         e = lower_if_str(e)
                         self.assertEqual(a, e)
-        
+
         def test_idle(self):
             if not self.client.has_capability('IDLE'):
                 return self.skipTest("Server doesn't support IDLE")
