@@ -583,6 +583,16 @@ def createLiveTestClass(conf, use_uid):
                 # on. EXPUNGE won't return anything in this case
                 self.assertIn((1, 'EXPUNGE'), resps)
 
+        def test_getacl(self):
+            self.skip_unless_capable('ACL')
+
+            folder = self.add_namespace('test_acl')
+            who = conf['username']
+            self.client.create_folder(folder)
+
+            rights = self.client.getacl(folder)
+            self.assertIn(who, [u for u, r in rights])
+
     return LiveTest
 
 
