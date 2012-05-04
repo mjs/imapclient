@@ -13,7 +13,7 @@ from operator import itemgetter
 import imaplib
 import response_lexer
 
-    
+
 try:
     import oauth2
 except ImportError:
@@ -46,7 +46,7 @@ RECENT = r'\Recent'         # This flag is read-only
 
 class Namespace(tuple):
     def __new__(cls, personal, other, shared):
-        return tuple.__new__(cls, (personal, other, shared)) 
+        return tuple.__new__(cls, (personal, other, shared))
 
     personal = property(itemgetter(0))
     other = property(itemgetter(1))
@@ -128,7 +128,7 @@ class IMAPClient(object):
             token = oauth2.Token(oauth_token, oauth_token_secret)
             consumer = oauth2.Consumer(consumer_key, consumer_secret)
             xoauth_callable = lambda x: oauth2.build_xoauth_string(url, consumer, token)
-            
+
             typ, data = self._imap.authenticate('XOAUTH', xoauth_callable)
             self._checkok('authenticate', typ, data)
             return data[0]
@@ -142,12 +142,10 @@ class IMAPClient(object):
         self._checkbye('logout', typ, data)
         return data[0]
 
-
     def capabilities(self):
         """Returns the server capability list.
         """
         return self._imap.capabilities
-
 
     def has_capability(self, capability):
         """Return ``True`` if the IMAP server has the given *capability*.
@@ -309,7 +307,6 @@ class IMAPClient(object):
                 value = parse_response(value)[0]
             elif key == 'READ-WRITE':
                 value = True
-                                 
             out[key] = value
         return out
 
@@ -463,7 +460,7 @@ class IMAPClient(object):
                                       self._encode_folder_name(new_name))
         self._checkok('rename', typ, data)
         return data[0]
-        
+
     def delete_folder(self, folder):
         """Delete *folder* on the server returning the server response string.
         """
@@ -532,7 +529,6 @@ class IMAPClient(object):
 
         return [ long(i) for i in data[0].split() ]
 
-
     def sort(self, sort_criteria, criteria='ALL', charset='UTF-8'):
         """Return a list of message ids sorted by *sort_criteria* and
         optionally filtered by *criteria*.
@@ -543,7 +539,7 @@ class IMAPClient(object):
             REVERSE SIZE
             SUBJECT
 
-        The *criteria* argument is as per search(). 
+        The *criteria* argument is as per search().
         See `RFC 5256 <http://tools.ietf.org/html/rfc5256>`_ for full details.
 
         Note that SORT is an extension to the IMAP4 standard so it may
@@ -571,7 +567,6 @@ class IMAPClient(object):
 
         return [long(i) for i in data[0].split()]
 
-
     def get_flags(self, messages):
         """Return the flags set for each message in *messages*.
 
@@ -580,7 +575,6 @@ class IMAPClient(object):
         """
         response = self.fetch(messages, ['FLAGS'])
         return self._flatten_dict(response)
-
 
     def add_flags(self, messages, flags):
         """Add *flags* to *messages*.
@@ -592,7 +586,6 @@ class IMAPClient(object):
         """
         return self._store('+FLAGS', messages, flags)
 
-
     def remove_flags(self, messages, flags):
         """Remove one or more *flags* from *messages*.
 
@@ -603,7 +596,6 @@ class IMAPClient(object):
         """
         return self._store('-FLAGS', messages, flags)
 
-
     def set_flags(self, messages, flags):
         """Set the *flags* for *messages*.
 
@@ -613,7 +605,6 @@ class IMAPClient(object):
         *get_flags*).
         """
         return self._store('FLAGS', messages, flags)
-
 
     def get_gmail_labels(self, messages):
         """Return the label set for each message in *messages*.
@@ -626,7 +617,6 @@ class IMAPClient(object):
         """
         response = self.fetch(messages, ['X-GM-LABELS'])
         return self._flatten_dict(response)
-
 
     def add_gmail_labels(self, messages, labels):
         """Add *labels* to *messages*.
@@ -641,7 +631,6 @@ class IMAPClient(object):
         """
         return self._store('+X-GM-LABELS', messages, labels)
 
-
     def remove_gmail_labels(self, messages, labels):
         """Remove one or more *labels* from *messages*.
 
@@ -654,7 +643,6 @@ class IMAPClient(object):
         attribute (eg. Gmail).
         """
         return self._store('-X-GM-LABELS', messages, labels)
-
 
     def set_gmail_labels(self, messages, labels):
         """Set the *labels* for *messages*.
@@ -669,7 +657,6 @@ class IMAPClient(object):
         """
         return self._store('X-GM-LABELS', messages, labels)
 
-
     def delete_messages(self, messages):
         """Delete one or more *messages* from the currently selected
         folder.
@@ -678,7 +665,6 @@ class IMAPClient(object):
         *get_flags*).
         """
         return self.add_flags(messages, DELETED)
-
 
     def fetch(self, messages, data, modifiers=None):
         """Retrieve selected *data* associated with one or more *messages*.
@@ -710,7 +696,6 @@ class IMAPClient(object):
              3293: {'FLAGS': (),
                     'INTERNALDATE': datetime.datetime(2011, 2, 24, 19, 30, 36),
                     'SEQ': 110}}
-
         """
         if not messages:
             return {}
@@ -910,7 +895,7 @@ class IMAPClient(object):
     def _log(self, text):
         self.log_file.write('%s %s\n' % (datetime.now().strftime('%M:%S.%f'), text))
         self.log_file.flush()
-        
+
 
 def messages_to_str(messages):
     """Convert a sequence of messages ids or a single integer message id
@@ -922,7 +907,6 @@ def messages_to_str(messages):
         raise ValueError('invalid message list: %r' % messages)
     return ','.join([str(m) for m in messages])
 
-
 def seq_to_parenlist(flags):
     """Convert a sequence of strings into parenthised list string for
     use with IMAP commands.
@@ -932,7 +916,6 @@ def seq_to_parenlist(flags):
     elif not isinstance(flags, (tuple, list)):
         raise ValueError('invalid flags list: %r' % flags)
     return '(%s)' % ' '.join(flags)
-
 
 def datetime_to_imap(dt):
     """Convert a datetime instance to a IMAP datetime string.
@@ -944,20 +927,17 @@ def datetime_to_imap(dt):
         dt = dt.replace(tzinfo=FixedOffset.for_system())
     return dt.strftime("%d-%b-%Y %H:%M:%S %z")
 
-
 def _quote_arg(arg):
   arg = arg.replace('\\', '\\\\')
   arg = arg.replace('"', '\\"')
   return '"%s"' % arg
-
 
 def _parse_untagged_response(text):
     assert text.startswith('* ')
     text = text[2:]
     if text.startswith(('OK ', 'NO ')):
         return tuple(text.split(' ', 1))
-    return parse_response([text]) 
-                
+    return parse_response([text])
+
 _re_status = re.compile(r'^\s*"?(?P<folder>[^"]+)"?\s+'
                         r'\((?P<status_items>.*)\)$')
-
