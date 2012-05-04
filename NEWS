@@ -4,14 +4,21 @@
  0.9 (dev)
 ===========
 
-* New methods for interacting the Gmail's label API: get_gmail_labels,
-  add_gmail_labels, set_gmail_labels, remove_gmail_labels. Thanks to
-  Brian Neal for the patches.
+Gmail Label Support
+-------------------
+New methods have been added for interacting with Gmail's label API:
+get_gmail_labels, add_gmail_labels, set_gmail_labels,
+remove_gmail_labels. Thanks to Brian Neal for the patches.
 
 Minor Features
 --------------
 * Don't traceback when an IMAP server returns a all-digit folder name
   without quotes. Thanks to Rhett Garber for the bug report. (#107)
+* More tests for ACL related methods (#89)
+
+Minor Bug Fixes
+---------------
+* Fixed rename live test so that it uses folder namespaces.
 
 =======
  0.8.1
@@ -69,7 +76,7 @@ Minor Features
 * Added imapclient.version_info - a tuple that contains the IMAPClient
   version number broken down into it's parts.
 
-Small Bug Fixes
+Minor Bug Fixes
 ---------------
 * getacl() was using wrong lexing class (#85) (Thanks josephhh)
 * Removed special handling for response tuples without whitespace
