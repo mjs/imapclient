@@ -368,6 +368,23 @@ def createLiveTestClass(conf, use_uid):
             self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "a"'])), 1)
             self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "c"'])), 0)
 
+        def test_sort(self):
+            if not self.client.has_capability('SORT'):
+                return self.skipTest("Server doesn't support SORT")
+
+            # Add some test messages
+            msg_tmpl = 'Subject: Test\r\n\r\nBody'
+            num_lines = (10, 20, 30)
+            line = '\n' + ('x' * 72)
+            for line_cnt in num_lines:
+                msg = msg_tmpl + (line * line_cnt)
+                self.client.append('INBOX', msg)
+
+            messages = self.client.sort('REVERSE SIZE')
+            self.assertEqual(len(messages), 3)
+            first_id = messages[0]
+            expected = [first_id, first_id - 1, first_id - 2]
+            self.assertListEqual(messages, expected)
 
         def test_copy(self):
             self.client.select_folder('INBOX')

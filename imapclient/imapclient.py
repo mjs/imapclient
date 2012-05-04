@@ -551,11 +551,13 @@ class IMAPClient(object):
         if not self.has_capability('SORT'):
             raise self.Error('The server does not support the SORT extension')
 
+        if isinstance(sort_criteria, basestring):
+            sort_criteria = (sort_criteria,)
+        sort_criteria = seq_to_parenlist([s.upper() for s in sort_criteria])
+
         if isinstance(criteria, basestring):
             criteria = (criteria,)
         crit_list = ['(%s)' % c for c in criteria]
-
-        sort_criteria = seq_to_parenlist([ s.upper() for s in sort_criteria])
 
         if self.use_uid:
             typ, data = self._imap.uid('SORT', sort_criteria, charset,
