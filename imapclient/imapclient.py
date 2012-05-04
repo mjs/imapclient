@@ -114,9 +114,7 @@ class IMAPClient(object):
         """Login using *username* and *password*, returning the
         server response.
         """
-        typ, data = self._imap.login(username, password)
-        self._checkok('login', typ, data)
-        return data[0]
+        return self._command_and_check('login', username, password, unpack=True)
 
     def oauth_login(self, url, oauth_token, oauth_token_secret,
                     consumer_key='anonymous', consumer_secret='anonymous'):
@@ -128,10 +126,7 @@ class IMAPClient(object):
             token = oauth2.Token(oauth_token, oauth_token_secret)
             consumer = oauth2.Consumer(consumer_key, consumer_secret)
             xoauth_callable = lambda x: oauth2.build_xoauth_string(url, consumer, token)
-
-            typ, data = self._imap.authenticate('XOAUTH', xoauth_callable)
-            self._checkok('authenticate', typ, data)
-            return data[0]
+            return self._command_and_check('authenticate', 'XOAUTH', xoauth_callable, unpack=True)
         else:
             raise self.Error('The optional oauth2 dependency is needed for oauth authentication')
 
@@ -139,7 +134,7 @@ class IMAPClient(object):
         """Logout, returning the server response.
         """
         typ, data = self._imap.logout()
-        self._checkbye('logout', typ, data)
+        self._check_resp('BYE', 'logout', typ, data)
         return data[0]
 
     def capabilities(self):
@@ -173,8 +168,7 @@ class IMAPClient(object):
 
         See `RFC 2342 <http://tools.ietf.org/html/rfc2342>`_ for more details.
         """
-        typ, data = self._imap.namespace()
-        self._checkok('namespace', typ, data)
+        data = self._command_and_check('namespace')
         return Namespace(*parse_response(data))
 
     def get_folder_delimiter(self):
@@ -291,8 +285,7 @@ class IMAPClient(object):
              'UIDNEXT': 11,
              'UIDVALIDITY': 1239278212}
         """
-        typ, data = self._imap.select(self._encode_folder_name(folder), readonly)
-        self._checkok('select', typ, data)
+        self._command_and_check('select', self._encode_folder_name(folder), readonly)
         return self._process_select_response(self._imap.untagged_responses)
 
     def _process_select_response(self, resp):
@@ -423,10 +416,8 @@ class IMAPClient(object):
             what = (what,)
         what_ = '(%s)' % (' '.join(what))
 
-        typ, data = self._imap.status(self._encode_folder_name(folder), what_)
-        self._checkok('status', typ, data)
-
-        match = _re_status.match(data[0])
+        data = self._command_and_check('status', self._encode_folder_name(folder), what_, unpack=True)
+        match = _re_status.match(data)
         if not match:
             raise self.Error('Could not get the folder status')
 
@@ -442,53 +433,42 @@ class IMAPClient(object):
         """Close the currently selected folder, returning the server
         response string.
         """
-        typ, data = self._imap.close()
-        self._checkok('close', typ, data)
-        return data[0]
+        return self._command_and_check('close', unpack=True)
 
     def create_folder(self, folder):
         """Create *folder* on the server returning the server response string.
         """
-        typ, data = self._imap.create(self._encode_folder_name(folder))
-        self._checkok('create', typ, data)
-        return data[0]
+        return self._command_and_check('create', self._encode_folder_name(folder), unpack=True)
 
     def rename_folder(self, old_name, new_name):
         """Change the name of a folder on the server.
         """
-        typ, data = self._imap.rename(self._encode_folder_name(old_name),
-                                      self._encode_folder_name(new_name))
-        self._checkok('rename', typ, data)
-        return data[0]
+        return self._command_and_check('rename',
+                                       self._encode_folder_name(old_name),
+                                       self._encode_folder_name(new_name),
+                                       unpack=True)
 
     def delete_folder(self, folder):
         """Delete *folder* on the server returning the server response string.
         """
-        typ, data = self._imap.delete(self._encode_folder_name(folder))
-        self._checkok('delete', typ, data)
-        return data[0]
+        return self._command_and_check('delete', self._encode_folder_name(folder), unpack=True)
 
     def folder_exists(self, folder):
         """Return ``True`` if *folder* exists on the server.
         """
-        typ, data = self._imap.list('', self._encode_folder_name(folder))
-        self._checkok('list', typ, data)
+        data = self._command_and_check('list', '', self._encode_folder_name(folder))
         data = [x for x in data if x]
         return len(data) == 1 and data[0] != None
 
     def subscribe_folder(self, folder):
         """Subscribe to *folder*, returning the server response string.
         """
-        typ, data = self._imap.subscribe(self._encode_folder_name(folder))
-        self._checkok('subscribe', typ, data)
-        return data
+        return self._command_and_check('subscribe', self._encode_folder_name(folder))
 
     def unsubscribe_folder(self, folder):
         """Unsubscribe to *folder*, returning the server response string.
         """
-        typ, data = self._imap.unsubscribe(self._encode_folder_name(folder))
-        self._checkok('unsubscribe', typ, data)
-        return data
+        return self._command_and_check('unsubscribe', self._encode_folder_name(folder))
 
     def search(self, criteria='ALL', charset=None):
         """Return a list of messages ids matching *criteria*.
@@ -738,14 +718,11 @@ class IMAPClient(object):
             time_val = '"%s"' % datetime_to_imap(msg_time)
         else:
             time_val = None
-
-        flags_list = seq_to_parenlist(flags)
-
-        typ, data = self._imap.append(self._encode_folder_name(folder),
-                                      flags_list, time_val, msg)
-        self._checkok('append', typ, data)
-
-        return data[0]
+        return self._command_and_check('append',
+                                       self._encode_folder_name(folder),
+                                       seq_to_parenlist(flags),
+                                       time_val, msg,
+                                       unpack=True)
 
     def copy(self, messages, folder):
         """Copy one or more messages from the current folder to
@@ -791,9 +768,7 @@ class IMAPClient(object):
         """Returns a list of ``(who, acl)`` tuples describing the
         access controls for *folder*.
         """
-        typ, data = self._imap.getacl(folder)
-        self._checkok('getacl', typ, data)
-
+        data = self._command_and_check('getacl', self._encode_folder_name(folder))
         parts = list(response_lexer.TokenSource(data))
         parts = parts[1:]       # First item is folder name
         return [(parts[i], parts[i+1]) for i in xrange(0, len(parts), 2)]
@@ -804,9 +779,10 @@ class IMAPClient(object):
         Set *what* to an empty string to remove an ACL. Returns the
         server response string.
         """
-        typ, data = self._imap.setacl(folder, who, what)
-        self._checkok('setacl', typ, data)
-        return data[0]
+        return self._command_and_check('setacl',
+                                       self._encode_folder_name(folder),
+                                       who, what,
+                                       unpack=True)
 
     def _check_resp(self, expected, command, typ, data):
         """Check command responses for errors.
@@ -828,11 +804,19 @@ class IMAPClient(object):
         self._checkok(command, typ, data)
         return data[0], resps
 
+    def _command_and_check(self, command, *args, **kwargs):
+        meth = getattr(self._imap, command)
+        unpack = pop_with_default(kwargs, 'unpack', False)
+        assert not kwargs, "unexpected keyword args: " + ', '.join(kwargs)
+
+        typ, data = meth(*args)
+        self._checkok(command, typ, data)
+        if unpack:
+            return data[0]
+        return data
+
     def _checkok(self, command, typ, data):
         self._check_resp('OK', command, typ, data)
-
-    def _checkbye(self, command, typ, data):
-        self._check_resp('BYE', command, typ, data)
 
     def _store(self, cmd, messages, flags):
         """Worker function for the various flag manipulation methods.
@@ -943,3 +927,8 @@ def _parse_untagged_response(text):
 
 _re_status = re.compile(r'^\s*"?(?P<folder>[^"]+)"?\s+'
                         r'\((?P<status_items>.*)\)$')
+
+def pop_with_default(dct, key, default):
+    if key in dct:
+        return dct.pop(key)
+    return default
