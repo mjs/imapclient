@@ -119,29 +119,28 @@ This works when IMAPClient has been installed from PyPI.
 
 livetest.py
 -----------
-This script contains a series of functional tests which exercise
+This script runs a series of functional tests which exercise
 IMAPClient against a live IMAP account. It is useful for ensuring
 compatibility with a given IMAP server implementation. livetest.py
-must be used with an account that has an INBOX folder and write access
-to the account.
+must be used with an account with write access.
 
-WARNING: The operations performed by livetest.py are
-destructive. Emails and folders in the test account WILL BE
-DELETED. Please only run against a dummy account that you don't care
-about.
+WARNING: As of version 0.9, livetest limits it's activity to a folder
+it creates and subfolders of that folder. It *should* be safe to use
+with any IMAP account. That said, some of the operations used by
+livetest are destructive and could cause unintended loss of non-test
+data. Please don't run the live test against a truly important IMAP
+account.
 
 Run livetest.py with the --help option to see usage.
 
 Please send the output of livetest.py to the mailing list if it fails
 to run successfully against a particular IMAP server. Reports of
 successful runs are also welcome.  Please include the type and version
-of the IMAP server.
+of the IMAP server, if known.
 
 The livetest functionality can also be accessed like this:
 
     python -m imapclient.livetest ...
-
-This works when IMAPClient has been installed from PyPI.
 
 
 Unit Tests

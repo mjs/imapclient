@@ -54,14 +54,18 @@ def createLiveTestClass(conf, use_uid):
     class LiveTest(unittest.TestCase):
 
         def setUp(self):
-            self.maxDiff = None
             self.client = create_client_from_config(conf)
             self.client.use_uid = use_uid
-            self.clear_folders()
-            self.unsub_all_folders()
-            self.client.select_folder('INBOX')
+            self.base_folder = conf.namespace[0] + ('__imapclient')
+            self.folder_delimiter = conf.namespace[1]
+            self.clear_test_folders()
+            self.unsub_all_test_folders()
+            self.client.create_folder(self.base_folder)
+            self.client.select_folder(self.base_folder)
 
         def tearDown(self):
+            self.clear_test_folders()
+            self.unsub_all_test_folders()
             self.client.logout()
 
         def skip_unless_capable(self, capability, name=None):
@@ -78,33 +82,31 @@ def createLiveTestClass(conf, use_uid):
                     ret.append(folder_name)
             return ret
 
-        def all_folder_names(self):
-            return self.just_folder_names(self.client.list_folders())
+        def all_test_folder_names(self):
+            return self.just_folder_names(self.client.list_folders(self.base_folder))
 
-        def all_sub_folder_names(self):
-            return self.just_folder_names(self.client.list_sub_folders())
+        def all_sub_test_folder_names(self):
+            return self.just_folder_names(self.client.list_sub_folders(self.base_folder))
 
-        def clear_folders(self):
+        def clear_test_folders(self):
             self.client.folder_encode = False
-            for folder in self.all_folder_names():
-                if folder.upper() != 'INBOX':
-                    self.client.delete_folder(folder)
+            for folder in self.all_test_folder_names():
+                self.client.delete_folder(folder)
             self.client.folder_encode = True
-            self.clear_folder('INBOX')
 
         def clear_folder(self, folder):
             self.client.select_folder(folder)
             self.client.delete_messages(self.client.search())
             self.client.expunge()
 
-        def add_namespace(self, folder):
-            return conf.namespace[0] + folder
+        def add_prefix_to_folder(self, folder):
+            return self.base_folder + self.folder_delimiter + folder
 
-        def add_namespace_to_list(self, folders):
-            return [self.add_namespace(folder) for folder in folders]
+        def add_prefix_to_folders(self, folders):
+            return [self.add_prefix_to_folder(folder) for folder in folders]
 
-        def unsub_all_folders(self):
-            for folder in self.all_sub_folder_names():
+        def unsub_all_test_folders(self):
+            for folder in self.all_sub_test_folder_names():
                 self.client.unsubscribe_folder(folder)
 
         def is_gmail(self):
@@ -138,7 +140,7 @@ def createLiveTestClass(conf, use_uid):
             self.assertEqual(ns.shared, ns[2])
 
         def test_select_and_close(self):
-            resp = self.client.select_folder('INBOX')
+            resp = self.client.select_folder(self.base_folder)
             self.assertIsInstance(resp['EXISTS'], int)
             self.assertEqual(resp['EXISTS'], 0)
             self.assertIsInstance(resp['RECENT'], int)
@@ -150,13 +152,13 @@ def createLiveTestClass(conf, use_uid):
             some_folders = ['simple', u'L\xffR']
             if not self.is_fastmail():
                 some_folders.extend([r'test"folder"', r'foo\bar'])
-            some_folders = self.add_namespace_to_list(some_folders)
+            some_folders = self.add_prefix_to_folders(some_folders)
             for name in some_folders:
                 self.client.create_folder(name)
 
-            folders = self.all_folder_names()
+            folders = self.all_test_folder_names()
             self.assertGreater(len(folders), 1, 'No folders visible on server')
-            self.assertIn('INBOX', [f.upper() for f in folders], 'INBOX not seen')
+            self.assertIn(self.base_folder, folders)
 
             for name in some_folders:
                 self.assertIn(name, folders)
@@ -180,31 +182,26 @@ def createLiveTestClass(conf, use_uid):
                     self.fail('INBOX not returned in XLIST output')
 
         def test_subscriptions(self):
-            test_folders = self.add_namespace_to_list([
-                'foobar',
-                'stuff & things',
-                u'test & \u2622'])
-
+            test_folders = self.add_prefix_to_folders(['foobar', 'stuff & things', u'test & \u2622'])
             for folder in test_folders:
                 self.client.create_folder(folder)
 
-            all_folders = sorted(self.all_folder_names())
-
+            all_folders = sorted(self.all_test_folder_names())
             for folder in all_folders:
                 self.client.subscribe_folder(folder)
 
-            self.assertListEqual(all_folders, sorted(self.all_sub_folder_names()))
+            self.assertListEqual(all_folders, sorted(self.all_sub_test_folder_names()))
 
             for folder in all_folders:
                 self.client.unsubscribe_folder(folder)
-            self.assertListEqual(self.all_sub_folder_names(), [])
+            self.assertListEqual(self.all_sub_test_folder_names(), [])
 
             self.assertRaises(imapclient.IMAPClient.Error,
                               self.client.subscribe_folder,
                               'this folder is not likely to exist')
 
         def test_folders(self):
-            self.assertTrue(self.client.folder_exists('INBOX'))
+            self.assertTrue(self.client.folder_exists(self.base_folder))
             self.assertFalse(self.client.folder_exists('this is very unlikely to exist'))
 
             test_folders = ['foobar',
@@ -216,7 +213,7 @@ def createLiveTestClass(conf, use_uid):
                 # Fastmail doesn't appear like double quotes in folder names
                 test_folders.extend(['"foobar"', 'foo "bar"'])
 
-            test_folders = self.add_namespace_to_list(test_folders)
+            test_folders = self.add_prefix_to_folders(test_folders)
 
             for folder in test_folders:
                 self.assertFalse(self.client.folder_exists(folder))
@@ -224,7 +221,7 @@ def createLiveTestClass(conf, use_uid):
                 self.client.create_folder(folder)
 
                 self.assertTrue(self.client.folder_exists(folder))
-                self.assertIn(folder, self.all_folder_names())
+                self.assertIn(folder, self.all_test_folder_names())
 
                 self.client.select_folder(folder)
                 self.client.close_folder()
@@ -233,7 +230,7 @@ def createLiveTestClass(conf, use_uid):
                 self.assertFalse(self.client.folder_exists(folder))
 
         def test_rename_folder(self):
-            test_folders = self.add_namespace_to_list([
+            test_folders = self.add_prefix_to_folders([
                 'foobar',
                 'stuff & things',
                 u'test & \u2622',
@@ -251,9 +248,9 @@ def createLiveTestClass(conf, use_uid):
 
         def test_status(self):
             # Default behaviour should return 5 keys
-            self.assertEqual(len(self.client.folder_status('INBOX')), 5)
+            self.assertEqual(len(self.client.folder_status(self.base_folder)), 5)
 
-            new_folder = self.add_namespace(u'test \u2622')
+            new_folder = self.add_prefix_to_folder(u'test \u2622')
             self.client.create_folder(new_folder)
             try:
                 status = self.client.folder_status(new_folder)
@@ -278,11 +275,11 @@ def createLiveTestClass(conf, use_uid):
             msg_time = datetime.now().replace(microsecond=0)
 
             # Append message
-            resp = self.client.append('INBOX', SIMPLE_MESSAGE, ('abc', 'def'), msg_time)
+            resp = self.client.append(self.base_folder, SIMPLE_MESSAGE, ('abc', 'def'), msg_time)
             self.assertIsInstance(resp, str)
 
             # Retrieve the just added message and check that all looks well
-            self.assertEqual(self.client.select_folder('INBOX')['EXISTS'], 1)
+            self.assertEqual(self.client.select_folder(self.base_folder)['EXISTS'], 1)
 
             resp = self.client.fetch(self.client.search()[0], ('RFC822', 'FLAGS', 'INTERNALDATE'))
 
@@ -302,13 +299,13 @@ def createLiveTestClass(conf, use_uid):
             self.assertEqual(msginfo['RFC822'], SIMPLE_MESSAGE)
 
         def test_flags(self):
-            self.client.append('INBOX', SIMPLE_MESSAGE)
-            msgid = self.client.search()[0]
+            self.client.append(self.base_folder, SIMPLE_MESSAGE)
+            msg_id = self.client.search()[0]
 
             def _flagtest(func, args, expected_flags):
-                answer = func(msgid, *args)
-                self.assertTrue(answer.has_key(msgid))
-                answer_flags = set(answer[msgid])
+                answer = func(msg_id, *args)
+                self.assertTrue(answer.has_key(msg_id))
+                answer_flags = set(answer[msg_id])
                 answer_flags.discard(r'\Recent')  # Might be present but don't care
                 self.assertSetEqual(answer_flags, set(expected_flags))
 
@@ -321,20 +318,26 @@ def createLiveTestClass(conf, use_uid):
         def test_gmail_labels(self):
             self.skip_unless_capable('X-GM-EXT-1', 'labels')
 
-            self.client.append('INBOX', SIMPLE_MESSAGE)
-            msgid = self.client.search()[0]
+            self.client.append(self.base_folder, SIMPLE_MESSAGE)
+            msg_id = self.client.search()[0]
 
             def _labeltest(func, args, expected_labels):
-                answer = func(msgid, *args)
-                self.assertEquals(answer.keys(), [msgid])
-                actual_labels = set(answer[msgid])
+                answer = func(msg_id, *args)
+                self.assertEquals(answer.keys(), [msg_id])
+                actual_labels = set(answer[msg_id])
                 self.assertSetEqual(actual_labels, set(expected_labels))
 
-            base_labels = ['foo', 'bar']
-            _labeltest(self.client.set_gmail_labels, [base_labels], base_labels)
-            _labeltest(self.client.get_gmail_labels, [], base_labels)
-            _labeltest(self.client.add_gmail_labels, ['baz'], base_labels + ['baz'])
-            _labeltest(self.client.remove_gmail_labels, ['baz'], base_labels)
+            base_labels = ['_imapclient_foo', '_imapclient_bar']
+            try:
+                _labeltest(self.client.set_gmail_labels, [base_labels], base_labels)
+                _labeltest(self.client.get_gmail_labels, [], base_labels)
+                _labeltest(self.client.add_gmail_labels, ['_imapclient_baz'], base_labels + ['_imapclient_baz'])
+                _labeltest(self.client.remove_gmail_labels, ['_imapclient_baz'], base_labels)
+            finally:
+                # Clean up
+                for label in ['_imapclient_baz'] + base_labels:
+                    if self.client.folder_exists(label):
+                        self.client.delete_folder(label)
 
         def test_search(self):
             # Add some test messages
@@ -346,7 +349,7 @@ def createLiveTestClass(conf, use_uid):
                     flags = (imapclient.DELETED,)
                 else:
                     flags = ()
-                self.client.append('INBOX', msg, flags)
+                self.client.append(self.base_folder, msg, flags)
 
             # Check we see all messages
             messages_all = self.client.search('ALL')
@@ -378,7 +381,7 @@ def createLiveTestClass(conf, use_uid):
             line = '\n' + ('x' * 72)
             for line_cnt in num_lines:
                 msg = msg_tmpl + (line * line_cnt)
-                self.client.append('INBOX', msg)
+                self.client.append(self.base_folder, msg)
 
             messages = self.client.sort('REVERSE SIZE')
             self.assertEqual(len(messages), 3)
@@ -387,9 +390,8 @@ def createLiveTestClass(conf, use_uid):
             self.assertListEqual(messages, expected)
 
         def test_copy(self):
-            self.client.select_folder('INBOX')
-            self.client.append('INBOX', SIMPLE_MESSAGE)
-            target_folder = self.add_namespace('target')
+            self.client.append(self.base_folder, SIMPLE_MESSAGE)
+            target_folder = self.add_prefix_to_folder('target')
             self.client.create_folder(target_folder)
             msg_id = self.client.search()[0]
 
@@ -409,8 +411,8 @@ def createLiveTestClass(conf, use_uid):
             msg_id_header = make_msgid()
             msg = ('Message-ID: %s\r\n' % msg_id_header) + MULTIPART_MESSAGE
 
-            self.client.select_folder('INBOX')
-            self.client.append('INBOX', msg)
+            self.client.select_folder(self.base_folder)
+            self.client.append(self.base_folder, msg)
 
             fields = ['RFC822', 'FLAGS', 'INTERNALDATE', 'ENVELOPE']
             msg_id = self.client.search()[0]
@@ -434,8 +436,8 @@ def createLiveTestClass(conf, use_uid):
                                    None, None, None, msg_id_header))
 
         def test_partial_fetch(self):
-            self.client.append('INBOX', MULTIPART_MESSAGE)
-            self.client.select_folder('INBOX')
+            self.client.append(self.base_folder, MULTIPART_MESSAGE)
+            self.client.select_folder(self.base_folder)
             msg_id = self.client.search()[0]
 
             resp = self.client.fetch(msg_id, ['BODY[]<0.20>'])
@@ -454,22 +456,29 @@ def createLiveTestClass(conf, use_uid):
             if not self.client.has_capability('CONDSTORE'):
                 return self.skipTest("Server doesn't support CONDSTORE")
 
-            maxModSeq = int(self.client.select_folder('INBOX')['HIGHESTMODSEQ'][0])
-            self.client.append('INBOX', SIMPLE_MESSAGE)
+            # A little dance to ensure MODSEQ tracking is turned on - I'm looking at you Dovecot!
+            self.client.select_folder(self.base_folder)
+            self.client.append(self.base_folder, SIMPLE_MESSAGE)
             msg_id = self.client.search()[0]
+            self.client.fetch(msg_id, ["MODSEQ"])
+            self.client.close_folder()
+            self.clear_folder(self.base_folder)
 
+            # Actual testing starts here
+            maxModSeq = int(self.client.select_folder(self.base_folder)['HIGHESTMODSEQ'][0])
+            self.client.append(self.base_folder, SIMPLE_MESSAGE)
+            msg_id = self.client.search()[0]
             resp = self.client.fetch(msg_id, ['FLAGS'], ['CHANGEDSINCE %d' % maxModSeq])
-            msg_info = resp[msg_id]
-            self.assertIn('MODSEQ', msg_info)
+            self.assertIn('MODSEQ', resp[msg_id])
 
             # Prove that the modifier is actually being used
             resp = self.client.fetch(msg_id, ['FLAGS'], ['CHANGEDSINCE %d' % (maxModSeq + 1)])
             self.assertFalse(resp)
 
         def test_BODYSTRUCTURE(self):
-            self.client.select_folder('INBOX')
-            self.client.append('INBOX', SIMPLE_MESSAGE)
-            self.client.append('INBOX', MULTIPART_MESSAGE)
+            self.client.select_folder(self.base_folder)
+            self.client.append(self.base_folder, SIMPLE_MESSAGE)
+            self.client.append(self.base_folder, MULTIPART_MESSAGE)
             msgs = self.client.search()
 
             fetched = self.client.fetch(msgs, ['BODY', 'BODYSTRUCTURE'])
@@ -513,13 +522,13 @@ def createLiveTestClass(conf, use_uid):
                 return self.skipTest("Server doesn't support IDLE")
 
             # Start main connection idling
-            self.client.select_folder('INBOX')
+            self.client.select_folder(self.base_folder)
             self.client.idle()
 
             # Start a new connection and upload a new message
             client2 = create_client_from_config(conf)
-            client2.select_folder('INBOX')
-            client2.append('INBOX', SIMPLE_MESSAGE)
+            client2.select_folder(self.base_folder)
+            client2.append(self.base_folder, SIMPLE_MESSAGE)
 
             # Check for the idle data
             responses = self.client.idle_check(timeout=5)
@@ -531,8 +540,8 @@ def createLiveTestClass(conf, use_uid):
 
             # Check for IDLE data returned by idle_done()
             self.client.idle()
-            client2.select_folder('INBOX')
-            client2.append('INBOX', SIMPLE_MESSAGE)
+            client2.select_folder(self.base_folder)
+            client2.append(self.base_folder, SIMPLE_MESSAGE)
             time.sleep(2)    # Allow some time for the IDLE response to be sent
 
             text, responses = self.client.idle_done()
@@ -541,7 +550,7 @@ def createLiveTestClass(conf, use_uid):
             self.assertGreater(len(text), 0)
 
         def test_noop(self):
-            self.client.select_folder('INBOX')
+            self.client.select_folder(self.base_folder)
 
             # Initially there should be no responses
             text, resps = self.client.noop()
@@ -551,8 +560,8 @@ def createLiveTestClass(conf, use_uid):
 
             # Start a new connection and upload a new message
             client2 = create_client_from_config(conf)
-            client2.select_folder('INBOX')
-            client2.append('INBOX', SIMPLE_MESSAGE)
+            client2.select_folder(self.base_folder)
+            client2.append(self.base_folder, SIMPLE_MESSAGE)
 
             # Check for this addition in the NOOP data
             msg, resps = self.client.noop()
@@ -562,7 +571,7 @@ def createLiveTestClass(conf, use_uid):
             self.assertIn((1, 'EXISTS'), resps)
 
         def test_expunge(self):
-            self.client.select_folder('INBOX')
+            self.client.select_folder(self.base_folder)
 
             # Test empty mailbox
             text, resps = self.client.expunge()
@@ -571,7 +580,7 @@ def createLiveTestClass(conf, use_uid):
             self.assertEqual(resps, [])
 
             # Now try with a message to expunge
-            self.client.append('INBOX', SIMPLE_MESSAGE, flags=[imapclient.DELETED])
+            self.client.append(self.base_folder, SIMPLE_MESSAGE, flags=[imapclient.DELETED])
 
             msg, resps = self.client.expunge()
 
@@ -586,7 +595,7 @@ def createLiveTestClass(conf, use_uid):
         def test_getacl(self):
             self.skip_unless_capable('ACL')
 
-            folder = self.add_namespace('test_acl')
+            folder = self.add_prefix_to_folder('test_acl')
             who = conf['username']
             self.client.create_folder(folder)
 
