@@ -367,5 +367,29 @@ class TestGmailLabels(IMAPClientTest):
         self.client._store.assert_called_with('X-GM-LABELS', sentinel.messages, sentinel.labels)
 
 
+class TestNamespace(IMAPClientTest):
+
+    def set_return(self, value):
+        self.client._imap.namespace.return_value = ('OK', [value])
+
+    def test_simple(self):
+        self.set_return('(("FOO." "/")) NIL NIL')
+        self.assertEquals(self.client.namespace(), ((('FOO.', '/'),), None, None))
+
+    def test_other_only(self):
+        self.set_return('NIL NIL (("" "."))')
+        self.assertEquals(self.client.namespace(), (None, None, (("", "."),)))
+
+    def test_complex(self):
+        self.set_return('(("" "/")) '
+                        '(("~" "/")) '
+                        '(("#shared/" "/") ("#public/" "/")("#ftp/" "/")("#news." "."))')
+        self.assertEquals(self.client.namespace(), (
+            (("", "/"),),
+            (("~", "/"),),
+            (("#shared/", "/"), ("#public/", "/"), ("#ftp/", "/"), ("#news.", ".")),
+            ))
+
+
 if __name__ == '__main__':
     unittest.main()
