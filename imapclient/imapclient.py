@@ -495,19 +495,20 @@ class IMAPClient(object):
         crit_list = ['(%s)' % c for c in criteria]
 
         if self.use_uid:
-            if charset is None:
-                typ, data = self._imap.uid('SEARCH', *crit_list)
+            if charset:
+                args = ['CHARSET', charset]
             else:
-                typ, data = self._imap.uid('SEARCH', 'CHARSET', charset,
-                    *crit_list)
+                args = []
+            args.extend(crit_list)
+            typ, data = self._imap.uid('SEARCH', *args)
         else:
             typ, data = self._imap.search(charset, *crit_list)
 
         self._checkok('search', typ, data)
-        if data == [None]: # no untagged responses...
+        data = data[0]
+        if data is None:    # no untagged responses...
             return []
-
-        return [ long(i) for i in data[0].split() ]
+        return [long(i) for i in data.split()]
 
     def sort(self, sort_criteria, criteria='ALL', charset='UTF-8'):
         """Return a list of message ids sorted by *sort_criteria* and
@@ -539,15 +540,11 @@ class IMAPClient(object):
             criteria = (criteria,)
         crit_list = ['(%s)' % c for c in criteria]
 
-        if self.use_uid:
-            typ, data = self._imap.uid('SORT', sort_criteria, charset,
-                *crit_list)
-        else:
-            typ, data = self._imap.sort(sort_criteria, charset, *crit_list)
-
-        self._checkok('sort', typ, data)
-
-        return [long(i) for i in data[0].split()]
+        ids = self._command_and_check('sort', sort_criteria,
+                                      charset,
+                                      *crit_list,
+                                      uid=True, unpack=True)
+        return [long(i) for i in ids.split()]
 
     def get_flags(self, messages):
         """Return the flags set for each message in *messages*.
@@ -688,10 +685,10 @@ class IMAPClient(object):
         if modifiers is not None:
             modifiers_list = seq_to_parenlist([m.upper() for m in modifiers])
 
+        args = ['FETCH', msg_list, data_list, modifiers_list]
         if self.use_uid:
-            tag = self._imap._command('UID', 'FETCH', msg_list, data_list, modifiers_list)
-        else:
-            tag = self._imap._command('FETCH', msg_list, data_list, modifiers_list)
+            args.insert(0, 'UID')
+        tag = self._imap._command(*args)
         typ, data = self._imap._command_complete('FETCH', tag)
         self._checkok('fetch', typ, data)
         typ, data = self._imap._untagged_response(typ, data, 'FETCH')
@@ -729,15 +726,10 @@ class IMAPClient(object):
         *folder*. Returns the COPY response string returned by the
         server.
         """
-        msg_list = messages_to_str(messages)
-        folder = self._encode_folder_name(folder)
-
-        if self.use_uid:
-            typ, data = self._imap.uid('COPY', msg_list, folder)
-        else:
-            typ, data = self._imap.copy(msg_list, folder)
-        self._checkok('copy', typ, data)
-        return data[0]
+        return self._command_and_check('copy',
+                                       messages_to_str(messages),
+                                       self._encode_folder_name(folder),
+                                       uid=True, unpack=True)
 
     def expunge(self):
         """Remove any messages from the currently selected folder that
@@ -805,11 +797,15 @@ class IMAPClient(object):
         return data[0], resps
 
     def _command_and_check(self, command, *args, **kwargs):
-        meth = getattr(self._imap, command)
         unpack = pop_with_default(kwargs, 'unpack', False)
+        uid = pop_with_default(kwargs, 'uid', False)
         assert not kwargs, "unexpected keyword args: " + ', '.join(kwargs)
 
-        typ, data = meth(*args)
+        if uid and self.use_uid:
+            typ, data = self._imap.uid(command, *args)
+        else:
+            meth = getattr(self._imap, command)
+            typ, data = meth(*args)
         self._checkok(command, typ, data)
         if unpack:
             return data[0]
@@ -825,15 +821,11 @@ class IMAPClient(object):
         """
         if not messages:
             return {}
-
-        msg_list = messages_to_str(messages)
-        flag_list = seq_to_parenlist(flags)
-
-        if self.use_uid:
-            typ, data = self._imap.uid('STORE', msg_list, cmd, flag_list)
-        else:
-            typ, data = self._imap.store(msg_list, cmd, flag_list)
-        self._checkok('store', typ, data)
+        data = self._command_and_check('store',
+                                       messages_to_str(messages),
+                                       cmd,
+                                       seq_to_parenlist(flags),
+                                       uid=True)
         return self._flatten_dict(parse_fetch_response((data)))
 
     def _flatten_dict(self, fetch_dict):
