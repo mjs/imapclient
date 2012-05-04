@@ -16,6 +16,14 @@ A signficant amount of duplicated code has been removed by abstracting
 out common command handling code. This will make the Python 3 port and
 future maintenance easier.
 
+livetest can now be run against non-dummy accounts (#108)
+---------------------------------------------------------
+Up until this release the tests in imapclient.livetest could only be
+run against a dummy IMAP account (all data in the account would be
+lost during testing). The tests are now limited to a sub-folder
+created by the tests so it is ok to run them against an account that
+contains real messages. These messages will be left alone.
+
 Minor Features
 --------------
 * Don't traceback when an IMAP server returns a all-digit folder name
