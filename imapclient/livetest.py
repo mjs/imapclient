@@ -64,6 +64,12 @@ def createLiveTestClass(conf, use_uid):
         def tearDown(self):
             self.client.logout()
 
+        def skip_unless_capable(self, capability, name=None):
+            if not self.client.has_capability(capability):
+                if not name:
+                    name = capability
+                self.skipTest("Server doesn't support %s" % name)
+
         def just_folder_names(self, dat):
             ret = []
             for _, _, folder_name in dat:
@@ -116,8 +122,7 @@ def createLiveTestClass(conf, use_uid):
             self.assertFalse(self.client.has_capability('WONT EXIST'))
 
         def test_namespace(self):
-            if not self.client.has_capability('NAMESPACE'):
-                return self.skipTest("Server doesn't support NAMESPACE")
+            self.skip_unless_capable('NAMESPACE')
 
             def assertNoneOrTuple(val):
                 assert val is None or isinstance(val, tuple), \
@@ -164,8 +169,7 @@ def createLiveTestClass(conf, use_uid):
                 self.assertIn("XLIST", caps, "expected XLIST in Gmail's capabilities")
 
         def test_xlist(self):
-            if not self.client.has_capability('XLIST'):
-                return self.skipTest("Server doesn't support XLIST")
+            self.skip_unless_capable('XLIST')
 
             result = self.client.xlist_folders()
             self.assertGreater(len(result), 0, 'No folders returned by XLIST')
@@ -317,8 +321,7 @@ def createLiveTestClass(conf, use_uid):
 
 
         def test_gmail_labels(self):
-            if not self.client.has_capability('X-GM-EXT-1'):
-                return self.skipTest("Server doesn't support labels")
+            self.skip_unless_capable('X-GM-EXT-1', 'labels')
 
             self.client.append('INBOX', SIMPLE_MESSAGE)
             msgid = self.client.search()[0]
@@ -586,6 +589,7 @@ def createLiveTestClass(conf, use_uid):
                 # GMail has an auto-expunge feature which might be
                 # on. EXPUNGE won't return anything in this case
                 self.assertIn((1, 'EXPUNGE'), resps)
+
 
     return LiveTest
 
