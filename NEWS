@@ -10,6 +10,12 @@ New methods have been added for interacting with Gmail's label API:
 get_gmail_labels, add_gmail_labels, set_gmail_labels,
 remove_gmail_labels. Thanks to Brian Neal for the patches.
 
+Removed Code Duplication (#9)
+-----------------------------
+A signficant amount of duplicated code has been removed by abstracting
+out common command handling code. This will make the Python 3 port and
+future maintenance easier.
+
 Minor Features
 --------------
 * Don't traceback when an IMAP server returns a all-digit folder name
@@ -18,7 +24,7 @@ Minor Features
 
 Minor Bug Fixes
 ---------------
-* Fixed rename live test so that it uses folder namespaces.
+* Fixed rename live test so that it uses folder namespaces (#100).
 
 =======
  0.8.1
