@@ -21,6 +21,7 @@ Minor Features
 * Don't traceback when an IMAP server returns a all-digit folder name
   without quotes. Thanks to Rhett Garber for the bug report. (#107)
 * More tests for ACL related methods (#89)
+* More tests for namespace()
 
 Minor Bug Fixes
 ---------------
