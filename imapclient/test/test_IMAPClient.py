@@ -171,6 +171,14 @@ class TestAclMethods(IMAPClientTest):
         acl = self.client.getacl('INBOX')
         self.assertSequenceEqual(acl, [('Fred', 'rwipslda'), ('Sally', 'rwip')])
 
+    def test_setacl(self):
+        self.client._imap.setacl.return_value = ('OK', [sentinel.msg])
+
+        response = self.client.setacl(sentinel.folder, sentinel.who, sentinel.what)
+
+        self.client._imap.setacl.assert_called_with(sentinel.folder, sentinel.who, sentinel.what)
+        self.assertEqual(response, sentinel.msg)
+
 
 class TestIdleAndNoop(IMAPClientTest):
 
