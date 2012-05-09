@@ -2,7 +2,6 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-import re
 import select
 import socket
 import sys
@@ -417,17 +416,8 @@ class IMAPClient(object):
         what_ = '(%s)' % (' '.join(what))
 
         data = self._command_and_check('status', self._encode_folder_name(folder), what_, unpack=True)
-        match = _re_status.match(data)
-        if not match:
-            raise self.Error('Could not get the folder status')
-
-        out = {}
-        status_items = match.group('status_items').strip().split()
-        while status_items:
-            key = status_items.pop(0)
-            value = long(status_items.pop(0))
-            out[key] = value
-        return out
+        _, status_items = parse_response([data])
+        return dict(as_pairs(status_items))
 
     def close_folder(self):
         """Close the currently selected folder, returning the server
@@ -917,10 +907,17 @@ def _parse_untagged_response(text):
         return tuple(text.split(' ', 1))
     return parse_response([text])
 
-_re_status = re.compile(r'^\s*"?(?P<folder>[^"]+)"?\s+'
-                        r'\((?P<status_items>.*)\)$')
-
 def pop_with_default(dct, key, default):
     if key in dct:
         return dct.pop(key)
     return default
+
+def as_pairs(items):
+    i = 0
+    last_item = None
+    for item in items:
+        if i % 2:
+            yield last_item, item
+        else:
+            last_item = item
+        i += 1
