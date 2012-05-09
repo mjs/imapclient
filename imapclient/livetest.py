@@ -376,7 +376,7 @@ def createLiveTestClass(conf, use_uid):
             self.assertListEqual(self.client.search('NOT DELETED'), self.client.search(['NOT DELETED']))
 
             # Multiple criteria
-            self.assertEqual(len(self.client.search(['NOT DELETED', 'SMALLER 100'])), len(subjects) - 1)
+            self.assertEqual(len(self.client.search(['NOT DELETED', 'SMALLER 500'])), len(subjects) - 1)
             self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "a"'])), 1)
             self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "c"'])), 0)
 
