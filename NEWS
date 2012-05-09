@@ -34,7 +34,10 @@ Minor Features
 Minor Bug Fixes
 ---------------
 * Fixed rename live test so that it uses folder namespaces (#100).
-* Parse STATUS responses robustly - fixes folder_status() with MS Exchange.
+* Parse STATUS responses robustly - fixes folder_status() with MS
+  Exchange.
+* Numerous livetest fixes to work around oddities with the MS
+  Exchange IMAP implementation.
 
 =======
  0.8.1
