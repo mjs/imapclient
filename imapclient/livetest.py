@@ -90,7 +90,16 @@ def createLiveTestClass(conf, use_uid):
 
         def clear_test_folders(self):
             self.client.folder_encode = False
-            for folder in self.all_test_folder_names():
+
+            # Sort folders depth first because some implementations
+            # (e.g. MS Exchange) will delete child folders when a
+            # parent is deleted.
+            def get_folder_depth(folder):
+                return folder.count(self.folder_delimiter)
+            folder_names = sorted(self.all_test_folder_names(),
+                                  key=get_folder_depth,
+                                  reverse=True)
+            for folder in folder_names:
                 self.client.delete_folder(folder)
             self.client.folder_encode = True
 
