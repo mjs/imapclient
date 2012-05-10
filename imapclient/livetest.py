@@ -124,6 +124,13 @@ def createLiveTestClass(conf, use_uid):
         def is_fastmail(self):
             return self.client._imap.host == 'mail.messagingengine.com'
 
+        def is_exchange(self):
+            # Assume that these capabilities mean we're talking to MS
+            # Exchange. A bit of a guess really.
+            return (self.client.has_capability('IMAP4') and
+                    self.client.has_capability('AUTH=NTLM') and
+                    self.client.has_capability('AUTH=GSSAPI'))
+
         def test_capabilities(self):
             caps = self.client.capabilities()
             self.assertIsInstance(caps, tuple)
@@ -205,9 +212,12 @@ def createLiveTestClass(conf, use_uid):
                 self.client.unsubscribe_folder(folder)
             self.assertListEqual(self.all_sub_test_folder_names(), [])
 
-            self.assertRaises(imapclient.IMAPClient.Error,
-                              self.client.subscribe_folder,
-                              'this folder is not likely to exist')
+            # Exchange doesn't return an error when subscribing to a
+            # non-existent folder
+            if not self.is_exchange():
+                self.assertRaises(imapclient.IMAPClient.Error,
+                                  self.client.subscribe_folder,
+                                  'this folder is not likely to exist')
 
         def test_folders(self):
             self.assertTrue(self.client.folder_exists(self.base_folder))
