@@ -586,7 +586,8 @@ def createLiveTestClass(conf, use_uid):
             text, resps = self.client.expunge()
             self.assertTrue(isinstance(text, str))
             self.assertGreater(len(text), 0)
-            self.assertEqual(resps, [])
+            # Some servers return nothing while others (e.g. Exchange) return (0, 'EXISTS')
+            self.assertIn(resps, ([], [(0, 'EXISTS')]))
 
             # Now try with a message to expunge
             self.client.append(self.base_folder, SIMPLE_MESSAGE, flags=[imapclient.DELETED])
