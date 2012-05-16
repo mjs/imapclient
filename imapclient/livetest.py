@@ -157,12 +157,23 @@ def createLiveTestClass(conf, use_uid):
 
         def test_select_and_close(self):
             resp = self.client.select_folder(self.base_folder)
-            self.assertIsInstance(resp['EXISTS'], int)
             self.assertEqual(resp['EXISTS'], 0)
             self.assertIsInstance(resp['RECENT'], int)
             self.assertIsInstance(resp['FLAGS'], tuple)
             self.assertGreater(len(resp['FLAGS']), 1)
             self.client.close_folder()
+
+        def test_select_read_only(self):
+            self.client.append(self.base_folder, SIMPLE_MESSAGE)
+            self.assertNotIn('READ-ONLY', self.client._imap.untagged_responses)
+
+            resp = self.client.select_folder(self.base_folder, readonly=True)
+
+            self.assertIn('READ-ONLY', self.client._imap.untagged_responses)
+            self.assertEqual(resp['EXISTS'], 1)
+            self.assertIsInstance(resp['RECENT'], int)
+            self.assertIsInstance(resp['FLAGS'], tuple)
+            self.assertGreater(len(resp['FLAGS']), 1)
 
         def test_list_folders(self):
             some_folders = ['simple', u'L\xffR']
