@@ -1,8 +1,8 @@
 .. -*-Mode: rst; -*-
 
-===========
- 0.9 (dev)
-===========
+=====
+ 0.9
+=====
 
 Gmail Label Support
 -------------------
@@ -30,6 +30,7 @@ Minor Features
   without quotes. Thanks to Rhett Garber for the bug report. (#107)
 * More tests for ACL related methods (#89)
 * More tests for namespace()
+* Added test for read-only select_folder()
 
 Minor Bug Fixes
 ---------------
