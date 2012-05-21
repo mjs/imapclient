@@ -19,6 +19,8 @@ except ImportError:
 
 from . import imap_utf7
 from .fixed_offset import FixedOffset
+from .six import moves
+xrange = moves.xrange
 
 
 __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT', 'RECENT']

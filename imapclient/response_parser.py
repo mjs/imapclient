@@ -6,7 +6,7 @@
 Parsing for IMAP command responses with focus on FETCH responses as
 returned by imaplib.
 
-Intially inspired by http://effbot.org/zone/simple-iterator-parser.htm
+Initially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 """
 
 #TODO more exact error reporting
@@ -14,7 +14,8 @@ Intially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 import sys
 from datetime import datetime
 
-from .six import advance_iterator
+from .six import advance_iterator, moves
+xrange = moves.xrange
 
 from .fixed_offset import FixedOffset
 from .response_lexer import TokenSource
