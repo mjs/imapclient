@@ -35,16 +35,16 @@ class TokenSource(object):
 
     def __iter__(self):
         return self.src
-    
+
+CTRL_CHARS = ''.join([chr(ch) for ch in range(32)])
+SPECIALS = r' ()%"[' + CTRL_CHARS
+ALL_CHARS = [chr(ch) for ch in range(256)]
+NON_SPECIALS = frozenset([ch for ch in ALL_CHARS if ch not in SPECIALS])
+WHITESPACE = frozenset(' \t\r\n')
 
 class Lexer(object):
     "A lexical analyzer class for IMAP"
 
-    CTRL_CHARS = ''.join([chr(ch) for ch in range(32)])
-    SPECIALS = r' ()%"[' + CTRL_CHARS
-    ALL_CHARS = [chr(ch) for ch in range(256)]
-    NON_SPECIALS = frozenset([ch for ch in ALL_CHARS if ch not in SPECIALS])
-    WHITESPACE = frozenset(' \t\r\n')
 
     def __init__(self):
         self.sources = None
@@ -69,8 +69,8 @@ class Lexer(object):
         return token + end_char
 
     def read_token_stream(self, stream_i):
-        whitespace = self.WHITESPACE
-        wordchars = self.NON_SPECIALS
+        whitespace = WHITESPACE
+        wordchars = NON_SPECIALS
         read_until = self.read_until
 
         while True:

@@ -18,6 +18,8 @@ def _imapclient_version_string(vinfo):
 __version__ = _imapclient_version_string(version_info)
 __author__ = 'Menno Smits <menno@freshfoo.com>'
 
-from imapclient import *
-from response_parser import *
-import imaplib_ssl_fix
+from .imapclient import *
+from .response_parser import *
+
+from .imaplib_ssl_fix import apply_patch
+apply_patch()

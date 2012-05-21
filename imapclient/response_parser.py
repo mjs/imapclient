@@ -11,9 +11,11 @@ Intially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 
 #TODO more exact error reporting
 
+import sys
 from datetime import datetime
-from fixed_offset import FixedOffset
-from response_lexer import TokenSource
+
+from .fixed_offset import FixedOffset
+from .response_lexer import TokenSource
 
 try:
     import imaplib2 as imaplib
@@ -40,14 +42,15 @@ def gen_parsed_response(text):
     if not text:
         return
     src = TokenSource(text)
-    
+
     token = None
     try:
         for token in src:
             yield atom(src, token)
     except ParseError:
         raise
-    except ValueError, err:
+    except ValueError:
+        _, err, _ = sys.exc_info()
         raise ParseError("%s: %s" % (str(err), token))
 
 

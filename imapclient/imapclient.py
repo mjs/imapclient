@@ -2,6 +2,7 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+import imaplib
 import select
 import socket
 import sys
@@ -9,22 +10,20 @@ import warnings
 from datetime import datetime
 from operator import itemgetter
 
-import imaplib
-import response_lexer
-
+from . import response_lexer
 
 try:
     import oauth2
 except ImportError:
     oauth2 = None
 
-import imap_utf7
-from fixed_offset import FixedOffset
+from . import imap_utf7
+from .fixed_offset import FixedOffset
 
 
 __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT', 'RECENT']
 
-from response_parser import parse_response, parse_fetch_response
+from .response_parser import parse_response, parse_fetch_response
 
 # We also offer the gmail-specific XLIST command...
 if 'XLIST' not in imaplib.Commands:
