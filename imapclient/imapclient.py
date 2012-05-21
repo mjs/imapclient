@@ -19,7 +19,7 @@ except ImportError:
 
 from . import imap_utf7
 from .fixed_offset import FixedOffset
-from .six import moves
+from .six import moves, string_types
 xrange = moves.xrange
 
 
@@ -412,7 +412,7 @@ class IMAPClient(object):
         """
         if what is None:
             what = ('MESSAGES', 'RECENT', 'UIDNEXT', 'UIDVALIDITY', 'UNSEEN')
-        elif isinstance(what, basestring):
+        elif isinstance(what, string_types):
             what = (what,)
         what_ = '(%s)' % (' '.join(what))
 
@@ -481,7 +481,7 @@ class IMAPClient(object):
         if not criteria:
             raise ValueError('no criteria specified')
 
-        if isinstance(criteria, basestring):
+        if isinstance(criteria, string_types):
             criteria = (criteria,)
         crit_list = ['(%s)' % c for c in criteria]
 
@@ -523,11 +523,11 @@ class IMAPClient(object):
         if not self.has_capability('SORT'):
             raise self.Error('The server does not support the SORT extension')
 
-        if isinstance(sort_criteria, basestring):
+        if isinstance(sort_criteria, string_types):
             sort_criteria = (sort_criteria,)
         sort_criteria = seq_to_parenlist([s.upper() for s in sort_criteria])
 
-        if isinstance(criteria, basestring):
+        if isinstance(criteria, string_types):
             criteria = (criteria,)
         crit_list = ['(%s)' % c for c in criteria]
 

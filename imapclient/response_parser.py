@@ -14,7 +14,7 @@ Initially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 import sys
 from datetime import datetime
 
-from .six import advance_iterator, moves
+from .six import advance_iterator, moves, string_types
 xrange = moves.xrange
 
 from .fixed_offset import FixedOffset
@@ -128,7 +128,7 @@ class BodyData(tuple):
         if isinstance(response[0], tuple):
             # Multipart, find where the message part tuples stop
             for i, part in enumerate(response):
-                if isinstance(part, basestring):
+                if isinstance(part, string_types):
                     break
             return cls((list(response[:i]),) + response[i:])
         else:

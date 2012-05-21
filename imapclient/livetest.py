@@ -13,8 +13,9 @@ from datetime import datetime
 from email.utils import make_msgid
 
 import imapclient
-from test.util import unittest
-from config import parse_config_file, create_client_from_config
+from imapclient.six import string_types
+from imapclient.test.util import unittest
+from imapclient.config import parse_config_file, create_client_from_config
 
 # TODO cleaner verbose output: avoid "__main__" and separator between classes
 
@@ -637,7 +638,7 @@ def createLiveTestClass(conf, use_uid):
 
 
 def lower_if_str(val):
-    if isinstance(val, basestring):
+    if isinstance(val, string_types):
         return val.lower()
     return val
 
