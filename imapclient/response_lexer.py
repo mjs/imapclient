@@ -154,10 +154,13 @@ class PushableIterator(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         if self.pushed:
             return self.pushed.pop()
         return advance_iterator(self.it)
+
+    # For Python 2 compatibility
+    next = __next__
 
     def push(self, item):
         self.pushed.append(item)
