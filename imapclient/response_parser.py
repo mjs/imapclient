@@ -14,6 +14,8 @@ Intially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 import sys
 from datetime import datetime
 
+from .six import advance_iterator
+
 from .fixed_offset import FixedOffset
 from .response_lexer import TokenSource
 
@@ -67,12 +69,13 @@ def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
     parsed_response = {}
     while True:
         try:
-            msg_id = seq = _int_or_error(response.next(), 'invalid message ID')
+            msg_id = seq = _int_or_error(advance_iterator(response),
+                                         'invalid message ID')
         except StopIteration:
             break
 
         try:
-            msg_response = response.next()
+            msg_response = advance_iterator(response)
         except StopIteration:
             raise ParseError('unexpected EOF')
 

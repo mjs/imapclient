@@ -16,6 +16,8 @@ use for external callers.
 
 __all__ = ["Lexer"]
 
+from .six import advance_iterator
+
 
 class TokenSource(object):
     """
@@ -56,7 +58,7 @@ class Lexer(object):
             for nextchar in stream_i:
                 if escape and nextchar == "\\":
                     escaper = nextchar
-                    nextchar = stream_i.next()
+                    nextchar = advance_iterator(stream_i)
                     if nextchar != escaper and nextchar != end_char:
                         token += escaper
                 elif nextchar == end_char:
@@ -155,7 +157,7 @@ class PushableIterator(object):
     def next(self):
         if self.pushed:
             return self.pushed.pop()
-        return self.it.next()
+        return advance_iterator(self.it)
 
     def push(self, item):
         self.pushed.append(item)
