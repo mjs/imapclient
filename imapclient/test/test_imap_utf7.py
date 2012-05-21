@@ -2,6 +2,7 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+from imapclient.six import u
 from imapclient.imap_utf7 import decode, encode, FolderNameError
 from imapclient.test.util import unittest
 
@@ -10,11 +11,11 @@ class IMAP4UTF7TestCase(unittest.TestCase):
         ['Foo', 'Foo'],
         ['Foo Bar', 'Foo Bar'],
         ['Stuff & Things', 'Stuff &- Things'],
-        [u'Hello world', 'Hello world'],
-        [u'Hello & world', 'Hello &- world'],
-        [u'Hello\xffworld', 'Hello&AP8-world'],
-        [u'\xff\xfe\xfd\xfc', '&AP8A,gD9APw-'],
-        [u'~peter/mail/\u65e5\u672c\u8a9e/\u53f0\u5317',
+        [u('Hello world'), 'Hello world'],
+        [u('Hello & world'), 'Hello &- world'],
+        [u('Hello\xffworld'), 'Hello&AP8-world'],
+        [u('\xff\xfe\xfd\xfc'), '&AP8A,gD9APw-'],
+        [u('~peter/mail/\u65e5\u672c\u8a9e/\u53f0\u5317'),
          '~peter/mail/&ZeVnLIqe-/&U,BTFw-'], # example from RFC 2060
         ['\x00foo', '&AAA-foo'],
     ]

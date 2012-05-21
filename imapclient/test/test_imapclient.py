@@ -8,7 +8,7 @@ import sys
 from datetime import datetime
 from StringIO import StringIO
 
-from imapclient.six import advance_iterator
+from imapclient.six import advance_iterator, u
 from imapclient.fixed_offset import FixedOffset
 from imapclient.imapclient import datetime_to_imap
 from imapclient.test.mock import patch, sentinel, Mock
@@ -92,8 +92,8 @@ class TestListFolders(IMAPClientTest):
         folders = self.client._proc_folder_list([('(\\NoInferiors \\UnMarked) "/" {5}', 'bang\xff'),
                                                  '',
                                                  '(\\HasNoChildren \\UnMarked) "/" "INBOX"'])
-        self.assertEqual(folders, [(['\\NoInferiors', '\\UnMarked'], "/", u'bang\xff'),
-                                   (['\\HasNoChildren', '\\UnMarked'], "/", u'INBOX')])
+        self.assertEqual(folders, [(['\\NoInferiors', '\\UnMarked'], "/", u('bang\xff')),
+                                   (['\\HasNoChildren', '\\UnMarked'], "/", u('INBOX'))])
 
 
     def test_quoted_specials(self):
@@ -176,7 +176,7 @@ class TestAclMethods(IMAPClientTest):
     def test_setacl(self):
         self.client._imap.setacl.return_value = ('OK', ["SETACL done"])
 
-        response = self.client.setacl(u'folder', sentinel.who, sentinel.what)
+        response = self.client.setacl(u('folder'), sentinel.who, sentinel.what)
 
         self.client._imap.setacl.assert_called_with('"folder"', sentinel.who, sentinel.what)
         self.assertEqual(response, "SETACL done")
