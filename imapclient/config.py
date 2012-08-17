@@ -7,13 +7,16 @@ def parse_config_file(path):
 
     Used by livetest.py and interact.py
     """
-    parser = SafeConfigParser(dict(ssl='false',
-                                   username=None,
-                                   password=None,
-                                   oauth='false',
-                                   oauth_url=None,
-                                   oauth_token=None,
-                                   oauth_token_secret=None))
+    parser = SafeConfigParser(dict(
+        username=None,
+        password=None,
+        ssl='false',
+        stream='false',
+        oauth='false',
+        oauth_token=None,
+        oauth_token_secret=None,
+        oauth_url=None,
+        ))
     fh = file(path)
     parser.readfp(fh)
     fh.close()
@@ -24,11 +27,12 @@ def parse_config_file(path):
         port = parser.getint(section, 'port')
     except NoOptionError:
         port = None
-        
+
     return Bunch(
         host=parser.get(section, 'host'),
         port=port,
         ssl=parser.getboolean(section, 'ssl'),
+        stream=parser.getboolean(section, 'stream'),
         username=parser.get(section, 'username'),
         password=parser.get(section, 'password'),
         oauth=parser.getboolean(section, 'oauth'),
@@ -38,12 +42,13 @@ def parse_config_file(path):
     )
 
 def create_client_from_config(conf):
-    client = imapclient.IMAPClient(conf.host, port=conf.port, ssl=conf.ssl)
+    client = imapclient.IMAPClient(conf.host, port=conf.port,
+                                   ssl=conf.ssl, stream=conf.stream)
     if conf.oauth:
         client.oauth_login(conf.oauth_url,
                            conf.oauth_token,
                            conf.oauth_token_secret)
-    else:
+    elif not conf.stream:
         client.login(conf.username, conf.password)
     return client
 
@@ -57,4 +62,3 @@ class Bunch(dict):
 
     def __setattr__(self, k, v):
         self[k] = v
-

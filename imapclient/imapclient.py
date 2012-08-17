@@ -65,6 +65,11 @@ class IMAPClient(object):
     If *ssl* is ``True`` an SSL connection will be made (defaults to
     ``False``).
 
+    If *stream* is ``True`` then *host* is used as the command to run
+    to establish a connection to the IMAP server (defaults to
+    ``False``). This is useful for exotic connection or authentication
+    setups.
+
     The *normalise_times* attribute specifies whether datetimes
     returned by ``fetch()`` are normalised to the local system time
     and include no timezone information (native), or are datetimes
@@ -88,13 +93,19 @@ class IMAPClient(object):
     AbortError = imaplib.IMAP4.abort
     ReadOnlyError = imaplib.IMAP4.readonly
 
-    def __init__(self, host, port=None, use_uid=True, ssl=False):
-        if port is None:
+    def __init__(self, host, port=None, use_uid=True, ssl=False, stream=False):
+        if stream:
+            if port is not None:
+                raise ValueError("can't set 'port' when 'stream' True")
+            if ssl:
+                raise ValueError("can't use 'ssl' when 'stream' is True")
+        elif port is None:
             port = ssl and 993 or 143
 
         self.host = host
         self.port = port
         self.ssl = ssl
+        self.stream = stream
         self.use_uid = use_uid
         self.folder_encode = True
         self.log_file = sys.stderr
@@ -106,6 +117,8 @@ class IMAPClient(object):
 
     def _create_IMAP4(self):
         # Create the IMAP instance in a separate method to make unit tests easier
+        if self.stream:
+            return imaplib.IMAP4_stream(self.host)
         ImapClass = self.ssl and imaplib.IMAP4_SSL or imaplib.IMAP4
         return ImapClass(self.host, self.port)
 

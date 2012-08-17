@@ -1,4 +1,18 @@
 .. -*-Mode: rst; -*-
+=============
+ Development
+=============
+
+Stream support [NEW]
+--------------------
+It is now possible to have IMAPClient run an external command to
+establish a connection to the IMAP server via a new *stream* keyword
+argument to the initialiser. This is useful for exotic connection or
+authentication setups. The *host* argument is used as the command to
+run.
+
+Thanks to Dave Eckhardt for the original patch.
+
 
 =====
  0.9
