@@ -12,7 +12,7 @@ from operator import itemgetter
 import imaplib
 import response_lexer
 
-
+# Confusingly, this module is for OAUTH v1, not v2
 try:
     import oauth2
 except ImportError:
@@ -132,7 +132,7 @@ class IMAPClient(object):
                     consumer_key='anonymous', consumer_secret='anonymous'):
         """Authenticate using the OAUTH method.
 
-        This only works with IMAP servers that support OAUTH (eg. Gmail).
+        This only works with IMAP servers that support OAUTH (e.g. Gmail).
         """
         if oauth2:
             token = oauth2.Token(oauth_token, oauth_token_secret)
@@ -140,7 +140,15 @@ class IMAPClient(object):
             xoauth_callable = lambda x: oauth2.build_xoauth_string(url, consumer, token)
             return self._command_and_check('authenticate', 'XOAUTH', xoauth_callable, unpack=True)
         else:
-            raise self.Error('The optional oauth2 dependency is needed for oauth authentication')
+            raise self.Error('The optional oauth2 dependency is needed for OAUTH authentication')
+
+    def oauth2_login(self, user, access_token):
+        """Authenticate using the OAUTH2 method.
+
+        This only works with IMAP servers that support OAUTH2 (e.g. Gmail).
+        """
+        auth_string = lambda x: 'user=%s\1auth=Bearer %s\1\1' % (user, access_token)
+        return self._command_and_check('authenticate', 'XOAUTH2', auth_string)
 
     def logout(self):
         """Logout, returning the server response.

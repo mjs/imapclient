@@ -13,6 +13,11 @@ run.
 
 Thanks to Dave Eckhardt for the original patch.
 
+OAUTH2 Support [NEW]
+--------------------
+OAUTH2 authentication (as supported by Gmail's IMAP) is now available
+via the new oauth2_login method. Thanks to Zac Witte for the original
+patch.
 
 =====
  0.9
