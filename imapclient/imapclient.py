@@ -14,9 +14,9 @@ import response_lexer
 
 # Confusingly, this module is for OAUTH v1, not v2
 try:
-    import oauth2
+    import oauth2 as oauth_module
 except ImportError:
-    oauth2 = None
+    oauth_module = None
 
 import imap_utf7
 from fixed_offset import FixedOffset
@@ -134,13 +134,13 @@ class IMAPClient(object):
 
         This only works with IMAP servers that support OAUTH (e.g. Gmail).
         """
-        if oauth2:
-            token = oauth2.Token(oauth_token, oauth_token_secret)
-            consumer = oauth2.Consumer(consumer_key, consumer_secret)
-            xoauth_callable = lambda x: oauth2.build_xoauth_string(url, consumer, token)
+        if oauth_module:
+            token = oauth_module.Token(oauth_token, oauth_token_secret)
+            consumer = oauth_module.Consumer(consumer_key, consumer_secret)
+            xoauth_callable = lambda x: oauth_module.build_xoauth_string(url, consumer, token)
             return self._command_and_check('authenticate', 'XOAUTH', xoauth_callable, unpack=True)
         else:
-            raise self.Error('The optional oauth2 dependency is needed for OAUTH authentication')
+            raise self.Error('The optional oauth2 package is needed for OAUTH authentication')
 
     def oauth2_login(self, user, access_token):
         """Authenticate using the OAUTH2 method.
