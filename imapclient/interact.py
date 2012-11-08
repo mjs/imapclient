@@ -18,7 +18,7 @@ def command_line():
                  help='Username to login with')
     p.add_option('-p', '--password', dest='password', action='store',
                  help='Password to login with')
-    p.add_option('-P', '--port', dest='port', action='store',
+    p.add_option('-P', '--port', dest='port', action='store', type=int,
                  default=None, help='IMAP port to use (default is 143)')
     p.add_option('-s', '--ssl', dest='ssl', action='store_true', default=False,
                  help='Use SSL connection')
@@ -41,7 +41,10 @@ def command_line():
                 setattr(opts, opt_name, getpass(opt_name + ': '))
         if not opts.port:
             opts.port = 143
-        opts.oauth = False     # OAUTH not supported on command line
+        # Options not supported on the command line
+        opts.oauth = False
+        opts.oauth2 = False
+        opts.stream = False
     return opts
 
 def main():
