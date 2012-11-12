@@ -1,7 +1,7 @@
 .. -*-Mode: rst; -*-
-=============
- Development
-=============
+=======
+ 0.9.1
+=======
 
 Stream support [NEW]
 --------------------
@@ -18,6 +18,12 @@ OAUTH2 Support [NEW]
 OAUTH2 authentication (as supported by Gmail's IMAP) is now available
 via the new oauth2_login method. Thanks to Zac Witte for the original
 patch.
+
+livetest now handles Gmail's new message handling
+-------------------------------------------------
+Gmail's IMAP implementation recently started requiring a NOOP command
+before new messages become visible after delivery or an APPEND. The
+livetest suite has been updated to deal with this.
 
 =====
  0.9
