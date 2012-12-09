@@ -6,9 +6,8 @@ import itertools
 import socket
 import sys
 from datetime import datetime
-from StringIO import StringIO
 
-from imapclient.six import advance_iterator, u
+from imapclient.six import advance_iterator, b, u, StringIO
 from imapclient.fixed_offset import FixedOffset
 from imapclient.imapclient import datetime_to_imap
 from imapclient.test.mock import patch, sentinel, Mock
@@ -65,9 +64,9 @@ class TestListFolders(IMAPClientTest):
 
 
     def test_without_quotes(self):
-        folders = self.client._proc_folder_list(['(\\HasNoChildren) "/" A',
-                                                 '(\\HasNoChildren) "/" B',
-                                                 '(\\HasNoChildren) "/" C',
+        folders = self.client._proc_folder_list([b('(\\HasNoChildren) "/" A'),
+                                                 b('(\\HasNoChildren) "/" B'),
+                                                 b('(\\HasNoChildren) "/" C'),
                                                  ])
         self.assertEqual(folders, [(['\\HasNoChildren'], '/', 'A'),
                                    (['\\HasNoChildren'], '/', 'B'),

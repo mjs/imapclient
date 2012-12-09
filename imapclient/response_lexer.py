@@ -16,8 +16,8 @@ use for external callers.
 
 __all__ = ["Lexer"]
 
-from .six import advance_iterator
-
+from .six import advance_iterator, b
+from .pycompat import iter_as_bytes, to_native_str
 
 class TokenSource(object):
     """
@@ -38,11 +38,11 @@ class TokenSource(object):
     def __iter__(self):
         return self.src
 
-CTRL_CHARS = ''.join([chr(ch) for ch in range(32)])
-SPECIALS = r' ()%"[' + CTRL_CHARS
-ALL_CHARS = [chr(ch) for ch in range(256)]
+CTRL_CHARS = b''.join([b(chr(ch)) for ch in range(32)])
+SPECIALS = b' ()%"[' + CTRL_CHARS
+ALL_CHARS = [b(chr(ch)) for ch in range(256)]
 NON_SPECIALS = frozenset([ch for ch in ALL_CHARS if ch not in SPECIALS])
-WHITESPACE = frozenset(' \t\r\n')
+WHITESPACE = frozenset(iter_as_bytes(b(' \t\r\n')))
 
 class Lexer(object):
     "A lexical analyzer class for IMAP"
@@ -56,19 +56,19 @@ class Lexer(object):
         token = ''
         try:
             for nextchar in stream_i:
-                if escape and nextchar == "\\":
+                if escape and nextchar == b("\\"):
                     escaper = nextchar
                     nextchar = advance_iterator(stream_i)
                     if nextchar != escaper and nextchar != end_char:
-                        token += escaper
+                        token += to_native_str(escaper.decode)
                 elif nextchar == end_char:
                     break
-                token += nextchar
+                token += to_native_str(nextchar)
             else:
                 raise ValueError("No closing %r" % end_char)
         except StopIteration:
             raise ValueError("No closing %r" % end_char)
-        return token + end_char
+        return token + to_native_str(end_char)
 
     def read_token_stream(self, stream_i):
         whitespace = WHITESPACE
@@ -86,20 +86,20 @@ class Lexer(object):
             token = ''
             for nextchar in stream_i:
                 if nextchar in wordchars:
-                    token += nextchar
-                elif nextchar == '[':
-                    token += nextchar + read_until(stream_i, ']', escape=False)
+                    token += to_native_str(nextchar)
+                elif nextchar == b('['):
+                    token += to_native_str(nextchar) + read_until(stream_i, b(']'), escape=False)
                 else:
                     if nextchar in whitespace:
                         yield token
-                    elif nextchar == '"':
+                    elif nextchar == b('"'):
                         assert not token
-                        yield nextchar + read_until(stream_i, nextchar)
+                        yield to_native_str(nextchar) + read_until(stream_i, nextchar)
                     else:
                         # Other punctuation, eg. "(". This ends the current token.
                         if token:
                             yield token
-                        yield nextchar
+                        yield to_native_str(nextchar)
                     break
             else:
                 if token:
@@ -131,16 +131,16 @@ class LiteralHandlingIter:
         if isinstance(resp_record, tuple):
             # A 'record' with a string which includes a literal marker, and
             # the literal itself.
-            src_text, self.literal = resp_record
-            assert src_text.endswith("}"), src_text
-            self.src_text = src_text
+            self.src_text = resp_record[0]
+            assert self.src_text.endswith(b("}")), self.src_text
+            self.literal = to_native_str(resp_record[1])
         else:
             # just a line with no literals.
             self.src_text = resp_record
             self.literal = None
 
     def __iter__(self):
-        return PushableIterator(self.src_text)
+        return PushableIterator(iter_as_bytes(self.src_text))
 
 
 class PushableIterator(object):
@@ -164,6 +164,3 @@ class PushableIterator(object):
 
     def push(self, item):
         self.pushed.append(item)
-
-        
-        

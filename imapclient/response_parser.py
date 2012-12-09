@@ -166,11 +166,11 @@ def _convert_INTERNALDATE(date_string, normalise_times=True):
 
 
 def atom(src, token):
-    if token == "(":
+    if token == '(':
         return parse_tuple(src)
     elif token == 'NIL':
         return None
-    elif token[0] == '{':
+    elif token[:1] == '{':
         literal_len = int(token[1:-1])
         literal_text = src.current_literal
         if literal_text is None:
@@ -179,13 +179,12 @@ def atom(src, token):
             raise ParseError('Expecting literal of size %d, got %d' % (
                                 literal_len, len(literal_text)))
         return literal_text
-    elif len(token) >= 2 and (token[0] == token[-1] == '"'):
+    elif len(token) >= 2 and (token[:1] == token[-1:] == '"'):
         return token[1:-1]
     elif token.isdigit():
         return int(token)
     else:
         return token
-
 
 def parse_tuple(src):
     out = []
@@ -196,7 +195,5 @@ def parse_tuple(src):
     # no terminator
     raise ParseError('Tuple incomplete before "(%s"' % _fmt_tuple(out))
 
-
 def _fmt_tuple(t):
     return ' '.join(str(item) for item in t)
-

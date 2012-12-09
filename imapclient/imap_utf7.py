@@ -23,6 +23,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 from .six import b, u, text_type, PY3, int2byte
+from .pycompat import iter_as_bytes
 
 class FolderNameError(ValueError):
     pass
@@ -100,11 +101,3 @@ def modified_base64(s):
 def modified_unbase64(s):
     s_utf7 = b('+') + s.replace(b(','), b('/')) + b('-')
     return s_utf7.decode('utf-7')
-
-if PY3:
-    def iter_as_bytes(some_bytes):
-        for c in some_bytes[:]:
-            yield int2byte(c)
-else:
-    def iter_as_bytes(a_str):
-        return iter(a_str)
