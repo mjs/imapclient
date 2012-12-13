@@ -104,19 +104,19 @@ class TestParseResponse(unittest.TestCase):
                      '<msg_id>')))
 
     def test_literal(self):
-        literal_text = add_crlf(dedent(b("""\
+        literal_text = add_crlf(dedent("""\
             012
             abc def XYZ
-            """)))
-        self._test([(b('{18}'), literal_text)], literal_text)
+            """))
+        self._test([(b('{18}'), b(literal_text))], literal_text)
 
 
     def test_literal_with_more(self):
-        literal_text = add_crlf(dedent(b("""\
+        literal_text = add_crlf(dedent("""\
             012
             abc def XYZ
-            """)))
-        response = [(b('(12 "foo" {18}'), literal_text), ")"]
+            """))
+        response = [(b('(12 "foo" {18}'), b(literal_text)), b(")")]
         self._test(response, (12, 'foo', literal_text))
 
 
@@ -161,7 +161,7 @@ class TestParseResponse(unittest.TestCase):
 class TestParseFetchResponse(unittest.TestCase):
 
     def test_basic(self):
-        self.assertEqual(parse_fetch_response('4 ()'), {4: {'SEQ': 4}})
+        self.assertEqual(parse_fetch_response(b('4 ()')), {4: {'SEQ': 4}})
 
 
     def test_none_special_case(self):
@@ -169,27 +169,27 @@ class TestParseFetchResponse(unittest.TestCase):
 
 
     def test_bad_msgid(self):
-        self.assertRaises(ParseError, parse_fetch_response, ['abc ()'])
+        self.assertRaises(ParseError, parse_fetch_response, [b('abc ()')])
 
 
     def test_bad_data(self):
-        self.assertRaises(ParseError, parse_fetch_response, ['2 WHAT'])
+        self.assertRaises(ParseError, parse_fetch_response, [b('2 WHAT')])
 
 
     def test_missing_data(self):
-        self.assertRaises(ParseError, parse_fetch_response, ['2'])
+        self.assertRaises(ParseError, parse_fetch_response, [b('2')])
 
 
     def test_simple_pairs(self):
-        self.assertEqual(parse_fetch_response(['23 (ABC 123 StUfF "hello")']),
+        self.assertEqual(parse_fetch_response([b('23 (ABC 123 StUfF "hello")')]),
                           {23: {'ABC': 123,
                                 'STUFF': 'hello',
                                 'SEQ': 23}})
 
 
     def test_odd_pairs(self):
-        self.assertRaises(ParseError, parse_fetch_response, ['(ONE)'])
-        self.assertRaises(ParseError, parse_fetch_response, ['(ONE TWO THREE)'])
+        self.assertRaises(ParseError, parse_fetch_response, [b('(ONE)')])
+        self.assertRaises(ParseError, parse_fetch_response, [b('(ONE TWO THREE)')])
 
 
     def test_UID(self):
@@ -200,13 +200,13 @@ class TestParseFetchResponse(unittest.TestCase):
 
 
     def test_not_uid_is_key(self):
-        self.assertEqual(parse_fetch_response(['23 (UID 76)'], uid_is_key=False),
+        self.assertEqual(parse_fetch_response([b('23 (UID 76)')], uid_is_key=False),
                           {23: {'UID': 76,
                                 'SEQ': 23}})
 
 
     def test_bad_UID(self):
-        self.assertRaises(ParseError, parse_fetch_response, ['(UID X)'])
+        self.assertRaises(ParseError, parse_fetch_response, [b('(UID X)')])
         
 
     def test_FLAGS(self):
@@ -216,8 +216,8 @@ class TestParseFetchResponse(unittest.TestCase):
 
     def test_multiple_messages(self):
         self.assertEqual(parse_fetch_response(
-                                    ["2 (FLAGS (Foo Bar)) ",
-                                     "7 (FLAGS (Baz Sneeve))"]),
+                                    [b("2 (FLAGS (Foo Bar)) "),
+                                     b("7 (FLAGS (Baz Sneeve))")]),
                          {
                             2: {'FLAGS': ('Foo', 'Bar'), 'SEQ': 2},
                             7: {'FLAGS': ('Baz', 'Sneeve'), 'SEQ': 7},
@@ -225,16 +225,16 @@ class TestParseFetchResponse(unittest.TestCase):
 
 
     def test_literals(self):
-        self.assertEqual(parse_fetch_response([('1 (RFC822.TEXT {4}', 'body'),
-                                                (' RFC822 {21}', 'Subject: test\r\n\r\nbody'),
-                                                ')']),
+        self.assertEqual(parse_fetch_response([(b('1 (RFC822.TEXT {4}'), b('body')),
+                                               (b(' RFC822 {21}'), b('Subject: test\r\n\r\nbody')),
+                                               b(')')]),
                           {1: {'RFC822.TEXT': 'body',
                                'RFC822': 'Subject: test\r\n\r\nbody',
                                'SEQ': 1}})
 
 
     def test_literals_and_keys_with_square_brackets(self):
-        self.assertEqual(parse_fetch_response([('1 (BODY[TEXT] {11}', 'Hi there.\r\n'), ')']),
+        self.assertEqual(parse_fetch_response([(b('1 (BODY[TEXT] {11}'), b('Hi there.\r\n')), b(')')]),
                           { 1: {'BODY[TEXT]': 'Hi there.\r\n',
                                 'SEQ': 1}})
 
@@ -277,14 +277,14 @@ class TestParseFetchResponse(unittest.TestCase):
     def test_partial_fetch(self):
         body = '01234567890123456789'
         self.assertEqual(parse_fetch_response(
-            [('123 (UID 367 BODY[]<0> {20}', body), ')']),
+            [(b('123 (UID 367 BODY[]<0> {20}'), b(body)), b(')')]),
             { 367: {'BODY[]<0>': body,
                     'SEQ': 123}})
                     
 
     def test_INTERNALDATE_normalised(self):
         def check(date_str, expected_dt):
-            output = parse_fetch_response(['3 (INTERNALDATE "%s")' % date_str])
+            output = parse_fetch_response([b('3 (INTERNALDATE "%s")' % date_str)])
             actual_dt = output[3]['INTERNALDATE']
             self.assert_(actual_dt.tzinfo is None)   # Returned date should be in local timezone
             expected_dt = datetime_to_native(expected_dt)
@@ -301,7 +301,7 @@ class TestParseFetchResponse(unittest.TestCase):
 
     def test_INTERNALDATE(self):
         def check(date_str, expected_dt):
-            output = parse_fetch_response(['3 (INTERNALDATE "%s")' % date_str], normalise_times=False)
+            output = parse_fetch_response([b('3 (INTERNALDATE "%s")' % date_str)], normalise_times=False)
             actual_dt = output[3]['INTERNALDATE']
             self.assertEqual(actual_dt, expected_dt)
 
@@ -315,9 +315,9 @@ class TestParseFetchResponse(unittest.TestCase):
               datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
 
     def test_mixed_types(self):
-        self.assertEqual(parse_fetch_response([('1 (INTERNALDATE " 9-Feb-2007 17:08:08 +0100" RFC822 {21}',
-                                                 'Subject: test\r\n\r\nbody'),
-                                                ')']),
+        self.assertEqual(parse_fetch_response([(b('1 (INTERNALDATE " 9-Feb-2007 17:08:08 +0100" RFC822 {21}'),
+                                                b('Subject: test\r\n\r\nbody')),
+                                               b(')')]),
                           {1: {'INTERNALDATE': datetime_to_native(datetime(2007, 2, 9,
                                                                            17, 8, 8, 0,
                                                                            FixedOffset(60))),

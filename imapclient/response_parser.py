@@ -14,7 +14,7 @@ Initially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 import sys
 from datetime import datetime
 
-from .six import advance_iterator, moves, string_types
+from .six import advance_iterator, moves, string_types, b
 xrange = moves.xrange
 
 from .fixed_offset import FixedOffset
@@ -140,7 +140,7 @@ class BodyData(tuple):
     
 
 def _convert_INTERNALDATE(date_string, normalise_times=True):
-    mo = imaplib.InternalDate.match('INTERNALDATE "%s"' % date_string)
+    mo = imaplib.InternalDate.match(b('INTERNALDATE "%s"' % date_string))
     if not mo:
         raise ValueError("couldn't parse date %r" % date_string)
 

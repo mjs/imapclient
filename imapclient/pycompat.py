@@ -9,6 +9,7 @@ if PY3:
         for c in some_bytes[:]:
             yield int2byte(c)
 
+    # XXX consider alternative name
     def to_native_str(some_bytes):
         return some_bytes.decode('latin-1')
 

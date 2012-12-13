@@ -47,6 +47,8 @@ WHITESPACE = frozenset(iter_as_bytes(b(' \t\r\n')))
 class Lexer(object):
     "A lexical analyzer class for IMAP"
 
+    #XXX document how this is the main bytes/string interface
+
 
     def __init__(self):
         self.sources = None
@@ -65,9 +67,9 @@ class Lexer(object):
                     break
                 token += to_native_str(nextchar)
             else:
-                raise ValueError("No closing %r" % end_char)
+                raise ValueError("No closing '%s'" % to_native_str(end_char))
         except StopIteration:
-            raise ValueError("No closing %r" % end_char)
+            raise ValueError("No closing '%s'" % to_native_str(end_char))
         return token + to_native_str(end_char)
 
     def read_token_stream(self, stream_i):
