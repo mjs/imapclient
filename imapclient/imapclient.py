@@ -19,7 +19,7 @@ except ImportError:
 
 from . import imap_utf7
 from .fixed_offset import FixedOffset
-from .six import moves, string_types
+from .six import moves, string_types, iteritems
 xrange = moves.xrange
 
 
@@ -290,7 +290,7 @@ class IMAPClient(object):
 
     def _process_select_response(self, resp):
         out = {}
-        for key, value in resp.iteritems():
+        for key, value in iteritems(resp):
             key = key.upper()
             if key == 'OK':
                 continue
@@ -822,7 +822,7 @@ class IMAPClient(object):
     def _flatten_dict(self, fetch_dict):
         return dict([
             (msgid, data.values()[0])
-            for msgid, data in fetch_dict.iteritems()
+            for msgid, data in iteritems(fetch_dict)
             ])
 
     def _decode_folder_name(self, name):
