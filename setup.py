@@ -10,6 +10,7 @@ import distribute_setup
 distribute_setup.use_setuptools()
 
 from setuptools import setup, find_packages
+from setuptools.command.test import test as TestCommand
 
 import imapclient
 version = imapclient.__version__
@@ -28,6 +29,21 @@ Features:
 
 IMAPClient includes units tests for more complex functionality and a automated functional test that can be run against a live IMAP server.
 """
+
+class TestDiscoverCommand(TestCommand):
+    """
+    Use unittest2 to discover and run tests
+    """
+
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        from imapclient.test.util import unittest   # this will import unittest2
+        unittest.main(argv=['', 'discover'])
+
 
 setup(name='IMAPClient',
       version=version,
@@ -51,4 +67,6 @@ setup(name='IMAPClient',
           'Topic :: Communications :: Email :: Post-Office :: IMAP',
           'Topic :: Internet',
           'Topic :: Software Development :: Libraries :: Python Modules',
-          'Topic :: System :: Networking'])
+          'Topic :: System :: Networking'],
+      cmdclass={'test': TestDiscoverCommand},
+)
