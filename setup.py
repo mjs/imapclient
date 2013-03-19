@@ -16,7 +16,7 @@ import imapclient
 version = imapclient.__version__
 
 desc = """\
-IMAPClient aims to be a easy-to-use, Pythonic and complete IMAP client library with no dependencies outside the Python standard library.
+IMAPClient aims to be a easy-to-use, Pythonic and complete IMAP client library.
 
 Features:
     * Arguments and return values are natural Python types.
@@ -27,7 +27,7 @@ Features:
     * Convenience methods are provided for commonly used functionality.
     * Exceptions are raised when errors occur.
 
-IMAPClient includes units tests for more complex functionality and a automated functional test that can be run against a live IMAP server.
+IMAPClient includes units tests for more complex functionality and an automated functional test that can be run against a live IMAP server.
 """
 
 class TestDiscoverCommand(TestCommand):
@@ -54,8 +54,7 @@ setup(name='IMAPClient',
       download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.zip' % version,
       packages=find_packages(),
       package_data=dict(imapclient=['examples/*.py']),
-      description="Easy-to-use, Pythonic and complete IMAP client library with "
-          "no dependencies outside the Python standard library.",
+      description="Easy-to-use, Pythonic and complete IMAP client library",
       long_description=desc,
       classifiers=[
           'Development Status :: 5 - Production/Stable',
