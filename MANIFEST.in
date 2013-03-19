@@ -3,6 +3,5 @@ include livetest.py
 include distribute_setup.py
 include interact.py
 recursive-include imapclient/examples *
-prune doc/doctrees
 recursive-include doc *.txt *.rst *.py *.png *.css *.html
 
