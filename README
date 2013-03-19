@@ -1,11 +1,11 @@
 Introduction
 ------------
 IMAPClient aims to be a easy-to-use, Pythonic and complete IMAP client
-library with no dependencies outside the Python standard library.
+library.
 
 Features:
-- Arguments and return values are natural Python types. 
-- IMAP server responses are fully parsed and readily usable. 
+- Arguments and return values are natural Python types.
+- IMAP server responses are fully parsed and readily usable.
 - IMAP unique message IDs (UIDs) are handled transparently. There is
   no need to call different methods to use UIDs.
 - Escaping for internationalised mailbox names is transparently
@@ -48,7 +48,7 @@ purposes. Any problems found will be fixed quickly once reported.
 
 The project's home page is a Trac instance at:
 
-    http://imapclient.freshfoo.com/  
+    http://imapclient.freshfoo.com/
 
 Details about upcoming versions and planned features/fixes can be
 found there.
@@ -93,15 +93,15 @@ directory.
 Mailing List
 ------------
 The IMAPClient mailing list can be used to ask IMAPClient related
-questions and report bugs. 
+questions and report bugs.
 
-* To send to the list and subscribe send an email to imapclient@librelist.com 
-* Archives of the list are available at http://librelist.com/browser/imapclient/ 
+* To send to the list and subscribe send an email to imapclient@librelist.com
+* Archives of the list are available at http://librelist.com/browser/imapclient/
 * See http://librelist.com/help.html for more information about the mailing list
 
 
-interact.py
------------
+Interactive Console
+-------------------
 This script connects an IMAPClient instance using the command line
 args given and starts an interactive session. This is useful for
 exploring the IMAPClient API and testing things out, avoiding the
@@ -110,54 +110,14 @@ steps required to set up an IMAPClient instance.
 The IPython shell is used if it is installed. Otherwise the
 code.interact() function from the standard library is used.
 
-The interact functionality can also be accessed like this:
+The interactive console functionality can be accessed running the
+interact.py script in the root of the source tree or by invoking the
+interact module like this:
 
     python -m imapclient.interact ...
 
-This works when IMAPClient has been installed from PyPI.
 
-
-livetest.py
------------
-This script runs a series of functional tests which exercise
-IMAPClient against a live IMAP account. It is useful for ensuring
-compatibility with a given IMAP server implementation. livetest.py
-must be used with an account with write access.
-
-WARNING: As of version 0.9, livetest limits it's activity to a folder
-it creates and subfolders of that folder. It *should* be safe to use
-with any IMAP account. That said, some of the operations used by
-livetest are destructive and could cause unintended loss of non-test
-data. Please don't run the live test against a truly important IMAP
-account.
-
-Run livetest.py with the --help option to see usage.
-
-Please send the output of livetest.py to the mailing list if it fails
-to run successfully against a particular IMAP server. Reports of
-successful runs are also welcome.  Please include the type and version
-of the IMAP server, if known.
-
-The livetest functionality can also be accessed like this:
-
-    python -m imapclient.livetest ...
-
-
-Unit Tests
-----------
-There are comprehensive unit tests for the server response parser and
-a number of other parts of the code. These tests use the unittest2
-package which is also included as the standard unittest package in
-Python 2.7 and 3.2.
-
-Where unittest2 is included in the standard library (eg. Python 2.7
-and 3.2) you can run all unit tests like this (starting from the root
-directory of the IMAPClient source):
-
-     python -m unittest discover
-
-Alternatively, if unittest2 is installed separately use the unit2
-script (for Unix-like systems) or the unit2.py script:
-
-     unit2 discover
-     unit2.py discover
+Working on IMAPClient
+---------------------
+The HACKING document contains information for those interested in
+improving IMAPClient and contributing back to the project.
