@@ -90,6 +90,12 @@ subdirectory can be found under the imapclient package installation
 directory.
 
 
+Working on IMAPClient
+---------------------
+The HACKING document contains information for those interested in
+improving IMAPClient and contributing back to the project.
+
+
 Mailing List
 ------------
 The IMAPClient mailing list can be used to ask IMAPClient related
@@ -115,9 +121,3 @@ interact.py script in the root of the source tree or by invoking the
 interact module like this:
 
     python -m imapclient.interact ...
-
-
-Working on IMAPClient
----------------------
-The HACKING document contains information for those interested in
-improving IMAPClient and contributing back to the project.
