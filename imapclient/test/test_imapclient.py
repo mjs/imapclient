@@ -9,7 +9,7 @@ import socket
 import sys
 from datetime import datetime
 
-from imapclient.six import advance_iterator, b, u, StringIO
+from imapclient.six import advance_iterator, StringIO
 from imapclient.fixed_offset import FixedOffset
 from imapclient.imapclient import datetime_to_imap
 from imapclient.test.mock import patch, sentinel, Mock
@@ -66,9 +66,9 @@ class TestListFolders(IMAPClientTest):
 
 
     def test_without_quotes(self):
-        folders = self.client._proc_folder_list([b('(\\HasNoChildren) "/" A'),
-                                                 b('(\\HasNoChildren) "/" B'),
-                                                 b('(\\HasNoChildren) "/" C'),
+        folders = self.client._proc_folder_list([b'(\\HasNoChildren) "/" A',
+                                                 b'(\\HasNoChildren) "/" B',
+                                                 b'(\\HasNoChildren) "/" C',
                                                  ])
         self.assertEqual(folders, [(['\\HasNoChildren'], '/', 'A'),
                                    (['\\HasNoChildren'], '/', 'B'),
@@ -93,8 +93,8 @@ class TestListFolders(IMAPClientTest):
         folders = self.client._proc_folder_list([('(\\NoInferiors \\UnMarked) "/" {5}', 'bang\xff'),
                                                  '',
                                                  '(\\HasNoChildren \\UnMarked) "/" "INBOX"'])
-        self.assertEqual(folders, [(['\\NoInferiors', '\\UnMarked'], "/", u('bang\xff')),
-                                   (['\\HasNoChildren', '\\UnMarked'], "/", u('INBOX'))])
+        self.assertEqual(folders, [(['\\NoInferiors', '\\UnMarked'], "/", 'bang\xff'),
+                                   (['\\HasNoChildren', '\\UnMarked'], "/", 'INBOX')])
 
 
     def test_quoted_specials(self):
@@ -177,7 +177,7 @@ class TestAclMethods(IMAPClientTest):
     def test_setacl(self):
         self.client._imap.setacl.return_value = ('OK', ["SETACL done"])
 
-        response = self.client.setacl(u('folder'), sentinel.who, sentinel.what)
+        response = self.client.setacl('folder', sentinel.who, sentinel.what)
 
         self.client._imap.setacl.assert_called_with('"folder"', sentinel.who, sentinel.what)
         self.assertEqual(response, "SETACL done")

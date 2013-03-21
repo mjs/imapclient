@@ -4,22 +4,22 @@
 
 from __future__ import unicode_literals
 
-from imapclient.six import b, u, binary_type, text_type, PY3
+from imapclient.six import binary_type, text_type, PY3
 from imapclient.imap_utf7 import decode, encode, FolderNameError
 from imapclient.test.util import unittest
 
 class IMAP4UTF7TestCase(unittest.TestCase):
     tests = [
-        ['Foo', b('Foo')],
-        ['Foo Bar', b('Foo Bar')],
-        ['Stuff & Things', b('Stuff &- Things')],
-        [u('Hello world'), b('Hello world')],
-        [u('Hello & world'), b('Hello &- world')],
-        [u('Hello\xffworld'), b('Hello&AP8-world')],
-        [u('\xff\xfe\xfd\xfc'), b('&AP8A,gD9APw-')],
-        [u('~peter/mail/\u65e5\u672c\u8a9e/\u53f0\u5317'),
-         b('~peter/mail/&ZeVnLIqe-/&U,BTFw-')], # example from RFC 2060
-        ['\x00foo', b('&AAA-foo')],
+        ['Foo', b'Foo'],
+        ['Foo Bar', b'Foo Bar'],
+        ['Stuff & Things', b'Stuff &- Things'],
+        ['Hello world', b'Hello world'],
+        ['Hello & world', b'Hello &- world'],
+        ['Hello\xffworld', b'Hello&AP8-world'],
+        ['\xff\xfe\xfd\xfc', b'&AP8A,gD9APw-'],
+        ['~peter/mail/\u65e5\u672c\u8a9e/\u53f0\u5317',
+         b'~peter/mail/&ZeVnLIqe-/&U,BTFw-'], # example from RFC 2060
+        ['\x00foo', b'&AAA-foo'],
     ]
 
     def test_encode(self):
@@ -58,11 +58,11 @@ class IMAP4UTF7TestCase(unittest.TestCase):
         """
         # All printables represent themselves
         for o in list(range(0x20, 0x26)) + list(range(0x27, 0x7f)):
-            self.assertEqual(b(chr(o)), encode(chr(o)))
-            self.assertEqual(chr(o), decode(b(chr(o))))
-        self.assertEqual(encode('&'), b('&-'))
-        self.assertEqual(encode(u('&')), b('&-'))
-        self.assertEqual(decode(b('&-')), u('&'))
+            self.assertEqual(bytes(chr(o), 'latin-1'), encode(chr(o)))
+            self.assertEqual(chr(o), decode(bytes(chr(o), 'latin-1')))
+        self.assertEqual(encode('&'), b'&-')
+        self.assertEqual(encode('&'), b'&-')
+        self.assertEqual(decode(b'&-'), '&')
 
     def test_FolderNameError_super(self):
         self.assertTrue(issubclass(FolderNameError, ValueError))

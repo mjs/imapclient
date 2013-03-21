@@ -24,7 +24,7 @@
 
 from __future__ import unicode_literals
 
-from .six import b, u, text_type, PY3, int2byte
+from .six import text_type, PY3, int2byte
 from .pycompat import iter_as_bytes
 
 class FolderNameError(ValueError):
@@ -50,7 +50,7 @@ def encode(s):
 
     def extend_result_if_chars_buffered():
         if _in:
-            r.extend([b('&'), modified_base64(''.join(_in)), b('-')])
+            r.extend([b'&', modified_base64(''.join(_in)), b'-'])
             del _in[:]
 
     for c in s:
@@ -59,13 +59,13 @@ def encode(s):
             r.append(int2byte(ord(c)))
         elif c == '&':
             extend_result_if_chars_buffered()
-            r.append(b('&-'))
+            r.append(b'&-')
         else:
             _in.append(c)
 
     extend_result_if_chars_buffered()
 
-    return b('').join(r[:])
+    return b''.join(r[:])
 
 def decode(s):
     """Decode a folder name from IMAP modified UTF-7 encoding to unicode
@@ -77,29 +77,29 @@ def decode(s):
     r = []
     _in = []
     for c in iter_as_bytes(s):
-        if c == b('&') and not _in:
-            _in.append(b('&'))
-        elif c == b('-') and _in:
+        if c == b'&' and not _in:
+            _in.append(b'&')
+        elif c == b'-' and _in:
             if len(_in) == 1:
-                r.append(u('&'))
+                r.append('&')
             else:
-                r.append(modified_unbase64(b('').join(_in[1:])))
+                r.append(modified_unbase64(b''.join(_in[1:])))
             _in = []
         elif _in:
             _in.append(c)
         else:
             r.append(c)
     if _in:
-        r.append(modified_unbase64(b('').join(_in[1:])))
+        r.append(modified_unbase64(b''.join(_in[1:])))
 
-    return u('').join(
+    return ''.join(
         x.decode('latin-1') if not isinstance(x, text_type) else x
         for x in r[:])
 
 def modified_base64(s):
     s_utf7 = s.encode('utf-7')
-    return s_utf7[1:-1].replace(b('/'), b(','))
+    return s_utf7[1:-1].replace(b'/', b',')
 
 def modified_unbase64(s):
-    s_utf7 = b('+') + s.replace(b(','), b('/')) + b('-')
+    s_utf7 = b'+' + s.replace(b',', b'/') + b'-'
     return s_utf7.decode('utf-7')
