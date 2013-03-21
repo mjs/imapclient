@@ -14,6 +14,8 @@ use for external callers.
 # http://bugs.python.org/issue7594, but redone to be specific to IMAPs
 # requirements while offering nice performance by using generators everywhere.
 
+from __future__ import unicode_literals
+
 __all__ = ["Lexer"]
 
 from .six import advance_iterator, b

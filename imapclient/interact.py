@@ -4,6 +4,8 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+from __future__ import unicode_literals
+
 
 from getpass import getpass
 from optparse import OptionParser
@@ -46,9 +48,9 @@ def command_line():
 
 def main():
     opts = command_line()
-    print 'Connecting...'
+    print('Connecting...')
     client = create_client_from_config(opts)
-    print 'Connected.'
+    print('Connected.')
     banner = '\nIMAPClient instance is "c"'
 
     def ipython_011(c):

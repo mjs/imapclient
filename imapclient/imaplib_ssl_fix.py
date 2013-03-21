@@ -18,6 +18,8 @@ patched.
 Efforts are made to only perform the patch once.
 """
 
+from __future__ import unicode_literals
+
 import sys
 import imaplib
 

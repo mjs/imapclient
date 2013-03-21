@@ -1,6 +1,8 @@
 # This example is a lot more interesting if you have an active client
 # connected to the same IMAP account!
 
+from __future__ import unicode_literals
+
 from imapclient import IMAPClient
 
 HOST = 'imap.host.com'
@@ -17,11 +19,11 @@ server.idle()
 
 # Wait for up to 30 seconds for an IDLE response
 responses = server.idle_check(timeout=30)
-print responses
+print(responses)
 
 # Come out of IDLE mode
 text, responses = server.idle_done()
-print 'IDLE done. Server said %r' % text
-print 'Final responses: ', responses
+print('IDLE done. Server said %r' % text)
+print('Final responses: ', responses)
     
-print server.logout()
+print(server.logout())

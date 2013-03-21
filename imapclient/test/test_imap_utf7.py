@@ -2,6 +2,8 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+from __future__ import unicode_literals
+
 from imapclient.six import b, u, binary_type, text_type, PY3
 from imapclient.imap_utf7 import decode, encode, FolderNameError
 from imapclient.test.util import unittest

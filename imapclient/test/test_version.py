@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from imapclient import _imapclient_version_string
 from imapclient.test.util import unittest
 

@@ -22,6 +22,8 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+from __future__ import unicode_literals
+
 from .six import b, u, text_type, PY3, int2byte
 from .pycompat import iter_as_bytes
 

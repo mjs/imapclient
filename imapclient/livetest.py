@@ -4,6 +4,7 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+from __future__ import print_function, unicode_literals
 
 import imp
 import os
@@ -651,9 +652,9 @@ def have_matching_types(a, b, type_or_types):
     return isinstance(b, type(a))
 
 def argv_error(msg):
-    print >> sys.stderr, msg
-    print >> sys.stderr
-    print >> sys.stderr, "usage: %s <livetest.ini> [ optional unittest arguments ]" % sys.argv[0]
+    print(msg, file=sys.stderr)
+    print(file=sys.stderr)
+    print("usage: %s <livetest.ini> [ optional unittest arguments ]" % sys.argv[0], file=sys.stderr)
     sys.exit(1)
 
 def parse_argv():

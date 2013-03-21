@@ -11,6 +11,8 @@ Initially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 
 #TODO more exact error reporting
 
+from __future__ import unicode_literals
+
 import sys
 from datetime import datetime
 

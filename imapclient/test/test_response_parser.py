@@ -6,6 +6,8 @@
 Unit tests for the FetchTokeniser and FetchParser classes
 '''
 
+from __future__ import unicode_literals
+
 from datetime import datetime
 from textwrap import dedent
 

@@ -2,6 +2,8 @@
 Further Python 2/3 compatibility helpers that aren't provided by six.
 """
 
+from __future__ import unicode_literals
+
 from .six import PY3, int2byte
 
 if PY3:
