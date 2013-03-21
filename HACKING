@@ -42,8 +42,15 @@ a number of other parts of the code. These tests use the unittest2
 package which is also included as the standard unittest package in
 Python 2.7 and 3.2.
 
+To run the tests run:
+
+     python setup.py test
+
+from the root of the package source. This will install any
+dependencies required by the tests if they aren't already installed.
+
 Where unittest2 is included in the standard library (eg. Python 2.7
-and 3.2) you can run all unit tests like this (starting from the root
+and 3.2) you can also run all unit tests like this (from the root
 directory of the IMAPClient source):
 
      python -m unittest discover
