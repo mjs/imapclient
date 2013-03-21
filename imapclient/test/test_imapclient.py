@@ -9,7 +9,7 @@ import socket
 import sys
 from datetime import datetime
 
-from imapclient.six import advance_iterator, StringIO
+from imapclient import six
 from imapclient.fixed_offset import FixedOffset
 from imapclient.imapclient import datetime_to_imap
 from imapclient.test.mock import patch, sentinel, Mock
@@ -239,7 +239,7 @@ class TestIdleAndNoop(IMAPClientTest):
         mock_select.return_value = ([True], [], [])
         counter = itertools.count()
         def fake_get_line():
-            count = advance_iterator(counter)
+            count = six.next(counter)
             if count == 0:
                 return '* 99 EXISTS'
             else:
@@ -286,7 +286,7 @@ class TestIdleAndNoop(IMAPClientTest):
 
         counter = itertools.count()
         def fake_get_response():
-            count = advance_iterator(counter)
+            count = six.next(counter)
             if count == 0:
                 return '* 99 EXISTS'
             client._imap.tagged_commands[sentinel.tag] = ('OK', ['Idle done'])
@@ -306,7 +306,7 @@ class TestDebugLogging(IMAPClientTest):
         self.assertIs(self.client.log_file, sys.stderr)
 
     def test_IMAP_is_patched(self):
-        log = StringIO()
+        log = six.StringIO()
         self.client.log_file = log
 
         self.client._log('one')

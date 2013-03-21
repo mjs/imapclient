@@ -18,7 +18,7 @@ from __future__ import unicode_literals
 
 __all__ = ["Lexer"]
 
-from .six import advance_iterator
+from . import six
 from .pycompat import iter_as_bytes, to_native_str
 
 class TokenSource(object):
@@ -62,7 +62,7 @@ class Lexer(object):
             for nextchar in stream_i:
                 if escape and nextchar == b"\\":
                     escaper = nextchar
-                    nextchar = advance_iterator(stream_i)
+                    nextchar = six.next(stream_i)
                     if nextchar != escaper and nextchar != end_char:
                         token += to_native_str(escaper.decode)
                 elif nextchar == end_char:
@@ -161,7 +161,7 @@ class PushableIterator(object):
     def __next__(self):
         if self.pushed:
             return self.pushed.pop()
-        return advance_iterator(self.it)
+        return six.next(self.it)
 
     # For Python 2 compatibility
     next = __next__

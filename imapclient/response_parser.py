@@ -16,8 +16,8 @@ from __future__ import unicode_literals
 import sys
 from datetime import datetime
 
-from .six import advance_iterator, moves, string_types
-xrange = moves.xrange
+from . import six
+xrange = six.moves.xrange
 
 from .fixed_offset import FixedOffset
 from .response_lexer import TokenSource
@@ -72,13 +72,13 @@ def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
     parsed_response = {}
     while True:
         try:
-            msg_id = seq = _int_or_error(advance_iterator(response),
+            msg_id = seq = _int_or_error(six.next(response),
                                          'invalid message ID')
         except StopIteration:
             break
 
         try:
-            msg_response = advance_iterator(response)
+            msg_response = six.next(response)
         except StopIteration:
             raise ParseError('unexpected EOF')
 
@@ -130,7 +130,7 @@ class BodyData(tuple):
         if isinstance(response[0], tuple):
             # Multipart, find where the message part tuples stop
             for i, part in enumerate(response):
-                if isinstance(part, string_types):
+                if isinstance(part, six.string_types):
                     break
             return cls((list(response[:i]),) + response[i:])
         else:
