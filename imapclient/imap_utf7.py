@@ -24,8 +24,7 @@
 
 from __future__ import unicode_literals
 
-from .six import text_type, PY3, int2byte
-from .pycompat import iter_as_bytes
+from .six import text_type, binary_type, iteritems
 
 class FolderNameError(ValueError):
     pass
@@ -33,73 +32,100 @@ class FolderNameError(ValueError):
 PRINTABLE = set(range(0x20, 0x26)) | set(range(0x27, 0x7f))
 
 def encode(s):
-    """Encode a folder name using IMAP modified UTF-7 encoding
+    """Encode a folder name using IMAP modified UTF-7 encoding.
 
-    Input and output types:
-      Python 2 - str/unicode to str
-      Python 3 - str to bytes
+    Even though we're using "encode" here the output is still a unicode string.
+
     """
-    # This is for Python 2 only. Under Python 3 the input will always be unicode.
-    if (not PY3 and isinstance(s, str) and
-          sum(n for n in (ord(c) for c in s) if n > 127)):
-        raise FolderNameError("%r contains characters not valid in a str "
-                              "folder name. Convert to unicode first?" % s)
+    if not isinstance(s, text_type):
+        return s
 
     r = []
     _in = []
 
     def extend_result_if_chars_buffered():
         if _in:
-            r.extend([b'&', modified_base64(''.join(_in)), b'-'])
+            r.extend(['&', modified_base64(''.join(_in)), '-'])
             del _in[:]
 
     for c in s:
         if ord(c) in PRINTABLE:
             extend_result_if_chars_buffered()
-            r.append(int2byte(ord(c)))
+            r.append(c)
         elif c == '&':
             extend_result_if_chars_buffered()
-            r.append(b'&-')
+            r.append('&-')
         else:
             _in.append(c)
 
     extend_result_if_chars_buffered()
 
-    return b''.join(r[:])
+    return ''.join(r)
 
 def decode(s):
-    """Decode a folder name from IMAP modified UTF-7 encoding to unicode
+    """Decode a folder name from IMAP modified UTF-7 encoding to unicode.
 
-    Input and output types:
-      Python 2 - str to unicode
-      Python 3 - bytes to str
+    Even though we're using "decode" here the input may still be a unicode
+    string.
+
+    If the input is bytes, it's first decoded to unicode.
+
     """
+    if isinstance(s, binary_type):
+        s = s.decode('latin-1')
+    if not isinstance(s, text_type):
+        return s
+
     r = []
     _in = []
-    for c in iter_as_bytes(s):
-        if c == b'&' and not _in:
-            _in.append(b'&')
-        elif c == b'-' and _in:
+    for c in s:
+        if c == '&' and not _in:
+            _in.append('&')
+        elif c == '-' and _in:
             if len(_in) == 1:
                 r.append('&')
             else:
-                r.append(modified_unbase64(b''.join(_in[1:])))
+                r.append(modified_unbase64(''.join(_in[1:])))
             _in = []
         elif _in:
             _in.append(c)
         else:
             r.append(c)
     if _in:
-        r.append(modified_unbase64(b''.join(_in[1:])))
+        r.append(modified_unbase64(''.join(_in[1:])))
 
-    return ''.join(
-        x.decode('latin-1') if not isinstance(x, text_type) else x
-        for x in r[:])
+    return ''.join(r)
 
 def modified_base64(s):
-    s_utf7 = s.encode('utf-7')
-    return s_utf7[1:-1].replace(b'/', b',')
+    # encode to utf-7: '\xff' => b'+AP8-', decode from latin-1 => '+AP8-'
+    s_utf7 = s.encode('utf-7').decode('latin-1')
+    return s_utf7[1:-1].replace('/', ',')
 
 def modified_unbase64(s):
-    s_utf7 = b'+' + s.replace(b',', b'/') + b'-'
-    return s_utf7.decode('utf-7')
+    s_utf7 = '+' + s.replace(',', '/') + '-'
+    # encode to latin-1: '+AP8-' => b'+AP8-', decode from utf-7 => '\xff'
+    return s_utf7.encode('latin-1').decode('utf-7')
+
+
+def from_bytes(data, folder_encode=True):
+    """Convert bytes to string in lists, tuples and dicts.
+
+    Decode by decoding from latin-1 or modified utf7.
+
+    """
+    if isinstance(data, dict):
+        decoded = {}
+        for key, value in iteritems(data):
+            key = from_bytes(key, folder_encode)
+            value = from_bytes(value, folder_encode)
+            decoded[key] = value
+        return decoded
+    if isinstance(data, list):
+        return [from_bytes(item, folder_encode) for item in data]
+    if isinstance(data, tuple):
+        return tuple([from_bytes(item, folder_encode) for item in data])
+    if folder_encode:
+        return decode(data)
+    if isinstance(data, binary_type):
+        return data.decode('latin-1')
+    return data

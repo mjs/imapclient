@@ -14,7 +14,7 @@ from datetime import datetime
 from email.utils import make_msgid
 
 import imapclient
-from imapclient.six import string_types
+from imapclient.six import text_type
 from imapclient.test.util import unittest
 from imapclient.config import parse_config_file, create_client_from_config
 
@@ -272,7 +272,7 @@ def createLiveTestClass(conf, use_uid):
 
                 new_folder = folder + 'x'
                 resp = self.client.rename_folder(folder, new_folder)
-                self.assertIsInstance(resp, str)
+                self.assertIsInstance(resp, text_type)
                 self.assertTrue(len(resp) > 0)
 
                 self.assertFalse(self.client.folder_exists(folder))
@@ -308,7 +308,7 @@ def createLiveTestClass(conf, use_uid):
 
             # Append message
             resp = self.client.append(self.base_folder, SIMPLE_MESSAGE, ('abc', 'def'), msg_time)
-            self.assertIsInstance(resp, str)
+            self.assertIsInstance(resp, text_type)
 
             # Retrieve the just added message and check that all looks well
             self.assertEqual(self.client.select_folder(self.base_folder)['EXISTS'], 1)
@@ -316,7 +316,7 @@ def createLiveTestClass(conf, use_uid):
             resp = self.client.fetch(self.client.search()[0], ('RFC822', 'FLAGS', 'INTERNALDATE'))
 
             self.assertEqual(len(resp), 1)
-            msginfo = resp.values()[0]
+            msginfo = tuple(resp.values())[0]
 
             # Time should match the time we specified
             returned_msg_time = msginfo['INTERNALDATE']
@@ -336,7 +336,7 @@ def createLiveTestClass(conf, use_uid):
 
             def _flagtest(func, args, expected_flags):
                 answer = func(msg_id, *args)
-                self.assertTrue(answer.has_key(msg_id))
+                self.assertTrue(msg_id in answer)
                 answer_flags = set(answer[msg_id])
                 answer_flags.discard(r'\Recent')  # Might be present but don't care
                 self.assertSetEqual(answer_flags, set(expected_flags))
@@ -355,7 +355,7 @@ def createLiveTestClass(conf, use_uid):
 
             def _labeltest(func, args, expected_labels):
                 answer = func(msg_id, *args)
-                self.assertEquals(answer.keys(), [msg_id])
+                self.assertEqual(list(answer.keys()), [msg_id])
                 actual_labels = set(answer[msg_id])
                 self.assertSetEqual(actual_labels, set(expected_labels))
 
@@ -566,7 +566,7 @@ def createLiveTestClass(conf, use_uid):
             responses = self.client.idle_check(timeout=5)
             text, more_responses = self.client.idle_done()
             self.assertIn((1, 'EXISTS'), responses)
-            self.assertTrue(isinstance(text, str))
+            self.assertTrue(isinstance(text, text_type))
             self.assertGreater(len(text), 0)
             self.assertTrue(isinstance(more_responses, list))
 
@@ -578,7 +578,7 @@ def createLiveTestClass(conf, use_uid):
 
             text, responses = self.client.idle_done()
             self.assertIn((2, 'EXISTS'), responses)
-            self.assertTrue(isinstance(text, str))
+            self.assertTrue(isinstance(text, text_type))
             self.assertGreater(len(text), 0)
 
         def test_noop(self):
@@ -586,9 +586,9 @@ def createLiveTestClass(conf, use_uid):
 
             # Initially there should be no responses
             text, resps = self.client.noop()
-            self.assertTrue(isinstance(text, str))
+            self.assertTrue(isinstance(text, text_type))
             self.assertGreater(len(text), 0)
-            self.assertEquals(resps, [])
+            self.assertEqual(resps, [])
 
             # Start a new connection and upload a new message
             client2 = create_client_from_config(conf)
@@ -597,7 +597,7 @@ def createLiveTestClass(conf, use_uid):
 
             # Check for this addition in the NOOP data
             msg, resps = self.client.noop()
-            self.assertTrue(isinstance(text, str))
+            self.assertTrue(isinstance(text, text_type))
             self.assertGreater(len(text), 0)
             self.assertTrue(isinstance(resps, list))
             self.assertIn((1, 'EXISTS'), resps)
@@ -607,7 +607,7 @@ def createLiveTestClass(conf, use_uid):
 
             # Test empty mailbox
             text, resps = self.client.expunge()
-            self.assertTrue(isinstance(text, str))
+            self.assertTrue(isinstance(text, text_type))
             self.assertGreater(len(text), 0)
             # Some servers return nothing while others (e.g. Exchange) return (0, 'EXISTS')
             self.assertIn(resps, ([], [(0, 'EXISTS')]))
@@ -617,7 +617,7 @@ def createLiveTestClass(conf, use_uid):
 
             msg, resps = self.client.expunge()
 
-            self.assertTrue(isinstance(text, str))
+            self.assertTrue(isinstance(text, text_type))
             self.assertGreater(len(text), 0)
             self.assertTrue(isinstance(resps, list))
             if not self.is_gmail():
@@ -639,7 +639,7 @@ def createLiveTestClass(conf, use_uid):
 
 
 def lower_if_str(val):
-    if isinstance(val, string_types):
+    if isinstance(val, text_type):
         return val.lower()
     return val
 

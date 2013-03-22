@@ -35,12 +35,12 @@ class ParseError(ValueError):
     pass
 
 
-def parse_response(text):
+def parse_response(data):
     """Pull apart IMAP command responses.
 
     Returns nested tuples of appropriately typed objects.
     """
-    return tuple(gen_parsed_response(text))
+    return tuple(gen_parsed_response(data))
 
 
 def gen_parsed_response(text):
@@ -59,7 +59,8 @@ def gen_parsed_response(text):
         raise ParseError("%s: %s" % (str(err), token))
 
 
-def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
+def parse_fetch_response(text, normalise_times=True, uid_is_key=True,
+                         folder_encode=True):
     """Pull apart IMAP FETCH responses as returned by imaplib.
 
     Returns a dictionary, keyed by message ID. Each value a dictionary
@@ -142,13 +143,13 @@ class BodyData(tuple):
     
 
 def _convert_INTERNALDATE(date_string, normalise_times=True):
-    mo = imaplib.InternalDate.match(b'INTERNALDATE "' + date_string + '"')
+    mo = imaplib.InternalDate.match(bytes('INTERNALDATE "%s"' % date_string, 'latin-1'))
     if not mo:
         raise ValueError("couldn't parse date %r" % date_string)
 
     zoneh = int(mo.group('zoneh'))
     zonem = (zoneh * 60) + int(mo.group('zonem'))
-    if mo.group('zonen') == '-':
+    if mo.group('zonen') == b'-':
         zonem = -zonem
     tz = FixedOffset(zonem)
 
