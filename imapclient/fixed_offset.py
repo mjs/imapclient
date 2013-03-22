@@ -38,9 +38,8 @@ class FixedOffset(tzinfo):
         """Return a FixedOffset instance for the current working timezone and
         DST conditions.
         """
-        if time.daylight:
+        if time.localtime().tm_isdst and time.daylight:
             offset = time.altzone
         else:
             offset = time.timezone
         return klass(-offset // 60)
-
