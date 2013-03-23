@@ -721,6 +721,8 @@ class IMAPClient(object):
         """
         if msg_time:
             time_val = '"%s"' % datetime_to_imap(msg_time)
+            if not PY3:
+                time_val = time_val.encode('ascii')
         else:
             time_val = None
         flags = self.quote_encode_flags(flags)

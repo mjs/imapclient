@@ -1,7 +1,5 @@
 """Utilities for writing code that runs on Python 2 and 3"""
 
-from __future__ import unicode_literals
-
 import operator
 import sys
 import types

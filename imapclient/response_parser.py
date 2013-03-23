@@ -143,7 +143,8 @@ class BodyData(tuple):
     
 
 def _convert_INTERNALDATE(date_string, normalise_times=True):
-    mo = imaplib.InternalDate.match(bytes('INTERNALDATE "%s"' % date_string, 'latin-1'))
+    date_msg = 'INTERNALDATE "%s"' % date_string
+    mo = imaplib.InternalDate.match(date_msg.encode('latin-1'))
     if not mo:
         raise ValueError("couldn't parse date %r" % date_string)
 

@@ -16,9 +16,21 @@ use for external callers.
 
 from __future__ import unicode_literals
 
+from . import six
+
 __all__ = ["Lexer"]
 
-from . import six
+
+if six.PY3:
+    CTRL_CHARS = frozenset(chr(c) for c in range(32))
+    ALL_CHARS = frozenset(chr(c) for c in range(256))
+else:
+    CTRL_CHARS = frozenset(unichr(c) for c in range(32))
+    ALL_CHARS = frozenset(unichr(c) for c in range(256))
+SPECIALS = frozenset(' ()%"[')
+NON_SPECIALS = ALL_CHARS - SPECIALS - CTRL_CHARS
+WHITESPACE = frozenset(' \t\r\n')
+
 
 class TokenSource(object):
     """
@@ -39,11 +51,6 @@ class TokenSource(object):
     def __iter__(self):
         return self.src
 
-CTRL_CHARS = ''.join([chr(ch) for ch in range(32)])
-SPECIALS = ' ()%"[' + CTRL_CHARS
-ALL_CHARS = [chr(ch) for ch in range(256)]
-NON_SPECIALS = frozenset([ch for ch in ALL_CHARS if ch not in SPECIALS])
-WHITESPACE = frozenset(' \t\r\n')
 
 class Lexer(object):
     "A lexical analyzer class for IMAP"

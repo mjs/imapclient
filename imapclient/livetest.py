@@ -14,9 +14,9 @@ from datetime import datetime
 from email.utils import make_msgid
 
 import imapclient
-from imapclient.six import text_type
-from imapclient.test.util import unittest
-from imapclient.config import parse_config_file, create_client_from_config
+from .six import text_type, PY3
+from .test.util import unittest
+from .config import parse_config_file, create_client_from_config
 
 # TODO cleaner verbose output: avoid "__main__" and separator between classes
 
@@ -688,8 +688,12 @@ def main():
        klass.__name__ = name
        setattr(live_test_mod, name, klass)
 
-    add_test_class('TestWithUIDs', createLiveTestClass(host_config, use_uid=True))
-    add_test_class('TestWithoutUIDs', createLiveTestClass(host_config, use_uid=False))
+    if PY3:
+        add_test_class('TestWithUIDs', createLiveTestClass(host_config, use_uid=True))
+        add_test_class('TestWithoutUIDs', createLiveTestClass(host_config, use_uid=False))
+    else:
+        add_test_class(b'TestWithUIDs', createLiveTestClass(host_config, use_uid=True))
+        add_test_class(b'TestWithoutUIDs', createLiveTestClass(host_config, use_uid=False))
 
     unittest.main(module='livetests')
 
