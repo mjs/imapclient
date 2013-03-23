@@ -351,7 +351,7 @@ class IMAPClient(object):
         See `RFC 2177 <http://tools.ietf.org/html/rfc2177>`_ for more
         information about the IDLE extension.
         """
-        self._idle_tag = from_bytes(self._imap._command('IDLE'), self.folder_encode)
+        self._idle_tag = self._imap._command('IDLE')
         resp = from_bytes(self._imap._get_response(), self.folder_encode)
         if resp is not None:
             raise self.Error('Unexpected IDLE response: %s' % resp)
@@ -374,13 +374,12 @@ class IMAPClient(object):
              (1, 'EXISTS'),
              (1, 'FETCH', ('FLAGS', ('\\NotJunk',)))]
         """
-        # make the socket non-blocking so the timeout can be
-        # implemented for this call
-
         # in py2, imaplib has sslobj (for ssl connexions), and sock for non-sll
         # in the py3 version it's just sock
         sock = getattr(self._imap, 'sslobj', self._imap.sock)
 
+        # make the socket non-blocking so the timeout can be
+        # implemented for this call
         sock.setblocking(0)
         try:
             resps = []
@@ -411,7 +410,7 @@ class IMAPClient(object):
         any). These are returned in parsed form as per
         ``idle_check()``.
         """
-        self._imap.send('DONE\r\n')
+        self._imap.send(b'DONE\r\n')
         return self._consume_until_tagged_response(self._idle_tag, 'IDLE')
 
     def folder_status(self, folder, what=None):
