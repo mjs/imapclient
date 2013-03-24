@@ -856,7 +856,9 @@ class IMAPClient(object):
 
         """
         # remove all SEQ keys
-        for msgid, data in iteritems(fetch_dict): del data['SEQ']
+        for msgid, data in iteritems(fetch_dict):
+            if 'SEQ' in data:
+                del data['SEQ']
 
         # there should now be only one key left per data dict, use its value
         return dict(

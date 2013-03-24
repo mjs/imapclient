@@ -20,13 +20,11 @@ from . import six
 
 __all__ = ["Lexer"]
 
-
 if six.PY3:
-    CTRL_CHARS = frozenset(chr(c) for c in range(32))
-    ALL_CHARS = frozenset(chr(c) for c in range(256))
-else:
-    CTRL_CHARS = frozenset(unichr(c) for c in range(32))
-    ALL_CHARS = frozenset(unichr(c) for c in range(256))
+    unichr = chr  # unichr doesn't exist in py3 where every string is unicode
+
+CTRL_CHARS = frozenset(unichr(c) for c in range(32))
+ALL_CHARS = frozenset(unichr(c) for c in range(256))
 SPECIALS = frozenset(' ()%"[')
 NON_SPECIALS = ALL_CHARS - SPECIALS - CTRL_CHARS
 WHITESPACE = frozenset(' \t\r\n')

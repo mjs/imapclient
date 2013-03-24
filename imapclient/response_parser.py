@@ -59,8 +59,7 @@ def gen_parsed_response(text):
         raise ParseError("%s: %s" % (str(err), token))
 
 
-def parse_fetch_response(text, normalise_times=True, uid_is_key=True,
-                         folder_encode=True):
+def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
     """Pull apart IMAP FETCH responses as returned by imaplib.
 
     Returns a dictionary, keyed by message ID. Each value a dictionary

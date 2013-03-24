@@ -7,10 +7,19 @@ from __future__ import unicode_literals
 from imapclient.imapclient import IMAPClient
 from imapclient.test.mock import Mock
 
+
 class TestableIMAPClient(IMAPClient):
 
     def __init__(self):
         super(TestableIMAPClient, self).__init__('somehost')
 
     def _create_IMAP4(self):
-        return Mock()
+        mock_IMAP4 = Mock()
+        mock_IMAP4._quote = self._quote
+        return mock_IMAP4
+
+    def _quote(self, arg):
+        """The real code from IMAP4._quote."""
+        arg = arg.replace('\\', '\\\\')
+        arg = arg.replace('"', '\\"')
+        return '"%s"' % arg
