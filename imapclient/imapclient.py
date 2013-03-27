@@ -548,6 +548,32 @@ class IMAPClient(object):
             return []
         return [long(i) for i in data.split()]
 
+    def thread(self, algorithm='REFERENCES', criteria='ALL', charset='UTF-8'):
+        """Return a list of messages threads matching *criteria*.
+
+        Each thread is a list of messages ids.
+
+        See `RFC 5256 <https://tools.ietf.org/html/rfc5256>`_ for more details.
+        """
+        if not self.has_capability('THREAD=' + algorithm):
+            raise ValueError('server does not support %s threading algorithm'
+                             % algorithm)
+
+        if not criteria:
+            raise ValueError('no criteria specified')
+
+        if isinstance(criteria, basestring):
+            criteria = (criteria,)
+        crit_list = ['(%s)' % c for c in criteria]
+
+        args = [algorithm]
+        if charset:
+            args.append(charset)
+        args.extend(crit_list)
+
+        data = self._command_and_check('thread', *args, uid=True)
+        return parse_response(data)
+
     def sort(self, sort_criteria, criteria='ALL', charset='UTF-8'):
         """Return a list of message ids sorted by *sort_criteria* and
         optionally filtered by *criteria*.

@@ -427,6 +427,29 @@ def createLiveTestClass(conf, use_uid):
             expected = [first_id, first_id - 1, first_id - 2]
             self.assertListEqual(messages, expected)
 
+        def test_thread(self):
+            thread_algo = None
+            for cap in self.client.capabilities():
+                if cap.startswith('THREAD='):
+                    thread_algo = cap.split('=')[-1]
+                    break
+            if not thread_algo:
+                return self.skipTest("Server doesn't support THREAD")
+
+            msg_tmpl = 'Subject: %s\r\n\r\nBody'
+            subjects = ('a', 'b', 'c')
+            for subject in subjects:
+                msg = msg_tmpl % subject
+                self.client.append(self.base_folder, msg)
+
+            messages = self.client.thread()
+
+            self.assertEqual(len(messages), 3)
+            self.assertIsInstance(messages[0], tuple)
+            first_id = messages[0][0]
+            expected = ((first_id,), (first_id + 1,), (first_id + 2,))
+            self.assertTupleEqual(messages, expected)
+
         def test_copy(self):
             self.append_msg(SIMPLE_MESSAGE)
             target_folder = self.add_prefix_to_folder('target')
