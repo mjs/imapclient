@@ -525,22 +525,17 @@ class IMAPClient(object):
         See `RFC 3501 section 6.4.4 <http://tools.ietf.org/html/rfc3501#section-6.4.4>`_
         for more details.
         """
-        if not criteria:
-            raise ValueError('no criteria specified')
-
-        if isinstance(criteria, basestring):
-            criteria = (criteria,)
-        crit_list = ['(%s)' % c for c in criteria]
+        criteria = normalise_search_criteria(criteria)
 
         if self.use_uid:
             if charset:
                 args = ['CHARSET', charset]
             else:
                 args = []
-            args.extend(crit_list)
+            args.extend(criteria)
             typ, data = self._imap.uid('SEARCH', *args)
         else:
-            typ, data = self._imap.search(charset, *crit_list)
+            typ, data = self._imap.search(charset, *criteria)
 
         self._checkok('search', typ, data)
         data = data[0]
@@ -562,14 +557,10 @@ class IMAPClient(object):
         if not criteria:
             raise ValueError('no criteria specified')
 
-        if isinstance(criteria, basestring):
-            criteria = (criteria,)
-        crit_list = ['(%s)' % c for c in criteria]
-
         args = [algorithm]
         if charset:
             args.append(charset)
-        args.extend(crit_list)
+        args.extend(normalise_search_criteria(criteria))
 
         data = self._command_and_check('thread', *args, uid=True)
         return parse_response(data)
@@ -600,13 +591,9 @@ class IMAPClient(object):
             sort_criteria = (sort_criteria,)
         sort_criteria = seq_to_parenlist([s.upper() for s in sort_criteria])
 
-        if isinstance(criteria, basestring):
-            criteria = (criteria,)
-        crit_list = ['(%s)' % c for c in criteria]
-
         ids = self._command_and_check('sort', sort_criteria,
                                       charset,
-                                      *crit_list,
+                                      *normalise_search_criteria(criteria),
                                       uid=True, unpack=True)
         return [long(i) for i in ids.split()]
 
@@ -958,6 +945,13 @@ def seq_to_parenlist(flags):
     elif not isinstance(flags, (tuple, list)):
         raise ValueError('invalid flags list: %r' % flags)
     return '(%s)' % ' '.join(flags)
+
+def normalise_search_criteria(criteria):
+    if not criteria:
+        raise ValueError('no criteria specified')
+    if isinstance(criteria, basestring):
+        criteria = (criteria,)
+    return ['(%s)' % c for c in criteria]
 
 def datetime_to_imap(dt):
     """Convert a datetime instance to a IMAP datetime string.
