@@ -19,6 +19,11 @@ that will be used, avoiding an unnecessary CAPABILITY command call.
 All this ensures that the client sees all available server
 capabilities.
 
+Minor Features
+--------------
+* Better documentation for contributers (see HACKING file)
+* Copyright date update for 2013.
+
 =======
  0.9.1
 =======
