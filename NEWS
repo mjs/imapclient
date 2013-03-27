@@ -1,5 +1,20 @@
 .. -*-Mode: rst; -*-
 =======
+ 0.9.2
+=======
+
+Enhanced capability querying [NEW]
+----------------------------------
+Previously only the pre-authentication server capabilities were
+returned by the capabilities() method. Now, if the connection is
+authenticated, the post-authentication capabilities will be returned.
+If the server sent an untagged CAPABILITY response after authentication,
+that will be used, avoiding an unnecessary CAPABILITY command call.
+
+All this ensures that the client sees all available server
+capabilities.
+
+=======
  0.9.1
 =======
 

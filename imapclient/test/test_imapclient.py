@@ -390,6 +390,38 @@ class TestNamespace(IMAPClientTest):
             (("#shared/", "/"), ("#public/", "/"), ("#ftp/", "/"), ("#news.", ".")),
             ))
 
+class TestCapabilities(IMAPClientTest):
+
+    def test_preauth(self):
+        self.client._imap.capabilities = ('FOO', 'BAR')
+        self.client._imap.untagged_responses = {}
+
+        self.assertEquals(self.client.capabilities(), ('FOO', 'BAR'))
+
+    def test_server_returned_capability_after_auth(self):
+        self.client._imap.capabilities = ('FOO',)
+        self.client._imap.untagged_responses = {'CAPABILITY': ['FOO MORE']}
+
+        self.assertEquals(self.client._cached_capabilities, None)
+        self.assertEquals(self.client.capabilities(), ('FOO', 'MORE'))
+        self.assertEquals(self.client._cached_capabilities, ('FOO', 'MORE'))
+
+    def test_caching(self):
+        self.client._imap.capabilities = ('FOO',)
+        self.client._imap.untagged_responses = {}
+        self.client._cached_capabilities = ('FOO', 'MORE')
+
+        self.assertEquals(self.client.capabilities(), ('FOO', 'MORE'))
+
+    def test_post_auth_request(self):
+        self.client._imap.capabilities = ('FOO',)
+        self.client._imap.untagged_responses = {}
+        self.client._imap.state = 'SELECTED'
+        self.client._imap.capability.return_value = ('OK', ['FOO BAR'])
+
+        self.assertEquals(self.client.capabilities(), ('FOO', 'BAR'))
+        self.assertEquals(self.client._cached_capabilities, ('FOO', 'BAR'))
+
 
 if __name__ == '__main__':
     unittest.main()

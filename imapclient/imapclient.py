@@ -111,6 +111,7 @@ class IMAPClient(object):
         self.log_file = sys.stderr
         self.normalise_times = True
 
+        self._cached_capabilities = None
         self._imap = self._create_IMAP4()
         self._imap._mesg = self._log    # patch in custom debug log method
         self._idle_tag = None
@@ -159,8 +160,37 @@ class IMAPClient(object):
 
     def capabilities(self):
         """Returns the server capability list.
+
+        If the session is authenticated and the server has returned a
+        CAPABILITY response at authentication time, this response
+        will be returned. Otherwise, the CAPABILITY command will be
+        issued to the server, with the results cached for future calls.
+
+        If the session is not yet authenticated, the cached
+        capabilities determined at connection time will be returned.
         """
+        # if a capability response has been cached, use that
+        if self._cached_capabilities:
+            return self._cached_capabilities
+
+        # If server returned an untagged CAPABILITY response (during
+        # authentication), cache it and return that.
+        response = self._imap.untagged_responses.pop('CAPABILITY', None)
+        if response:
+            return self._save_capabilities(response[0])
+
+        # if authenticated, but don't have a capability reponse, ask for one
+        if self._imap.state in ('SELECTED', 'AUTH'):
+            response = self._command_and_check('capability', unpack=True)
+            return self._save_capabilities(response)
+
+        # Just return capabilities that imaplib grabbed at connection
+        # time (pre-auth)
         return self._imap.capabilities
+
+    def _save_capabilities(self, raw_response):
+        self._cached_capabilities = tuple(raw_response.upper().split())
+        return self._cached_capabilities
 
     def has_capability(self, capability):
         """Return ``True`` if the IMAP server has the given *capability*.
@@ -170,10 +200,7 @@ class IMAPClient(object):
         # capabilities may in the future be named SORT2 which is
         # still compatible with the current standard and will not
         # be detected by this method.
-        if capability.upper() in self._imap.capabilities:
-            return True
-        else:
-            return False
+        return capability.upper() in self.capabilities()
 
     def namespace(self):
         """Return the namespace for the account as a (personal, other,
