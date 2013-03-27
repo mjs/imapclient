@@ -111,6 +111,7 @@ class IMAPClient(object):
         self.log_file = sys.stderr
         self.normalise_times = True
 
+        self._cached_capabilities = None
         self._imap = self._create_IMAP4()
         self._imap._mesg = self._log    # patch in custom debug log method
         self._idle_tag = None
@@ -159,8 +160,37 @@ class IMAPClient(object):
 
     def capabilities(self):
         """Returns the server capability list.
+
+        If the session is authenticated and the server has returned a
+        CAPABILITY response at authentication time, this response
+        will be returned. Otherwise, the CAPABILITY command will be
+        issued to the server, with the results cached for future calls.
+
+        If the session is not yet authenticated, the cached
+        capabilities determined at connection time will be returned.
         """
+        # if a capability response has been cached, use that
+        if self._cached_capabilities:
+            return self._cached_capabilities
+
+        # If server returned an untagged CAPABILITY response (during
+        # authentication), cache it and return that.
+        response = self._imap.untagged_responses.pop('CAPABILITY', None)
+        if response:
+            return self._save_capabilities(response[0])
+
+        # if authenticated, but don't have a capability reponse, ask for one
+        if self._imap.state in ('SELECTED', 'AUTH'):
+            response = self._command_and_check('capability', unpack=True)
+            return self._save_capabilities(response)
+
+        # Just return capabilities that imaplib grabbed at connection
+        # time (pre-auth)
         return self._imap.capabilities
+
+    def _save_capabilities(self, raw_response):
+        self._cached_capabilities = tuple(raw_response.upper().split())
+        return self._cached_capabilities
 
     def has_capability(self, capability):
         """Return ``True`` if the IMAP server has the given *capability*.
@@ -170,10 +200,7 @@ class IMAPClient(object):
         # capabilities may in the future be named SORT2 which is
         # still compatible with the current standard and will not
         # be detected by this method.
-        if capability.upper() in self._imap.capabilities:
-            return True
-        else:
-            return False
+        return capability.upper() in self.capabilities()
 
     def namespace(self):
         """Return the namespace for the account as a (personal, other,
@@ -498,28 +525,45 @@ class IMAPClient(object):
         See `RFC 3501 section 6.4.4 <http://tools.ietf.org/html/rfc3501#section-6.4.4>`_
         for more details.
         """
-        if not criteria:
-            raise ValueError('no criteria specified')
-
-        if isinstance(criteria, basestring):
-            criteria = (criteria,)
-        crit_list = ['(%s)' % c for c in criteria]
+        criteria = normalise_search_criteria(criteria)
 
         if self.use_uid:
             if charset:
                 args = ['CHARSET', charset]
             else:
                 args = []
-            args.extend(crit_list)
+            args.extend(criteria)
             typ, data = self._imap.uid('SEARCH', *args)
         else:
-            typ, data = self._imap.search(charset, *crit_list)
+            typ, data = self._imap.search(charset, *criteria)
 
         self._checkok('search', typ, data)
         data = data[0]
         if data is None:    # no untagged responses...
             return []
         return [long(i) for i in data.split()]
+
+    def thread(self, algorithm='REFERENCES', criteria='ALL', charset='UTF-8'):
+        """Return a list of messages threads matching *criteria*.
+
+        Each thread is a list of messages ids.
+
+        See `RFC 5256 <https://tools.ietf.org/html/rfc5256>`_ for more details.
+        """
+        if not self.has_capability('THREAD=' + algorithm):
+            raise ValueError('server does not support %s threading algorithm'
+                             % algorithm)
+
+        if not criteria:
+            raise ValueError('no criteria specified')
+
+        args = [algorithm]
+        if charset:
+            args.append(charset)
+        args.extend(normalise_search_criteria(criteria))
+
+        data = self._command_and_check('thread', *args, uid=True)
+        return parse_response(data)
 
     def sort(self, sort_criteria, criteria='ALL', charset='UTF-8'):
         """Return a list of message ids sorted by *sort_criteria* and
@@ -547,13 +591,9 @@ class IMAPClient(object):
             sort_criteria = (sort_criteria,)
         sort_criteria = seq_to_parenlist([s.upper() for s in sort_criteria])
 
-        if isinstance(criteria, basestring):
-            criteria = (criteria,)
-        crit_list = ['(%s)' % c for c in criteria]
-
         ids = self._command_and_check('sort', sort_criteria,
                                       charset,
-                                      *crit_list,
+                                      *normalise_search_criteria(criteria),
                                       uid=True, unpack=True)
         return [long(i) for i in ids.split()]
 
@@ -905,6 +945,13 @@ def seq_to_parenlist(flags):
     elif not isinstance(flags, (tuple, list)):
         raise ValueError('invalid flags list: %r' % flags)
     return '(%s)' % ' '.join(flags)
+
+def normalise_search_criteria(criteria):
+    if not criteria:
+        raise ValueError('no criteria specified')
+    if isinstance(criteria, basestring):
+        criteria = (criteria,)
+    return ['(%s)' % c for c in criteria]
 
 def datetime_to_imap(dt):
     """Convert a datetime instance to a IMAP datetime string.
