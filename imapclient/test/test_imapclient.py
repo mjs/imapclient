@@ -29,9 +29,10 @@ class TestListFolders(IMAPClientTest):
         self.client._imap._untagged_response.return_value = ('LIST', sentinel.folder_data)
         self.client._proc_folder_list = Mock(return_value=sentinel.folder_list)
 
-        folders = self.client.list_folders(sentinel.dir, sentinel.pattern)
+        folders = self.client.list_folders('foo', 'bar')
 
-        self.assertEqual(self.client._imap._simple_command.call_args, (('LIST', sentinel.dir, sentinel.pattern), {}))
+        self.client._imap._simple_command.assert_called_once_with(
+            'LIST', '"foo"', '"bar"')
         self.assertEqual(self.client._proc_folder_list.call_args, ((sentinel.folder_data,), {}))
         self.assertTrue(folders is sentinel.folder_list)
 
@@ -40,9 +41,10 @@ class TestListFolders(IMAPClientTest):
         self.client._imap._untagged_response.return_value = ('LSUB', sentinel.folder_data)
         self.client._proc_folder_list = Mock(return_value=sentinel.folder_list)
 
-        folders = self.client.list_sub_folders(sentinel.dir, sentinel.pattern)
+        folders = self.client.list_sub_folders('foo', 'bar')
 
-        self.assertEqual(self.client._imap._simple_command.call_args, (('LSUB', sentinel.dir, sentinel.pattern), {}))
+        self.client._imap._simple_command.assert_called_once_with(
+            'LSUB', '"foo"', '"bar"')
         self.assertEqual(self.client._proc_folder_list.call_args, ((sentinel.folder_data,), {}))
         self.assertTrue(folders is sentinel.folder_list)
 

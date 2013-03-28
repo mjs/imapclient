@@ -19,9 +19,9 @@ try:
 except ImportError:
     oauth2 = None
 
-from .imap_utf7 import encode as encode_utf7, from_bytes
+from .imap_utf7 import encode as encode_utf7, from_bytes, decode as decode_utf7
 from .fixed_offset import FixedOffset
-from .six import moves, iteritems, text_type, integer_types, PY3
+from .six import moves, iteritems, text_type, integer_types, PY3, binary_type
 xrange = moves.xrange
 
 if PY3:
@@ -254,9 +254,8 @@ class IMAPClient(object):
         return self._do_list('LSUB', directory, pattern)
 
     def _do_list(self, cmd, directory, pattern):
-        if self.folder_encode:
-            directory = encode_utf7(directory)
-            pattern = encode_utf7(pattern)
+        directory = self.encode_quote(directory)
+        pattern = self.encode_quote(pattern)
         typ, dat = self._imap._simple_command(cmd, directory, pattern)
         dat = from_bytes(dat, self.folder_encode)
         self._checkok(cmd, typ, dat)
@@ -296,7 +295,7 @@ class IMAPClient(object):
              'UIDNEXT': 11,
              'UIDVALIDITY': 1239278212}
         """
-        self._command_and_check('select', self._imap._quote(folder), readonly)
+        self._command_and_check('select', self.encode_quote(folder), readonly)
         untagged = self._imap.untagged_responses
         untagged = from_bytes(untagged, self.folder_encode)
         return self._process_select_response(untagged)
@@ -429,7 +428,7 @@ class IMAPClient(object):
             what = (what,)
         what_ = '(%s)' % (' '.join(what))
 
-        data = self._command_and_check('status', self._imap._quote(folder), what_, unpack=True)
+        data = self._command_and_check('status', self.encode_quote(folder), what_, unpack=True)
         _, status_items = parse_response([data])
         return dict(as_pairs(status_items))
 
@@ -442,37 +441,37 @@ class IMAPClient(object):
     def create_folder(self, folder):
         """Create *folder* on the server returning the server response string.
         """
-        return self._command_and_check('create', self._imap._quote(folder), unpack=True)
+        return self._command_and_check('create', self.encode_quote(folder), unpack=True)
 
     def rename_folder(self, old_name, new_name):
         """Change the name of a folder on the server.
         """
         return self._command_and_check('rename',
-                                       self._imap._quote(old_name),
-                                       self._imap._quote(new_name),
+                                       self.encode_quote(old_name),
+                                       self.encode_quote(new_name),
                                        unpack=True)
 
     def delete_folder(self, folder):
         """Delete *folder* on the server returning the server response string.
         """
-        return self._command_and_check('delete', self._imap._quote(folder), unpack=True)
+        return self._command_and_check('delete', self.encode_quote(folder), unpack=True)
 
     def folder_exists(self, folder):
         """Return ``True`` if *folder* exists on the server.
         """
-        data = self._command_and_check('list', '', self._imap._quote(folder))
+        data = self._command_and_check('list', '', self.encode_quote(folder))
         data = [x for x in data if x]
         return len(data) == 1 and data[0] != None
 
     def subscribe_folder(self, folder):
         """Subscribe to *folder*, returning the server response string.
         """
-        return self._command_and_check('subscribe', self._imap._quote(folder))
+        return self._command_and_check('subscribe', self.encode_quote(folder))
 
     def unsubscribe_folder(self, folder):
         """Unsubscribe to *folder*, returning the server response string.
         """
-        return self._command_and_check('unsubscribe', self._imap._quote(folder))
+        return self._command_and_check('unsubscribe', self.encode_quote(folder))
 
     def search(self, criteria='ALL', charset=None):
         """Return a list of messages ids matching *criteria*.
@@ -726,7 +725,7 @@ class IMAPClient(object):
         else:
             time_val = None
         return self._command_and_check('append',
-                                       self._imap._quote(folder),
+                                       self.encode_quote(folder),
                                        seq_to_parenlist(flags),
                                        time_val, msg.encode('ascii'),
                                        unpack=True)
@@ -738,7 +737,7 @@ class IMAPClient(object):
         """
         return self._command_and_check('copy',
                                        messages_to_str(messages),
-                                       self._imap._quote(folder),
+                                       self.encode_quote(folder),
                                        uid=True, unpack=True)
 
     def expunge(self):
@@ -770,7 +769,7 @@ class IMAPClient(object):
         """Returns a list of ``(who, acl)`` tuples describing the
         access controls for *folder*.
         """
-        data = self._command_and_check('getacl', self._imap._quote(folder))
+        data = self._command_and_check('getacl', self.encode_quote(folder))
         parts = list(response_lexer.TokenSource(data))
         parts = parts[1:]       # First item is folder name
         return [(parts[i], parts[i+1]) for i in xrange(0, len(parts), 2)]
@@ -782,7 +781,7 @@ class IMAPClient(object):
         server response string.
         """
         return self._command_and_check('setacl',
-                                       self._imap._quote(folder),
+                                       self.encode_quote(folder),
                                        who, what,
                                        unpack=True)
 
@@ -811,11 +810,6 @@ class IMAPClient(object):
         unpack = pop_with_default(kwargs, 'unpack', False)
         uid = pop_with_default(kwargs, 'uid', False)
         assert not kwargs, "unexpected keyword args: " + ', '.join(kwargs)
-
-        if self.folder_encode:
-            # "encode" all args to modified UTF-7 just in case there's folder
-            # names or flags
-            args = [encode_utf7(arg) for arg in args]
 
         if uid and self.use_uid:
             typ, data = self._imap.uid(command, *args)
@@ -887,6 +881,14 @@ class IMAPClient(object):
     def _log(self, text):
         self.log_file.write('%s %s\n' % (datetime.now().strftime('%M:%S.%f'), text))
         self.log_file.flush()
+
+    def encode_quote(self, folder_name):
+        """Encode the folder name to modified utf-7 and quote it."""
+        if isinstance(folder_name, binary_type):
+            folder_name = folder_name.decode('ascii')
+        if self.folder_encode:
+            folder_name = encode_utf7(folder_name)
+        return self._imap._quote(folder_name)
 
 
 def messages_to_str(messages):
