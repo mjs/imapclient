@@ -207,8 +207,8 @@ class IMAPClient(object):
         character and ``%`` matches 0 or more characters except the
         folder delimiter.
 
-        Folder names are always returned as unicode strings except if
-        folder_decode is not set.
+        Folder names are always returned as unicode strings, and decoded from
+        modifier utf-7, except if folder_decode is not set.
         """
         return self._do_list('LIST', directory, pattern)
 
@@ -725,7 +725,6 @@ class IMAPClient(object):
                 time_val = time_val.encode('ascii')
         else:
             time_val = None
-        flags = self.quote_encode_flags(flags)
         return self._command_and_check('append',
                                        self._imap._quote(folder),
                                        seq_to_parenlist(flags),
@@ -839,7 +838,6 @@ class IMAPClient(object):
         """
         if not messages:
             return {}
-        flags = self.quote_encode_flags(flags)
         data = self._command_and_check('store',
                                        messages_to_str(messages),
                                        cmd,
@@ -889,15 +887,6 @@ class IMAPClient(object):
     def _log(self, text):
         self.log_file.write('%s %s\n' % (datetime.now().strftime('%M:%S.%f'), text))
         self.log_file.flush()
-
-    def quote_encode_flags(self, flags):
-        """Encode to modified utf-7 if needed and quote."""
-        if isinstance(flags, text_type):
-            flags = (flags,)
-        flags = [self._imap._quote(flag) for flag in flags]
-        if self.folder_encode:
-            flags = [encode_utf7(flag) for flag in flags]
-        return flags
 
 
 def messages_to_str(messages):
