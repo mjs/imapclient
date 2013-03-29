@@ -459,7 +459,7 @@ class IMAPClient(object):
     def folder_exists(self, folder):
         """Return ``True`` if *folder* exists on the server.
         """
-        data = self._command_and_check('list', '', self.encode_quote(folder))
+        data = self._command_and_check('list', '""', self.encode_quote(folder))
         data = [x for x in data if x]
         return len(data) == 1 and data[0] != None
 
