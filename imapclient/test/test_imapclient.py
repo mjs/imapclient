@@ -1,4 +1,4 @@
-# Copyright (c) 2012, Menno Smits
+# Copyright (c) 2013, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -391,6 +391,83 @@ class TestNamespace(IMAPClientTest):
             (("#shared/", "/"), ("#public/", "/"), ("#ftp/", "/"), ("#news.", ".")),
             ))
 
+class TestCapabilities(IMAPClientTest):
+
+    def test_preauth(self):
+        self.client._imap.capabilities = ('FOO', 'BAR')
+        self.client._imap.untagged_responses = {}
+
+        self.assertEquals(self.client.capabilities(), ('FOO', 'BAR'))
+
+    def test_server_returned_capability_after_auth(self):
+        self.client._imap.capabilities = ('FOO',)
+        self.client._imap.untagged_responses = {'CAPABILITY': ['FOO MORE']}
+
+        self.assertEquals(self.client._cached_capabilities, None)
+        self.assertEquals(self.client.capabilities(), ('FOO', 'MORE'))
+        self.assertEquals(self.client._cached_capabilities, ('FOO', 'MORE'))
+
+    def test_caching(self):
+        self.client._imap.capabilities = ('FOO',)
+        self.client._imap.untagged_responses = {}
+        self.client._cached_capabilities = ('FOO', 'MORE')
+
+        self.assertEquals(self.client.capabilities(), ('FOO', 'MORE'))
+
+    def test_post_auth_request(self):
+        self.client._imap.capabilities = ('FOO',)
+        self.client._imap.untagged_responses = {}
+        self.client._imap.state = 'SELECTED'
+        self.client._imap.capability.return_value = ('OK', ['FOO BAR'])
+
+        self.assertEquals(self.client.capabilities(), ('FOO', 'BAR'))
+        self.assertEquals(self.client._cached_capabilities, ('FOO', 'BAR'))
+
+
+class TestThread(IMAPClientTest):
+
+    def test_thread_without_uid(self):
+        self.client._cached_capabilities = ('THREAD=REFERENCES',)
+        self.client.use_uid = False
+        self.client._imap.thread.return_value = ('OK', ['(1 2)(3)(4 5 6)'])
+
+        threads = self.client.thread()
+
+        self.assertSequenceEqual(threads, ((1, 2), (3,), (4, 5, 6)))
+
+    def test_thread_with_uid(self):
+        self.client._cached_capabilities = ('THREAD=REFERENCES',)
+        self.client.use_uid = True
+        self.client._imap.uid.return_value = ('OK', ['(1 2)(3)(4 5 6)'])
+
+        threads = self.client.thread()
+
+        self.assertSequenceEqual(threads, ((1, 2), (3,), (4, 5, 6)))
+
+    def test_no_support(self):
+        self.client._cached_capabilities = ('NOT-THREAD',)
+        self.assertRaises(ValueError, self.client.thread)
+
+    def test_no_support2(self):
+        self.client._cached_capabilities = ('THREAD=FOO',)
+        self.assertRaises(ValueError, self.client.thread)
+
+    def test_all_args_with_uid(self):
+        self.client._cached_capabilities = ('THREAD=FOO',)
+        self.client._imap.uid.return_value = ('OK', [])
+
+        self.client.thread(algorithm='FOO', criteria='STUFF', charset='ASCII')
+
+        self.client._imap.uid.assert_called_once_with('thread', 'FOO', 'ASCII', '(STUFF)')
+
+    def test_all_args_without_uid(self):
+        self.client.use_uid = False
+        self.client._cached_capabilities = ('THREAD=FOO',)
+        self.client._imap.thread.return_value = ('OK', [])
+
+        self.client.thread(algorithm='FOO', criteria='STUFF', charset='ASCII')
+
+        self.client._imap.thread.assert_called_once_with('FOO', 'ASCII','(STUFF)')
 
 if __name__ == '__main__':
     unittest.main()

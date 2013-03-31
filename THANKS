@@ -32,7 +32,15 @@ Andrew Scheller
 Brian Neal
     Gmail labels methods.
     
+Dave Eckhardt
+    Stream connection support.
 
+Zac Witte
+    OAUTH2 support.
+
+Lukasz Mierzwa     
+    THREAD support. 
+    
 Bug Reports
 ------------
 Brian Jackson

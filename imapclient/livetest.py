@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (c) 2012, Menno Smits
+# Copyright (c) 2013, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -133,6 +133,13 @@ def createLiveTestClass(conf, use_uid):
                     self.client.has_capability('AUTH=NTLM') and
                     self.client.has_capability('AUTH=GSSAPI'))
 
+        def append_msg(self, msg, folder=None):
+            if not folder:
+                folder = self.base_folder
+            self.client.append(folder, msg)
+            if self.is_gmail():
+                self.client.noop()
+
         def test_capabilities(self):
             caps = self.client.capabilities()
             self.assertIsInstance(caps, tuple)
@@ -166,7 +173,7 @@ def createLiveTestClass(conf, use_uid):
             self.client.close_folder()
 
         def test_select_read_only(self):
-            self.client.append(self.base_folder, SIMPLE_MESSAGE)
+            self.append_msg(SIMPLE_MESSAGE)
             self.assertNotIn('READ-ONLY', self.client._imap.untagged_responses)
 
             resp = self.client.select_folder(self.base_folder, readonly=True)
@@ -291,7 +298,7 @@ def createLiveTestClass(conf, use_uid):
                 self.assertEqual(status['UNSEEN'], 0)
 
                 # Add a message to the folder, it should show up now.
-                self.client.append(new_folder, SIMPLE_MESSAGE)
+                self.append_msg(SIMPLE_MESSAGE, new_folder)
 
                 status = self.client.folder_status(new_folder)
                 self.assertEqual(status['MESSAGES'], 1)
@@ -331,7 +338,7 @@ def createLiveTestClass(conf, use_uid):
             self.assertEqual(msginfo['RFC822'], SIMPLE_MESSAGE)
 
         def test_flags(self):
-            self.client.append(self.base_folder, SIMPLE_MESSAGE)
+            self.append_msg(SIMPLE_MESSAGE)
             msg_id = self.client.search()[0]
 
             def _flagtest(func, args, expected_flags):
@@ -350,7 +357,7 @@ def createLiveTestClass(conf, use_uid):
         def test_gmail_labels(self):
             self.skip_unless_capable('X-GM-EXT-1', 'labels')
 
-            self.client.append(self.base_folder, SIMPLE_MESSAGE)
+            self.append_msg(SIMPLE_MESSAGE)
             msg_id = self.client.search()[0]
 
             def _labeltest(func, args, expected_labels):
@@ -382,6 +389,7 @@ def createLiveTestClass(conf, use_uid):
                 else:
                     flags = ()
                 self.client.append(self.base_folder, msg, flags)
+            self.client.noop()    # For Gmail
 
             # Check we see all messages
             messages_all = self.client.search('ALL')
@@ -421,8 +429,31 @@ def createLiveTestClass(conf, use_uid):
             expected = [first_id, first_id - 1, first_id - 2]
             self.assertListEqual(messages, expected)
 
+        def test_thread(self):
+            thread_algo = None
+            for cap in self.client.capabilities():
+                if cap.startswith('THREAD='):
+                    thread_algo = cap.split('=')[-1]
+                    break
+            if not thread_algo:
+                return self.skipTest("Server doesn't support THREAD")
+
+            msg_tmpl = 'Subject: %s\r\n\r\nBody'
+            subjects = ('a', 'b', 'c')
+            for subject in subjects:
+                msg = msg_tmpl % subject
+                self.client.append(self.base_folder, msg)
+
+            messages = self.client.thread()
+
+            self.assertEqual(len(messages), 3)
+            self.assertIsInstance(messages[0], tuple)
+            first_id = messages[0][0]
+            expected = ((first_id,), (first_id + 1,), (first_id + 2,))
+            self.assertTupleEqual(messages, expected)
+
         def test_copy(self):
-            self.client.append(self.base_folder, SIMPLE_MESSAGE)
+            self.append_msg(SIMPLE_MESSAGE)
             target_folder = self.add_prefix_to_folder('target')
             self.client.create_folder(target_folder)
             msg_id = self.client.search()[0]
@@ -444,7 +475,7 @@ def createLiveTestClass(conf, use_uid):
             msg = ('Message-ID: %s\r\n' % msg_id_header) + MULTIPART_MESSAGE
 
             self.client.select_folder(self.base_folder)
-            self.client.append(self.base_folder, msg)
+            self.append_msg(msg)
 
             fields = ['RFC822', 'FLAGS', 'INTERNALDATE', 'ENVELOPE']
             msg_id = self.client.search()[0]
@@ -490,7 +521,7 @@ def createLiveTestClass(conf, use_uid):
 
             # A little dance to ensure MODSEQ tracking is turned on - I'm looking at you Dovecot!
             self.client.select_folder(self.base_folder)
-            self.client.append(self.base_folder, SIMPLE_MESSAGE)
+            self.append_msg(SIMPLE_MESSAGE)
             msg_id = self.client.search()[0]
             self.client.fetch(msg_id, ["MODSEQ"])
             self.client.close_folder()
@@ -498,7 +529,7 @@ def createLiveTestClass(conf, use_uid):
 
             # Actual testing starts here
             maxModSeq = int(self.client.select_folder(self.base_folder)['HIGHESTMODSEQ'][0])
-            self.client.append(self.base_folder, SIMPLE_MESSAGE)
+            self.append_msg(SIMPLE_MESSAGE)
             msg_id = self.client.search()[0]
             resp = self.client.fetch(msg_id, ['FLAGS'], ['CHANGEDSINCE %d' % maxModSeq])
             self.assertIn('MODSEQ', resp[msg_id])
@@ -509,8 +540,8 @@ def createLiveTestClass(conf, use_uid):
 
         def test_BODYSTRUCTURE(self):
             self.client.select_folder(self.base_folder)
-            self.client.append(self.base_folder, SIMPLE_MESSAGE)
-            self.client.append(self.base_folder, MULTIPART_MESSAGE)
+            self.append_msg(SIMPLE_MESSAGE)
+            self.append_msg(MULTIPART_MESSAGE)
             msgs = self.client.search()
 
             fetched = self.client.fetch(msgs, ['BODY', 'BODYSTRUCTURE'])
@@ -571,9 +602,16 @@ def createLiveTestClass(conf, use_uid):
             self.assertTrue(isinstance(more_responses, list))
 
             # Check for IDLE data returned by idle_done()
+
+            # Gmail now delays updates following APPEND making this
+            # part of the test impractical.
+            if self.is_gmail():
+                return
+
             self.client.idle()
             client2.select_folder(self.base_folder)
             client2.append(self.base_folder, SIMPLE_MESSAGE)
+
             time.sleep(2)    # Allow some time for the IDLE response to be sent
 
             text, responses = self.client.idle_done()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2012, Menno Smits
+# Copyright (c) 2013, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -10,12 +10,13 @@ import distribute_setup
 distribute_setup.use_setuptools()
 
 from setuptools import setup, find_packages
+from setuptools.command.test import test as TestCommand
 
 import imapclient
 version = imapclient.__version__
 
 desc = """\
-IMAPClient aims to be a easy-to-use, Pythonic and complete IMAP client library with no dependencies outside the Python standard library.
+IMAPClient aims to be a easy-to-use, Pythonic and complete IMAP client library.
 
 Features:
     * Arguments and return values are natural Python types.
@@ -26,8 +27,23 @@ Features:
     * Convenience methods are provided for commonly used functionality.
     * Exceptions are raised when errors occur.
 
-IMAPClient includes units tests for more complex functionality and a automated functional test that can be run against a live IMAP server.
+IMAPClient includes units tests for more complex functionality and an automated functional test that can be run against a live IMAP server.
 """
+
+class TestDiscoverCommand(TestCommand):
+    """
+    Use unittest2 to discover and run tests
+    """
+
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        from imapclient.test.util import unittest   # this will import unittest2
+        unittest.main(argv=['', 'discover'])
+
 
 setup(name='IMAPClient',
       version=version,
@@ -38,8 +54,7 @@ setup(name='IMAPClient',
       download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.zip' % version,
       packages=find_packages(),
       package_data=dict(imapclient=['examples/*.py']),
-      description="Easy-to-use, Pythonic and complete IMAP client library with "
-          "no dependencies outside the Python standard library.",
+      description="Easy-to-use, Pythonic and complete IMAP client library",
       long_description=desc,
       classifiers=[
           'Development Status :: 5 - Production/Stable',
@@ -51,4 +66,6 @@ setup(name='IMAPClient',
           'Topic :: Communications :: Email :: Post-Office :: IMAP',
           'Topic :: Internet',
           'Topic :: Software Development :: Libraries :: Python Modules',
-          'Topic :: System :: Networking'])
+          'Topic :: System :: Networking'],
+      cmdclass={'test': TestDiscoverCommand},
+)

@@ -1,4 +1,4 @@
-# Copyright (c) 2012, Menno Smits
+# Copyright (c) 2013, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -14,12 +14,13 @@ from operator import itemgetter
 
 from . import response_lexer
 
+# Confusingly, this module is for OAUTH v1, not v2
 try:
-    import oauth2
+    import oauth2 as oauth_module
 except ImportError:
-    oauth2 = None
+    oauth_module = None
 
-from .imap_utf7 import encode as encode_utf7, from_bytes, decode as decode_utf7
+from .imap_utf7 import encode as encode_utf7, from_bytes
 from .fixed_offset import FixedOffset
 from .six import moves, iteritems, text_type, integer_types, PY3, binary_type
 xrange = moves.xrange
@@ -71,6 +72,11 @@ class IMAPClient(object):
     If *ssl* is ``True`` an SSL connection will be made (defaults to
     ``False``).
 
+    If *stream* is ``True`` then *host* is used as the command to run
+    to establish a connection to the IMAP server (defaults to
+    ``False``). This is useful for exotic connection or authentication
+    setups.
+
     The *normalise_times* attribute specifies whether datetimes
     returned by ``fetch()`` are normalised to the local system time
     and include no timezone information (native), or are datetimes
@@ -94,24 +100,33 @@ class IMAPClient(object):
     AbortError = imaplib.IMAP4.abort
     ReadOnlyError = imaplib.IMAP4.readonly
 
-    def __init__(self, host, port=None, use_uid=True, ssl=False):
-        if port is None:
+    def __init__(self, host, port=None, use_uid=True, ssl=False, stream=False):
+        if stream:
+            if port is not None:
+                raise ValueError("can't set 'port' when 'stream' True")
+            if ssl:
+                raise ValueError("can't use 'ssl' when 'stream' is True")
+        elif port is None:
             port = ssl and 993 or 143
 
         self.host = host
         self.port = port
         self.ssl = ssl
+        self.stream = stream
         self.use_uid = use_uid
         self.folder_encode = True
         self.log_file = sys.stderr
         self.normalise_times = True
 
+        self._cached_capabilities = None
         self._imap = self._create_IMAP4()
         self._imap._mesg = self._log    # patch in custom debug log method
         self._idle_tag = None
 
     def _create_IMAP4(self):
         # Create the IMAP instance in a separate method to make unit tests easier
+        if self.stream:
+            return imaplib.IMAP4_stream(self.host)
         ImapClass = self.ssl and imaplib.IMAP4_SSL or imaplib.IMAP4
         return ImapClass(self.host, self.port)
 
@@ -125,15 +140,23 @@ class IMAPClient(object):
                     consumer_key='anonymous', consumer_secret='anonymous'):
         """Authenticate using the OAUTH method.
 
-        This only works with IMAP servers that support OAUTH (eg. Gmail).
+        This only works with IMAP servers that support OAUTH (e.g. Gmail).
         """
-        if oauth2:
-            token = oauth2.Token(oauth_token, oauth_token_secret)
-            consumer = oauth2.Consumer(consumer_key, consumer_secret)
-            xoauth_callable = lambda x: oauth2.build_xoauth_string(url, consumer, token)
+        if oauth_module:
+            token = oauth_module.Token(oauth_token, oauth_token_secret)
+            consumer = oauth_module.Consumer(consumer_key, consumer_secret)
+            xoauth_callable = lambda x: oauth_module.build_xoauth_string(url, consumer, token)
             return self._command_and_check('authenticate', 'XOAUTH', xoauth_callable, unpack=True)
         else:
-            raise self.Error('The optional oauth2 dependency is needed for oauth authentication')
+            raise self.Error('The optional oauth2 package is needed for OAUTH authentication')
+
+    def oauth2_login(self, user, access_token):
+        """Authenticate using the OAUTH2 method.
+
+        This only works with IMAP servers that support OAUTH2 (e.g. Gmail).
+        """
+        auth_string = lambda x: 'user=%s\1auth=Bearer %s\1\1' % (user, access_token)
+        return self._command_and_check('authenticate', 'XOAUTH2', auth_string)
 
     def logout(self):
         """Logout, returning the server response.
@@ -145,9 +168,38 @@ class IMAPClient(object):
 
     def capabilities(self):
         """Returns the server capability list.
+
+        If the session is authenticated and the server has returned a
+        CAPABILITY response at authentication time, this response
+        will be returned. Otherwise, the CAPABILITY command will be
+        issued to the server, with the results cached for future calls.
+
+        If the session is not yet authenticated, the cached
+        capabilities determined at connection time will be returned.
         """
-        capabilities = from_bytes(self._imap.capabilities, self.folder_encode)
-        return capabilities
+        # if a capability response has been cached, use that
+        if self._cached_capabilities:
+            return self._cached_capabilities
+
+        # If server returned an untagged CAPABILITY response (during
+        # authentication), cache it and return that.
+        response = self._imap.untagged_responses.pop('CAPABILITY', None)
+        if response:
+            return self._save_capabilities(response[0])
+
+        # if authenticated, but don't have a capability reponse, ask for one
+        if self._imap.state in ('SELECTED', 'AUTH'):
+            response = self._command_and_check('capability', unpack=True)
+            return self._save_capabilities(response)
+
+        # Just return capabilities that imaplib grabbed at connection
+        # time (pre-auth)
+        return from_bytes(self._imap.capabilities, folder_encode=False)
+
+    def _save_capabilities(self, raw_response):
+        raw_response = from_bytes(raw_response, folder_encode=False)
+        self._cached_capabilities = tuple(raw_response.upper().split())
+        return self._cached_capabilities
 
     def has_capability(self, capability):
         """Return ``True`` if the IMAP server has the given *capability*.
@@ -157,10 +209,7 @@ class IMAPClient(object):
         # capabilities may in the future be named SORT2 which is
         # still compatible with the current standard and will not
         # be detected by this method.
-        if capability.upper() in self.capabilities():
-            return True
-        else:
-            return False
+        return capability.upper() in self.capabilities()
 
     def namespace(self):
         """Return the namespace for the account as a (personal, other,
@@ -490,22 +539,17 @@ class IMAPClient(object):
         See `RFC 3501 section 6.4.4 <http://tools.ietf.org/html/rfc3501#section-6.4.4>`_
         for more details.
         """
-        if not criteria:
-            raise ValueError('no criteria specified')
-
-        if isinstance(criteria, text_type):
-            criteria = (criteria,)
-        crit_list = ['(%s)' % c for c in criteria]
+        criteria = normalise_search_criteria(criteria)
 
         if self.use_uid:
             if charset:
                 args = ['CHARSET', charset]
             else:
                 args = []
-            args.extend(crit_list)
+            args.extend(criteria)
             typ, data = self._imap.uid('SEARCH', *args)
         else:
-            typ, data = self._imap.search(charset, *crit_list)
+            typ, data = self._imap.search(charset, *criteria)
 
         data = from_bytes(data, self.folder_encode)
 
@@ -514,6 +558,28 @@ class IMAPClient(object):
         if data is None:    # no untagged responses...
             return []
         return [long(i) for i in data.split()]
+
+    def thread(self, algorithm='REFERENCES', criteria='ALL', charset='UTF-8'):
+        """Return a list of messages threads matching *criteria*.
+
+        Each thread is a list of messages ids.
+
+        See `RFC 5256 <https://tools.ietf.org/html/rfc5256>`_ for more details.
+        """
+        if not self.has_capability('THREAD=' + algorithm):
+            raise ValueError('server does not support %s threading algorithm'
+                             % algorithm)
+
+        if not criteria:
+            raise ValueError('no criteria specified')
+
+        args = [algorithm]
+        if charset:
+            args.append(charset)
+        args.extend(normalise_search_criteria(criteria))
+
+        data = self._command_and_check('thread', *args, uid=True)
+        return parse_response(data)
 
     def sort(self, sort_criteria, criteria='ALL', charset='UTF-8'):
         """Return a list of message ids sorted by *sort_criteria* and
@@ -541,13 +607,9 @@ class IMAPClient(object):
             sort_criteria = (sort_criteria,)
         sort_criteria = seq_to_parenlist([s.upper() for s in sort_criteria])
 
-        if isinstance(criteria, text_type):
-            criteria = (criteria,)
-        crit_list = ['(%s)' % c for c in criteria]
-
         ids = self._command_and_check('sort', sort_criteria,
                                       charset,
-                                      *crit_list,
+                                      *normalise_search_criteria(criteria),
                                       uid=True, unpack=True)
         return [long(i) for i in ids.split()]
 
@@ -900,6 +962,13 @@ def messages_to_str(messages):
     elif not isinstance(messages, (tuple, list)):
         raise ValueError('invalid message list: %r' % messages)
     return ','.join([text_type(m) for m in messages])
+
+def normalise_search_criteria(criteria):
+    if not criteria:
+        raise ValueError('no criteria specified')
+    if isinstance(criteria, basestring):
+        criteria = (criteria,)
+    return ['(%s)' % c for c in criteria]
 
 def datetime_to_imap(dt):
     """Convert a datetime instance to a IMAP datetime string.
