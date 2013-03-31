@@ -966,7 +966,7 @@ def messages_to_str(messages):
 def normalise_search_criteria(criteria):
     if not criteria:
         raise ValueError('no criteria specified')
-    if isinstance(criteria, basestring):
+    if isinstance(criteria, text_type):
         criteria = (criteria,)
     return ['(%s)' % c for c in criteria]
 
