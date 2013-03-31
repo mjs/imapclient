@@ -155,8 +155,8 @@ class TestParseResponse(unittest.TestCase):
     def _test_parse_error(self, to_parse, expected_msg):
         if not isinstance(to_parse, list):
             to_parse = [to_parse]
-        self.assertRaisesRegexp(ParseError, expected_msg,
-                                parse_response, to_parse)
+        self.assertRaisesRegex(ParseError, expected_msg,
+                               parse_response, to_parse)
 
 
 class TestParseFetchResponse(unittest.TestCase):

@@ -16,3 +16,14 @@ def find_unittest2():
         return unittest2
 
 unittest = find_unittest2()
+
+def patch_TestCase():
+    TestCase = unittest.TestCase
+    # Older versions of unittest2 don't have
+    # TestCase.assertRaisesRegex # and newer version raises warnings
+    # when you use # assertRaisesRegexp. This helps deal with the
+    # mismatch.
+    if not hasattr(TestCase, 'assertRaisesRegex'):
+         TestCase.assertRaisesRegex = TestCase.assertRaisesRegexp
+
+patch_TestCase()
