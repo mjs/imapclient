@@ -422,8 +422,8 @@ class IMAPClient(object):
              (1, 'EXISTS'),
              (1, 'FETCH', ('FLAGS', ('\\NotJunk',)))]
         """
-        # in py2, imaplib has sslobj (for ssl connexions), and sock for non-sll
-        # in the py3 version it's just sock
+        # In py2, imaplib has sslobj (for SSL connections), and sock for non-SSL.
+        # In the py3 version it's just sock.
         sock = getattr(self._imap, 'sslobj', self._imap.sock)
 
         # make the socket non-blocking so the timeout can be
@@ -438,6 +438,14 @@ class IMAPClient(object):
                         line = from_bytes(self._imap._get_line(), self.folder_encode)
                     except (socket.timeout, socket.error):
                         break
+                    except IMAPClient.AbortError:
+                        # An imaplib.IMAP4.abort with "EOF" is raised
+                        # under Python 3
+                        err = sys.exc_info()[1]
+                        if 'EOF' in err.args[0]:
+                            break
+                        else:
+                            raise
                     else:
                         resps.append(_parse_untagged_response(line))
             return resps
