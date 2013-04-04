@@ -26,9 +26,6 @@ from __future__ import unicode_literals
 
 from .six import text_type, binary_type, iteritems
 
-class FolderNameError(ValueError):
-    pass
-
 PRINTABLE = set(range(0x20, 0x26)) | set(range(0x27, 0x7f))
 
 def encode(s):

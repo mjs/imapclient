@@ -4,8 +4,8 @@
 
 from __future__ import unicode_literals
 
-from imapclient.six import binary_type, text_type, PY3
-from imapclient.imap_utf7 import decode, encode, FolderNameError
+from imapclient.six import text_type, PY3
+from imapclient.imap_utf7 import decode, encode
 from imapclient.test.util import unittest
 
 if PY3:
@@ -50,10 +50,6 @@ class IMAP4UTF7TestCase(unittest.TestCase):
         self.assertEqual(encode('&'), '&-')
         self.assertEqual(encode('&'), '&-')
         self.assertEqual(decode(b'&-'), '&')
-
-    def test_FolderNameError_super(self):
-        self.assertTrue(issubclass(FolderNameError, ValueError))
-
 
 if __name__ == '__main__':
     unittest.main()
