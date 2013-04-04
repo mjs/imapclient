@@ -31,8 +31,7 @@ PRINTABLE = set(range(0x20, 0x26)) | set(range(0x27, 0x7f))
 def encode(s):
     """Encode a folder name using IMAP modified UTF-7 encoding.
 
-    Even though we're using "encode" here the output is still a unicode string.
-
+    Despite the function's name, the output is still a unicode string.
     """
     if not isinstance(s, text_type):
         return s
@@ -42,7 +41,7 @@ def encode(s):
 
     def extend_result_if_chars_buffered():
         if _in:
-            r.extend(['&', modified_base64(''.join(_in)), '-'])
+            r.extend(['&', modified_utf7(''.join(_in)), '-'])
             del _in[:]
 
     for c in s:
@@ -62,11 +61,8 @@ def encode(s):
 def decode(s):
     """Decode a folder name from IMAP modified UTF-7 encoding to unicode.
 
-    Even though we're using "decode" here the input may still be a unicode
-    string.
-
-    If the input is bytes, it's first decoded to unicode.
-
+    Despite the function's name, the input may still be a unicode
+    string. If the input is bytes, it's first decoded to unicode.
     """
     if isinstance(s, binary_type):
         s = s.decode('latin-1')
@@ -82,23 +78,23 @@ def decode(s):
             if len(_in) == 1:
                 r.append('&')
             else:
-                r.append(modified_unbase64(''.join(_in[1:])))
+                r.append(modified_deutf7(''.join(_in[1:])))
             _in = []
         elif _in:
             _in.append(c)
         else:
             r.append(c)
     if _in:
-        r.append(modified_unbase64(''.join(_in[1:])))
+        r.append(modified_deutf7(''.join(_in[1:])))
 
     return ''.join(r)
 
-def modified_base64(s):
+def modified_utf7(s):
     # encode to utf-7: '\xff' => b'+AP8-', decode from latin-1 => '+AP8-'
     s_utf7 = s.encode('utf-7').decode('latin-1')
     return s_utf7[1:-1].replace('/', ',')
 
-def modified_unbase64(s):
+def modified_deutf7(s):
     s_utf7 = '+' + s.replace(',', '/') + '-'
     # encode to latin-1: '+AP8-' => b'+AP8-', decode from utf-7 => '\xff'
     return s_utf7.encode('latin-1').decode('utf-7')
