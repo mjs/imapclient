@@ -588,14 +588,17 @@ def createLiveTestClass(conf, use_uid):
             self.client.select_folder(self.base_folder)
             self.client.idle()
 
-            # Start a new connection and upload a new message
-            client2 = create_client_from_config(conf)
-            client2.select_folder(self.base_folder)
-            client2.append(self.base_folder, SIMPLE_MESSAGE)
+            try:
+                # Start a new connection and upload a new message
+                client2 = create_client_from_config(conf)
+                self.addCleanup(client2.logout)
+                client2.select_folder(self.base_folder)
+                client2.append(self.base_folder, SIMPLE_MESSAGE)
 
-            # Check for the idle data
-            responses = self.client.idle_check(timeout=5)
-            text, more_responses = self.client.idle_done()
+                # Check for the idle data
+                responses = self.client.idle_check(timeout=5)
+            finally:
+                text, more_responses = self.client.idle_done()
             self.assertIn((1, 'EXISTS'), responses)
             self.assertTrue(isinstance(text, text_type))
             self.assertGreater(len(text), 0)
@@ -609,12 +612,12 @@ def createLiveTestClass(conf, use_uid):
                 return
 
             self.client.idle()
-            client2.select_folder(self.base_folder)
-            client2.append(self.base_folder, SIMPLE_MESSAGE)
-
-            time.sleep(2)    # Allow some time for the IDLE response to be sent
-
-            text, responses = self.client.idle_done()
+            try:
+                client2.select_folder(self.base_folder)
+                client2.append(self.base_folder, SIMPLE_MESSAGE)
+                time.sleep(2)    # Allow some time for the IDLE response to be sent
+            finally:
+                text, responses = self.client.idle_done()
             self.assertIn((2, 'EXISTS'), responses)
             self.assertTrue(isinstance(text, text_type))
             self.assertGreater(len(text), 0)
@@ -630,6 +633,7 @@ def createLiveTestClass(conf, use_uid):
 
             # Start a new connection and upload a new message
             client2 = create_client_from_config(conf)
+            self.addCleanup(client2.logout)
             client2.select_folder(self.base_folder)
             client2.append(self.base_folder, SIMPLE_MESSAGE)
 
