@@ -727,15 +727,13 @@ def main():
     sys.modules['livetests'] = live_test_mod
 
     def add_test_class(name, klass):
-       klass.__name__ = name
-       setattr(live_test_mod, name, klass)
+        if not PY3:
+            name = name.encode('ascii')
+        klass.__name__ = name
+        setattr(live_test_mod, name, klass)
 
-    if PY3:
-        add_test_class('TestWithUIDs', createLiveTestClass(host_config, use_uid=True))
-        add_test_class('TestWithoutUIDs', createLiveTestClass(host_config, use_uid=False))
-    else:
-        add_test_class(b'TestWithUIDs', createLiveTestClass(host_config, use_uid=True))
-        add_test_class(b'TestWithoutUIDs', createLiveTestClass(host_config, use_uid=False))
+    add_test_class('TestWithUIDs', createLiveTestClass(host_config, use_uid=True))
+    add_test_class('TestWithoutUIDs', createLiveTestClass(host_config, use_uid=False))
 
     unittest.main(module='livetests')
 
