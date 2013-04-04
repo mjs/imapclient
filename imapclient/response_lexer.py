@@ -51,10 +51,9 @@ class TokenSource(object):
 
 
 class Lexer(object):
-    "A lexical analyzer class for IMAP"
-
-    #XXX document how this is the main bytes/string interface
-
+    """
+    A lexical analyzer class for IMAP
+    """
 
     def __init__(self):
         self.sources = None
