@@ -601,7 +601,8 @@ def createUidTestClass(conf, use_uid):
             if not self.client.has_capability('CONDSTORE'):
                 return self.skipTest("Server doesn't support CONDSTORE")
 
-            # A little dance to ensure MODSEQ tracking is turned on - I'm looking at you Dovecot!
+            # A little dance to ensure MODSEQ tracking is turned on.
+            # I'm looking at you Dovecot!
             self.client.select_folder(self.base_folder)
             self.append_msg(SIMPLE_MESSAGE)
             msg_id = self.client.search()[0]
