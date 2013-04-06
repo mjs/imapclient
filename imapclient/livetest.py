@@ -190,7 +190,7 @@ class TestGeneral(_TestBase):
         self.assertGreater(len(resp['FLAGS']), 1)
 
     def test_list_folders(self):
-        some_folders = ['simple', u'L\xffR']
+        some_folders = ['simple', 'L\xffR']
         if not self.is_fastmail():
             some_folders.extend([r'test"folder"', r'foo\bar'])
         some_folders = self.add_prefix_to_folders(some_folders)
@@ -223,7 +223,7 @@ class TestGeneral(_TestBase):
                 self.fail('INBOX not returned in XLIST output')
 
     def test_subscriptions(self):
-        test_folders = self.add_prefix_to_folders(['foobar', 'stuff & things', u'test & \u2622'])
+        test_folders = self.add_prefix_to_folders(['foobar', 'stuff & things', 'test & \u2622'])
         for folder in test_folders:
             self.client.create_folder(folder)
 
@@ -250,7 +250,7 @@ class TestGeneral(_TestBase):
 
         test_folders = ['foobar',
                         'stuff & things',
-                        u'test & \u2622',
+                        'test & \u2622',
                         '123']
 
         if not self.is_fastmail():
@@ -277,7 +277,7 @@ class TestGeneral(_TestBase):
         test_folders = self.add_prefix_to_folders([
             'foobar',
             'stuff & things',
-            u'test & \u2622',
+            'test & \u2622',
             '123'])
         for folder in test_folders:
             self.client.create_folder(folder)
@@ -294,7 +294,7 @@ class TestGeneral(_TestBase):
         # Default behaviour should return 5 keys
         self.assertEqual(len(self.client.folder_status(self.base_folder)), 5)
 
-        new_folder = self.add_prefix_to_folder(u'test \u2622')
+        new_folder = self.add_prefix_to_folder('test \u2622')
         self.client.create_folder(new_folder)
         try:
             status = self.client.folder_status(new_folder)
