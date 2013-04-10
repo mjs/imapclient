@@ -4,7 +4,7 @@ and contribute back to the project.
 Source Code
 -----------
 The official source code repository for IMAPClient can be found on
-bitbucket at https://bitbucket.org/mjs0/imapclient/.
+bitbucket at: https://bitbucket.org/mjs0/imapclient/
 
 Any major feature branches will also be found on bitbucket as forks of
 this repository.
@@ -42,7 +42,7 @@ a number of other parts of the code. These tests use the unittest2
 package which is also included as the standard unittest package in
 Python 2.7 and 3.2.
 
-To run the tests run:
+To run the tests run::
 
      python setup.py test
 
@@ -51,12 +51,12 @@ dependencies required by the tests if they aren't already installed.
 
 Where unittest2 is included in the standard library (eg. Python 2.7
 and 3.2) you can also run all unit tests like this (from the root
-directory of the IMAPClient source):
+directory of the IMAPClient source)::
 
      python -m unittest discover
 
 Alternatively, if unittest2 is installed separately use the unit2
-script (for Unix-like systems) or the unit2.py script:
+script (for Unix-like systems) or the unit2.py script::
 
      unit2 discover
      unit2.py discover
@@ -83,7 +83,7 @@ to run successfully against a particular IMAP server. Reports of
 successful runs are also welcome.  Please include the type and version
 of the IMAP server, if known.
 
-The livetest functionality can also be accessed like this:
+The livetest functionality can also be accessed like this::
 
     python -m imapclient.livetest ...
 

@@ -4,6 +4,7 @@ IMAPClient aims to be a easy-to-use, Pythonic and complete IMAP client
 library.
 
 Features:
+
 - Arguments and return values are natural Python types.
 - IMAP server responses are fully parsed and readily usable.
 - IMAP unique message IDs (UIDs) are handled transparently. There is
@@ -46,9 +47,7 @@ API.
 You should feel confident using IMAPClient for production
 purposes. Any problems found will be fixed quickly once reported.
 
-The project's home page is a Trac instance at:
-
-    http://imapclient.freshfoo.com/
+The project's home page is a Trac instance at: http://imapclient.freshfoo.com/
 
 Details about upcoming versions and planned features/fixes can be
 found there.
@@ -57,13 +56,13 @@ found there.
 Using IMAPClient
 ----------------
 IMAPClient is listed on the PyPI (Python Package Index). To install
-via PyPI use the pip or easy_install tools:
+via PyPI use the pip or easy_install tools::
 
     pip install imapclient
 
     easy_install IMAPClient
 
-To install from the source distribution:
+To install from the source distribution::
 
     python setup.py install
 
@@ -76,11 +75,10 @@ Documentation
 -------------
 HTML documentation can be found at doc/html in the source
 distribution. The documentation is also available online at:
-
-    http://imapclient.readthedocs.org/
+http://imapclient.readthedocs.org/
 
 The Sphinx source is at doc/src. If Sphinx is installed, the
-documentation can be rebuilt using:
+documentation can be rebuilt using::
 
     python setup.py build_sphinx
 
@@ -101,9 +99,9 @@ Mailing List
 The IMAPClient mailing list can be used to ask IMAPClient related
 questions and report bugs.
 
-* To send to the list and subscribe send an email to imapclient@librelist.com
-* Archives of the list are available at http://librelist.com/browser/imapclient/
-* See http://librelist.com/help.html for more information about the mailing list
+- To send to the list and subscribe send an email to imapclient@librelist.com
+- Archives of the list are available at http://librelist.com/browser/imapclient/
+- See http://librelist.com/help.html for more information about the mailing list
 
 
 Interactive Console
@@ -118,6 +116,6 @@ code.interact() function from the standard library is used.
 
 The interactive console functionality can be accessed running the
 interact.py script in the root of the source tree or by invoking the
-interact module like this:
+interact module like this::
 
     python -m imapclient.interact ...
