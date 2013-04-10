@@ -90,7 +90,7 @@ directory.
 
 Working on IMAPClient
 ---------------------
-The HACKING document contains information for those interested in
+The HACKING.rst document contains information for those interested in
 improving IMAPClient and contributing back to the project.
 
 
