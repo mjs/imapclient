@@ -790,14 +790,17 @@ class IMAPClient(object):
         """
         if msg_time:
             time_val = '"%s"' % datetime_to_imap(msg_time)
-            if not PY3:
-                time_val = time_val.encode('ascii')
+            if PY3:
+                time_val = to_unicode(time_val)
+            else:
+                time_val = to_bytes(time_val)
         else:
             time_val = None
         return self._command_and_check('append',
                                        self.encode_quote(folder),
                                        seq_to_parenlist(flags),
-                                       time_val, msg.encode('ascii'),
+                                       time_val,
+                                       to_bytes(msg),
                                        unpack=True)
 
     def copy(self, messages, folder):
@@ -996,7 +999,7 @@ def seq_to_parenlist(flags):
         flags = (flags,)
     elif not isinstance(flags, (tuple, list)):
         raise ValueError('invalid flags list: %r' % flags)
-    return '(%s)' % ' '.join(flags)
+    return '(%s)' % ' '.join(to_unicode(f) for f in flags)
 
 def _parse_untagged_response(text):
     assert text.startswith('* ')
@@ -1019,3 +1022,13 @@ def as_pairs(items):
         else:
             last_item = item
         i += 1
+
+def to_unicode(s):
+    if isinstance(s, binary_type):
+        return s.decode('ascii')
+    return s
+
+def to_bytes(s):
+    if isinstance(s, text_type):
+        return s.encode('ascii')
+    return s

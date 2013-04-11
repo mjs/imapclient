@@ -126,27 +126,25 @@ class TestAppend(IMAPClientTest):
 
     def test_without_msg_time(self):
         self.client._imap.append.return_value = ('OK', ['Good'])
-        msg = Mock()
-        msg.encode.return_value = sentinel.msg
+        msg = 'hi'
 
         self.client.append('foobar', msg, ['FLAG', 'WAVE'], None)
 
         self.client._imap.append.assert_called_with(
-            '"foobar"', '(FLAG WAVE)', None, sentinel.msg)
+            '"foobar"', '(FLAG WAVE)', None, b'hi')
 
     @patch('imapclient.imapclient.datetime_to_imap')
     def test_with_msg_time(self, datetime_to_imap):
         datetime_to_imap.return_value = 'somedate'
         self.client._imap.append.return_value = ('OK', ['Good'])
-        msg = Mock()
-        msg.encode.return_value = sentinel.msg
+        msg = b'bye'
 
         self.client.append('foobar', msg, ['FLAG', 'WAVE'],
                            datetime(2009, 4, 5, 11, 0, 5, 0, FixedOffset(2*60)))
 
         self.assertTrue(datetime_to_imap.called)
         self.client._imap.append.assert_called_with(
-            '"foobar"', '(FLAG WAVE)', '"somedate"', sentinel.msg)
+            '"foobar"', '(FLAG WAVE)', '"somedate"', msg)
 
 
 class TestDateTimeToImap(unittest.TestCase):

@@ -13,8 +13,8 @@ import time
 from datetime import datetime
 from email.utils import make_msgid
 
-import imapclient
-from .six import text_type, PY3
+from .imapclient import IMAPClient, DELETED, to_unicode
+from .six import binary_type, text_type, PY3
 from .test.util import unittest
 from .config import parse_config_file, create_client_from_config
 
@@ -58,7 +58,7 @@ class _TestBase(unittest.TestCase):
     def setUp(self):
         self.client = create_client_from_config(self.conf)
         self.client.use_uid = self.use_uid
-        self.base_folder = self.conf.namespace[0] + ('__imapclient')
+        self.base_folder = self.conf.namespace[0] + '__imapclient'
         self.folder_delimiter = self.conf.namespace[1]
         self.clear_test_folders()
         self.unsub_all_test_folders()
@@ -111,7 +111,11 @@ class _TestBase(unittest.TestCase):
         self.client.expunge()
 
     def add_prefix_to_folder(self, folder):
-        return self.base_folder + self.folder_delimiter + folder
+        if isinstance(folder, binary_type):
+            return self.base_folder.encode('ascii') + \
+                self.folder_delimiter.encode('ascii') + folder
+        else:
+            return self.base_folder + self.folder_delimiter + folder
 
     def add_prefix_to_folders(self, folders):
         return [self.add_prefix_to_folder(folder) for folder in folders]
@@ -190,9 +194,9 @@ class TestGeneral(_TestBase):
         self.assertGreater(len(resp['FLAGS']), 1)
 
     def test_list_folders(self):
-        some_folders = ['simple', 'L\xffR']
+        some_folders = ['simple', b'simple2', 'L\xffR']
         if not self.is_fastmail():
-            some_folders.extend([r'test"folder"', r'foo\bar'])
+            some_folders.extend([r'test"folder"', br'foo\bar'])
         some_folders = self.add_prefix_to_folders(some_folders)
         for name in some_folders:
             self.client.create_folder(name)
@@ -200,9 +204,8 @@ class TestGeneral(_TestBase):
         folders = self.all_test_folder_names()
         self.assertGreater(len(folders), 1, 'No folders visible on server')
         self.assertIn(self.base_folder, folders)
-
         for name in some_folders:
-            self.assertIn(name, folders)
+            self.assertIn(to_unicode(name), folders)
 
         #TODO: test LIST with wildcards
 
@@ -223,24 +226,30 @@ class TestGeneral(_TestBase):
                 self.fail('INBOX not returned in XLIST output')
 
     def test_subscriptions(self):
-        test_folders = self.add_prefix_to_folders(['foobar', 'stuff & things', 'test & \u2622'])
-        for folder in test_folders:
+        folders = self.add_prefix_to_folders([
+            'foobar',
+            b'foobar2',
+            'stuff & things',
+            b'stuff & things2',
+            'test & \u2622',
+        ])
+        for folder in folders:
             self.client.create_folder(folder)
-
-        all_folders = sorted(self.all_test_folder_names())
-        for folder in all_folders:
             self.client.subscribe_folder(folder)
 
-        self.assertListEqual(all_folders, sorted(self.all_sub_test_folder_names()))
+        server_folders = self.all_test_folder_names()
+        server_folders.remove(self.base_folder)
+        server_folders.sort()
+        self.assertListEqual(server_folders, sorted(self.all_sub_test_folder_names()))
 
-        for folder in all_folders:
+        for folder in folders:
             self.client.unsubscribe_folder(folder)
         self.assertListEqual(self.all_sub_test_folder_names(), [])
 
         # Exchange doesn't return an error when subscribing to a
         # non-existent folder
         if not self.is_exchange():
-            self.assertRaises(imapclient.IMAPClient.Error,
+            self.assertRaises(IMAPClient.Error,
                               self.client.subscribe_folder,
                               'this folder is not likely to exist')
 
@@ -248,24 +257,33 @@ class TestGeneral(_TestBase):
         self.assertTrue(self.client.folder_exists(self.base_folder))
         self.assertFalse(self.client.folder_exists('this is very unlikely to exist'))
 
-        test_folders = ['foobar',
-                        'stuff & things',
-                        'test & \u2622',
-                        '123']
-
+        folders = [
+            'foobar',
+            b'foobar',
+            'stuff & things',
+            b'stuff & things',
+            '123',
+            b'123',
+            'test & \u2622',
+        ]
         if not self.is_fastmail():
             # Fastmail doesn't appear like double quotes in folder names
-            test_folders.extend(['"foobar"', 'foo "bar"'])
+            folders.extend([
+                '"foobar"',
+                b'"foobar"',
+                'foo "bar"',
+                b'foo "bar"',
+            ])
 
-        test_folders = self.add_prefix_to_folders(test_folders)
+        folders = self.add_prefix_to_folders(folders)
 
-        for folder in test_folders:
+        for folder in folders:
             self.assertFalse(self.client.folder_exists(folder))
 
             self.client.create_folder(folder)
 
             self.assertTrue(self.client.folder_exists(folder))
-            self.assertIn(folder, self.all_test_folder_names())
+            self.assertIn(to_unicode(folder), self.all_test_folder_names())
 
             self.client.select_folder(folder)
             self.client.close_folder()
@@ -274,15 +292,23 @@ class TestGeneral(_TestBase):
             self.assertFalse(self.client.folder_exists(folder))
 
     def test_rename_folder(self):
-        test_folders = self.add_prefix_to_folders([
+        folders = self.add_prefix_to_folders([
             'foobar',
+            b'foobar2',
             'stuff & things',
+            b'stuff & things2',
+            '123',
+            b'1232',
             'test & \u2622',
-            '123'])
-        for folder in test_folders:
+        ])
+        for folder in folders:
             self.client.create_folder(folder)
 
-            new_folder = folder + 'x'
+            if isinstance(folder,  binary_type):
+                new_folder = folder + b'x'
+            else:
+                new_folder = folder + 'x'
+
             resp = self.client.rename_folder(folder, new_folder)
             self.assertIsInstance(resp, text_type)
             self.assertTrue(len(resp) > 0)
@@ -390,13 +416,19 @@ def createUidTestClass(conf, use_uid):
         off.
         """
 
-        def test_append(self):
+        def test_append_unicode(self):
+            self.check_append(SIMPLE_MESSAGE, SIMPLE_MESSAGE)
+
+        def test_append_bytes(self):
+            self.check_append(SIMPLE_MESSAGE.encode('ascii'), SIMPLE_MESSAGE)
+
+        def check_append(self, in_message, out_message):
             # Message time microseconds are set to 0 because the server will return
             # time with only seconds precision.
             msg_time = datetime.now().replace(microsecond=0)
 
             # Append message
-            resp = self.client.append(self.base_folder, SIMPLE_MESSAGE, ('abc', 'def'), msg_time)
+            resp = self.client.append(self.base_folder, in_message, ('abc', 'def'), msg_time)
             self.assertIsInstance(resp, text_type)
 
             # Retrieve the just added message and check that all looks well
@@ -417,7 +449,7 @@ def createUidTestClass(conf, use_uid):
             self.assertIn('def', msginfo['FLAGS'])
 
             # Message body should match
-            self.assertEqual(msginfo['RFC822'], SIMPLE_MESSAGE)
+            self.assertEqual(msginfo['RFC822'], out_message)
 
         def test_flags(self):
             self.append_msg(SIMPLE_MESSAGE)
@@ -467,7 +499,7 @@ def createUidTestClass(conf, use_uid):
             for subject in subjects:
                 msg = msg_tmpl % subject
                 if subject == 'c':
-                    flags = (imapclient.DELETED,)
+                    flags = (DELETED,)
                 else:
                     flags = ()
                 self.client.append(self.base_folder, msg, flags)
@@ -559,14 +591,17 @@ def createUidTestClass(conf, use_uid):
             self.client.select_folder(self.base_folder)
             self.append_msg(msg)
 
-            fields = ['RFC822', 'FLAGS', 'INTERNALDATE', 'ENVELOPE']
+            fields = ['RFC822', b'FLAGS', 'INTERNALDATE', 'ENVELOPE']
             msg_id = self.client.search()[0]
             resp = self.client.fetch(msg_id, fields)
 
             self.assertEqual(len(resp), 1)
             msginfo = resp[msg_id]
 
-            self.assertSetEqual(set(msginfo.keys()), set(fields + ['SEQ']))
+            self.assertSetEqual(
+                set(msginfo.keys()),
+                set([to_unicode(f) for f in fields] + ['SEQ'])
+            )
             self.assertEqual(msginfo['SEQ'], 1)
             self.assertMultiLineEqual(msginfo['RFC822'], msg)
             self.assertIsInstance(msginfo['INTERNALDATE'], datetime)
@@ -674,7 +709,7 @@ def createUidTestClass(conf, use_uid):
             self.assertIn(resps, ([], [(0, 'EXISTS')]))
 
             # Now try with a message to expunge
-            self.client.append(self.base_folder, SIMPLE_MESSAGE, flags=[imapclient.DELETED])
+            self.client.append(self.base_folder, SIMPLE_MESSAGE, flags=[DELETED])
 
             msg, resps = self.client.expunge()
 
@@ -700,7 +735,6 @@ def createUidTestClass(conf, use_uid):
     LiveTest.use_uid = use_uid
 
     return LiveTest
-
 
 def lower_if_str(val):
     if isinstance(val, text_type):
