@@ -10,7 +10,7 @@ from __future__ import unicode_literals
 from getpass import getpass
 from optparse import OptionParser
 
-from config import parse_config_file, create_client_from_config
+from .config import parse_config_file, create_client_from_config
 
 def command_line():
     p = OptionParser()
