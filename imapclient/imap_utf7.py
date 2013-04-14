@@ -98,27 +98,3 @@ def modified_deutf7(s):
     s_utf7 = '+' + s.replace(',', '/') + '-'
     # encode to latin-1: '+AP8-' => b'+AP8-', decode from utf-7 => '\xff'
     return s_utf7.encode('latin-1').decode('utf-7')
-
-
-def from_bytes(data, folder_encode=True):
-    """Convert bytes to string in lists, tuples and dicts.
-
-    Decode by decoding from latin-1 or modified utf7.
-
-    """
-    if isinstance(data, dict):
-        decoded = {}
-        for key, value in iteritems(data):
-            key = from_bytes(key, folder_encode)
-            value = from_bytes(value, folder_encode)
-            decoded[key] = value
-        return decoded
-    if isinstance(data, list):
-        return [from_bytes(item, folder_encode) for item in data]
-    if isinstance(data, tuple):
-        return tuple([from_bytes(item, folder_encode) for item in data])
-    if folder_encode:
-        return decode(data)
-    if isinstance(data, binary_type):
-        return data.decode('latin-1')
-    return data

@@ -20,7 +20,7 @@ try:
 except ImportError:
     oauth_module = None
 
-from .imap_utf7 import encode as encode_utf7, from_bytes
+from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .fixed_offset import FixedOffset
 from .six import moves, iteritems, text_type, integer_types, PY3, binary_type
 xrange = moves.xrange
@@ -162,7 +162,7 @@ class IMAPClient(object):
         """Logout, returning the server response.
         """
         typ, data = self._imap.logout()
-        data = from_bytes(data, self.folder_encode)
+        data = from_bytes(data)
         self._check_resp('BYE', 'logout', typ, data)
         return data[0]
 
@@ -194,10 +194,10 @@ class IMAPClient(object):
 
         # Just return capabilities that imaplib grabbed at connection
         # time (pre-auth)
-        return from_bytes(self._imap.capabilities, folder_encode=False)
+        return from_bytes(self._imap.capabilities)
 
     def _save_capabilities(self, raw_response):
-        raw_response = from_bytes(raw_response, folder_encode=False)
+        raw_response = from_bytes(raw_response)
         self._cached_capabilities = tuple(raw_response.upper().split())
         return self._cached_capabilities
 
@@ -306,10 +306,10 @@ class IMAPClient(object):
         directory = self.encode_quote(directory)
         pattern = self.encode_quote(pattern)
         typ, dat = self._imap._simple_command(cmd, directory, pattern)
-        dat = from_bytes(dat, self.folder_encode)
+        dat = from_bytes(dat)
         self._checkok(cmd, typ, dat)
         typ, dat = self._imap._untagged_response(typ, dat, cmd)
-        dat = from_bytes(dat, self.folder_encode)
+        dat = from_bytes(dat)
         return self._proc_folder_list(dat)
 
     def _proc_folder_list(self, folder_data):
@@ -321,9 +321,19 @@ class IMAPClient(object):
         ret = []
         parsed = parse_response(folder_data)
         while parsed:
+            # TODO: could be more efficient
             flags, delim, name = parsed[:3]
             parsed = parsed[3:]
-            ret.append((flags, delim, self._parse_folder_name(name)))
+
+            if isinstance(name, int):
+                # Some IMAP implementations return integer folder names
+                # with quotes. These get parsed to ints so convert them
+                # back to strings.
+                name = text_type(name)
+            elif self.folder_encode:
+                name = decode_utf7(name)
+
+            ret.append((flags, delim, name))
         return ret
 
     def select_folder(self, folder, readonly=False):
@@ -346,7 +356,7 @@ class IMAPClient(object):
         """
         self._command_and_check('select', self.encode_quote(folder), readonly)
         untagged = self._imap.untagged_responses
-        untagged = from_bytes(untagged, self.folder_encode)
+        untagged = from_bytes(untagged)
         return self._process_select_response(untagged)
 
     def _process_select_response(self, resp):
@@ -400,7 +410,7 @@ class IMAPClient(object):
         information about the IDLE extension.
         """
         self._idle_tag = self._imap._command('IDLE')
-        resp = from_bytes(self._imap._get_response(), self.folder_encode)
+        resp = from_bytes(self._imap._get_response())
         if resp is not None:
             raise self.Error('Unexpected IDLE response: %s' % resp)
 
@@ -435,7 +445,7 @@ class IMAPClient(object):
             if rs:
                 while True:
                     try:
-                        line = from_bytes(self._imap._get_line(), self.folder_encode)
+                        line = from_bytes(self._imap._get_line())
                     except (socket.timeout, socket.error):
                         break
                     except IMAPClient.AbortError:
@@ -559,7 +569,7 @@ class IMAPClient(object):
         else:
             typ, data = self._imap.search(charset, *criteria)
 
-        data = from_bytes(data, self.folder_encode)
+        data = from_bytes(data)
 
         self._checkok('search', typ, data)
         data = data[0]
@@ -765,10 +775,10 @@ class IMAPClient(object):
             args.insert(0, 'UID')
         tag = self._imap._command(*args)
         typ, data = self._imap._command_complete('FETCH', tag)
-        data = from_bytes(data, self.folder_encode)
+        data = from_bytes(data)
         self._checkok('fetch', typ, data)
         typ, data = self._imap._untagged_response(typ, data, 'FETCH')
-        data = from_bytes(data, self.folder_encode)
+        data = from_bytes(data)
         return parse_fetch_response(data, self.normalise_times, self.use_uid)
 
     def append(self, folder, msg, flags=(), msg_time=None):
@@ -873,9 +883,9 @@ class IMAPClient(object):
             line = self._imap._get_response()
             if tagged_commands[tag]:
                 break
-            resps.append(_parse_untagged_response(from_bytes(line, self.folder_encode)))
+            resps.append(_parse_untagged_response(from_bytes(line)))
         typ, data = tagged_commands.pop(tag)
-        data = from_bytes(data, self.folder_encode)
+        data = from_bytes(data)
         self._checkok(command, typ, data)
         return data[0], resps
 
@@ -889,7 +899,7 @@ class IMAPClient(object):
         else:
             meth = getattr(self._imap, command)
             typ, data = meth(*args)
-        data = from_bytes(data, self.folder_encode)
+        data = from_bytes(data)
         self._checkok(command, typ, data)
         if unpack:
             return data[0]
@@ -930,14 +940,6 @@ class IMAPClient(object):
             (msgid, tuple(data.values())[0])
             for msgid, data in iteritems(fetch_dict)
             )
-
-    def _parse_folder_name(self, name):
-        if isinstance(name, int):
-            # Some IMAP implementations return integer folder names
-            # with quotes. These get parsed to ints so convert them
-            # back to strings.
-            return text_type(name)
-        return name
 
     def __debug_get(self):
         return self._imap.debug
@@ -1032,3 +1034,21 @@ def to_bytes(s):
     if isinstance(s, text_type):
         return s.encode('ascii')
     return s
+
+def from_bytes(data):
+    """Convert bytes to string in lists, tuples and dicts.
+    """
+    if isinstance(data, dict):
+        decoded = {}
+        for key, value in iteritems(data):
+            key = from_bytes(key)
+            value = from_bytes(value)
+            decoded[key] = value
+        return decoded
+    elif isinstance(data, list):
+        return [from_bytes(item) for item in data]
+    elif isinstance(data, tuple):
+        return tuple([from_bytes(item) for item in data])
+    elif isinstance(data, binary_type):
+        return data.decode('latin-1')
+    return data

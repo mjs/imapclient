@@ -58,6 +58,34 @@ class TestListFolders(IMAPClientTest):
         self.client._imap._simple_command.return_value = ('NO', ['badness'])
         self.assertRaises(IMAPClient.Error, self.client.list_folders)
 
+    def test_utf7_decoding(self):
+        self.client._imap._simple_command.return_value = (b'OK', b'something')
+        self.client._imap._untagged_response.return_value = (
+            b'LIST', [
+                b'(\\HasNoChildren) "/" "A"',
+                b'(\\HasNoChildren) "/" "Hello&AP8-world"',
+            ])
+
+        folders = self.client.list_folders('foo', 'bar')
+
+        self.client._imap._simple_command.assert_called_once_with('LIST', '"foo"', '"bar"')
+        self.assertEqual(folders, [(('\\HasNoChildren',), '/', 'A'),
+                                   (('\\HasNoChildren',), '/', 'Hello\xffworld')])
+
+    def test_folder_encode_off(self):
+        self.client.folder_encode = False
+        self.client._imap._simple_command.return_value = (b'OK', b'something')
+        self.client._imap._untagged_response.return_value = (
+            b'LIST', [
+                b'(\\HasNoChildren) "/" "A"',
+                b'(\\HasNoChildren) "/" "Hello&AP8-world"',
+            ])
+
+        folders = self.client.list_folders('foo', 'bar')
+
+        self.client._imap._simple_command.assert_called_once_with('LIST', '"foo"', '"bar"')
+        self.assertEqual(folders, [(('\\HasNoChildren',), '/', 'A'),
+                                   (('\\HasNoChildren',), '/', 'Hello&AP8-world')])
 
     def test_simple(self):
         folders = self.client._proc_folder_list(['(\\HasNoChildren) "/" "A"',
