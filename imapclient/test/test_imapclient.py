@@ -25,7 +25,7 @@ class IMAPClientTest(unittest.TestCase):
 class TestListFolders(IMAPClientTest):
 
     def test_list_folders(self):
-        self.client._imap._simple_command.return_value = ('OK', 'something')
+        self.client._imap._simple_command.return_value = ('OK', [b'something'])
         self.client._imap._untagged_response.return_value = ('LIST', sentinel.folder_data)
         self.client._proc_folder_list = Mock(return_value=sentinel.folder_list)
 
@@ -37,7 +37,7 @@ class TestListFolders(IMAPClientTest):
         self.assertTrue(folders is sentinel.folder_list)
 
     def test_list_sub_folders(self):
-        self.client._imap._simple_command.return_value = ('OK', 'something')
+        self.client._imap._simple_command.return_value = ('OK', [b'something'])
         self.client._imap._untagged_response.return_value = ('LSUB', sentinel.folder_data)
         self.client._proc_folder_list = Mock(return_value=sentinel.folder_list)
 
@@ -50,16 +50,16 @@ class TestListFolders(IMAPClientTest):
 
 
     def test_list_folders_NO(self):
-        self.client._imap._simple_command.return_value = ('NO', ['badness'])
+        self.client._imap._simple_command.return_value = ('NO', [b'badness'])
         self.assertRaises(IMAPClient.Error, self.client.list_folders)
 
 
     def test_list_sub_folders_NO(self):
-        self.client._imap._simple_command.return_value = ('NO', ['badness'])
+        self.client._imap._simple_command.return_value = ('NO', [b'badness'])
         self.assertRaises(IMAPClient.Error, self.client.list_folders)
 
     def test_utf7_decoding(self):
-        self.client._imap._simple_command.return_value = (b'OK', b'something')
+        self.client._imap._simple_command.return_value = ('OK', [b'something'])
         self.client._imap._untagged_response.return_value = (
             b'LIST', [
                 b'(\\HasNoChildren) "/" "A"',
@@ -74,7 +74,7 @@ class TestListFolders(IMAPClientTest):
 
     def test_folder_encode_off(self):
         self.client.folder_encode = False
-        self.client._imap._simple_command.return_value = (b'OK', b'something')
+        self.client._imap._simple_command.return_value = ('OK', [b'something'])
         self.client._imap._untagged_response.return_value = (
             b'LIST', [
                 b'(\\HasNoChildren) "/" "A"',
