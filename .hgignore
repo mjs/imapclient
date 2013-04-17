@@ -3,3 +3,4 @@
 IMAPClient.egg-info
 doc/doctrees/
 doc/html/
+.tox/

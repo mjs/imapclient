@@ -4,7 +4,10 @@
 
 # version_info provides the version number in programmer friendly way.
 # The 4th part will be either alpha, beta or final.
-version_info = (0, 9, 2, 'final')
+
+from __future__ import unicode_literals
+
+version_info = (0, 10, 0, 'alpha')
 
 def _imapclient_version_string(vinfo):
     major, minor, micro, releaselevel = vinfo
@@ -18,6 +21,8 @@ def _imapclient_version_string(vinfo):
 __version__ = _imapclient_version_string(version_info)
 __author__ = 'Menno Smits <menno@freshfoo.com>'
 
-from imapclient import *
-from response_parser import *
-import imaplib_ssl_fix
+from .imapclient import *
+from .response_parser import *
+
+from .imaplib_ssl_fix import apply_patch
+apply_patch()

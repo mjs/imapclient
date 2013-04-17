@@ -17,6 +17,7 @@ Features:
 - Convenience methods are provided for commonly used functionality.
 - Exceptions are raised when errors occur.
 
+Python versions 2.6, 2.7, 3.2 and 3.3 are officially supported.
 
 Why IMAPClient?
 ---------------

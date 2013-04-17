@@ -2,17 +2,19 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+from __future__ import unicode_literals
+
 from datetime import timedelta
 from imapclient.test.util import unittest
 from imapclient.fixed_offset import FixedOffset
-from imapclient.test.mock import patch
+from imapclient.test.mock import Mock, patch, DEFAULT
 
 class TestFixedOffset(unittest.TestCase):
 
     def _check(self, offset, expected_delta, expected_name):
-        self.assert_(offset.utcoffset(None) == expected_delta)
-        self.assert_(offset.tzname(None) == expected_name)
-        self.assert_(offset.dst(None) == timedelta(0))
+        self.assertEqual(offset.utcoffset(None), expected_delta)
+        self.assertEqual(offset.tzname(None), expected_name)
+        self.assertEqual(offset.dst(None), timedelta(0))
 
     def test_GMT(self):
         self._check(FixedOffset(0),
@@ -34,17 +36,31 @@ class TestFixedOffset(unittest.TestCase):
         self._check(FixedOffset(-11*60 - 30),
                     timedelta(minutes=(-11*60) - 30), '-1130')
 
-    @patch('imapclient.fixed_offset.time.daylight', True)
-    @patch('imapclient.fixed_offset.time.altzone', 15*60*60)
-    def test_for_system_DST(self):
-        offset = FixedOffset.for_system()
-        self.assert_(offset.tzname(None) == '-1500')
+    @patch.multiple('imapclient.fixed_offset.time',
+                    daylight=True, timezone=15*60*60, localtime=DEFAULT)
+    def test_for_system_DST_not_active(self, localtime):
+        localtime_mock = Mock()
+        localtime_mock.tm_isdst = False
+        localtime.return_value = localtime_mock
 
-    @patch('imapclient.fixed_offset.time.daylight', False)
-    @patch('imapclient.fixed_offset.time.timezone', -15*60*60)
+        offset = FixedOffset.for_system()
+        self.assertEqual(offset.tzname(None), '-1500')
+
+    @patch.multiple('imapclient.fixed_offset.time',
+                    daylight=True, altzone=15*60*60, localtime=DEFAULT)
+    def test_for_system_DST_active(self, localtime):
+        localtime_mock = Mock()
+        localtime_mock.tm_isdst = True
+        localtime.return_value = localtime_mock
+
+        offset = FixedOffset.for_system()
+        self.assertEqual(offset.tzname(None), '-1500')
+
+    @patch.multiple('imapclient.fixed_offset.time',
+                    daylight=False, timezone=-15*60*60)
     def test_for_system_no_DST(self):
         offset = FixedOffset.for_system()
-        self.assert_(offset.tzname(None) == '+1500')
+        self.assertEqual(offset.tzname(None), '+1500')
 
 if __name__ == '__main__':
     unittest.main()

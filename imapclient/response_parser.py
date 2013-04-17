@@ -6,14 +6,21 @@
 Parsing for IMAP command responses with focus on FETCH responses as
 returned by imaplib.
 
-Intially inspired by http://effbot.org/zone/simple-iterator-parser.htm
+Initially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 """
 
 #TODO more exact error reporting
 
+from __future__ import unicode_literals
+
+import sys
 from datetime import datetime
-from fixed_offset import FixedOffset
-from response_lexer import TokenSource
+
+from . import six
+xrange = six.moves.xrange
+
+from .fixed_offset import FixedOffset
+from .response_lexer import TokenSource
 
 try:
     import imaplib2 as imaplib
@@ -28,26 +35,27 @@ class ParseError(ValueError):
     pass
 
 
-def parse_response(text):
+def parse_response(data):
     """Pull apart IMAP command responses.
 
     Returns nested tuples of appropriately typed objects.
     """
-    return tuple(gen_parsed_response(text))
+    return tuple(gen_parsed_response(data))
 
 
 def gen_parsed_response(text):
     if not text:
         return
     src = TokenSource(text)
-    
+
     token = None
     try:
         for token in src:
             yield atom(src, token)
     except ParseError:
         raise
-    except ValueError, err:
+    except ValueError:
+        _, err, _ = sys.exc_info()
         raise ParseError("%s: %s" % (str(err), token))
 
 
@@ -64,12 +72,13 @@ def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
     parsed_response = {}
     while True:
         try:
-            msg_id = seq = _int_or_error(response.next(), 'invalid message ID')
+            msg_id = seq = _int_or_error(six.next(response),
+                                         'invalid message ID')
         except StopIteration:
             break
 
         try:
-            msg_response = response.next()
+            msg_response = six.next(response)
         except StopIteration:
             raise ParseError('unexpected EOF')
 
@@ -121,7 +130,7 @@ class BodyData(tuple):
         if isinstance(response[0], tuple):
             # Multipart, find where the message part tuples stop
             for i, part in enumerate(response):
-                if isinstance(part, basestring):
+                if isinstance(part, six.string_types):
                     break
             return cls((list(response[:i]),) + response[i:])
         else:
@@ -133,13 +142,14 @@ class BodyData(tuple):
     
 
 def _convert_INTERNALDATE(date_string, normalise_times=True):
-    mo = imaplib.InternalDate.match('INTERNALDATE "%s"' % date_string)
+    date_msg = 'INTERNALDATE "%s"' % date_string
+    mo = imaplib.InternalDate.match(date_msg.encode('latin-1'))
     if not mo:
         raise ValueError("couldn't parse date %r" % date_string)
 
     zoneh = int(mo.group('zoneh'))
     zonem = (zoneh * 60) + int(mo.group('zonem'))
-    if mo.group('zonen') == '-':
+    if mo.group('zonen') == b'-':
         zonem = -zonem
     tz = FixedOffset(zonem)
 
@@ -159,11 +169,11 @@ def _convert_INTERNALDATE(date_string, normalise_times=True):
 
 
 def atom(src, token):
-    if token == "(":
+    if token == '(':
         return parse_tuple(src)
     elif token == 'NIL':
         return None
-    elif token[0] == '{':
+    elif token[:1] == '{':
         literal_len = int(token[1:-1])
         literal_text = src.current_literal
         if literal_text is None:
@@ -172,13 +182,12 @@ def atom(src, token):
             raise ParseError('Expecting literal of size %d, got %d' % (
                                 literal_len, len(literal_text)))
         return literal_text
-    elif len(token) >= 2 and (token[0] == token[-1] == '"'):
+    elif len(token) >= 2 and (token[:1] == token[-1:] == '"'):
         return token[1:-1]
     elif token.isdigit():
         return int(token)
     else:
         return token
-
 
 def parse_tuple(src):
     out = []
@@ -189,7 +198,5 @@ def parse_tuple(src):
     # no terminator
     raise ParseError('Tuple incomplete before "(%s"' % _fmt_tuple(out))
 
-
 def _fmt_tuple(t):
     return ' '.join(str(item) for item in t)
-

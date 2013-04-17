@@ -22,66 +22,79 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+from __future__ import unicode_literals
 
-class FolderNameError(ValueError):
-    pass
+from .six import text_type, binary_type, iteritems
 
+PRINTABLE = set(range(0x20, 0x26)) | set(range(0x27, 0x7f))
 
 def encode(s):
-    if isinstance(s, str) and sum(n for n in (ord(c) for c in s) if n > 127):
-        raise FolderNameError("%r contains characters not valid in a str folder name. "
-                              "Convert to unicode first?" % s)
+    """Encode a folder name using IMAP modified UTF-7 encoding.
+
+    Despite the function's name, the output is still a unicode string.
+    """
+    if not isinstance(s, text_type):
+        return s
+
+    r = []
+    _in = []
+
+    def extend_result_if_chars_buffered():
+        if _in:
+            r.extend(['&', modified_utf7(''.join(_in)), '-'])
+            del _in[:]
+
+    for c in s:
+        if ord(c) in PRINTABLE:
+            extend_result_if_chars_buffered()
+            r.append(c)
+        elif c == '&':
+            extend_result_if_chars_buffered()
+            r.append('&-')
+        else:
+            _in.append(c)
+
+    extend_result_if_chars_buffered()
+
+    return ''.join(r)
+
+def decode(s):
+    """Decode a folder name from IMAP modified UTF-7 encoding to unicode.
+
+    Despite the function's name, the input may still be a unicode
+    string. If the input is bytes, it's first decoded to unicode.
+    """
+    if isinstance(s, binary_type):
+        s = s.decode('latin-1')
+    if not isinstance(s, text_type):
+        return s
 
     r = []
     _in = []
     for c in s:
-        if ord(c) in (range(0x20, 0x26) + range(0x27, 0x7f)):
-            if _in:
-                r.extend(['&', modified_base64(''.join(_in)), '-'])
-                del _in[:]
-            r.append(str(c))
-        elif c == '&':
-            if _in:
-                r.extend(['&', modified_base64(''.join(_in)), '-'])
-                del _in[:]
-            r.append('&-')
-        else:
-            _in.append(c)
-    if _in:
-        r.extend(['&', modified_base64(''.join(_in)), '-'])
-    return ''.join(r)
-
-
-def decode(s):
-    r = []
-    decode = []
-    for c in s:
-        if c == '&' and not decode:
-            decode.append('&')
-        elif c == '-' and decode:
-            if len(decode) == 1:
+        if c == '&' and not _in:
+            _in.append('&')
+        elif c == '-' and _in:
+            if len(_in) == 1:
                 r.append('&')
             else:
-                r.append(modified_unbase64(''.join(decode[1:])))
-            decode = []
-        elif decode:
-            decode.append(c)
+                r.append(modified_deutf7(''.join(_in[1:])))
+            _in = []
+        elif _in:
+            _in.append(c)
         else:
             r.append(c)
-    if decode:
-        r.append(modified_unbase64(''.join(decode[1:])))
-    out = ''.join(r)
+    if _in:
+        r.append(modified_deutf7(''.join(_in[1:])))
 
-    if not isinstance(out, unicode):
-        out = unicode(out, 'latin-1')
-    return out
+    return ''.join(r)
 
-
-def modified_base64(s):
-    s_utf7 = s.encode('utf-7')
+def modified_utf7(s):
+    # encode to utf-7: '\xff' => b'+AP8-', decode from latin-1 => '+AP8-'
+    s_utf7 = s.encode('utf-7').decode('latin-1')
     return s_utf7[1:-1].replace('/', ',')
 
-
-def modified_unbase64(s):
+def modified_deutf7(s):
     s_utf7 = '+' + s.replace(',', '/') + '-'
-    return s_utf7.decode('utf-7')
+    # encode to latin-1: '+AP8-' => b'+AP8-', decode from utf-7 => '\xff'
+    return s_utf7.encode('latin-1').decode('utf-7')

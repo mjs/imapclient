@@ -13,6 +13,8 @@
 # Comments, suggestions and bug reports welcome.
 
 
+from __future__ import unicode_literals
+
 __all__ = (
     'Mock',
     'MagicMock',
