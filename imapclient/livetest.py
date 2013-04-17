@@ -350,7 +350,7 @@ class TestGeneral(_TestBase):
         try:
             # Start a new connection and upload a new message
             client2 = create_client_from_config(self.conf)
-            self.addCleanup(client2.logout)
+            self.addCleanup(quiet_logout, client2)
             client2.select_folder(self.base_folder)
             client2.append(self.base_folder, SIMPLE_MESSAGE)
 
@@ -392,7 +392,7 @@ class TestGeneral(_TestBase):
 
         # Start a new connection and upload a new message
         client2 = create_client_from_config(self.conf)
-        self.addCleanup(client2.logout)
+        self.addCleanup(quiet_logout, client2)
         client2.select_folder(self.base_folder)
         client2.append(self.base_folder, SIMPLE_MESSAGE)
 
@@ -735,6 +735,14 @@ def createUidTestClass(conf, use_uid):
     LiveTest.use_uid = use_uid
 
     return LiveTest
+
+def quiet_logout(client):
+    """Log out a connection, ignoring errors (say because the connection is down)
+    """
+    try:
+        client.logout()
+    except IMAPClient.Error:
+        pass
 
 def lower_if_str(val):
     if isinstance(val, text_type):
