@@ -259,19 +259,19 @@ class TestGeneral(_TestBase):
 
         folders = [
             'foobar',
-            b'foobar',
             'stuff & things',
-            b'stuff & things',
             '123',
-            b'123',
             'test & \u2622',
+            b'foobar',
+            b'stuff & things',
+            b'123',
         ]
         if not self.is_fastmail():
             # Fastmail doesn't appear like double quotes in folder names
             folders.extend([
                 '"foobar"',
-                b'"foobar"',
                 'foo "bar"',
+                b'"foobar"',
                 b'foo "bar"',
             ])
 
