@@ -40,7 +40,10 @@ Zac Witte
 
 Lukasz Mierzwa     
     THREAD support. 
-    
+
+Mathieu Agopian
+    Significant Python 3 porting contributions.
+
 Bug Reports
 ------------
 Brian Jackson
