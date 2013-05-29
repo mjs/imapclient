@@ -15,7 +15,7 @@ server.login(USERNAME, PASSWORD)
 server.select_folder('INBOX')
 
 # Start IDLE mode
-server.idle()     
+server.idle()
 
 # Wait for up to 30 seconds for an IDLE response
 responses = server.idle_check(timeout=30)
@@ -25,5 +25,5 @@ print(responses)
 text, responses = server.idle_done()
 print('IDLE done. Server said %r' % text)
 print('Final responses: ', responses)
-    
+
 print(server.logout())

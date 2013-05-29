@@ -2,11 +2,11 @@ from __future__ import unicode_literals
 
 from imapclient import IMAPClient
 
-CONSUMER_KEY = ''
-CONSUMER_SECRET = ''
-
-OAUTH_TOKEN = ''
-OAUTH_TOKEN_SECRET = ''
+# Populate these with actual values
+CONSUMER_KEY = '...'
+CONSUMER_SECRET = '...'
+OAUTH_TOKEN = '...'
+OAUTH_TOKEN_SECRET = '...'
 
 HOST = 'imap.host.com'
 URL = "https://somedomain.com/someuser/imap/"
