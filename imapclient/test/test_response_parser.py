@@ -224,6 +224,13 @@ class TestParseFetchResponse(unittest.TestCase):
                             7: {'FLAGS': ('Baz', 'Sneeve'), 'SEQ': 7},
                          })
 
+    def test_same_message_appearing_multiple_times(self):
+        # This can occur when server sends unsolicited FETCH responses
+        # (e.g. RFC 4551)
+        self.assertEqual(parse_fetch_response(
+                                    ["2 (FLAGS (Foo Bar)) ",
+                                     "2 (MODSEQ 4)"]),
+                         {2: {'FLAGS': ('Foo', 'Bar'), 'SEQ': 2, 'MODSEQ': 4}})
 
     def test_literals(self):
         self.assertEqual(parse_fetch_response([('1 (RFC822.TEXT {4}', 'body'),

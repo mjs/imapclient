@@ -14,6 +14,7 @@ Initially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 from __future__ import unicode_literals
 
 import sys
+from collections import defaultdict
 from datetime import datetime
 
 from . import six
@@ -69,7 +70,7 @@ def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
         return {}
     response = gen_parsed_response(text)
 
-    parsed_response = {}
+    parsed_response = defaultdict(dict)
     while True:
         try:
             msg_id = seq = _int_or_error(six.next(response),
@@ -107,7 +108,7 @@ def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
             else:
                 msg_data[word] = value
 
-        parsed_response[msg_id] = msg_data
+        parsed_response[msg_id].update(msg_data)
 
     return parsed_response
 
