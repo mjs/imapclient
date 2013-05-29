@@ -222,7 +222,7 @@ class IMAPClient(object):
         positionally or using attributes named *personal*, *other* and
         *shared*.
 
-        See `RFC 2342 <http://tools.ietf.org/html/rfc2342>`_ for more details.
+        See :rfc:`2342` for more details.
         """
         data = self._command_and_check('namespace')
         return Namespace(*parse_response(data))
@@ -406,8 +406,7 @@ class IMAPClient(object):
             Any other commmands issued while the server is in IDLE
             mode will fail.
 
-        See `RFC 2177 <http://tools.ietf.org/html/rfc2177>`_ for more
-        information about the IDLE extension.
+        See :rfc:`2177` for more information about the IDLE extension.
         """
         self._idle_tag = self._imap._command('IDLE')
         resp = from_bytes(self._imap._get_response())
@@ -554,8 +553,7 @@ class IMAPClient(object):
         *charset* specifies the character set of the strings in the
         criteria. It defaults to US-ASCII.
 
-        See `RFC 3501 section 6.4.4 <http://tools.ietf.org/html/rfc3501#section-6.4.4>`_
-        for more details.
+        See :rfc:`3501#section-6.4.4` for more details.
         """
         criteria = normalise_search_criteria(criteria)
 
@@ -582,7 +580,7 @@ class IMAPClient(object):
 
         Each thread is a list of messages ids.
 
-        See `RFC 5256 <https://tools.ietf.org/html/rfc5256>`_ for more details.
+        See :rfc:`5256` for more details.
         """
         if not self.has_capability('THREAD=' + algorithm):
             raise ValueError('server does not support %s threading algorithm'
@@ -610,7 +608,8 @@ class IMAPClient(object):
             SUBJECT
 
         The *criteria* argument is as per search().
-        See `RFC 5256 <http://tools.ietf.org/html/rfc5256>`_ for full details.
+
+        See :rfc:`5256` for full details.
 
         Note that SORT is an extension to the IMAP4 standard so it may
         not be supported by all IMAP servers.
@@ -738,7 +737,7 @@ class IMAPClient(object):
         'RFC822']``.
 
         *modifiers* are required for some extensions to the IMAP
-        protocol (eg. RFC 4551). These should be a sequnce of strings
+        protocol (eg. :rfc:`4551`). These should be a sequnce of strings
         if specified, for example ``['CHANGEDSINCE 123']``.
 
         A dictionary is returned, indexed by message number. Each item
@@ -839,11 +838,8 @@ class IMAPClient(object):
         sequence numbers 2 and 1 where deleted, leaving no recent
         messages in the folder.
 
-        See `RFC 3501 section 6.4.3
-        <http://tools.ietf.org/html/rfc3501#section-6.4.3>`_ and
-        `RFC 3501 section 7.4.1
-        <http://tools.ietf.org/html/rfc3501#section-7.4.1>`_ for more
-        details.
+        See :rfc:`3501#section-6.4.3` section 6.4.3 and
+        :rfc:`3501#section-7.4.1` section 7.4.1 for more details.
         """
         tag = self._imap._command('EXPUNGE')
         return self._consume_until_tagged_response(tag, 'EXPUNGE')
