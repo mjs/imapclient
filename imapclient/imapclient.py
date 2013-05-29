@@ -309,8 +309,7 @@ class IMAPClient(object):
         dat = from_bytes(dat)
         self._checkok(cmd, typ, dat)
         typ, dat = self._imap._untagged_response(typ, dat, cmd)
-        dat = from_bytes(dat)
-        return self._proc_folder_list(dat)
+        return self._proc_folder_list(from_bytes(dat))
 
     def _proc_folder_list(self, folder_data):
         # Filter out empty strings and None's.
@@ -356,8 +355,7 @@ class IMAPClient(object):
         """
         self._command_and_check('select', self._normalise_folder(folder), readonly)
         untagged = self._imap.untagged_responses
-        untagged = from_bytes(untagged)
-        return self._process_select_response(untagged)
+        return self._process_select_response(from_bytes(untagged))
 
     def _process_select_response(self, resp):
         out = {}
@@ -777,8 +775,7 @@ class IMAPClient(object):
         data = from_bytes(data)
         self._checkok('fetch', typ, data)
         typ, data = self._imap._untagged_response(typ, data, 'FETCH')
-        data = from_bytes(data)
-        return parse_fetch_response(data, self.normalise_times, self.use_uid)
+        return parse_fetch_response(from_bytes(data), self.normalise_times, self.use_uid)
 
     def append(self, folder, msg, flags=(), msg_time=None):
         """Append a message to *folder*.
@@ -1036,9 +1033,7 @@ def from_bytes(data):
     if isinstance(data, dict):
         decoded = {}
         for key, value in iteritems(data):
-            key = from_bytes(key)
-            value = from_bytes(value)
-            decoded[key] = value
+            decoded[from_bytes(key)] = from_bytes(value)
         return decoded
     elif isinstance(data, list):
         return [from_bytes(item) for item in data]
