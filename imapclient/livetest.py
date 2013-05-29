@@ -55,11 +55,14 @@ class _TestBase(unittest.TestCase):
     conf = None
     use_uid = True
 
+    @classmethod
+    def setUpClass(cls):
+        cls.client = create_client_from_config(cls.conf)
+        cls.client.use_uid = cls.use_uid
+        cls.base_folder = cls.conf.namespace[0] + '__imapclient'
+        cls.folder_delimiter = cls.conf.namespace[1]
+
     def setUp(self):
-        self.client = create_client_from_config(self.conf)
-        self.client.use_uid = self.use_uid
-        self.base_folder = self.conf.namespace[0] + '__imapclient'
-        self.folder_delimiter = self.conf.namespace[1]
         self.clear_test_folders()
         self.unsub_all_test_folders()
         self.client.create_folder(self.base_folder)
@@ -68,7 +71,10 @@ class _TestBase(unittest.TestCase):
     def tearDown(self):
         self.clear_test_folders()
         self.unsub_all_test_folders()
-        self.client.logout()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.client.logout()
 
     def skip_unless_capable(self, capability, name=None):
         if not self.client.has_capability(capability):
@@ -93,17 +99,18 @@ class _TestBase(unittest.TestCase):
     def clear_test_folders(self):
         self.client.folder_encode = False
 
-        # Sort folders depth first because some implementations
-        # (e.g. MS Exchange) will delete child folders when a
-        # parent is deleted.
-        def get_folder_depth(folder):
-            return folder.count(self.folder_delimiter)
         folder_names = sorted(self.all_test_folder_names(),
-                              key=get_folder_depth,
+                              key=self.get_folder_depth,
                               reverse=True)
         for folder in folder_names:
             self.client.delete_folder(folder)
         self.client.folder_encode = True
+
+    def get_folder_depth(self, folder):
+        # Sort folders depth first because some implementations
+        # (e.g. MS Exchange) will delete child folders when a
+        # parent is deleted.
+        return folder.count(self.folder_delimiter)
 
     def clear_folder(self, folder):
         self.client.select_folder(folder)
@@ -637,7 +644,6 @@ def createUidTestClass(conf, use_uid):
                 return self.skipTest("Server doesn't support CONDSTORE")
 
             # A little dance to ensure MODSEQ tracking is turned on.
-            # I'm looking at you Dovecot!
             self.client.select_folder(self.base_folder)
             self.append_msg(SIMPLE_MESSAGE)
             msg_id = self.client.search()[0]
