@@ -153,7 +153,7 @@ class TestListFolders(IMAPClientTest):
 class TestAppend(IMAPClientTest):
 
     def test_without_msg_time(self):
-        self.client._imap.append.return_value = ('OK', ['Good'])
+        self.client._imap.append.return_value = ('OK', [b'Good'])
         msg = 'hi'
 
         self.client.append('foobar', msg, ['FLAG', 'WAVE'], None)
@@ -164,7 +164,7 @@ class TestAppend(IMAPClientTest):
     @patch('imapclient.imapclient.datetime_to_imap')
     def test_with_msg_time(self, datetime_to_imap):
         datetime_to_imap.return_value = 'somedate'
-        self.client._imap.append.return_value = ('OK', ['Good'])
+        self.client._imap.append.return_value = ('OK', [b'Good'])
         msg = b'bye'
 
         self.client.append('foobar', msg, ['FLAG', 'WAVE'],
@@ -192,12 +192,12 @@ class TestDateTimeToImap(unittest.TestCase):
 class TestAclMethods(IMAPClientTest):
 
     def test_getacl(self):
-        self.client._imap.getacl.return_value = ('OK', ['INBOX Fred rwipslda Sally rwip'])
+        self.client._imap.getacl.return_value = ('OK', [b'INBOX Fred rwipslda Sally rwip'])
         acl = self.client.getacl('INBOX')
         self.assertSequenceEqual(acl, [('Fred', 'rwipslda'), ('Sally', 'rwip')])
 
     def test_setacl(self):
-        self.client._imap.setacl.return_value = ('OK', ["SETACL done"])
+        self.client._imap.setacl.return_value = ('OK', [b"SETACL done"])
 
         response = self.client.setacl('folder', sentinel.who, sentinel.what)
 
@@ -265,11 +265,11 @@ class TestIdleAndNoop(IMAPClientTest):
         def fake_get_line():
             count = six.next(counter)
             if count == 0:
-                return '* 99 EXISTS'
+                return b'* 99 EXISTS'
             else:
                 raise socket.timeout
         self.client._imap._get_line = fake_get_line
-            
+
         responses = self.client.idle_check()
 
         mock_select.assert_called_once_with([mock_sock], [], [], None)
@@ -400,17 +400,17 @@ class TestNamespace(IMAPClientTest):
         self.client._imap.namespace.return_value = ('OK', [value])
 
     def test_simple(self):
-        self.set_return('(("FOO." "/")) NIL NIL')
+        self.set_return(b'(("FOO." "/")) NIL NIL')
         self.assertEqual(self.client.namespace(), ((('FOO.', '/'),), None, None))
 
     def test_other_only(self):
-        self.set_return('NIL NIL (("" "."))')
+        self.set_return(b'NIL NIL (("" "."))')
         self.assertEqual(self.client.namespace(), (None, None, (("", "."),)))
 
     def test_complex(self):
-        self.set_return('(("" "/")) '
-                        '(("~" "/")) '
-                        '(("#shared/" "/") ("#public/" "/")("#ftp/" "/")("#news." "."))')
+        self.set_return(b'(("" "/")) '
+                        b'(("~" "/")) '
+                        b'(("#shared/" "/") ("#public/" "/")("#ftp/" "/")("#news." "."))')
         self.assertEqual(self.client.namespace(), (
             (("", "/"),),
             (("~", "/"),),
@@ -444,7 +444,7 @@ class TestCapabilities(IMAPClientTest):
         self.client._imap.capabilities = ('FOO',)
         self.client._imap.untagged_responses = {}
         self.client._imap.state = 'SELECTED'
-        self.client._imap.capability.return_value = ('OK', ['FOO BAR'])
+        self.client._imap.capability.return_value = ('OK', [b'FOO BAR'])
 
         self.assertEqual(self.client.capabilities(), ('FOO', 'BAR'))
         self.assertEqual(self.client._cached_capabilities, ('FOO', 'BAR'))
@@ -455,7 +455,7 @@ class TestThread(IMAPClientTest):
     def test_thread_without_uid(self):
         self.client._cached_capabilities = ('THREAD=REFERENCES',)
         self.client.use_uid = False
-        self.client._imap.thread.return_value = ('OK', ['(1 2)(3)(4 5 6)'])
+        self.client._imap.thread.return_value = ('OK', [b'(1 2)(3)(4 5 6)'])
 
         threads = self.client.thread()
 
@@ -464,7 +464,7 @@ class TestThread(IMAPClientTest):
     def test_thread_with_uid(self):
         self.client._cached_capabilities = ('THREAD=REFERENCES',)
         self.client.use_uid = True
-        self.client._imap.uid.return_value = ('OK', ['(1 2)(3)(4 5 6)'])
+        self.client._imap.uid.return_value = ('OK', [b'(1 2)(3)(4 5 6)'])
 
         threads = self.client.thread()
 
