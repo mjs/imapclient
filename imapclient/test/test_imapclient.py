@@ -150,6 +150,41 @@ class TestListFolders(IMAPClientTest):
         self.assertEqual(folders, [((r'\HasNoChildren',), '/', 'last')])
 
 
+class TestSelectFolder(IMAPClientTest):
+
+    def test_normal(self):
+        self.client._command_and_check = Mock()
+        self.client._imap.untagged_responses = {
+            'OK': [],
+            'exists': ['1'],
+            'RECENT': ['2'],
+            'UIDNEXT': ['3'],
+            'UIDVALIDITY': ['4'],
+            'HIGHESTMODSEQ': ['5'],
+            'FLAGS': ['(ABC DEF)'],
+            'PERMANENTFLAGS': ['(XXX ZZZ)'],
+            'READ-WRITE': [''],
+            'OTHER': ['blah']
+        }
+
+        result = self.client.select_folder(b'folder_name', sentinel.readonly)
+
+        self.client._command_and_check.assert_called_once_with('select',
+                                                               '"folder_name"',
+                                                               sentinel.readonly)
+        self.assertEqual(result, {
+            'EXISTS': 1,
+            'RECENT': 2,
+            'UIDNEXT': 3,
+            'UIDVALIDITY': 4,
+            'HIGHESTMODSEQ': 5,
+            'FLAGS': ('ABC', 'DEF'),
+            'PERMANENTFLAGS': ('XXX', 'ZZZ'),
+            'READ-WRITE': True,
+            'OTHER': ['blah']
+        })
+
+
 class TestAppend(IMAPClientTest):
 
     def test_without_msg_time(self):

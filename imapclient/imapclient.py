@@ -363,7 +363,7 @@ class IMAPClient(object):
             key = key.upper()
             if key == 'OK':
                 continue
-            elif key in ('EXISTS', 'RECENT', 'UIDNEXT', 'UIDVALIDITY'):
+            elif key in ('EXISTS', 'RECENT', 'UIDNEXT', 'UIDVALIDITY', 'HIGHESTMODSEQ'):
                 value = int(value[0])
             elif key in ('FLAGS', 'PERMANENTFLAGS'):
                 value = parse_response(value)[0]
