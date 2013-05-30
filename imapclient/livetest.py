@@ -666,7 +666,7 @@ def createUidTestClass(conf, use_uid):
             self.clear_folder(self.base_folder)
 
             # Actual testing starts here
-            maxModSeq = int(self.client.select_folder(self.base_folder)['HIGHESTMODSEQ'][0])
+            maxModSeq = self.client.select_folder(self.base_folder)['HIGHESTMODSEQ']
             self.append_msg(SIMPLE_MESSAGE)
             msg_id = self.client.search()[0]
             resp = self.client.fetch(msg_id, ['FLAGS'], ['CHANGEDSINCE %d' % maxModSeq])
