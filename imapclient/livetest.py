@@ -266,15 +266,12 @@ class TestGeneral(_TestBase):
 
         folders = [
             'foobar',
-            'stuff & things',
             '123',
-            'test & \u2622',
             b'foobar',
-            b'stuff & things',
             b'123',
         ]
         if not self.is_fastmail():
-            # Fastmail doesn't appear like double quotes in folder names
+            # Fastmail doesn't appear to like double quotes in folder names
             folders.extend([
                 '"foobar"',
                 'foo "bar"',
@@ -282,9 +279,26 @@ class TestGeneral(_TestBase):
                 b'foo "bar"',
             ])
 
-        folders = self.add_prefix_to_folders(folders)
+        # Run folder tests with folder_encode off
+        self.client.folder_encode = False
+        try:
+            self.run_folder_tests(folders)
+        finally:
+            self.client.folder_encode = True
 
-        for folder in folders:
+        # Now with folder_encode on, adding in names that only work
+        # when this is enabled.
+        folders.extend([
+            'test & \u2622',
+            'stuff & things',
+            b'stuff & things',
+        ])
+        self.run_folder_tests(folders)
+
+    def run_folder_tests(self, folder_names):
+        folder_names = self.add_prefix_to_folders(folder_names)
+
+        for folder in folder_names:
             self.assertFalse(self.client.folder_exists(folder))
 
             self.client.create_folder(folder)
