@@ -30,6 +30,8 @@ explains IMAP in detail. Other RFCs also apply to various extensions
 to the base protocol. These are referred to in the documentation below
 where relevant.
 
+Python versions 2.6, 2.7, 3.2 and 3.3 are officially supported.
+
 A Simple Example
 ----------------
 The core of the IMAPClient API is the IMAPClient class. Instantiating

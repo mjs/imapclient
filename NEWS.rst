@@ -22,6 +22,22 @@ that there will be a problem. Please test your existing applications
 thoroughly with this verison of IMAPClient before deploying to
 production situations.
 
+Minor Features
+--------------
+* "python setup.py test" now runs the unit tests
+* live tests that aren't UID related are now only run once
+* live tests now perform far less logins to the server under test
+* Unit tests can now be run for all supported Python versions using ``tox``.
+* Much improved documentation regarding working on the project.
+* Various documentation clarifications.
+
+Minor Bug Fixes
+---------------
+* HIGHESTMODSEQ in SELECT response is now parsed correctly
+* Fixed daylight saving handling in FixedOffset class
+* Fixed --port command line bug in imapclient.interact when SSL
+  connections are made.
+
 =======
  0.9.2
 =======

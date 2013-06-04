@@ -1,6 +1,6 @@
 Introduction
 ------------
-IMAPClient aims to be a easy-to-use, Pythonic and complete IMAP client
+IMAPClient is an easy-to-use, Pythonic and complete IMAP client
 library.
 
 Features:
@@ -17,8 +17,7 @@ Features:
 - Convenience methods are provided for commonly used functionality.
 - Exceptions are raised when errors occur.
 
-As of version 0.10, Python versions 2.6, 2.7, 3.2 and 3.3 are
-officially supported.
+Python versions 2.6, 2.7, 3.2 and 3.3 are officially supported.
 
 Why IMAPClient?
 ---------------
