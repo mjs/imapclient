@@ -40,7 +40,7 @@ Unit Tests
 There are comprehensive unit tests for the server response parser and
 a number of other parts of the code. These tests use the unittest2
 package which is also included as the standard unittest package in
-Python 2.7 and 3.2.
+Python 2.7 and 3.2 onwards.
 
 To run the tests run::
 
@@ -61,6 +61,13 @@ script (for Unix-like systems) or the unit2.py script::
      unit2 discover
      unit2.py discover
 
+Running the Unit Tests Against Multiple Python Versions
+-------------------------------------------------------
+It is possible to run the unit tests against all supported Python
+versions at once using `tox`_. Once installed, the ``tox`` command
+will use the tox.ini file in the root of the source directory and run
+the unit tests against the Python versions officially supported by
+IMAPClient.
 
 "Live" Tests
 ------------
@@ -100,3 +107,5 @@ Although not essential, it will make the project maintainer a much
 happier person if change submissions include appropriate updates to
 unit tests and the live tests. Please ask if you're unsure how of how
 the tests work.
+
+.. _`tox`: http://testrun.org/tox/
