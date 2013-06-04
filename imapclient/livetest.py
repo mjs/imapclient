@@ -103,7 +103,11 @@ class _TestBase(unittest.TestCase):
                               key=self.get_folder_depth,
                               reverse=True)
         for folder in folder_names:
-            self.client.delete_folder(folder)
+            try:
+                self.client.delete_folder(folder)
+            except IMAPClient.Error:
+                if not self.is_fastmail():
+                    raise
         self.client.folder_encode = True
 
     def get_folder_depth(self, folder):
