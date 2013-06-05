@@ -69,31 +69,6 @@ will use the tox.ini file in the root of the source directory and run
 the unit tests against the Python versions officially supported by
 IMAPClient.
 
-"Live" Tests
-------------
-This script runs a series of functional tests which exercise
-IMAPClient against a live IMAP account. It is useful for ensuring
-compatibility with a given IMAP server implementation. livetest.py
-must be used with an account with write access.
-
-WARNING: As of version 0.9, livetest limits it's activity to a folder
-it creates and subfolders of that folder. It *should* be safe to use
-with any IMAP account. That said, some of the operations used by
-livetest are destructive and could cause unintended loss of non-test
-data. Please don't run the live test against a truly important IMAP
-account.
-
-Run livetest.py with the --help option to see usage.
-
-Please send the output of livetest.py to the mailing list if it fails
-to run successfully against a particular IMAP server. Reports of
-successful runs are also welcome.  Please include the type and version
-of the IMAP server, if known.
-
-The livetest functionality can also be accessed like this::
-
-    python -m imapclient.livetest ...
-
 Contributing To The Project
 ---------------------------
 The best way to contribute changes to IMAPClient is to fork the
