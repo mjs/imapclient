@@ -1,4 +1,4 @@
-include README COPYING AUTHORS THANKS NEWS
+include README.rst NEWS.rst HACKING.rst COPYING AUTHORS THANKS
 include livetest.py
 include distribute_setup.py
 include interact.py
