@@ -86,11 +86,6 @@ IMAPClient. If the IMAPClient was installed from PyPI the examples
 subdirectory can be found under the imapclient package installation
 directory.
 
-Working on IMAPClient
----------------------
-The HACKING.rst document contains information for those interested in
-improving IMAPClient and contributing back to the project.
-
 Mailing List
 ------------
 The IMAPClient mailing list can be used to ask IMAPClient related
@@ -99,6 +94,18 @@ questions and report bugs.
 - To send to the list and subscribe send an email to imapclient@librelist.com
 - Archives of the list are available at http://librelist.com/browser/imapclient/
 - See http://librelist.com/help.html for more information about the mailing list
+
+Working on IMAPClient
+---------------------
+The HACKING.rst document contains information for those interested in
+improving IMAPClient and contributing back to the project.
+
+IMAP Servers
+------------
+IMAPClient is heavily tested against Dovecot, Gmail, Fastmail.fm
+(who use a modified Cyrus implementation) and occasionally Microsoft
+Exchange. Access to accounts on other IMAP servers/services for
+testing would be greatly appreciated.
 
 Interactive Console
 -------------------
