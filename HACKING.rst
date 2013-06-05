@@ -46,8 +46,9 @@ To run the tests run::
 
      python setup.py test
 
-from the root of the package source. This will install any
-dependencies required by the tests if they aren't already installed.
+from the root of the package source. This will install the Mock
+package (locally) if it isn't already installed as it is required for
+many of the tests.
 
 Where unittest2 is included in the standard library (eg. Python 2.7
 and 3.2) you can also run all unit tests like this (from the root

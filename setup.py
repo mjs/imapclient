@@ -56,6 +56,7 @@ setup(name='IMAPClient',
       download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.zip' % version,
       packages=find_packages(),
       package_data=dict(imapclient=['examples/*.py']),
+      tests_require=['mock==0.8.0'],
       description="Easy-to-use, Pythonic and complete IMAP client library",
       long_description=desc,
       classifiers=[
