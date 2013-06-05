@@ -18,6 +18,8 @@ patched.
 Efforts are made to only perform the patch once.
 """
 
+from __future__ import unicode_literals
+
 import sys
 import imaplib
 
@@ -41,8 +43,8 @@ def _fixed_readline(self):
 
 _fixed_readline.patched = True    # Marker to indicate patched version 
 
-
 ssl_class = imaplib.IMAP4_SSL
 
-if _is_affected_version(sys.version_info) and not hasattr(ssl_class.readline, 'patched'):
-    ssl_class.readline = _fixed_readline
+def apply_patch():
+    if _is_affected_version(sys.version_info) and not hasattr(ssl_class.readline, 'patched'):
+        ssl_class.readline = _fixed_readline

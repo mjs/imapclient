@@ -1,4 +1,10 @@
-from ConfigParser import SafeConfigParser, NoOptionError
+from __future__ import unicode_literals
+
+try:
+    from ConfigParser import SafeConfigParser, NoOptionError
+except ImportError:
+    from configparser import SafeConfigParser, NoOptionError
+
 import imapclient
 import urllib
 
@@ -27,9 +33,8 @@ def parse_config_file(path):
         oauth2_client_secret=None,
         oauth2_refresh_token=None,
         ))
-    fh = file(path)
-    parser.readfp(fh)
-    fh.close()
+    with open(path, 'r') as fh:
+        parser.readfp(fh)
     section = 'main'
     assert parser.sections() == [section], 'Only expected a [main] section'
 

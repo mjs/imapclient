@@ -1,4 +1,43 @@
-.. -*-Mode: rst; -*-
+======
+ 0.10
+======
+
+Python 3 support (#22) [API CHANGE]
+-----------------------------------
+Python 3.2 and 3.3 are now officially supported. This release also
+means that Python versions older than 2.6 are no longer supported.
+
+A single source approach has been used, with no conversion step required.
+
+A big thank you to Mathieu Agopian for his massive contribution to
+getting the Python 3 port finished. His changes and ideas feature
+heavily in this release.
+
+**IMPORTANT**: Under Python 2, all strings returned by IMAPClient are now
+returned as unicode objects. With the exception of folder names, these
+unicode objects will only contain characters in the ASCII range so
+this shouldn't break existing code, however there is always a chance
+that there will be a problem. Please test your existing applications
+thoroughly with this verison of IMAPClient before deploying to
+production situations.
+
+Minor Changes
+-------------
+* "python setup.py test" now runs the unit tests
+* Mock library is now longer included (listed as external test dependency)
+* live tests that aren't UID related are now only run once
+* live tests now perform far less logins to the server under test
+* Unit tests can now be run for all supported Python versions using ``tox``.
+* Improved documentation regarding working on the project.
+* Many documentation fixes and improvements.
+
+Minor Bug Fixes
+---------------
+* HIGHESTMODSEQ in SELECT response is now parsed correctly
+* Fixed daylight saving handling in FixedOffset class
+* Fixed --port command line bug in imapclient.interact when SSL
+  connections are made.
+
 =======
  0.9.2
 =======

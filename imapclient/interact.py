@@ -4,11 +4,13 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+from __future__ import unicode_literals
+
 
 from getpass import getpass
 from optparse import OptionParser
 
-from config import parse_config_file, create_client_from_config
+from .config import parse_config_file, create_client_from_config
 
 def command_line():
     p = OptionParser()
@@ -19,7 +21,8 @@ def command_line():
     p.add_option('-p', '--password', dest='password', action='store',
                  help='Password to login with')
     p.add_option('-P', '--port', dest='port', action='store', type=int,
-                 default=None, help='IMAP port to use (default is 143)')
+                 default=None,
+                 help='IMAP port to use (default is 143, or 993 for SSL)')
     p.add_option('-s', '--ssl', dest='ssl', action='store_true', default=False,
                  help='Use SSL connection')
     p.add_option('-f', '--file', dest='file', action='store', default=None,
@@ -39,8 +42,6 @@ def command_line():
         for opt_name in ('host', 'username', 'password'):
             if not getattr(opts, opt_name):
                 setattr(opts, opt_name, getpass(opt_name + ': '))
-        if not opts.port:
-            opts.port = 143
         # Options not supported on the command line
         opts.oauth = False
         opts.oauth2 = False
@@ -49,9 +50,9 @@ def command_line():
 
 def main():
     opts = command_line()
-    print 'Connecting...'
+    print('Connecting...')
     client = create_client_from_config(opts)
-    print 'Connected.'
+    print('Connected.')
     banner = '\nIMAPClient instance is "c"'
 
     def ipython_011(c):

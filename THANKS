@@ -40,7 +40,10 @@ Zac Witte
 
 Lukasz Mierzwa     
     THREAD support. 
-    
+
+Mathieu Agopian
+    Significant Python 3 porting contributions.
+
 Bug Reports
 ------------
 Brian Jackson
@@ -49,6 +52,7 @@ Mark Eichin (eichin _AT_ thok.org)
 Fergal Daly (fergal _AT_ esatclear.ie)
 Bob Yexley (bob _AT_ yexley.net)
 Rhett Garber
+Erik Quaeghebeur
 
 
 The project was partially developed while the author was working at NetBox Blue

@@ -4,6 +4,7 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from imapclient import IMAPClient
+from __future__ import unicode_literals
+
 from imapclient.interact import main
 main()

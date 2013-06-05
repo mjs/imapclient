@@ -2,8 +2,9 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+from mock import patch, sentinel
+
 from imapclient.imapclient import IMAPClient
-from imapclient.test.mock import patch, sentinel
 from imapclient.test.util import unittest
 
 class TestInit(unittest.TestCase):

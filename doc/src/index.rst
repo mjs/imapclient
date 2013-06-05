@@ -15,7 +15,8 @@ IMAPClient
 
 Introduction
 ------------
-IMAPClient is a a Pythonic, easy-to-use IMAP client package.
+IMAPClient is an easy-to-use, Pythonic and complete IMAP client
+library.
 
 Although IMAPClient actually uses the imaplib module from the Python
 standard library under the hood, it provides a different API. Instead
@@ -25,11 +26,12 @@ types. Exceptions are raised when problems occur (no error checking of
 return values is required).
 
 IMAPClient is straight forward it use, but it can be useful to have at
-least a general understanding of the IMAP protocol. `RFC 3501
-<http://www.faqs.org/rfcs/rfc3501.html>`_ explains IMAP in
-detail. Other RFCs also apply to various extensions to the base
-protocol. These are referred to in the documentation below where
-relevant.
+least a general understanding of the IMAP protocol. :rfc:`3501`
+explains IMAP in detail. Other RFCs also apply to various extensions
+to the base protocol. These are referred to in the documentation below
+where relevant.
+
+Python versions 2.6, 2.7, 3.2 and 3.3 are officially supported.
 
 A Simple Example
 ----------------
@@ -120,10 +122,9 @@ Folder Name Encoding
 ~~~~~~~~~~~~~~~~~~~~
 Any method that takes a folder name will accept a standard string or a
 unicode string. Unicode strings will be transparently encoded using
-modified UTF-7 as specified by `RFC 3501 section 5.1.3
-<http://tools.ietf.org/html/rfc3501#section-5.1.3>`_.  This allows for
-arbitrary unicode characters (eg. non-English characters) to be used
-in folder names.
+modified UTF-7 as specified by :rfc:`3501#section-5.1.3`.  This allows
+for arbitrary unicode characters (eg. non-English characters) to be
+used in folder names.
 
 All folder names returned by IMAPClient are always returned as unicode
 strings.

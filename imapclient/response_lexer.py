@@ -14,7 +14,20 @@ use for external callers.
 # http://bugs.python.org/issue7594, but redone to be specific to IMAPs
 # requirements while offering nice performance by using generators everywhere.
 
+from __future__ import unicode_literals
+
+from . import six
+
 __all__ = ["Lexer"]
+
+if six.PY3:
+    unichr = chr  # unichr doesn't exist in py3 where every string is unicode
+
+CTRL_CHARS = frozenset(unichr(c) for c in range(32))
+ALL_CHARS = frozenset(unichr(c) for c in range(256))
+SPECIALS = frozenset(' ()%"[')
+NON_SPECIALS = ALL_CHARS - SPECIALS - CTRL_CHARS
+WHITESPACE = frozenset(' \t\r\n')
 
 
 class TokenSource(object):
@@ -35,16 +48,12 @@ class TokenSource(object):
 
     def __iter__(self):
         return self.src
-    
+
 
 class Lexer(object):
-    "A lexical analyzer class for IMAP"
-
-    CTRL_CHARS = ''.join([chr(ch) for ch in range(32)])
-    SPECIALS = r' ()%"[' + CTRL_CHARS
-    ALL_CHARS = [chr(ch) for ch in range(256)]
-    NON_SPECIALS = frozenset([ch for ch in ALL_CHARS if ch not in SPECIALS])
-    WHITESPACE = frozenset(' \t\r\n')
+    """
+    A lexical analyzer class for IMAP
+    """
 
     def __init__(self):
         self.sources = None
@@ -56,21 +65,21 @@ class Lexer(object):
             for nextchar in stream_i:
                 if escape and nextchar == "\\":
                     escaper = nextchar
-                    nextchar = stream_i.next()
+                    nextchar = six.next(stream_i)
                     if nextchar != escaper and nextchar != end_char:
-                        token += escaper
+                        token += escaper.decode
                 elif nextchar == end_char:
                     break
                 token += nextchar
             else:
-                raise ValueError("No closing %r" % end_char)
+                raise ValueError("No closing '%s'" % end_char)
         except StopIteration:
-            raise ValueError("No closing %r" % end_char)
+            raise ValueError("No closing '%s'" % end_char)
         return token + end_char
 
     def read_token_stream(self, stream_i):
-        whitespace = self.WHITESPACE
-        wordchars = self.NON_SPECIALS
+        whitespace = WHITESPACE
+        wordchars = NON_SPECIALS
         read_until = self.read_until
 
         while True:
@@ -129,9 +138,9 @@ class LiteralHandlingIter:
         if isinstance(resp_record, tuple):
             # A 'record' with a string which includes a literal marker, and
             # the literal itself.
-            src_text, self.literal = resp_record
-            assert src_text.endswith("}"), src_text
-            self.src_text = src_text
+            self.src_text = resp_record[0]
+            assert self.src_text.endswith("}"), self.src_text
+            self.literal = resp_record[1]
         else:
             # just a line with no literals.
             self.src_text = resp_record
@@ -152,13 +161,13 @@ class PushableIterator(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         if self.pushed:
             return self.pushed.pop()
-        return self.it.next()
+        return six.next(self.it)
+
+    # For Python 2 compatibility
+    next = __next__
 
     def push(self, item):
         self.pushed.append(item)
-
-        
-        
