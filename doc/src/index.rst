@@ -15,7 +15,8 @@ IMAPClient
 
 Introduction
 ------------
-IMAPClient is a a Pythonic, easy-to-use IMAP client package.
+IMAPClient is an easy-to-use, Pythonic and complete IMAP client
+library.
 
 Although IMAPClient actually uses the imaplib module from the Python
 standard library under the hood, it provides a different API. Instead
