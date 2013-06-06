@@ -632,7 +632,7 @@ class IMAPClient(object):
         msgid1: [flag1, flag2, ... ], }``.
         """
         response = self.fetch(messages, ['FLAGS'])
-        return self._flatten_dict(response)
+        return self._filter_fetch_dict(response, 'FLAGS')
 
     def add_flags(self, messages, flags):
         """Add *flags* to *messages*.
@@ -642,7 +642,7 @@ class IMAPClient(object):
         Returns the flags set for each modified message (see
         *get_flags*).
         """
-        return self._store('+FLAGS', messages, flags)
+        return self._store('+FLAGS', messages, flags, 'FLAGS')
 
     def remove_flags(self, messages, flags):
         """Remove one or more *flags* from *messages*.
@@ -652,7 +652,7 @@ class IMAPClient(object):
         Returns the flags set for each modified message (see
         *get_flags*).
         """
-        return self._store('-FLAGS', messages, flags)
+        return self._store('-FLAGS', messages, flags, 'FLAGS')
 
     def set_flags(self, messages, flags):
         """Set the *flags* for *messages*.
@@ -662,7 +662,7 @@ class IMAPClient(object):
         Returns the flags set for each modified message (see
         *get_flags*).
         """
-        return self._store('FLAGS', messages, flags)
+        return self._store('FLAGS', messages, flags, 'FLAGS')
 
     def get_gmail_labels(self, messages):
         """Return the label set for each message in *messages*.
@@ -674,7 +674,7 @@ class IMAPClient(object):
         attribute (eg. Gmail).
         """
         response = self.fetch(messages, ['X-GM-LABELS'])
-        return self._flatten_dict(response)
+        return self._filter_fetch_dict(response, 'X-GM-LABELS')
 
     def add_gmail_labels(self, messages, labels):
         """Add *labels* to *messages*.
@@ -687,7 +687,7 @@ class IMAPClient(object):
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
         """
-        return self._store('+X-GM-LABELS', messages, labels)
+        return self._store('+X-GM-LABELS', messages, labels, 'X-GM-LABELS')
 
     def remove_gmail_labels(self, messages, labels):
         """Remove one or more *labels* from *messages*.
@@ -700,7 +700,7 @@ class IMAPClient(object):
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
         """
-        return self._store('-X-GM-LABELS', messages, labels)
+        return self._store('-X-GM-LABELS', messages, labels, 'X-GM-LABELS')
 
     def set_gmail_labels(self, messages, labels):
         """Set the *labels* for *messages*.
@@ -713,7 +713,7 @@ class IMAPClient(object):
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
         """
-        return self._store('X-GM-LABELS', messages, labels)
+        return self._store('X-GM-LABELS', messages, labels, 'X-GM-LABELS')
 
     def delete_messages(self, messages):
         """Delete one or more *messages* from the currently selected
@@ -897,7 +897,7 @@ class IMAPClient(object):
     def _checkok(self, command, typ, data):
         self._check_resp('OK', command, typ, data)
 
-    def _store(self, cmd, messages, flags):
+    def _store(self, cmd, messages, flags, fetch_key):
         """Worker function for the various flag manipulation methods.
 
         *cmd* is the STORE command to use (eg. '+FLAGS').
@@ -909,26 +909,11 @@ class IMAPClient(object):
                                        cmd,
                                        seq_to_parenstr(flags),
                                        uid=True)
-        return self._flatten_dict(parse_fetch_response(data))
+        return self._filter_fetch_dict(parse_fetch_response(data), fetch_key)
 
-    def _flatten_dict(self, fetch_dict):
-        """Return the msg id with the value of the key which isn't 'SEQ'.
-
-        eg: flatten_dict({1: {'SEQ': 1, 'FLAGS': ('abc', 'def')},
-                          2: {'SEQ': 2, 'FLAGS': ('ghi', 'jkl')})
-        >>> {1: ('abc', 'def'), 2: ('ghi', 'jkl')}
-
-        """
-        # remove all SEQ keys
-        for msgid, data in iteritems(fetch_dict):
-            if 'SEQ' in data:
-                del data['SEQ']
-
-        # there should now be only one key left per data dict, use its value
-        return dict(
-            (msgid, tuple(data.values())[0])
-            for msgid, data in iteritems(fetch_dict)
-            )
+    def _filter_fetch_dict(self, fetch_dict, key):
+        return dict((msgid, data[key])
+                    for msgid, data in iteritems(fetch_dict))
 
     def __debug_get(self):
         return self._imap.debug
