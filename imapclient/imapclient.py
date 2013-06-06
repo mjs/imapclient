@@ -488,8 +488,8 @@ class IMAPClient(object):
         """
         if what is None:
             what = ('MESSAGES', 'RECENT', 'UIDNEXT', 'UIDVALIDITY', 'UNSEEN')
-        elif isinstance(what, text_type):
-            what = (what,)
+        else:
+            what = normalise_text_list(what)
         what_ = '(%s)' % (' '.join(what))
 
         data = self._command_and_check('status', self._normalise_folder(folder), what_, unpack=True)
@@ -618,11 +618,8 @@ class IMAPClient(object):
         if not self.has_capability('SORT'):
             raise self.Error('The server does not support the SORT extension')
 
-        if isinstance(sort_criteria, text_type):
-            sort_criteria = (sort_criteria,)
-        sort_criteria = seq_to_parenlist([s.upper() for s in sort_criteria])
-
-        ids = self._command_and_check('sort', sort_criteria,
+        ids = self._command_and_check('sort',
+                                      seq_to_parenstr_upper(sort_criteria),
                                       charset,
                                       *normalise_search_criteria(criteria),
                                       uid=True, unpack=True)
@@ -761,13 +758,12 @@ class IMAPClient(object):
         if not messages:
             return {}
 
-        msg_list = messages_to_str(messages)
-        data_list = seq_to_parenlist([p.upper() for p in data])
-        modifiers_list = None
-        if modifiers is not None:
-            modifiers_list = seq_to_parenlist([m.upper() for m in modifiers])
-
-        args = ['FETCH', msg_list, data_list, modifiers_list]
+        args = [
+            'FETCH',
+            messages_to_str(messages),
+            seq_to_parenstr_upper(data),
+            seq_to_parenstr_upper(modifiers) if modifiers else None
+        ]
         if self.use_uid:
             args.insert(0, 'UID')
         tag = self._imap._command(*args)
@@ -804,7 +800,7 @@ class IMAPClient(object):
             time_val = None
         return self._command_and_check('append',
                                        self._normalise_folder(folder),
-                                       seq_to_parenlist(flags),
+                                       seq_to_parenstr(flags),
                                        time_val,
                                        to_bytes(msg),
                                        unpack=True)
@@ -911,7 +907,7 @@ class IMAPClient(object):
         data = self._command_and_check('store',
                                        messages_to_str(messages),
                                        cmd,
-                                       seq_to_parenlist(flags),
+                                       seq_to_parenstr(flags),
                                        uid=True)
         return self._flatten_dict(parse_fetch_response(data))
 
@@ -958,22 +954,40 @@ class IMAPClient(object):
         return self._imap._quote(folder_name)
 
 
+def normalise_text_list(items):
+    return list(_normalise_text_list(items))
+
+def seq_to_parenstr(items):
+    return _join_and_paren(_normalise_text_list(items))
+
+def seq_to_parenstr_upper(items):
+    return _join_and_paren(item.upper() for item in _normalise_text_list(items))
+
 def messages_to_str(messages):
     """Convert a sequence of messages ids or a single integer message id
     into an id list string for use with IMAP commands
     """
-    if isinstance(messages, (text_type, integer_types)):
+    if isinstance(messages, (text_type, binary_type, integer_types)):
         messages = (messages,)
-    elif not isinstance(messages, (tuple, list)):
-        raise ValueError('invalid message list: %r' % messages)
-    return ','.join([text_type(m) for m in messages])
+    return ','.join(_maybe_int_to_unicode(m) for m in messages)
+
+def _maybe_int_to_unicode(val):
+    if isinstance(val, integer_types):
+        return text_type(val)
+    return to_unicode(val)
 
 def normalise_search_criteria(criteria):
     if not criteria:
         raise ValueError('no criteria specified')
-    if isinstance(criteria, (text_type, binary_type)):
-        criteria = (criteria,)
-    return ['(%s)' % to_unicode(c) for c in criteria]
+    return ['(%s)' % item for item in _normalise_text_list(criteria)]
+
+def _join_and_paren(items):
+    return '(%s)' % ' '.join(items)
+
+def _normalise_text_list(items):
+    if isinstance(items, (text_type, binary_type)):
+        items = (items,)
+    return (to_unicode(c) for c in items)
 
 def datetime_to_imap(dt):
     """Convert a datetime instance to a IMAP datetime string.
@@ -984,16 +998,6 @@ def datetime_to_imap(dt):
     if not dt.tzinfo:
         dt = dt.replace(tzinfo=FixedOffset.for_system())
     return dt.strftime("%d-%b-%Y %H:%M:%S %z")
-
-def seq_to_parenlist(flags):
-    """Convert a sequence of strings into parenthised list string for
-    use with IMAP commands.
-    """
-    if isinstance(flags, text_type):
-        flags = (flags,)
-    elif not isinstance(flags, (tuple, list)):
-        raise ValueError('invalid flags list: %r' % flags)
-    return '(%s)' % ' '.join(to_unicode(f) for f in flags)
 
 def _parse_untagged_response(text):
     assert text.startswith('* ')
