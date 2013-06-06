@@ -971,9 +971,9 @@ def messages_to_str(messages):
 def normalise_search_criteria(criteria):
     if not criteria:
         raise ValueError('no criteria specified')
-    if isinstance(criteria, text_type):
+    if isinstance(criteria, (text_type, binary_type)):
         criteria = (criteria,)
-    return ['(%s)' % c for c in criteria]
+    return ['(%s)' % to_unicode(c) for c in criteria]
 
 def datetime_to_imap(dt):
     """Convert a datetime instance to a IMAP datetime string.
