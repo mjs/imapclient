@@ -1,3 +1,14 @@
+========
+ 0.10.1
+========
+
+Fixed regressions in several cases when binary data (i.e. normal
+strings under Python 2) are used as arguments to some methods. Also
+refactored input normalisation functions somewhat.
+
+Fixed buggy method for extracting flags and Gmail labels from STORE
+responses.
+
 ======
  0.10
 ======

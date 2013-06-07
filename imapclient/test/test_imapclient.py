@@ -418,15 +418,15 @@ class TestGmailLabels(IMAPClientTest):
 
     def test_add(self):
         self.client.add_gmail_labels(sentinel.messages, sentinel.labels)
-        self.client._store.assert_called_with('+X-GM-LABELS', sentinel.messages, sentinel.labels)
+        self.client._store.assert_called_with('+X-GM-LABELS', sentinel.messages, sentinel.labels, 'X-GM-LABELS')
 
     def test_remove(self):
         self.client.remove_gmail_labels(sentinel.messages, sentinel.labels)
-        self.client._store.assert_called_with('-X-GM-LABELS', sentinel.messages, sentinel.labels)
+        self.client._store.assert_called_with('-X-GM-LABELS', sentinel.messages, sentinel.labels, 'X-GM-LABELS')
 
     def test_set(self):
         self.client.set_gmail_labels(sentinel.messages, sentinel.labels)
-        self.client._store.assert_called_with('X-GM-LABELS', sentinel.messages, sentinel.labels)
+        self.client._store.assert_called_with('X-GM-LABELS', sentinel.messages, sentinel.labels, 'X-GM-LABELS')
 
 
 class TestNamespace(IMAPClientTest):
