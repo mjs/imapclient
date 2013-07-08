@@ -1,4 +1,11 @@
 ========
+ 0.10.2
+========
+Switch back to setuptools now that distribute and setuptools have
+merged back. Some users were reporting problems with distribute and
+the newer versions of setuptools.
+
+========
  0.10.1
 ========
 
