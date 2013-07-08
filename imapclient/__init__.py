@@ -7,7 +7,7 @@
 
 from __future__ import unicode_literals
 
-version_info = (0, 10, 1, 'final')
+version_info = (0, 10, 2, 'final')
 
 def _imapclient_version_string(vinfo):
     major, minor, micro, releaselevel = vinfo
