@@ -8,6 +8,7 @@ import imaplib
 import select
 import socket
 import sys
+import re
 import warnings
 from datetime import datetime
 from operator import itemgetter
@@ -359,16 +360,26 @@ class IMAPClient(object):
 
     def _process_select_response(self, resp):
         out = {}
+
+        # imaplib doesn't parse these correctly (broken regex) so replace
+        # with the raw values out of the OK section
+        for line in resp.get('OK', []):
+            match = re.match(r'\[(?P<key>[A-Z-]+)( \((?P<data>.*)\))?\]', line)
+            if match:
+                key = match.group('key')
+                if key == 'PERMANENTFLAGS':
+                    out[key] = tuple(match.group('data').split())
+
         for key, value in iteritems(resp):
             key = key.upper()
-            if key == 'OK':
-                continue
+            if key in ('OK', 'PERMANENTFLAGS'):
+                continue  # already handled above
             elif key in ('EXISTS', 'RECENT', 'UIDNEXT', 'UIDVALIDITY', 'HIGHESTMODSEQ'):
                 value = int(value[0])
-            elif key in ('FLAGS', 'PERMANENTFLAGS'):
-                value = parse_response(value)[0]
             elif key == 'READ-WRITE':
                 value = True
+            elif key == 'FLAGS':
+                value = tuple(value[0][1:-1].split())
             out[key] = value
         return out
 
