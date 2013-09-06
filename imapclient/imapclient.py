@@ -573,6 +573,43 @@ class IMAPClient(object):
             return []
         return [long(i) for i in data.split()]
 
+    def gm_search(self, query, charset=None):
+        """Do a search using Gmail's X-GM-RAW attribute.
+
+        *query* should be a valid Gmail search query string. Example values
+        include::
+
+            'has:attachment in:unread'
+
+        See https://developers.google.com/gmail/imap_extensions#extension_of_the_search_command_x-gm-raw
+        for more info.
+
+        *charset* specifies the character set of the strings in the
+        criteria. It defaults to US-ASCII.
+        """
+        # we use the literal feature to allow querying for non-ascii subjects
+        if charset:
+            query = query.encode(charset)
+        else:
+            query = query.encode('us-ascii')
+        self._imap.literal = query
+        if self.use_uid:
+            args = []
+            if charset:
+                args.extend(['CHARSET', charset])
+            args.append('X-GM-RAW')
+            typ, data = self._imap.uid('SEARCH', *args)
+        else:
+            typ, data = self._imap.search(charset, 'X-GM-RAW')
+
+        data = from_bytes(data)
+
+        self._checkok('search', typ, data)
+        data = data[0]
+        if data is None:    # no untagged responses...
+            return []
+        return [long(i) for i in data.split()]
+
     def thread(self, algorithm='REFERENCES', criteria='ALL', charset='UTF-8'):
         """Return a list of messages threads matching *criteria*.
 
