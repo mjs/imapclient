@@ -573,21 +573,22 @@ class IMAPClient(object):
             return []
         return [long(i) for i in data.split()]
 
-    def gm_search(self, query, charset=None):
-        """Do a search using Gmail's X-GM-RAW attribute.
+    def gmail_search(self, query, charset=None):
+        """Search using Gmail's X-GM-RAW attribute.
 
-        *query* should be a valid Gmail search query string. Example values
-        include::
+        *query* should be a valid Gmail search query string. For
+         example::
 
             'has:attachment in:unread'
 
         See https://developers.google.com/gmail/imap_extensions#extension_of_the_search_command_x-gm-raw
         for more info.
 
-        *charset* specifies the character set of the strings in the
-        criteria. It defaults to US-ASCII.
+        *charset* specifies the character set used to encode the
+        search string. It defaults to US-ASCII.
+
         """
-        # we use the literal feature to allow querying for non-ascii subjects
+        # the the query is sent as a literal to allow for 7-bit query strings
         if charset:
             query = query.encode(charset)
         else:
