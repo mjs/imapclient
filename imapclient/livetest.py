@@ -8,6 +8,8 @@ from __future__ import print_function, unicode_literals
 
 import imp
 import os
+import random
+import string
 import sys
 import time
 from datetime import datetime
@@ -549,6 +551,20 @@ def createUidTestClass(conf, use_uid):
             self.assertEqual(len(self.client.search(['NOT DELETED', 'SMALLER 500'])), len(subjects) - 1)
             self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "a"'])), 1)
             self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "c"'])), 0)
+
+        def test_gmail_search(self):
+            self.skip_unless_capable('X-GM-EXT-1', 'Gmail search')
+
+            random_string = ''.join(random.sample(string.letters*20, 64))
+            msg = 'Subject: something\r\n\r\nFoo\r\n%s\r\n' % random_string
+            self.client.append(self.base_folder, msg)
+            self.client.noop()    # For Gmail
+
+            ids = self.client.gmail_search(random_string)
+            self.assertEqual(len(ids), 1)
+
+            ids = self.client.gmail_search('s0mewh4t unl1kely')
+            self.assertEqual(len(ids), 0)
 
         def test_sort(self):
             if not self.client.has_capability('SORT'):
