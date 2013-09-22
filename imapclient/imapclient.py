@@ -553,25 +553,7 @@ class IMAPClient(object):
 
         See :rfc:`3501#section-6.4.4` for more details.
         """
-        criteria = normalise_search_criteria(criteria)
-
-        if self.use_uid:
-            if charset:
-                args = ['CHARSET', charset]
-            else:
-                args = []
-            args.extend(criteria)
-            typ, data = self._imap.uid('SEARCH', *args)
-        else:
-            typ, data = self._imap.search(charset, *criteria)
-
-        data = from_bytes(data)
-
-        self._checkok('search', typ, data)
-        data = data[0]
-        if data is None:    # no untagged responses...
-            return []
-        return [long(i) for i in data.split()]
+        return self._search(normalise_search_criteria(criteria), charset)
 
     def gmail_search(self, query, charset=None):
         """Search using Gmail's X-GM-RAW attribute.
@@ -586,22 +568,20 @@ class IMAPClient(object):
 
         *charset* specifies the character set used to encode the
         search string. It defaults to US-ASCII.
-
         """
         # the the query is sent as a literal to allow for 7-bit query strings
-        if charset:
-            query = query.encode(charset)
-        else:
-            query = query.encode('us-ascii')
-        self._imap.literal = query
+        self._imap.literal = query.encode(charset or 'us-ascii')
+        return self._search(['X-GM-RAW'], charset)
+
+    def _search(self, criteria, charset):
         if self.use_uid:
             args = []
             if charset:
                 args.extend(['CHARSET', charset])
-            args.append('X-GM-RAW')
+            args.extend(criteria)
             typ, data = self._imap.uid('SEARCH', *args)
         else:
-            typ, data = self._imap.search(charset, 'X-GM-RAW')
+            typ, data = self._imap.search(charset, *criteria)
 
         data = from_bytes(data)
 
