@@ -148,16 +148,19 @@ class TestSelectFolder(IMAPClientTest):
     def test_normal(self):
         self.client._command_and_check = Mock()
         self.client._imap.untagged_responses = {
-            'OK': [],
-            'exists': ['1'],
-            'RECENT': ['2'],
-            'UIDNEXT': ['3'],
-            'UIDVALIDITY': ['4'],
-            'HIGHESTMODSEQ': ['5'],
-            'FLAGS': ['(ABC DEF)'],
-            'PERMANENTFLAGS': ['(XXX ZZZ)'],
-            'READ-WRITE': [''],
-            'OTHER': ['blah']
+            b'exists': [b'3'],
+            b'FLAGS': [br"(\Flagged \Deleted abc [foo]/bar def)"],
+            b'HIGHESTMODSEQ': [b'127110'],
+            b'OK': [br"[PERMANENTFLAGS (\Flagged \Deleted abc [foo]/bar def \*)] Flags permitted.",
+                    b'[UIDVALIDITY 631062293] UIDs valid.',
+                    b'[UIDNEXT 1281] Predicted next UID.',
+                    b'[HIGHESTMODSEQ 127110]'],
+            b'PERMANENTFLAGS': [br'(\Flagged \Deleted abc [foo'],
+            b'READ-WRITE': [b''],
+            b'RECENT': [b'0'],
+            b'UIDNEXT': [b'1281'],
+            b'UIDVALIDITY': [b'631062293'],
+            b'OTHER': [b'blah']
         }
 
         result = self.client.select_folder(b'folder_name', sentinel.readonly)
@@ -165,14 +168,15 @@ class TestSelectFolder(IMAPClientTest):
         self.client._command_and_check.assert_called_once_with('select',
                                                                '"folder_name"',
                                                                sentinel.readonly)
+        self.maxDiff = 99999
         self.assertEqual(result, {
-            'EXISTS': 1,
-            'RECENT': 2,
-            'UIDNEXT': 3,
-            'UIDVALIDITY': 4,
-            'HIGHESTMODSEQ': 5,
-            'FLAGS': ('ABC', 'DEF'),
-            'PERMANENTFLAGS': ('XXX', 'ZZZ'),
+            'EXISTS': 3,
+            'RECENT': 0,
+            'UIDNEXT': 1281,
+            'UIDVALIDITY': 631062293,
+            'HIGHESTMODSEQ': 127110,
+            'FLAGS': (r'\Flagged', r'\Deleted', 'abc', '[foo]/bar', 'def'),
+            'PERMANENTFLAGS': (r'\Flagged', r'\Deleted', 'abc', '[foo]/bar', 'def', r'\*'),
             'READ-WRITE': True,
             'OTHER': ['blah']
         })

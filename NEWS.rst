@@ -1,6 +1,15 @@
 ========
+ 0.10.3
+========
+
+Handle square brackets in flags returned in SELECT
+response. Previously these would cause parsing errors. Thanks to
+Benjamin Morrise for the bug report.
+
+========
  0.10.2
 ========
+
 Switch back to setuptools now that distribute and setuptools have
 merged back. Some users were reporting problems with distribute and
 the newer versions of setuptools.
