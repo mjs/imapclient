@@ -12,15 +12,8 @@ from mock import patch, sentinel, Mock
 
 from imapclient import six
 from imapclient.fixed_offset import FixedOffset
-from imapclient.imapclient import datetime_to_imap
-from imapclient.test.testable_imapclient import TestableIMAPClient as IMAPClient
-from imapclient.test.util import unittest
-
-class IMAPClientTest(unittest.TestCase):
-
-    def setUp(self):
-        self.client = IMAPClient()
-
+from .testable_imapclient import TestableIMAPClient as IMAPClient
+from .imapclient_test import IMAPClientTest
 
 class TestListFolders(IMAPClientTest):
 
@@ -208,20 +201,6 @@ class TestAppend(IMAPClientTest):
         self.assertTrue(datetime_to_imap.called)
         self.client._imap.append.assert_called_with(
             '"foobar"', '(FLAG WAVE)', '"somedate"', msg)
-
-
-class TestDateTimeToImap(unittest.TestCase):
-
-    def test_with_timezone(self):
-        dt = datetime(2009, 1, 2, 3, 4, 5, 0, FixedOffset(2*60 + 30))
-        self.assertEqual(datetime_to_imap(dt), '02-Jan-2009 03:04:05 +0230')
-
-    @patch('imapclient.imapclient.FixedOffset.for_system')
-    def test_without_timezone(self, for_system):
-        dt = datetime(2009, 1, 2, 3, 4, 5, 0)
-        for_system.return_value = FixedOffset(-5 * 60)
-
-        self.assertEqual(datetime_to_imap(dt), '02-Jan-2009 03:04:05 -0500')
 
 
 class TestAclMethods(IMAPClientTest):
@@ -529,6 +508,3 @@ class TestThread(IMAPClientTest):
         self.client.thread(algorithm='FOO', criteria='STUFF', charset='ASCII')
 
         self.client._imap.thread.assert_called_once_with('FOO', 'ASCII','(STUFF)')
-
-if __name__ == '__main__':
-    unittest.main()

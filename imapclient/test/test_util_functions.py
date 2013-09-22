@@ -4,13 +4,19 @@
 
 from __future__ import unicode_literals
 
+from datetime import datetime
+
+from mock import patch
+
 from imapclient.imapclient import (
+    datetime_to_imap,
     messages_to_str,
     normalise_search_criteria,
     normalise_text_list,
     seq_to_parenstr,
     seq_to_parenstr_upper,
 )
+from imapclient.fixed_offset import FixedOffset
 from imapclient.test.util import unittest
 
 
@@ -137,3 +143,16 @@ class Test_normalise_search_criteria(unittest.TestCase):
 
     def test_empty(self):
         self.assertRaises(ValueError, normalise_search_criteria, '')
+
+class TestDateTimeToImap(unittest.TestCase):
+
+    def test_with_timezone(self):
+        dt = datetime(2009, 1, 2, 3, 4, 5, 0, FixedOffset(2*60 + 30))
+        self.assertEqual(datetime_to_imap(dt), '02-Jan-2009 03:04:05 +0230')
+
+    @patch('imapclient.imapclient.FixedOffset.for_system')
+    def test_without_timezone(self, for_system):
+        dt = datetime(2009, 1, 2, 3, 4, 5, 0)
+        for_system.return_value = FixedOffset(-5 * 60)
+
+        self.assertEqual(datetime_to_imap(dt), '02-Jan-2009 03:04:05 -0500')
