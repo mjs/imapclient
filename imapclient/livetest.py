@@ -555,7 +555,7 @@ def createUidTestClass(conf, use_uid):
         def test_gmail_search(self):
             self.skip_unless_capable('X-GM-EXT-1', 'Gmail search')
 
-            random_string = ''.join(random.sample(string.letters*20, 64))
+            random_string = ''.join(random.sample(string.ascii_letters*20, 64))
             msg = 'Subject: something\r\n\r\nFoo\r\n%s\r\n' % random_string
             self.client.append(self.base_folder, msg)
             self.client.noop()    # For Gmail
