@@ -1,7 +1,15 @@
-========
- 0.10.3
-========
+======
+ 0.11
+======
 
+Support for raw Gmail searching [NEW]
+-------------------------------------
+The new gmail_search methods allows direct Gmail queries using the
+X-GM-RAW search extension. Thanks to John Louis del Rosario for the
+patch.
+
+SELECT response bug fix
+-----------------------
 Handle square brackets in flags returned in SELECT
 response. Previously these would cause parsing errors. Thanks to
 Benjamin Morrise for the bug report.
