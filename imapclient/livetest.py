@@ -232,11 +232,14 @@ class TestGeneral(_TestBase):
 
         result = self.client.xlist_folders()
         self.assertGreater(len(result), 0, 'No folders returned by XLIST')
+
+        foundInbox = False
         for flags, _, _  in result:
-            if '\\INBOX' in [flag.upper() for flag in flags]:
+            if r'\INBOX' in [flag.upper() for flag in flags]:
+                foundInbox = True
                 break
-            else:
-                self.fail('INBOX not returned in XLIST output')
+        if not foundInbox:
+            self.fail('INBOX not returned in XLIST output')
 
     def test_subscriptions(self):
         folders = self.add_prefix_to_folders([
