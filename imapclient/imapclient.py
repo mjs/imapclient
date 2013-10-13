@@ -284,9 +284,11 @@ class IMAPClient(object):
              ([u'\\HasNoChildren', u'\\Starred'], '/', u'[Gmail]/Starred'),
              ([u'\\HasNoChildren', u'\\Trash'], '/', u'[Gmail]/Trash')]
 
-        This is a Gmail-specific IMAP extension. It is the
-        responsibility of the caller to either check for ``XLIST`` in
-        the server capabilites, or to handle the error if the server
+        This is a *deprecated* Gmail-specific IMAP extension (See 
+        https://developers.google.com/gmail/imap_extensions#xlist_is_deprecated
+        for more information).
+        It is the responsibility of the caller to either check for ``XLIST``
+        in the server capabilites, or to handle the error if the server
         doesn't support this extension.
 
         The *directory* and *pattern* arguments are as per
