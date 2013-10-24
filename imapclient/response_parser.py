@@ -199,7 +199,9 @@ def _convert_ENVELOPE(envelope_response, normalise_times=True):
         if addr_list:
             for addr_tuple in addr_list:
                  addrs.append(Address(*addr_tuple))
-        addresses.append(tuple(addrs))
+            addresses.append(tuple(addrs))
+        else:
+            addresses.append(None)
 
     in_reply_to = envelope_response[8]
     message_id = envelope_response[9]
