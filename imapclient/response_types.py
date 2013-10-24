@@ -44,17 +44,23 @@ class Envelope(namedtuple("Envelope", "Date Subject From Sender Reply_To To " + 
 
         Subject -- Returns a string that represents the "Subject:" header.
 
-        From -- Returns a tuple sequence of Address structure that represents "From:" header.
+        From -- Returns a tuple sequence of Address structure that represents "From:" header,
+                or None if header does not exist.
 
-        Sender -- Returns a tuple sequence of Address structure that represents "Sender:" header.
+        Sender -- Returns a tuple sequence of Address structure that represents "Sender:" header,
+                  or None if header does not exist.
 
-        Reply_To -- Returns a tuple sequence of Address structure that represents "Reply_To:" header.
+        Reply_To -- Returns a tuple sequence of Address structure that represents "Reply_To:" header,
+                    or None if header does not exist.
 
-        To -- Returns a tuple sequence of Address structure that represents "To:" header.
+        To -- Returns a tuple sequence of Address structure that represents "To:" header,
+              or None if header does not exist.
 
-        Cc -- Returns a tuple sequence of Address structure that represents "Cc:" header.
+        Cc -- Returns a tuple sequence of Address structure that represents "Cc:" header,
+              or None if header does not exist.
 
-        Bcc -- Returns a tuple sequence of Address structure that represents "Bcc:" header.
+        Bcc -- Returns a tuple sequence of Address structure that represents "Bcc:" header,
+               or None if header does not exist.
 
         In_Reply_To -- Returns a string that represents the "In-Reply-To:" header.
 
