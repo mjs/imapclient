@@ -16,12 +16,14 @@ from __future__ import unicode_literals
 import sys
 from collections import defaultdict
 from datetime import datetime
+#from email.utils import parsedate_tz
 
 from . import six
 xrange = six.moves.xrange
 
 from .fixed_offset import FixedOffset
 from .response_lexer import TokenSource
+from .response_types import *
 
 try:
     import imaplib2 as imaplib
@@ -103,6 +105,8 @@ def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
                     msg_data[word] = uid
             elif word == 'INTERNALDATE':
                 msg_data[word] = _convert_INTERNALDATE(value, normalise_times)
+            elif word == 'ENVELOPE':
+                msg_data[word] = _convert_ENVELOPE(value, normalise_times)
             elif word in ('BODY', 'BODYSTRUCTURE'):
                 msg_data[word] = BodyData.create(value)
             else:
@@ -168,6 +172,40 @@ def _convert_INTERNALDATE(date_string, normalise_times=True):
         return dt.astimezone(FixedOffset.for_system()).replace(tzinfo=None)
     return dt
 
+def _convert_ENVELOPE(envelope_response, normalise_times=True):
+    # XXX: the following commented lines is for parsing the RFC2822 string
+    # into a datatime structure, but it might be easier (at least for now)
+    # to remain as a string.
+
+    #parsed_dt = parsedate_tz(envelope_response[0])
+    #if parsed_dt == None:
+    #    raise ValueError("couldn't parse date %r" % envelope_response[0])
+
+    #dt = datetime(*parsed_dt[0:6], tzinfo=FixedOffset(parsed_dt[-1]))
+    ## this is really difficult to figure out -- sigh python
+    ##if normalise_times:
+    ##    # Normalise to host system's timezone
+    ##    return dt.astimezone(FixedOffset.for_system()).replace(tzinfo=None)
+
+    # stick with using a string for backwards compatibility
+    dt = envelope_response[0]
+    subject = envelope_response[1]
+
+    # addresses contains a tuple of addresses
+    # from, sender, reply_to, to, cc, bcc headers
+    addresses = []
+    for addr_list in envelope_response[2:8]:
+        addrs = []
+        if addr_list:
+            for addr_tuple in addr_list:
+                 addrs.append(Address(*addr_tuple))
+        addresses.append(tuple(addrs))
+
+    in_reply_to = envelope_response[8]
+    message_id = envelope_response[9]
+
+    return Envelope(dt, subject, *addresses, \
+                    In_Reply_To=in_reply_to, Message_Id=message_id)
 
 def atom(src, token):
     if token == '(':
