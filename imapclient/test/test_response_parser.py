@@ -13,6 +13,7 @@ from textwrap import dedent
 
 from imapclient.fixed_offset import FixedOffset
 from imapclient.response_parser import parse_response, parse_fetch_response, ParseError
+from imapclient.response_types import Envelope, Address
 from imapclient.test.util import unittest
 
 #TODO: tokenising tests
@@ -291,10 +292,24 @@ class TestParseFetchResponse(unittest.TestCase):
 
     def test_ENVELOPE(self):
         def check(envelope_str, expected_envelope):
-            output = parse_fetch_response(['3 (ENVELOPE '+envelope_str+')'])
-            self.assertEqual(1,2)
+            output = parse_fetch_response([envelope_str])
+            self.assertSequenceEqual(output[3]['ENVELOPE'], expected_envelope)
 
-        check("abc", "def")
+
+        check('(UID 5 ENVELOPE ("internal_date" "subject" '
+              '(("name" NIL "address1" "domain1.com")) '
+              '((NIL NIL "address2" "domain2.com")) '
+              '(("name" NIL "address3" "domain3.com")) '
+              '((NIL NIL "address4" "domain4.com")) '
+              'NIL NIL "<reply-to-id>" "<msg_id>"))',
+              Envelope("internal_date","subject",
+                       (Address("name", None, "address1", "domain1.com"),),
+                       (Address(None, None, "address2", "domain2.com"),),
+                       (Address("name", None, "address3", "domain3.com"),),
+                       (Address(None, None, "address4", "domain4.com"),),
+                       None, None, "<reply-to-id>", "<msg_id>"))
+                       
+
 
     def test_INTERNALDATE_normalised(self):
         def check(date_str, expected_dt):
