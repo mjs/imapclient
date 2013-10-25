@@ -23,7 +23,7 @@ xrange = six.moves.xrange
 
 from .fixed_offset import FixedOffset
 from .response_lexer import TokenSource
-from .response_types import *
+from .response_types import Envelope, Address
 
 try:
     import imaplib2 as imaplib
@@ -206,8 +206,8 @@ def _convert_ENVELOPE(envelope_response, normalise_times=True):
     in_reply_to = envelope_response[8]
     message_id = envelope_response[9]
 
-    return Envelope(dt, subject, *addresses, \
-                    In_Reply_To=in_reply_to, Message_Id=message_id)
+    return Envelope(dt, subject, *addresses,
+                    in_reply_to=in_reply_to, message_id=message_id)
 
 def atom(src, token):
     if token == '(':
