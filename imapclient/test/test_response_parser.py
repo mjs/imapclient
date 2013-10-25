@@ -288,7 +288,13 @@ class TestParseFetchResponse(unittest.TestCase):
             [('123 (UID 367 BODY[]<0> {20}', body), ')']),
             { 367: {'BODY[]<0>': body,
                     'SEQ': 123}})
-                    
+
+    def test_ENVELOPE(self):
+        def check(envelope_str, expected_envelope):
+            output = parse_fetch_response(['3 (ENVELOPE '+envelope_str+')'])
+            self.assertEqual(1,2)
+
+        check("abc", "def")
 
     def test_INTERNALDATE_normalised(self):
         def check(date_str, expected_dt):
