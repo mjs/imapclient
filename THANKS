@@ -47,6 +47,10 @@ Mathieu Agopian
 John Louis del Rosario
      Gmail search support (X-GM-RAW).
 
+Naveen Nathan
+     ENVELOPE FETCH response parsing
+     
+
 Bug Reports
 ------------
 Brian Jackson
