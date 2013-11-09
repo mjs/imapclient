@@ -13,10 +13,6 @@ Jp Calderone
     taken from the Twisted project (http://twistedmatrix.com/). This
     functionality was written by Jp Calderone.
 
-Michael Foord
-    IMAPClient is distributed with Michael's excellent Mock library.
-    (http://www.voidspace.org.uk/python/mock/)
-
 Mark Hammond (mhammond _AT_ skipinet.com.au)
     Much work related to response parsing and many bug reports.
 
@@ -63,5 +59,14 @@ Erik Quaeghebeur
 Benjamin Morrise
 
 
-The project was partially developed while the author was working at NetBox Blue
-(http://netboxblue.com/).
+External Projects
+-----------------
+IMAPClient uses Michael's excellent 'Mock' package.
+(http://www.voidspace.org.uk/python/mock/)
+
+IMAPClient includes Benjamin Peterson's 'six' library to help achieve
+cross-version Python compatibility.
+(https://pypi.python.org/pypi/six)
+
+The project was started while the author was working at NetBox Blue.
+(http://netboxblue.com/)
