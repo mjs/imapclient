@@ -16,11 +16,12 @@ from __future__ import unicode_literals
 import sys
 from collections import defaultdict
 from datetime import datetime
-#from email.utils import parsedate_tz
+from email.utils import parsedate_tz
 
 from . import six
 xrange = six.moves.xrange
 
+from .datetime_util import parse_to_datetime
 from .fixed_offset import FixedOffset
 from .response_lexer import TokenSource
 from .response_types import Envelope, Address
@@ -173,22 +174,7 @@ def _convert_INTERNALDATE(date_string, normalise_times=True):
     return dt
 
 def _convert_ENVELOPE(envelope_response, normalise_times=True):
-    # XXX: the following commented lines is for parsing the RFC2822 string
-    # into a datatime structure, but it might be easier (at least for now)
-    # to remain as a string.
-
-    #parsed_dt = parsedate_tz(envelope_response[0])
-    #if parsed_dt == None:
-    #    raise ValueError("couldn't parse date %r" % envelope_response[0])
-
-    #dt = datetime(*parsed_dt[0:6], tzinfo=FixedOffset(parsed_dt[-1]))
-    ## this is really difficult to figure out -- sigh python
-    ##if normalise_times:
-    ##    # Normalise to host system's timezone
-    ##    return dt.astimezone(FixedOffset.for_system()).replace(tzinfo=None)
-
-    # stick with using a string for backwards compatibility
-    dt = envelope_response[0]
+    dt = parse_to_datetime(envelope_response[0], normalise=normalise_times)
     subject = envelope_response[1]
 
     # addresses contains a tuple of addresses
@@ -203,11 +189,11 @@ def _convert_ENVELOPE(envelope_response, normalise_times=True):
         else:
             addresses.append(None)
 
-    in_reply_to = envelope_response[8]
-    message_id = envelope_response[9]
-
-    return Envelope(dt, subject, *addresses,
-                    in_reply_to=in_reply_to, message_id=message_id)
+    return Envelope(
+        dt, subject, *addresses,
+        in_reply_to=envelope_response[8],
+        message_id=envelope_response[9]
+    )
 
 def atom(src, token):
     if token == '(':

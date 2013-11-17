@@ -291,25 +291,30 @@ class TestParseFetchResponse(unittest.TestCase):
                     'SEQ': 123}})
 
     def test_ENVELOPE(self):
-        def check(envelope_str, expected_envelope):
-            output = parse_fetch_response([envelope_str])
-            self.assertSequenceEqual(output[3]['ENVELOPE'], expected_envelope)
+        envelope_str = ('1 (ENVELOPE ( '
+            '"Sun, 24 Mar 2013 22:06:10 +0200" '
+            '"subject" '
+            '(("name" NIL "address1" "domain1.com")) '
+            '((NIL NIL "address2" "domain2.com")) '
+            '(("name" NIL "address3" "domain3.com")) '
+            '((NIL NIL "address4" "domain4.com") '
+             '("person" NIL "address4b" "domain4b.com")) '
+            'NIL NIL "<reply-to-id>" "<msg_id>"))')
 
+        output = parse_fetch_response([envelope_str], normalise_times=False)
 
-        check('(UID 5 ENVELOPE ("internal_date" "subject" '
-              '(("name" NIL "address1" "domain1.com")) '
-              '((NIL NIL "address2" "domain2.com")) '
-              '(("name" NIL "address3" "domain3.com")) '
-              '((NIL NIL "address4" "domain4.com")) '
-              'NIL NIL "<reply-to-id>" "<msg_id>"))',
-              Envelope("internal_date","subject",
-                       (Address("name", None, "address1", "domain1.com"),),
-                       (Address(None, None, "address2", "domain2.com"),),
-                       (Address("name", None, "address3", "domain3.com"),),
-                       (Address(None, None, "address4", "domain4.com"),),
-                       None, None, "<reply-to-id>", "<msg_id>"))
-                       
-
+        self.assertSequenceEqual(output[1]['ENVELOPE'],
+            Envelope(
+                datetime(2013, 3, 24, 22, 6, 10, tzinfo=FixedOffset(120)),
+                "subject",
+                (Address("name", None, "address1", "domain1.com"),),
+                (Address(None, None, "address2", "domain2.com"),),
+                (Address("name", None, "address3", "domain3.com"),),
+                (Address(None, None, "address4", "domain4.com"),
+                 Address("person", None, "address4b", "domain4b.com")),
+                None, None, "<reply-to-id>", "<msg_id>"
+            )
+        )
 
     def test_INTERNALDATE_normalised(self):
         def check(date_str, expected_dt):
