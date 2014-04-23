@@ -99,6 +99,11 @@ class _TestBase(unittest.TestCase):
         return self.just_folder_names(self.client.list_sub_folders(self.base_folder))
 
     def clear_test_folders(self):
+        try:
+            self.client.close_folder()
+        except IMAPClient.Error:
+            pass
+
         self.client.folder_encode = False
 
         folder_names = sorted(self.all_test_folder_names(),
@@ -122,6 +127,7 @@ class _TestBase(unittest.TestCase):
         self.client.select_folder(folder)
         self.client.delete_messages(self.client.search())
         self.client.expunge()
+        self.client.close_folder()
 
     def add_prefix_to_folder(self, folder):
         if isinstance(folder, binary_type):
