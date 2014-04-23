@@ -258,10 +258,11 @@ class TestParseFetchResponse(unittest.TestCase):
     def test_BODY(self):
          self.check_BODYish_single_part('BODY')
          self.check_BODYish_multipart('BODY')
+         self.check_BODYish_nested_multipart('BODY')
 
     def test_BODYSTRUCTURE(self):
          self.check_BODYish_single_part('BODYSTRUCTURE')
-         self.check_BODYish_multipart('BODYSTRUCTURE')
+         self.check_BODYish_nested_multipart('BODYSTRUCTURE')
     
     def check_BODYish_single_part(self, respType):
         text =  '123 (UID 317 %s ("TEXT" "PLAIN" ("CHARSET" "us-ascii") NIL NIL "7BIT" 16 1))' % respType
@@ -282,6 +283,36 @@ class TestParseFetchResponse(unittest.TestCase):
                                         'SEQ': 123}
                                         })
         self.assertTrue(parsed[269][respType].is_multipart)
+
+    def check_BODYish_nested_multipart(self, respType):
+        text = '1 (%s (' \
+               '(' \
+                 '("text" "html" ("charset" "utf-8") NIL NIL "7bit" 97 3 NIL NIL NIL NIL)' \
+                 '("text" "plain" ("charset" "utf-8") NIL NIL "7bit" 62 3 NIL NIL NIL NIL)' \
+                 '"alternative" ("boundary" "===============8211050864078048428==") NIL NIL NIL' \
+               ')' \
+               '("text" "plain" ("charset" "utf-8") NIL NIL "7bit" 16 1 NIL ("attachment" ("filename" "attachment.txt")) NIL NIL) ' \
+               '"mixed" ("boundary" "===============0373402508605428821==") NIL NIL NIL))' \
+               % respType
+
+        parsed = parse_fetch_response([text])
+        self.assertEqual(parsed, {1: {
+            respType: (
+                [
+                    (
+                        [
+                            ('text', 'html', ('charset', 'utf-8'), None, None, '7bit', 97, 3, None, None, None, None),
+                            ('text', 'plain', ('charset', 'utf-8'), None, None, '7bit', 62, 3, None, None, None, None)
+                        ], 'alternative', ('boundary', '===============8211050864078048428=='), None, None, None
+                    ),
+                    ('text', 'plain', ('charset', 'utf-8'), None, None, '7bit', 16, 1, None, ('attachment', ('filename', 'attachment.txt')), None, None)
+                ], 'mixed', ('boundary', '===============0373402508605428821=='), None, None, None,
+            ),
+            'SEQ': 1,
+        }})
+        self.assertTrue(parsed[1][respType].is_multipart)
+        self.assertTrue(parsed[1][respType][0][0].is_multipart)
+        self.assertFalse(parsed[1][respType][0][0][0][0].is_multipart)
 
     def test_partial_fetch(self):
         body = '01234567890123456789'
