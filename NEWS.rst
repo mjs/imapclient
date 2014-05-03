@@ -14,6 +14,16 @@ Handle square brackets in flags returned in SELECT
 response. Previously these would cause parsing errors. Thanks to
 Benjamin Morrise for the bug report.
 
+Correct nested BODYSTRUCTURE handling [API CHANGE]
+--------------------------------------------------
+BODY and BODYSTRUCTURE responses are now processed recusively so
+multipart sections within other multipart sections are returned
+correctly. This also means that each the part of the response now has
+a is_multipart property available.
+
+NOTE: code that expects the old (broken) behaviour will need to be
+updated.
+
 ========
  0.10.2
 ========
