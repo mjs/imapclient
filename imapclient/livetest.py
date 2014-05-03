@@ -16,6 +16,7 @@ from datetime import datetime
 from email.utils import make_msgid
 
 from .imapclient import IMAPClient, DELETED, to_unicode
+from .fixed_offset import FixedOffset
 from .six import binary_type, text_type, PY3
 from .test.util import unittest
 from .config import parse_config_file, create_client_from_config
@@ -638,6 +639,7 @@ def createUidTestClass(conf, use_uid):
             msg_id_header = make_msgid()
             msg = ('Message-ID: %s\r\n' % msg_id_header) + MULTIPART_MESSAGE
 
+            self.client.normalise_times = False
             self.client.select_folder(self.base_folder)
             self.append_msg(msg)
 
@@ -657,7 +659,7 @@ def createUidTestClass(conf, use_uid):
             self.assertIsInstance(msginfo['INTERNALDATE'], datetime)
             self.assertIsInstance(msginfo['FLAGS'], tuple)
             self.assertTupleEqual(msginfo['ENVELOPE'],
-                                  ('Tue, 16 Mar 2010 16:45:32 +0000',
+                                  (datetime(2010, 3, 16, 16, 45, 32, tzinfo=FixedOffset(0)),
                                    'A multipart message',
                                    (('Bob Smith', None, 'bob', 'smith.com'),),
                                    (('Bob Smith', None, 'bob', 'smith.com'),),
