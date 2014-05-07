@@ -17,6 +17,7 @@ from email.utils import make_msgid
 
 from .fixed_offset import FixedOffset
 from .imapclient import IMAPClient, DELETED, to_unicode
+from .fixed_offset import FixedOffset
 from .response_types import Envelope, Address
 from .six import binary_type, text_type, PY3
 from .test.util import unittest
@@ -653,7 +654,6 @@ def createUidTestClass(conf, use_uid):
             self.assertMultiLineEqual(msginfo['RFC822'], msg)
             self.assertIsInstance(msginfo['INTERNALDATE'], datetime)
             self.assertIsInstance(msginfo['FLAGS'], tuple)
-
             self.assertSequenceEqual(msginfo['ENVELOPE'],
                 Envelope(
                     datetime(2010, 3, 16, 16, 45, 32, tzinfo=FixedOffset(0)),

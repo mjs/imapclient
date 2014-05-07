@@ -137,7 +137,7 @@ class BodyData(tuple):
             for i, part in enumerate(response):
                 if isinstance(part, six.string_types):
                     break
-            return cls((list(response[:i]),) + response[i:])
+            return cls(([cls.create(part) for part in response[:i]],) + response[i:])
         else:
             return cls(response)
             
