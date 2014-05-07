@@ -2,70 +2,50 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-"""
-Structured representation for IMAP response.
-Inspired by Ruby Net::IMAP::Envelope and Net::IMAP::Address
-(see http://www.ruby-doc.org/stdlib-2.0.0/libdoc/net/imap/rdoc/Net/IMAP.html).
-"""
-
 from collections import namedtuple
 from email.utils import formataddr
 
-# the following hack to add docstrings to namedtuples is courtesy of:
-# http://stackoverflow.com/questions/1606436/adding-docstrings-to-namedtuples-in-python
-
-class Address(namedtuple("Address", "name route mailbox host")):
-    """
-    Represents electronic mail addresses.
-
-    Fields (in-order):
-
-        name -- Returns the phrase from [RFC-822] mailbox.
-
-        route -- Returns the route from [RFC-822] route-addr.
-
-        mailbox -- None indicates end of [RFC-822] group. If not None and host is None,
-                   returns [RFC-822] group name. Otherwise, returns [RFC-822] local-part.
-
-        host -- None indicates [RFC-822] group syntax. Otherwise, returns [RFC-822] domain name.
-
-    """
-
-    def __str__(self):
-        return formataddr((self.name, self.mailbox + '@' + self.host))
 
 class Envelope(namedtuple("Envelope", "date subject from_ sender reply_to to " +
                           "cc bcc in_reply_to message_id")):
     """
+    Represents envelope structures of messages. Returned when parsing
+    ENVELOPE responses.
 
-    Represents envelope structures of messages.
-
-    Fields (in-order):
-
-        date -- Returns a string that represents the "Date:" header.
-
-        subject -- Returns a string that represents the "Subject:" header.
-
-        from_ -- Returns a tuple sequence of Address structure that represents "From:" header,
-                 or None if header does not exist.
-
-        sender -- Returns a tuple sequence of Address structure that represents "Sender:" header,
-                  or None if header does not exist.
-
-        reply_to -- Returns a tuple sequence of Address structure that represents "Reply_To:" header,
-                    or None if header does not exist.
-
-        to -- Returns a tuple sequence of Address structure that represents "To:" header,
-              or None if header does not exist.
-
-        cc -- Returns a tuple sequence of Address structure that represents "Cc:" header,
-              or None if header does not exist.
-
-        bcc -- Returns a tuple sequence of Address structure that represents "Bcc:" header,
-               or None if header does not exist.
-
-        in_reply_to -- Returns a string that represents the "In-Reply-To:" header.
-
-        message_id -- Returns a string that represents the "Message-Id:" header.
-
+    :ivar date: A datetime instance that represents the "Date" header.
+    :ivar subject: A string that contains the "Subject" header.
+    :ivar from\_: A tuple of Address objects that represent on or more
+      addresses from the "From" header, or None if header does not exist.
+    :ivar sender: As for from\_ but represents the "Sender" header.
+    :ivar reply_to: As for from\_ but represents the "Reply-To" header.
+    :ivar to: As for from\_ but represents the "To" header.
+    :ivar cc: As for from\_ but represents the "Cc" header.
+    :ivar bcc: As for from\_ but represents the "Bcc" recipients.
+    :ivar in_reply_to: A string that contains the "In-Reply-To" header.
+    :ivar message_id: A string that contains the "Message-Id" header.
     """
+
+
+class Address(namedtuple("Address", "name route mailbox host")):
+    """
+    Represents electronic mail addresses. Used to store addresses in
+    :py:class:`Envelope`.
+
+    :ivar name: The address "personal name".
+    :ivar route: SMTP source route (rarely used).
+    :ivar mailbox: Mailbox name (what comes just before the @ sign).
+    :ivar host: The host/domain name.
+
+    As an example, an address header that looks like::
+
+        Mary Smith <mary@foo.com>
+
+    would be represented as::
+
+        Address(name=u'Mary Smith', route=None, mailbox=u'mary', host=u'foo.com')
+
+    See :rfc:`2822` for more.
+    """
+
+    def __str__(self):
+        return formataddr((self.name, self.mailbox + '@' + self.host))

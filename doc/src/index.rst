@@ -147,13 +147,25 @@ The IMAP related exceptions that will be raised by this class are:
 These are aliases for the imaplib.IMAP4 exceptions of the same name. Socket
 errors may also be raised in the case of network errors.
 
-IMAPClient Class Reference
---------------------------
+API Reference
+-------------
+
+IMAPClient Class
+~~~~~~~~~~~~~~~~
 The primary class used by the imapclient package is the IMAPClient
 class. All interaction with a remote IMAP server is performed via an
 IMAPClient instance.
 
 .. autoclass:: imapclient.IMAPClient
+   :members:
+
+Fetch Response Types
+~~~~~~~~~~~~~~~~~~~~
+Various types may be used in the data structures returned by
+:py:meth:`.IMAPClient.fetch` when certain response types
+are encountered during parsing.
+
+.. automodule:: imapclient.response_types
    :members:
 
 Interactive Sessions

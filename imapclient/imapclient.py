@@ -768,7 +768,11 @@ class IMAPClient(object):
 
         A dictionary is returned, indexed by message number. Each item
         in this dictionary is also a dictionary, with an entry
-        corresponding to each item in *data*.
+        corresponding to each item in *data*. Returned values will be
+        appropriately typed. For example, integer values will be returned as
+        Python integers, timestamps will be returned as datetime
+        instances and ENVELOPE responses will be returned as
+        :py:class:`Envelope <imapclient.response_types.Envelope>` instances.
 
         In addition to an element for each *data* item, the dict
         returned for each message also contains a *SEQ* key containing

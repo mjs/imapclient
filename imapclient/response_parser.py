@@ -16,7 +16,6 @@ from __future__ import unicode_literals
 import sys
 from collections import defaultdict
 from datetime import datetime
-from email.utils import parsedate_tz
 
 from . import six
 xrange = six.moves.xrange

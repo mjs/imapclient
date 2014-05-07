@@ -297,9 +297,10 @@ class TestParseFetchResponse(unittest.TestCase):
             '(("name" NIL "address1" "domain1.com")) '
             '((NIL NIL "address2" "domain2.com")) '
             '(("name" NIL "address3" "domain3.com")) '
+            'NIL'
             '((NIL NIL "address4" "domain4.com") '
              '("person" NIL "address4b" "domain4b.com")) '
-            'NIL NIL "<reply-to-id>" "<msg_id>"))')
+            'NIL "<reply-to-id>" "<msg_id>"))')
 
         output = parse_fetch_response([envelope_str], normalise_times=False)
 
@@ -310,9 +311,10 @@ class TestParseFetchResponse(unittest.TestCase):
                 (Address("name", None, "address1", "domain1.com"),),
                 (Address(None, None, "address2", "domain2.com"),),
                 (Address("name", None, "address3", "domain3.com"),),
+                None,
                 (Address(None, None, "address4", "domain4.com"),
                  Address("person", None, "address4b", "domain4b.com")),
-                None, None, "<reply-to-id>", "<msg_id>"
+                None, "<reply-to-id>", "<msg_id>"
             )
         )
 

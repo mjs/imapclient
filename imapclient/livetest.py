@@ -15,7 +15,9 @@ import time
 from datetime import datetime
 from email.utils import make_msgid
 
+from .fixed_offset import FixedOffset
 from .imapclient import IMAPClient, DELETED, to_unicode
+from .response_types import Envelope, Address
 from .six import binary_type, text_type, PY3
 from .test.util import unittest
 from .config import parse_config_file, create_client_from_config
@@ -634,6 +636,7 @@ def createUidTestClass(conf, use_uid):
 
             self.client.select_folder(self.base_folder)
             self.append_msg(msg)
+            self.client.normalise_times = False
 
             fields = ['RFC822', b'FLAGS', 'INTERNALDATE', 'ENVELOPE']
             msg_id = self.client.search()[0]
@@ -650,14 +653,17 @@ def createUidTestClass(conf, use_uid):
             self.assertMultiLineEqual(msginfo['RFC822'], msg)
             self.assertIsInstance(msginfo['INTERNALDATE'], datetime)
             self.assertIsInstance(msginfo['FLAGS'], tuple)
-            self.assertTupleEqual(msginfo['ENVELOPE'],
-                                  ('Tue, 16 Mar 2010 16:45:32 +0000',
-                                   'A multipart message',
-                                   (('Bob Smith', None, 'bob', 'smith.com'),),
-                                   (('Bob Smith', None, 'bob', 'smith.com'),),
-                                   (('Bob Smith', None, 'bob', 'smith.com'),),
-                                   (('Some One', None, 'some', 'one.com'), (None, None, 'foo', 'foo.com')),
-                                   None, None, None, msg_id_header))
+
+            self.assertSequenceEqual(msginfo['ENVELOPE'],
+                Envelope(
+                    datetime(2010, 3, 16, 16, 45, 32, tzinfo=FixedOffset(0)),
+                    'A multipart message',
+                    (Address('Bob Smith', None, 'bob', 'smith.com'),),
+                    (Address('Bob Smith', None, 'bob', 'smith.com'),),
+                    (Address('Bob Smith', None, 'bob', 'smith.com'),),
+                    (Address('Some One', None, 'some', 'one.com'),
+                     Address(None, None, 'foo', 'foo.com')),
+                    None, None, None, msg_id_header))
 
         def test_partial_fetch(self):
             self.client.append(self.base_folder, MULTIPART_MESSAGE)

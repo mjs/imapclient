@@ -8,11 +8,21 @@ The new gmail_search methods allows direct Gmail queries using the
 X-GM-RAW search extension. Thanks to John Louis del Rosario for the
 patch.
 
+ENVELOPE FETCH response parsing [NEW, API CHANGE]
+-------------------------------------------------
+ENVELOPE FETCH responses are now returned as Envelope instances. These
+objects are namedtuples providing convenient attribute and positional
+based access to envelope fields. The Date field is also now converted
+to a datetime instance.
+
+As part of this change various date and time related utilities were
+moved to a new module at imapclient.datetime_util.
+
 SELECT response bug fix
 -----------------------
-Handle square brackets in flags returned in SELECT
-response. Previously these would cause parsing errors. Thanks to
-Benjamin Morrise for the bug report.
+Handle square brackets in flags returned in SELECT response.
+Previously these would cause parsing errors. Thanks to Benjamin
+Morrise for the bug report.
 
 ========
  0.10.2
