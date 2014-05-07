@@ -34,6 +34,11 @@ Handle square brackets in flags returned in SELECT response.
 Previously these would cause parsing errors. Thanks to Benjamin
 Morrise for the bug report.
 
+Minor Features
+--------------
+Copyright date update for 2014.
+
+
 ========
  0.10.2
 ========
