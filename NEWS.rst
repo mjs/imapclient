@@ -18,6 +18,8 @@ to a datetime instance.
 As part of this change various date and time related utilities were
 moved to a new module at imapclient.datetime_util.
 
+Thanks to Naveen Nathan for the work on this feature.
+
 Correct nested BODYSTRUCTURE handling [API CHANGE]
 --------------------------------------------------
 BODY and BODYSTRUCTURE responses are now processed recusively so
@@ -28,14 +30,16 @@ a is_multipart property available.
 NOTE: code that expects the old (broken) behaviour will need to be
 updated.
 
+Thanks to Brandon Rhodes for the bug report.
+
 SELECT response bug fix
 -----------------------
 Handle square brackets in flags returned in SELECT response.
 Previously these would cause parsing errors. Thanks to Benjamin
 Morrise for the bug report.
 
-Minor Features
---------------
+Minor Changes
+-------------
 Copyright date update for 2014.
 
 
