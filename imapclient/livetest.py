@@ -17,7 +17,6 @@ from email.utils import make_msgid
 
 from .fixed_offset import FixedOffset
 from .imapclient import IMAPClient, DELETED, to_unicode
-from .fixed_offset import FixedOffset
 from .response_types import Envelope, Address
 from .six import binary_type, text_type, PY3
 from .test.util import unittest
