@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (c) 2013, Menno Smits
+# Copyright (c) 2014, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -8,12 +8,16 @@ from __future__ import print_function, unicode_literals
 
 import imp
 import os
+import random
+import string
 import sys
 import time
 from datetime import datetime
 from email.utils import make_msgid
 
+from .fixed_offset import FixedOffset
 from .imapclient import IMAPClient, DELETED, to_unicode
+from .response_types import Envelope, Address
 from .six import binary_type, text_type, PY3
 from .test.util import unittest
 from .config import parse_config_file, create_client_from_config
@@ -230,11 +234,14 @@ class TestGeneral(_TestBase):
 
         result = self.client.xlist_folders()
         self.assertGreater(len(result), 0, 'No folders returned by XLIST')
+
+        foundInbox = False
         for flags, _, _  in result:
-            if '\\INBOX' in [flag.upper() for flag in flags]:
+            if r'\INBOX' in [flag.upper() for flag in flags]:
+                foundInbox = True
                 break
-            else:
-                self.fail('INBOX not returned in XLIST output')
+        if not foundInbox:
+            self.fail('INBOX not returned in XLIST output')
 
     def test_subscriptions(self):
         folders = self.add_prefix_to_folders([
@@ -550,6 +557,20 @@ def createUidTestClass(conf, use_uid):
             self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "a"'])), 1)
             self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "c"'])), 0)
 
+        def test_gmail_search(self):
+            self.skip_unless_capable('X-GM-EXT-1', 'Gmail search')
+
+            random_string = ''.join(random.sample(string.ascii_letters*20, 64))
+            msg = 'Subject: something\r\n\r\nFoo\r\n%s\r\n' % random_string
+            self.client.append(self.base_folder, msg)
+            self.client.noop()    # For Gmail
+
+            ids = self.client.gmail_search(random_string)
+            self.assertEqual(len(ids), 1)
+
+            ids = self.client.gmail_search('s0mewh4t unl1kely')
+            self.assertEqual(len(ids), 0)
+
         def test_sort(self):
             if not self.client.has_capability('SORT'):
                 return self.skipTest("Server doesn't support SORT")
@@ -615,6 +636,7 @@ def createUidTestClass(conf, use_uid):
 
             self.client.select_folder(self.base_folder)
             self.append_msg(msg)
+            self.client.normalise_times = False
 
             fields = ['RFC822', b'FLAGS', 'INTERNALDATE', 'ENVELOPE']
             msg_id = self.client.search()[0]
@@ -631,14 +653,16 @@ def createUidTestClass(conf, use_uid):
             self.assertMultiLineEqual(msginfo['RFC822'], msg)
             self.assertIsInstance(msginfo['INTERNALDATE'], datetime)
             self.assertIsInstance(msginfo['FLAGS'], tuple)
-            self.assertTupleEqual(msginfo['ENVELOPE'],
-                                  ('Tue, 16 Mar 2010 16:45:32 +0000',
-                                   'A multipart message',
-                                   (('Bob Smith', None, 'bob', 'smith.com'),),
-                                   (('Bob Smith', None, 'bob', 'smith.com'),),
-                                   (('Bob Smith', None, 'bob', 'smith.com'),),
-                                   (('Some One', None, 'some', 'one.com'), (None, None, 'foo', 'foo.com')),
-                                   None, None, None, msg_id_header))
+            self.assertSequenceEqual(msginfo['ENVELOPE'],
+                Envelope(
+                    datetime(2010, 3, 16, 16, 45, 32, tzinfo=FixedOffset(0)),
+                    'A multipart message',
+                    (Address('Bob Smith', None, 'bob', 'smith.com'),),
+                    (Address('Bob Smith', None, 'bob', 'smith.com'),),
+                    (Address('Bob Smith', None, 'bob', 'smith.com'),),
+                    (Address('Some One', None, 'some', 'one.com'),
+                     Address(None, None, 'foo', 'foo.com')),
+                    None, None, None, msg_id_header))
 
         def test_partial_fetch(self):
             self.client.append(self.base_folder, MULTIPART_MESSAGE)

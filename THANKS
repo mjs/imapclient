@@ -13,10 +13,6 @@ Jp Calderone
     taken from the Twisted project (http://twistedmatrix.com/). This
     functionality was written by Jp Calderone.
 
-Michael Foord
-    IMAPClient is distributed with Michael's excellent Mock library.
-    (http://www.voidspace.org.uk/python/mock/)
-
 Mark Hammond (mhammond _AT_ skipinet.com.au)
     Much work related to response parsing and many bug reports.
 
@@ -24,25 +20,32 @@ Thomas Jost (schnouki _AT_ schnouki.net)
     FETCH modifiers patch.
 
 Johannes Heckel
-    OAUTH and IDLE support. 
+    OAUTH and IDLE support.
 
 Andrew Scheller
-    "normalise_times" support.     
+    "normalise_times" support.
 
 Brian Neal
     Gmail labels methods.
-    
+
 Dave Eckhardt
     Stream connection support.
 
 Zac Witte
     OAUTH2 support.
 
-Lukasz Mierzwa     
-    THREAD support. 
+Lukasz Mierzwa
+    THREAD support.
 
 Mathieu Agopian
     Significant Python 3 porting contributions.
+
+John Louis del Rosario
+     Gmail search support (X-GM-RAW).
+
+Naveen Nathan
+     ENVELOPE FETCH response parsing
+     
 
 Bug Reports
 ------------
@@ -54,7 +57,17 @@ Bob Yexley (bob _AT_ yexley.net)
 Rhett Garber
 Erik Quaeghebeur
 Benjamin Morrise
+Brandon Rhodes
 
 
-The project was partially developed while the author was working at NetBox Blue
-(http://netboxblue.com/).
+External Projects
+-----------------
+IMAPClient uses Michael's excellent 'Mock' package.
+(http://www.voidspace.org.uk/python/mock/)
+
+IMAPClient includes Benjamin Peterson's 'six' library to help achieve
+cross-version Python compatibility.
+(https://pypi.python.org/pypi/six)
+
+The project was started while the author was working at NetBox Blue.
+(http://netboxblue.com/)

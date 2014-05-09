@@ -1,4 +1,4 @@
-# Copyright (c) 2013, Menno Smits
+# Copyright (c) 2014, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -20,8 +20,10 @@ from datetime import datetime
 from . import six
 xrange = six.moves.xrange
 
+from .datetime_util import parse_to_datetime
 from .fixed_offset import FixedOffset
 from .response_lexer import TokenSource
+from .response_types import Envelope, Address
 
 try:
     import imaplib2 as imaplib
@@ -103,6 +105,8 @@ def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
                     msg_data[word] = uid
             elif word == 'INTERNALDATE':
                 msg_data[word] = _convert_INTERNALDATE(value, normalise_times)
+            elif word == 'ENVELOPE':
+                msg_data[word] = _convert_ENVELOPE(value, normalise_times)
             elif word in ('BODY', 'BODYSTRUCTURE'):
                 msg_data[word] = BodyData.create(value)
             else:
@@ -133,7 +137,7 @@ class BodyData(tuple):
             for i, part in enumerate(response):
                 if isinstance(part, six.string_types):
                     break
-            return cls((list(response[:i]),) + response[i:])
+            return cls(([cls.create(part) for part in response[:i]],) + response[i:])
         else:
             return cls(response)
             
@@ -168,6 +172,27 @@ def _convert_INTERNALDATE(date_string, normalise_times=True):
         return dt.astimezone(FixedOffset.for_system()).replace(tzinfo=None)
     return dt
 
+def _convert_ENVELOPE(envelope_response, normalise_times=True):
+    dt = parse_to_datetime(envelope_response[0], normalise=normalise_times)
+    subject = envelope_response[1]
+
+    # addresses contains a tuple of addresses
+    # from, sender, reply_to, to, cc, bcc headers
+    addresses = []
+    for addr_list in envelope_response[2:8]:
+        addrs = []
+        if addr_list:
+            for addr_tuple in addr_list:
+                 addrs.append(Address(*addr_tuple))
+            addresses.append(tuple(addrs))
+        else:
+            addresses.append(None)
+
+    return Envelope(
+        dt, subject, *addresses,
+        in_reply_to=envelope_response[8],
+        message_id=envelope_response[9]
+    )
 
 def atom(src, token):
     if token == '(':

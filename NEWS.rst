@@ -1,10 +1,47 @@
-========
- 0.10.3
-========
+======
+ 0.11
+======
 
-Handle square brackets in flags returned in SELECT
-response. Previously these would cause parsing errors. Thanks to
-Benjamin Morrise for the bug report.
+Support for raw Gmail searching [NEW]
+-------------------------------------
+The new gmail_search methods allows direct Gmail queries using the
+X-GM-RAW search extension. Thanks to John Louis del Rosario for the
+patch.
+
+ENVELOPE FETCH response parsing [NEW, API CHANGE]
+-------------------------------------------------
+ENVELOPE FETCH responses are now returned as Envelope instances. These
+objects are namedtuples providing convenient attribute and positional
+based access to envelope fields. The Date field is also now converted
+to a datetime instance.
+
+As part of this change various date and time related utilities were
+moved to a new module at imapclient.datetime_util.
+
+Thanks to Naveen Nathan for the work on this feature.
+
+Correct nested BODYSTRUCTURE handling [API CHANGE]
+--------------------------------------------------
+BODY and BODYSTRUCTURE responses are now processed recusively so
+multipart sections within other multipart sections are returned
+correctly. This also means that each the part of the response now has
+a is_multipart property available.
+
+NOTE: code that expects the old (broken) behaviour will need to be
+updated.
+
+Thanks to Brandon Rhodes for the bug report.
+
+SELECT response bug fix
+-----------------------
+Handle square brackets in flags returned in SELECT response.
+Previously these would cause parsing errors. Thanks to Benjamin
+Morrise for the bug report.
+
+Minor Changes
+-------------
+Copyright date update for 2014.
+
 
 ========
  0.10.2

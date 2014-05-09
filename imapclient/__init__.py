@@ -1,4 +1,4 @@
-# Copyright (c) 2013, Menno Smits
+# Copyright (c) 2014, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -7,7 +7,7 @@
 
 from __future__ import unicode_literals
 
-version_info = (0, 10, 2, 'final')
+version_info = (0, 11, 0, 'final')
 
 def _imapclient_version_string(vinfo):
     major, minor, micro, releaselevel = vinfo

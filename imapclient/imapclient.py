@@ -1,4 +1,4 @@
-# Copyright (c) 2013, Menno Smits
+# Copyright (c) 2014, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -284,9 +284,11 @@ class IMAPClient(object):
              ([u'\\HasNoChildren', u'\\Starred'], '/', u'[Gmail]/Starred'),
              ([u'\\HasNoChildren', u'\\Trash'], '/', u'[Gmail]/Trash')]
 
-        This is a Gmail-specific IMAP extension. It is the
-        responsibility of the caller to either check for ``XLIST`` in
-        the server capabilites, or to handle the error if the server
+        This is a *deprecated* Gmail-specific IMAP extension (See 
+        https://developers.google.com/gmail/imap_extensions#xlist_is_deprecated
+        for more information).
+        It is the responsibility of the caller to either check for ``XLIST``
+        in the server capabilites, or to handle the error if the server
         doesn't support this extension.
 
         The *directory* and *pattern* arguments are as per
@@ -564,13 +566,31 @@ class IMAPClient(object):
 
         See :rfc:`3501#section-6.4.4` for more details.
         """
-        criteria = normalise_search_criteria(criteria)
+        return self._search(normalise_search_criteria(criteria), charset)
 
+    def gmail_search(self, query, charset=None):
+        """Search using Gmail's X-GM-RAW attribute.
+
+        *query* should be a valid Gmail search query string. For
+         example::
+
+            'has:attachment in:unread'
+
+        See https://developers.google.com/gmail/imap_extensions#extension_of_the_search_command_x-gm-raw
+        for more info.
+
+        *charset* specifies the character set used to encode the
+        search string. It defaults to US-ASCII.
+        """
+        # the the query is sent as a literal to allow for 7-bit query strings
+        self._imap.literal = query.encode(charset or 'us-ascii')
+        return self._search(['X-GM-RAW'], charset)
+
+    def _search(self, criteria, charset):
         if self.use_uid:
+            args = []
             if charset:
-                args = ['CHARSET', charset]
-            else:
-                args = []
+                args.extend(['CHARSET', charset])
             args.extend(criteria)
             typ, data = self._imap.uid('SEARCH', *args)
         else:
@@ -748,7 +768,11 @@ class IMAPClient(object):
 
         A dictionary is returned, indexed by message number. Each item
         in this dictionary is also a dictionary, with an entry
-        corresponding to each item in *data*.
+        corresponding to each item in *data*. Returned values will be
+        appropriately typed. For example, integer values will be returned as
+        Python integers, timestamps will be returned as datetime
+        instances and ENVELOPE responses will be returned as
+        :py:class:`Envelope <imapclient.response_types.Envelope>` instances.
 
         In addition to an element for each *data* item, the dict
         returned for each message also contains a *SEQ* key containing
