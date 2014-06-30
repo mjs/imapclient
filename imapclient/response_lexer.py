@@ -5,20 +5,15 @@
 """
 A lexical analyzer class for IMAP responses.
 
-Although Lexer does all the work, TokenSource is probably the class to
-use for external callers.
+Although Lexer does all the work, TokenSource is the class to use for
+external callers.
 """
-
-# This was heavily inspired by (ie, ripped off from) python 2.6's shlex
-# module with further inspiration from the patch in
-# http://bugs.python.org/issue7594, but redone to be specific to IMAPs
-# requirements while offering nice performance by using generators everywhere.
 
 from __future__ import unicode_literals
 
 from . import six
 
-__all__ = ["Lexer"]
+__all__ = ["TokenSource"]
 
 if six.PY3:
     unichr = chr  # unichr doesn't exist in py3 where every string is unicode
@@ -37,10 +32,8 @@ class TokenSource(object):
     """
 
     def __init__(self, text):
-        lex = Lexer()
-        lex.sources = (LiteralHandlingIter(lex, chunk) for chunk in text)
-        self.lex = lex
-        self.src = iter(lex)
+        self.lex = Lexer(text)
+        self.src = iter(self.lex)
 
     @property
     def current_literal(self):
@@ -55,8 +48,8 @@ class Lexer(object):
     A lexical analyzer class for IMAP
     """
 
-    def __init__(self):
-        self.sources = None
+    def __init__(self, text):
+        self.sources = (LiteralHandlingIter(self, chunk) for chunk in text)
         self.current_source = None
 
     def read_until(self, stream_i, end_char, escape=True):
@@ -114,7 +107,6 @@ class Lexer(object):
                 break
 
     def __iter__(self):
-        "Generate tokens"
         for source in self.sources:
             self.current_source = source
             for tok in self.read_token_stream(iter(source)):
@@ -126,12 +118,12 @@ class Lexer(object):
 # 'line'.  What we end up with is a list of response 'records', where each
 # record is either a simple string, or tuple of (str_with_lit, literal) -
 # where str_with_lit is a string with the {xxx} marker at its end.  Note
-# that each elt of this list does *not* correspond 1:1 with the untagged
-# responses.
+# that each element of this list does *not* correspond 1:1 with the
+# untagged responses.
 # (http://bugs.python.org/issue5045 also has comments about this)
-# So: we have a special file-like object for each of these records.  When
-# a string literal is finally processed, we peek into this file-like object
-# to grab the literal.
+# So: we have a special object for each of these records.  When a
+# string literal is processed, we peek into this object to grab the
+# literal.
 class LiteralHandlingIter:
     def __init__(self, lexer, resp_record):
         self.lexer = lexer
