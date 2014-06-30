@@ -67,7 +67,7 @@ class Lexer(object):
                     escaper = nextchar
                     nextchar = six.next(stream_i)
                     if nextchar != escaper and nextchar != end_char:
-                        token += escaper.decode
+                        nextchar = escaper + nextchar    # Don't touch invalid escaping
                 elif nextchar == end_char:
                     break
                 token += nextchar
