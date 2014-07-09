@@ -15,14 +15,16 @@ from . import six
 
 __all__ = ["TokenSource"]
 
-if six.PY3:
-    unichr = chr  # unichr doesn't exist in py3 where every string is unicode
-
-CTRL_CHARS = frozenset(unichr(c) for c in range(32))
-ALL_CHARS = frozenset(unichr(c) for c in range(256))
-SPECIALS = frozenset(' ()%"[')
+CTRL_CHARS = frozenset(c for c in range(32))
+ALL_CHARS = frozenset(c for c in range(256))
+SPECIALS = frozenset(c for c in six.iterbytes(b' ()%"['))
 NON_SPECIALS = ALL_CHARS - SPECIALS - CTRL_CHARS
-WHITESPACE = frozenset(' \t\r\n')
+WHITESPACE = frozenset(c for c in six.iterbytes(b' \t\r\n'))
+
+BACKSLASH = ord('\\')
+OPEN_SQUARE = ord('[')
+CLOSE_SQUARE = ord(']')
+DOUBLE_QUOTE = ord('"')
 
 
 class TokenSource(object):
@@ -53,22 +55,23 @@ class Lexer(object):
         self.current_source = None
 
     def read_until(self, stream_i, end_char, escape=True):
-        token = ''
+        token = bytearray()
         try:
             for nextchar in stream_i:
-                if escape and nextchar == "\\":
+                if escape and nextchar == BACKSLASH:
                     escaper = nextchar
                     nextchar = six.next(stream_i)
                     if nextchar != escaper and nextchar != end_char:
-                        nextchar = escaper + nextchar    # Don't touch invalid escaping
+                        token.append(escaper)  # Don't touch invalid escaping
                 elif nextchar == end_char:
                     break
-                token += nextchar
+                token.append(nextchar)
             else:
-                raise ValueError("No closing '%s'" % end_char)
+                raise ValueError("No closing '%s'" % chr(end_char))
         except StopIteration:
-            raise ValueError("No closing '%s'" % end_char)
-        return token + end_char
+            raise ValueError("No closing '%s'" % chr(end_char))
+        token.append(end_char)
+        return token
 
     def read_token_stream(self, stream_i):
         whitespace = WHITESPACE
@@ -76,30 +79,33 @@ class Lexer(object):
         read_until = self.read_until
 
         while True:
-            # whitespace
+            # Whitespace
             for nextchar in stream_i:
                 if nextchar not in whitespace:
                     stream_i.push(nextchar)
                     break    # done skipping over the whitespace
 
-            # non whitespace
-            token = ''
+            # Non-whitespace
+            token = bytearray()
             for nextchar in stream_i:
                 if nextchar in wordchars:
-                    token += nextchar
-                elif nextchar == '[':
-                    token += nextchar + read_until(stream_i, ']', escape=False)
+                    token.append(nextchar)
+                elif nextchar == OPEN_SQUARE:
+                    token.append(nextchar)
+                    token.extend(read_until(stream_i, CLOSE_SQUARE, escape=False))
                 else:
                     if nextchar in whitespace:
                         yield token
-                    elif nextchar == '"':
+                    elif nextchar == DOUBLE_QUOTE:
                         assert not token
-                        yield nextchar + read_until(stream_i, nextchar)
+                        token.append(nextchar)
+                        token.extend(read_until(stream_i, nextchar))
+                        yield token
                     else:
                         # Other punctuation, eg. "(". This ends the current token.
                         if token:
                             yield token
-                        yield nextchar
+                        yield bytearray([nextchar])
                     break
             else:
                 if token:
@@ -110,7 +116,7 @@ class Lexer(object):
         for source in self.sources:
             self.current_source = source
             for tok in self.read_token_stream(iter(source)):
-                yield tok
+                yield bytes(tok)
 
 
 # imaplib has poor handling of 'literals' - it both fails to remove the
@@ -131,7 +137,7 @@ class LiteralHandlingIter:
             # A 'record' with a string which includes a literal marker, and
             # the literal itself.
             self.src_text = resp_record[0]
-            assert self.src_text.endswith("}"), self.src_text
+            assert self.src_text.endswith(b"}"), self.src_text
             self.literal = resp_record[1]
         else:
             # just a line with no literals.
@@ -139,7 +145,7 @@ class LiteralHandlingIter:
             self.literal = None
 
     def __iter__(self):
-        return PushableIterator(self.src_text)
+        return PushableIterator(six.iterbytes(self.src_text))
 
 
 class PushableIterator(object):
