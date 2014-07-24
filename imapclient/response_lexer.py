@@ -144,6 +144,7 @@ class LiteralHandlingIter:
             self.src_text = resp_record
             self.literal = None
 
+
     def __iter__(self):
         return PushableIterator(six.iterbytes(self.src_text))
 
