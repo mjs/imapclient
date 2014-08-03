@@ -23,7 +23,7 @@ except ImportError:
 
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .fixed_offset import FixedOffset
-from .six import moves, iteritems, text_type, integer_types, PY3, binary_type
+from .six import moves, iteritems, text_type, integer_types, PY3, binary_type, string_types
 xrange = moves.xrange
 
 if PY3:
@@ -195,10 +195,10 @@ class IMAPClient(object):
 
         # Just return capabilities that imaplib grabbed at connection
         # time (pre-auth)
-        return from_bytes(self._imap.capabilities)
+        return tuple(to_bytes(c) for c in self._imap.capabilities)
 
     def _save_capabilities(self, raw_response):
-        raw_response = from_bytes(raw_response)
+        raw_response = to_bytes(raw_response)
         self._cached_capabilities = tuple(raw_response.upper().split())
         return self._cached_capabilities
 
@@ -210,7 +210,7 @@ class IMAPClient(object):
         # capabilities may in the future be named SORT2 which is
         # still compatible with the current standard and will not
         # be detected by this method.
-        return capability.upper() in self.capabilities()
+        return to_bytes(capability).upper() in self.capabilities()
 
     def namespace(self):
         """Return the namespace for the account as a (personal, other,
@@ -226,7 +226,18 @@ class IMAPClient(object):
         See :rfc:`2342` for more details.
         """
         data = self._command_and_check('namespace')
-        return Namespace(*parse_response(data))
+        parts = []
+        for item in parse_response(data):
+            if item is None:
+                parts.append(item)
+            else:
+                converted = []
+                for prefix, separator in item:
+                    if self.folder_encode:
+                        prefix = decode_utf7(prefix)
+                    converted.append((prefix, to_unicode(separator)))
+                parts.append(tuple(converted))
+        return Namespace(*parts)
 
     def get_folder_delimiter(self):
         """Return the folder separator used by the IMAP server.
@@ -365,22 +376,22 @@ class IMAPClient(object):
 
         # imaplib doesn't parse these correctly (broken regex) so replace
         # with the raw values out of the OK section
-        for line in resp.get('OK', []):
-            match = re.match(r'\[(?P<key>[A-Z-]+)( \((?P<data>.*)\))?\]', line)
+        for line in resp.get(b'OK', []):
+            match = re.match(br'\[(?P<key>[A-Z-]+)( \((?P<data>.*)\))?\]', line)
             if match:
                 key = match.group('key')
-                if key == 'PERMANENTFLAGS':
+                if key == b'PERMANENTFLAGS':
                     out[key] = tuple(match.group('data').split())
 
         for key, value in iteritems(resp):
             key = key.upper()
-            if key in ('OK', 'PERMANENTFLAGS'):
+            if key in (b'OK', b'PERMANENTFLAGS'):
                 continue  # already handled above
-            elif key in ('EXISTS', 'RECENT', 'UIDNEXT', 'UIDVALIDITY', 'HIGHESTMODSEQ'):
+            elif key in (b'EXISTS', b'RECENT', b'UIDNEXT', b'UIDVALIDITY', b'HIGHESTMODSEQ'):
                 value = int(value[0])
-            elif key == 'READ-WRITE':
+            elif key == b'READ-WRITE':
                 value = True
-            elif key == 'FLAGS':
+            elif key == b'FLAGS':
                 value = tuple(value[0][1:-1].split())
             out[key] = value
         return out
@@ -583,14 +594,16 @@ class IMAPClient(object):
         search string. It defaults to US-ASCII.
         """
         # the the query is sent as a literal to allow for 7-bit query strings
-        self._imap.literal = query.encode(charset or 'us-ascii')
-        return self._search(['X-GM-RAW'], charset)
+        if isinstance(query, string_types):
+            query = query.encode(charset or 'us-ascii')
+        self._imap.literal = query
+        return self._search([b'X-GM-RAW'], charset)
 
     def _search(self, criteria, charset):
         if self.use_uid:
             args = []
             if charset:
-                args.extend(['CHARSET', charset])
+                args.extend([b'CHARSET', charset])
             args.extend(criteria)
             typ, data = self._imap.uid('SEARCH', *args)
         else:
@@ -611,7 +624,8 @@ class IMAPClient(object):
 
         See :rfc:`5256` for more details.
         """
-        if not self.has_capability('THREAD=' + algorithm):
+        algorithm = to_bytes(algorithm)
+        if not self.has_capability(b'THREAD=' + algorithm):
             raise ValueError('server does not support %s threading algorithm'
                              % algorithm)
 
@@ -620,7 +634,7 @@ class IMAPClient(object):
 
         args = [algorithm]
         if charset:
-            args.append(charset)
+            args.append(to_bytes(charset))
         args.extend(normalise_search_criteria(criteria))
 
         data = self._command_and_check('thread', *args, uid=True)
@@ -971,8 +985,18 @@ class IMAPClient(object):
             folder_name = folder_name.decode('ascii')
         if self.folder_encode:
             folder_name = encode_utf7(folder_name)
-        return self._imap._quote(folder_name)
+        return _quote(folder_name)
 
+#XXX revisit
+def _quote(arg):
+    if isinstance(arg, text_type):
+        arg = arg.replace('\\', '\\\\')
+        arg = arg.replace('"', '\\"')
+        return '"%s"' % arg
+    else:
+        arg = arg.replace(b'\\', b'\\\\')
+        arg = arg.replace(b'"', b'\\"')
+        return b'"' + arg + b'"'
 
 def normalise_text_list(items):
     return list(_normalise_text_list(items))
@@ -983,31 +1007,32 @@ def seq_to_parenstr(items):
 def seq_to_parenstr_upper(items):
     return _join_and_paren(item.upper() for item in _normalise_text_list(items))
 
+#XXX name?
 def messages_to_str(messages):
     """Convert a sequence of messages ids or a single integer message id
     into an id list string for use with IMAP commands
     """
     if isinstance(messages, (text_type, binary_type, integer_types)):
-        messages = (messages,)
-    return ','.join(_maybe_int_to_unicode(m) for m in messages)
+        messages = (to_bytes(messages),)
+    return b','.join(_maybe_int_to_bytes(m) for m in messages)
 
-def _maybe_int_to_unicode(val):
+def _maybe_int_to_bytes(val):
     if isinstance(val, integer_types):
-        return text_type(val)
-    return to_unicode(val)
+        return str(val).encode('us-ascii')
+    return to_bytes(val)
 
 def normalise_search_criteria(criteria):
     if not criteria:
         raise ValueError('no criteria specified')
-    return ['(%s)' % item for item in _normalise_text_list(criteria)]
+    return [b'(' + item + b')' for item in _normalise_text_list(criteria)]
 
 def _join_and_paren(items):
-    return '(%s)' % ' '.join(items)
+    return b'(' + b' '.join(items) + b')'
 
 def _normalise_text_list(items):
     if isinstance(items, (text_type, binary_type)):
-        items = (items,)
-    return (to_unicode(c) for c in items)
+        items = (to_bytes(items),)
+    return (to_bytes(c) for c in items)
 
 def datetime_to_imap(dt):
     """Convert a datetime instance to a IMAP datetime string.
@@ -1020,10 +1045,10 @@ def datetime_to_imap(dt):
     return dt.strftime("%d-%b-%Y %H:%M:%S %z")
 
 def _parse_untagged_response(text):
-    assert text.startswith('* ')
+    assert text.startswith(b'* ')
     text = text[2:]
-    if text.startswith(('OK ', 'NO ')):
-        return tuple(text.split(' ', 1))
+    if text.startswith((b'OK ', b'NO ')):
+        return tuple(text.split(b' ', 1))
     return parse_response([text])
 
 def pop_with_default(dct, key, default):
@@ -1041,11 +1066,13 @@ def as_pairs(items):
             last_item = item
         i += 1
 
+#XXX
 def to_unicode(s):
     if isinstance(s, binary_type):
         return s.decode('ascii')
     return s
 
+#XXX
 def to_bytes(s):
     if isinstance(s, text_type):
         return s.encode('ascii')
@@ -1054,6 +1081,8 @@ def to_bytes(s):
 def from_bytes(data):
     """Convert bytes to string in lists, tuples and dicts.
     """
+    #XXX
+    return data
     if isinstance(data, dict):
         decoded = {}
         for key, value in iteritems(data):
