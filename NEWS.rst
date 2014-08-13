@@ -1,3 +1,10 @@
+========
+ 0.11.1
+========
+
+* Close folders during livetest cleanup so that livetests work with
+  newer Dovecot servers (#131)
+
 ======
  0.11
 ======
