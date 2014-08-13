@@ -342,7 +342,7 @@ class TestGeneral(_TestBase):
                 new_folder = folder + 'x'
 
             resp = self.client.rename_folder(folder, new_folder)
-            self.assertIsInstance(resp, text_type)
+            self.assertIsInstance(resp, binary_type)
             self.assertTrue(len(resp) > 0)
 
             self.assertFalse(self.client.folder_exists(folder))
@@ -391,7 +391,7 @@ class TestGeneral(_TestBase):
         finally:
             text, more_responses = self.client.idle_done()
         self.assertIn((1, 'EXISTS'), responses)
-        self.assertTrue(isinstance(text, text_type))
+        self.assertTrue(isinstance(text, binary_type))
         self.assertGreater(len(text), 0)
         self.assertTrue(isinstance(more_responses, list))
 
@@ -410,7 +410,7 @@ class TestGeneral(_TestBase):
         finally:
             text, responses = self.client.idle_done()
         self.assertIn((2, 'EXISTS'), responses)
-        self.assertTrue(isinstance(text, text_type))
+        self.assertTrue(isinstance(text, binary_type))
         self.assertGreater(len(text), 0)
 
     def test_noop(self):
@@ -418,7 +418,7 @@ class TestGeneral(_TestBase):
 
         # Initially there should be no responses
         text, resps = self.client.noop()
-        self.assertTrue(isinstance(text, text_type))
+        self.assertTrue(isinstance(text, binary_type))
         self.assertGreater(len(text), 0)
         self.assertEqual(resps, [])
 
@@ -430,7 +430,7 @@ class TestGeneral(_TestBase):
 
         # Check for this addition in the NOOP data
         msg, resps = self.client.noop()
-        self.assertTrue(isinstance(text, text_type))
+        self.assertTrue(isinstance(text, binary_type))
         self.assertGreater(len(text), 0)
         self.assertTrue(isinstance(resps, list))
         self.assertIn((1, 'EXISTS'), resps)
@@ -461,7 +461,7 @@ def createUidTestClass(conf, use_uid):
 
             # Append message
             resp = self.client.append(self.base_folder, in_message, ('abc', 'def'), msg_time)
-            self.assertIsInstance(resp, text_type)
+            self.assertIsInstance(resp, binary_type)
 
             # Retrieve the just added message and check that all looks well
             self.assertEqual(self.client.select_folder(self.base_folder)['EXISTS'], 1)
@@ -742,8 +742,8 @@ def createUidTestClass(conf, use_uid):
                     if e == ('charset', 'us-ascii') and a is None:
                         pass  # Some servers (eg. Gmail) don't return a charset when it's us-ascii
                     else:
-                        a = lower_if_str(a)
-                        e = lower_if_str(e)
+                        a = maybe_lower(a)
+                        e = maybe_lower(e)
                         self.assertEqual(a, e)
 
         def test_expunge(self):
@@ -751,7 +751,7 @@ def createUidTestClass(conf, use_uid):
 
             # Test empty mailbox
             text, resps = self.client.expunge()
-            self.assertTrue(isinstance(text, text_type))
+            self.assertTrue(isinstance(text, binary_type))
             self.assertGreater(len(text), 0)
             # Some servers return nothing while others (e.g. Exchange) return (0, 'EXISTS')
             self.assertIn(resps, ([], [(0, 'EXISTS')]))
@@ -761,7 +761,7 @@ def createUidTestClass(conf, use_uid):
 
             msg, resps = self.client.expunge()
 
-            self.assertTrue(isinstance(text, text_type))
+            self.assertTrue(isinstance(text, binary_type))
             self.assertGreater(len(text), 0)
             self.assertTrue(isinstance(resps, list))
             if not self.is_gmail():
@@ -792,8 +792,8 @@ def quiet_logout(client):
     except IMAPClient.Error:
         pass
 
-def lower_if_str(val):
-    if isinstance(val, text_type):
+def maybe_lower(val):
+    if isinstance(val, (text_type, binary_type)):
         return val.lower()
     return val
 
