@@ -101,7 +101,8 @@ class IMAPClient(object):
     AbortError = imaplib.IMAP4.abort
     ReadOnlyError = imaplib.IMAP4.readonly
 
-    def __init__(self, host, port=None, use_uid=True, ssl=False, stream=False):
+    def __init__(self, host, port=None, use_uid=True, ssl=False, stream=False,
+                 **kwargs):
         if stream:
             if port is not None:
                 raise ValueError("can't set 'port' when 'stream' True")
@@ -120,16 +121,16 @@ class IMAPClient(object):
         self.normalise_times = True
 
         self._cached_capabilities = None
-        self._imap = self._create_IMAP4()
+        self._imap = self._create_IMAP4(**kwargs)
         self._imap._mesg = self._log    # patch in custom debug log method
         self._idle_tag = None
 
-    def _create_IMAP4(self):
+    def _create_IMAP4(self, **kwargs):
         # Create the IMAP instance in a separate method to make unit tests easier
         if self.stream:
             return imaplib.IMAP4_stream(self.host)
         ImapClass = self.ssl and imaplib.IMAP4_SSL or imaplib.IMAP4
-        return ImapClass(self.host, self.port)
+        return ImapClass(self.host, self.port, **kwargs)
 
     def login(self, username, password):
         """Login using *username* and *password*, returning the
@@ -284,7 +285,7 @@ class IMAPClient(object):
              ([u'\\HasNoChildren', u'\\Starred'], '/', u'[Gmail]/Starred'),
              ([u'\\HasNoChildren', u'\\Trash'], '/', u'[Gmail]/Trash')]
 
-        This is a *deprecated* Gmail-specific IMAP extension (See 
+        This is a *deprecated* Gmail-specific IMAP extension (See
         https://developers.google.com/gmail/imap_extensions#xlist_is_deprecated
         for more information).
         It is the responsibility of the caller to either check for ``XLIST``
