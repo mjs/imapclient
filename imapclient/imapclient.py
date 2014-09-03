@@ -78,6 +78,17 @@ class IMAPClient(object):
     ``False``). This is useful for exotic connection or authentication
     setups.
 
+    Additional keyword arguments are passed to the constructor of the
+    :py:class:`imaplib.IMAP4` class, resp. :py:class:`imaplib.IMAP4_SSL` when
+    *ssl* is ``True``, which is used by ``IMAPClient`` internally. This allows
+    passing SSL related parameters, i.e. *keyfile* and *certfile* or an
+    :py:class:`ssl.SSLContext` instance with *ssl_context*. Please note that
+    some keyword arguments of the :py:class:`imaplib.IMP4_SSL` init method are
+    only supported in newer Python versions, in particular, the *ssl_context*
+    argument was added in Python 3.3. The class :py:class:`imaplib.IMAP4` (no
+    SSL) does not accept any additional keyword arguments. For details, see the
+    :py:mod:`imaplib` documentation in the standard library reference.
+
     The *normalise_times* attribute specifies whether datetimes
     returned by ``fetch()`` are normalised to the local system time
     and include no timezone information (native), or are datetimes

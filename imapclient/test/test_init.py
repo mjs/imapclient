@@ -40,6 +40,25 @@ class TestInit(unittest.TestCase):
         self.assertEqual(imap.ssl, True)
         self.assertEqual(imap.stream, False)
 
+    def test_SSL_kwargs(self):
+        self.imaplib.IMAP4_SSL.return_value = sentinel.IMAP4_SSL
+
+        imap = IMAPClient('1.2.3.4', ssl=True, keyfile='key.pem',
+                          certfile='cert.pem')
+
+        self.assertEqual(imap._imap, sentinel.IMAP4_SSL)
+        self.imaplib.IMAP4_SSL.assert_called_with('1.2.3.4', 993,
+            keyfile='key.pem', certfile='cert.pem')
+        self.assertEqual(imap.ssl, True)
+        self.assertEqual(imap.stream, False)
+
+        imap = IMAPClient('1.2.3.4', ssl=True, ssl_context=None)
+        self.imaplib.IMAP4_SSL.assert_called_with('1.2.3.4', 993,
+            ssl_context=None)
+        self.assertEqual(imap.ssl, True)
+        self.assertEqual(imap.stream, False)
+
+
     def test_stream(self):
         self.imaplib.IMAP4_stream.return_value = sentinel.IMAP4_stream
 
