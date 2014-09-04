@@ -44,7 +44,7 @@ class TestDiscoverCommand(TestCommand):
 
     def run_tests(self):
         from imapclient.test.util import unittest   # this will import unittest2
-        unittest.main(argv=['', 'discover'])
+        unittest.main(module=None, argv=['', 'discover'])
 
 
 setup(name='IMAPClient',
