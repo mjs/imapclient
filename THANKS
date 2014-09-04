@@ -44,8 +44,11 @@ John Louis del Rosario
      Gmail search support (X-GM-RAW).
 
 Naveen Nathan
-     ENVELOPE FETCH response parsing
-     
+     ENVELOPE FETCH response parsing.
+
+Chris Arndt
+     Pass-through imaplib kwargs.
+
 
 Bug Reports
 ------------
