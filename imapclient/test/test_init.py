@@ -52,9 +52,9 @@ class TestInit(unittest.TestCase):
         self.assertEqual(imap.ssl, True)
         self.assertEqual(imap.stream, False)
 
-        imap = IMAPClient('1.2.3.4', ssl=True, ssl_context=None)
+        imap = IMAPClient('1.2.3.4', ssl=True, ssl_context=sentinel.context)
         self.imaplib.IMAP4_SSL.assert_called_with('1.2.3.4', 993,
-            ssl_context=None)
+            ssl_context=sentinel.context)
         self.assertEqual(imap.ssl, True)
         self.assertEqual(imap.stream, False)
 
