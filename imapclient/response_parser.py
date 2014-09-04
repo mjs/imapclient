@@ -173,7 +173,10 @@ def _convert_INTERNALDATE(date_string, normalise_times=True):
     return dt
 
 def _convert_ENVELOPE(envelope_response, normalise_times=True):
-    dt = parse_to_datetime(envelope_response[0], normalise=normalise_times)
+    if envelope_response[0]:
+        dt = parse_to_datetime(envelope_response[0], normalise=normalise_times)
+    else:
+        dt = None
     subject = envelope_response[1]
 
     # addresses contains a tuple of addresses

@@ -101,8 +101,14 @@ class _TestBase(unittest.TestCase):
         return self.just_folder_names(self.client.list_sub_folders(self.base_folder))
 
     def clear_test_folders(self):
-        self.client.folder_encode = False
+        # Some servers (e.g. newer Dovecot) don't like it when you
+        # delete the currently selected folder.
+        try:
+            self.client.close_folder()
+        except IMAPClient.Error:
+            pass
 
+        self.client.folder_encode = False
         folder_names = sorted(self.all_test_folder_names(),
                               key=self.get_folder_depth,
                               reverse=True)

@@ -349,6 +349,33 @@ class TestParseFetchResponse(unittest.TestCase):
             )
         )
 
+    def test_ENVELOPE_with_no_date(self):
+        envelope_str = ('1 (ENVELOPE ( '
+            'NIL '
+            '"subject" '
+            '(("name" NIL "address1" "domain1.com")) '
+            '((NIL NIL "address2" "domain2.com")) '
+            '(("name" NIL "address3" "domain3.com")) '
+            'NIL'
+            '((NIL NIL "address4" "domain4.com") '
+             '("person" NIL "address4b" "domain4b.com")) '
+            'NIL "<reply-to-id>" "<msg_id>"))')
+
+        output = parse_fetch_response([envelope_str], normalise_times=False)
+
+        self.assertSequenceEqual(output[1]['ENVELOPE'],
+            Envelope(
+                None,
+                "subject",
+                (Address("name", None, "address1", "domain1.com"),),
+                (Address(None, None, "address2", "domain2.com"),),
+                (Address("name", None, "address3", "domain3.com"),),
+                None,
+                (Address(None, None, "address4", "domain4.com"),
+                 Address("person", None, "address4b", "domain4b.com")),
+                None, "<reply-to-id>", "<msg_id>"
+            )
+        )
     def test_INTERNALDATE_normalised(self):
         def check(date_str, expected_dt):
             output = parse_fetch_response(['3 (INTERNALDATE "%s")' % date_str])
