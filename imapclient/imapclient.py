@@ -61,9 +61,8 @@ class Namespace(tuple):
 
 
 class IMAPClient(object):
-    """
-    A connection to the IMAP server specified by *host* is made when
-    the class is instantiated.
+    """A connection to the IMAP server specified by *host* is made when
+    this class is instantiated.
 
     *port* defaults to 143, or 993 if *ssl* is ``True``.
 
@@ -78,16 +77,19 @@ class IMAPClient(object):
     ``False``). This is useful for exotic connection or authentication
     setups.
 
-    Additional keyword arguments are passed to the constructor of the
-    :py:class:`imaplib.IMAP4` class, resp. :py:class:`imaplib.IMAP4_SSL` when
-    *ssl* is ``True``, which is used by ``IMAPClient`` internally. This allows
-    passing SSL related parameters, i.e. *keyfile* and *certfile* or an
-    :py:class:`ssl.SSLContext` instance with *ssl_context*. Please note that
-    some keyword arguments of the :py:class:`imaplib.IMP4_SSL` init method are
-    only supported in newer Python versions, in particular, the *ssl_context*
-    argument was added in Python 3.3. The class :py:class:`imaplib.IMAP4` (no
-    SSL) does not accept any additional keyword arguments. For details, see the
-    :py:mod:`imaplib` documentation in the standard library reference.
+    Additional keyword arguments are passed through to the constructor
+    of the :py:class:`imaplib.IMAP4` class, or
+    :py:class:`imaplib.IMAP4_SSL` when *ssl* is ``True`` (these are
+    used by ``IMAPClient`` internally). This allows passing SSL
+    related parameters such as *keyfile*, *certfile* and *ssl_context*
+    (Python version dependent). For details, see the :py:mod:`imaplib`
+    documentation in the standard library reference.
+
+    .. note::
+
+       Support for passthrough keyword arguments may be removed in
+       some future version of IMAPClient. Backwards compatibility is
+       not guaranteed for this feature.
 
     The *normalise_times* attribute specifies whether datetimes
     returned by ``fetch()`` are normalised to the local system time
@@ -106,6 +108,7 @@ class IMAPClient(object):
     By default, debug output goes to stderr. The *log_file* attribute
     can be assigned to an alternate file handle for writing debug
     output to.
+
     """
 
     Error = imaplib.IMAP4.error
