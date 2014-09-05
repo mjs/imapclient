@@ -24,6 +24,7 @@ def parse_config_file(path):
         username=None,
         password=None,
         ssl='false',
+        starttls='false',
         stream='false',
         oauth='false',
         oauth_token=None,
@@ -48,6 +49,7 @@ def parse_config_file(path):
         host=parser.get(section, 'host'),
         port=port,
         ssl=parser.getboolean(section, 'ssl'),
+        starttls=parser.getboolean(section, 'starttls'),
         stream=parser.getboolean(section, 'stream'),
 
         username=parser.get(section, 'username'),
@@ -89,6 +91,10 @@ def get_oauth2_token(client_id, client_secret, refresh_token):
 def create_client_from_config(conf):
     client = imapclient.IMAPClient(conf.host, port=conf.port,
                                    ssl=conf.ssl, stream=conf.stream)
+
+    if conf.starttls:
+        client.starttls()
+
     if conf.oauth:
         client.oauth_login(conf.oauth_url,
                            conf.oauth_token,
