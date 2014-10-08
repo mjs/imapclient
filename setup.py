@@ -4,6 +4,7 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+from os.path import join
 
 # bootstrap setuptools if necessary
 from ez_setup import use_setuptools
@@ -13,8 +14,10 @@ from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
 import sys
-import imapclient
-version = imapclient.__version__
+# read meta-data from release.py
+info = {}
+metamod = join('imapclient', 'version.py')
+exec(compile(open(metamod).read(), metamod, 'exec'), {}, info)
 
 MAJ_MIN = sys.version_info[:2]
 IS_PY_26_OR_OLDER = MAJ_MIN <= (2, 6)
@@ -59,15 +62,20 @@ if IS_PY_26_OR_OLDER:
     test_deps.append('unittest2')
 
 setup(name='IMAPClient',
-      version=version,
-      author="Menno Smits",
-      author_email="menno@freshfoo.com",
+      version=info['version'],
+      author=info['author'],
+      author_email=info['author_email'],
       license="http://en.wikipedia.org/wiki/BSD_licenses",
       url="http://imapclient.freshfoo.com/",
-      download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.zip' % version,
+      download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.zip' % info['version'],
       packages=find_packages(),
       package_data=dict(imapclient=['examples/*.py']),
       tests_require=test_deps,
+      install_requires=[
+        'six',
+        'pyopenssl',
+        'service_identity'
+      ],
       description="Easy-to-use, Pythonic and complete IMAP client library",
       long_description=desc,
       classifiers=[
