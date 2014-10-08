@@ -13,12 +13,7 @@ import re
 from datetime import datetime
 from operator import itemgetter
 
-try:
-    import ssl
-    HAVE_SSL = True
-except ImportError:
-    HAVE_SSL = False
-
+from .imaptls import IMAP4
 # Confusingly, this module is for OAUTH v1, not v2
 try:
     import oauth2 as oauth_module
@@ -29,7 +24,6 @@ from . import response_lexer
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .fixed_offset import FixedOffset
 from .response_types import SearchIds
-from .match_hostname import CertificateError, match_hostname
 from .six import moves, iteritems, text_type, integer_types, PY3, binary_type, string_types
 xrange = moves.xrange
 
@@ -48,10 +42,6 @@ if 'XLIST' not in imaplib.Commands:
 # ...and IDLE
 if 'IDLE' not in imaplib.Commands:
     imaplib.Commands['IDLE'] = imaplib.Commands['APPEND']
-
-# ...and STARTTLS
-if 'STARTTLS' not in imaplib.Commands:
-    imaplib.Commands['STARTTLS'] = ('NONAUTH',)
 
 
 # System flags
@@ -154,135 +144,28 @@ class IMAPClient(object):
         # Create the IMAP instance in a separate method to make unit tests easier
         if self.stream:
             return imaplib.IMAP4_stream(self.host)
-        ImapClass = self.ssl and imaplib.IMAP4_SSL or imaplib.IMAP4
+        ImapClass = self.ssl and imaplib.IMAP4_SSL or IMAP4
         return ImapClass(self.host, self.port, **kwargs)
 
-    def _starttls(self, ssl_context=None, **ssl_opts):
-        """Send a STARTTLS command and wrap the socket with SSL."""
-        name = 'STARTTLS'
-
-        if (isinstance(self._imap, imaplib.IMAP4_SSL) or
-                getattr(self._imap, '_tls_established', False)):
-            raise self.AbortError('TLS session already established')
-
-        if not self.has_capability(name):
-            raise self.AbortError('STARTTLS not supported by server')
-
-        check_hostname = ((ssl_context and ssl_context.check_hostname) or
-            ssl_opts.pop('check_hostname', False))
-
-        typ, dat = self._imap._simple_command(name)
-
-        if typ == 'OK':
-            if ssl_context:
-                server_hostname = (self.host
-                    if getattr(ssl, 'HAS_SNI', False) else None)
-                self._imap.sock = ssl_context.wrap_socket(
-                    self._imap.sock, server_hostname=server_hostname)
-            else:
-                self._imap.sock = ssl.wrap_socket(self._imap.sock, **ssl_opts)
-
-            if check_hostname:
-                match_hostname(self._imap.sock.getpeercert(), self.host)
-
-            self._imap.file = self._imap.sock.makefile('rb')
-            self._imap._tls_established = True
-
-            # refresh cached capabilities,
-            # they may have changed with SSL enabled
-            response = self._imap.untagged_responses.pop('CAPABILITY', None)
-            if response:
-                self._save_capabilities(response[0])
-        else:
-            raise self.Error("Couldn't establish TLS session")
-
-        return self._imap._untagged_response(typ, dat, name)
-
-    def starttls(self, ssl_context=None, **ssl_opts):
+    def starttls(self, ssl_context=None):
         """Switch to an SSL encrypted connection by sending a STARTTLS command.
 
         The *ssl_context* argument is optional and should be a
-        :py:class:`ssl.SSLContext` object. If no SSL context is given, and no
-        SSL options are given as extra keyword arguments (see below), a default
-        SSL context will be created, if the :py:mod:`ssl` library supports it
-        (Python 2.7.9 and 3.4+). Otherwise a default set of SSL options will be
-        used. In this case no certificate or hostname checking is performed and
-        SSLv2 is used, falling back to SSLv3, if the server doesn't support it.
+        :py:class:`OpenSSL.SSL.Context` object. If no SSL context is given, a
+        default SSL context with reasonably secure settings will be created.
 
-        SSL options may be passed as keyword arguments, if *ssl_context* is
-        ``None``. The supported keyword arguments are the same as for
-        :py:func:`ssl.wrap_socket` minus *do_handshake_on_connect* and
-        *suppress_ragged_eofs*, which do not make sense in this context. Also,
-        the *ciphers* option is only supported with Python 2.7 and above.
+        You can enable checking of the hostname in the certificate presented
+        by the server  against the hostname which was used for connecting, by
+        setting the *check_hostname* attribute of the SSL context to ``True``.
+        The default SSL context has this setting enabled.
 
-        Additionally, you can enable checking of the hostname in the
-        certificate presented by the server against the hostname which was
-        used for connecting, by setting either the *check_hostname* attribute
-        of the SSL context, or - when *ssl_context* is ``None`` - the
-        *check_hostname* keyword argument to ``True``.
+        Raises :py:exc:`Error` if the SSL connection could not be established.
 
-        If you want consistent SSL options accross all supported Python
-        versions, pass them as keyword arguments and don't use *ciphers*, but
-        then you lose support for automatic loading of system default ca
-        certificates.
-
-        With current Python versions it is recommended to create a default SSL
-        context yourself with :py:func:`ssl.create_default_context`, change
-        options as needed and pass them with the *ssl_context* argument.
-
-        Raises :py:exc:`ValueError` if unrecognized or unsupported keyword
-        arguments or both an SSL context and SSL option arguments are passed.
-
-        Raises :py:exc:`ssl.SSLError` when the SSL connection could not be
-        established. Raises :py:`CertificateError` when the hostname check
-        fails.
-
-        Raises :py:exc:`Error` if SSL support is not available and
-        :py:exc:`AbortError` if the server does not support STARTTLS or an
-        SSL connection is already established.
+        Raises :py:exc:`AbortError` if the server does not support STARTTLS
+        or an SSL connection is already established.
 
         """
-        if not HAVE_SSL:
-            raise self.Error('SSL support missing')
-
-        # Set SSL options, filling in defaults if necessary
-        default_opts = {
-            'keyfile': None,
-            'certfile': None,
-            'server_side': False,
-            'cert_reqs': ssl.CERT_NONE,
-            'ssl_version': ssl.PROTOCOL_SSLv23,
-            'ca_certs': None,
-        }
-
-        if sys.version_info[:2] >= (2, 7):
-            default_opts['ciphers'] = None
-        elif 'ciphers' in ssl_opts:
-            raise ValueError("Setting SSL ciphers requires Python >= 2.7")
-
-        unknown_opts = set(ssl_opts).difference(default_opts)
-
-        if unknown_opts:
-            raise ValueError("Unrecognized SSL option arguments: %s" %
-                ", ".join(unknown_opts))
-
-        if ssl_context and ssl_opts:
-            raise ValueError("No additional keyword arguments allowed if "
-                "'ssl_context' given")
-
-        default_opts.update(ssl_opts)
-
-        # Try to create a default SSL context if none was passed and no
-        # valid SSL option keywords arguments either
-        try:
-            if ssl_context is None and not ssl_opts:
-                ssl_context = ssl._create_stdlib_context()
-        except AttributeError:
-            # when no default context could be created, use ssl_opts
-            pass
-
-        # Now we either have a valid SSL context or (default) ssl_opts
-        return self._starttls(ssl_context, **default_opts)[0]
+        return self._imap.starttls(ssl_context)
 
     def login(self, username, password):
         """Login using *username* and *password*, returning the
