@@ -9,6 +9,7 @@ import select
 import socket
 import sys
 import re
+
 from datetime import datetime
 from operator import itemgetter
 
@@ -28,6 +29,7 @@ from . import response_lexer
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .fixed_offset import FixedOffset
 from .response_types import SearchIds
+from .match_hostname import CertificateError, match_hostname
 from .six import moves, iteritems, text_type, integer_types, PY3, binary_type, string_types
 xrange = moves.xrange
 
@@ -159,11 +161,15 @@ class IMAPClient(object):
         """Send a STARTTLS command and wrap the socket with SSL."""
         name = 'STARTTLS'
 
-        if getattr(self._imap, '_tls_established', False):
+        if (isinstance(self._imap, imaplib.IMAP4_SSL) or
+                getattr(self._imap, '_tls_established', False)):
             raise self.AbortError('TLS session already established')
 
         if not self.has_capability(name):
-            raise self.AbortError('TLS not supported by server')
+            raise self.AbortError('STARTTLS not supported by server')
+
+        check_hostname = ((ssl_context and ssl_context.check_hostname) or
+            ssl_opts.pop('check_hostname', False))
 
         typ, dat = self._imap._simple_command(name)
 
@@ -173,11 +179,13 @@ class IMAPClient(object):
                     if getattr(ssl, 'HAS_SNI', False) else None)
                 self._imap.sock = ssl_context.wrap_socket(
                     self._imap.sock, server_hostname=server_hostname)
-                self._imap.file = self._imap.sock.makefile('rb')
             else:
                 self._imap.sock = ssl.wrap_socket(self._imap.sock, **ssl_opts)
-                self._imap.file = self._imap.sock.makefile('rb')
 
+            if check_hostname:
+                match_hostname(self._imap.sock.getpeercert(), self.host)
+
+            self._imap.file = self._imap.sock.makefile('rb')
             self._imap._tls_established = True
 
             # refresh cached capabilities,
@@ -207,10 +215,16 @@ class IMAPClient(object):
         *suppress_ragged_eofs*, which do not make sense in this context. Also,
         the *ciphers* option is only supported with Python 2.7 and above.
 
+        Additionally, you can enable checking of the hostname in the
+        certificate presented by the server against the hostname which was
+        used for connecting, by setting either the *check_hostname* attribute
+        of the SSL context, or - when *ssl_context* is ``None`` - the
+        *check_hostname* keyword argument to ``True``.
+
         If you want consistent SSL options accross all supported Python
         versions, pass them as keyword arguments and don't use *ciphers*, but
         then you lose support for automatic loading of system default ca
-        certificates and hostname checking.
+        certificates.
 
         With current Python versions it is recommended to create a default SSL
         context yourself with :py:func:`ssl.create_default_context`, change
@@ -220,7 +234,8 @@ class IMAPClient(object):
         arguments or both an SSL context and SSL option arguments are passed.
 
         Raises :py:exc:`ssl.SSLError` when the SSL connection could not be
-        established.
+        established. Raises :py:`CertificateError` when the hostname check
+        fails.
 
         Raises :py:exc:`Error` if SSL support is not available and
         :py:exc:`AbortError` if the server does not support STARTTLS or an
