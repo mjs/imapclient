@@ -16,7 +16,7 @@ from datetime import datetime
 from email.utils import make_msgid
 
 from .fixed_offset import FixedOffset
-from .imapclient import IMAPClient, DELETED, to_unicode
+from .imapclient import IMAPClient, DELETED, to_unicode, to_bytes
 from .response_types import Envelope, Address
 from .six import binary_type, text_type, PY3
 from .test.util import unittest
@@ -87,10 +87,14 @@ class _TestBase(unittest.TestCase):
             self.skipTest("Server doesn't support %s" % name)
 
     def just_folder_names(self, dat):
+        if self.client.folder_encode:
+            gmail_special_prefix = '['
+        else:
+            gmail_special_prefix = b'['
         ret = []
         for _, _, folder_name in dat:
             # gmail's "special" folders start with '['
-            if not folder_name.startswith('['):
+            if not folder_name.startswith(gmail_special_prefix):
                 ret.append(folder_name)
         return ret
 
@@ -124,7 +128,7 @@ class _TestBase(unittest.TestCase):
         # Sort folders depth first because some implementations
         # (e.g. MS Exchange) will delete child folders when a
         # parent is deleted.
-        return folder.count(self.folder_delimiter)
+        return folder.count(self.folder_delimiter.encode('ascii'))
 
     def clear_folder(self, folder):
         self.client.select_folder(folder)
@@ -297,11 +301,7 @@ class TestGeneral(_TestBase):
             ])
 
         # Run folder tests with folder_encode off
-        self.client.folder_encode = False
-        try:
-            self.run_folder_tests(folders)
-        finally:
-            self.client.folder_encode = True
+        self.run_folder_tests(folders, False)
 
         # Now with folder_encode on, adding in names that only work
         # when this is enabled.
@@ -310,24 +310,33 @@ class TestGeneral(_TestBase):
             'stuff & things',
             b'stuff & things',
         ])
-        self.run_folder_tests(folders)
+        self.run_folder_tests(folders, True)
 
-    def run_folder_tests(self, folder_names):
-        folder_names = self.add_prefix_to_folders(folder_names)
+    def run_folder_tests(self, folder_names, folder_encode):
+        self.client.folder_encode = folder_encode
+        try:
+            folder_names = self.add_prefix_to_folders(folder_names)
 
-        for folder in folder_names:
-            self.assertFalse(self.client.folder_exists(folder))
+            for folder in folder_names:
+                self.assertFalse(self.client.folder_exists(folder))
 
-            self.client.create_folder(folder)
+                self.client.create_folder(folder)
 
-            self.assertTrue(self.client.folder_exists(folder))
-            self.assertIn(to_unicode(folder), self.all_test_folder_names())
+                self.assertTrue(self.client.folder_exists(folder))
 
-            self.client.select_folder(folder)
-            self.client.close_folder()
+                self.assertIn(
+                    to_unicode(folder) if folder_encode else to_bytes(folder),
+                    self.all_test_folder_names()
+                )
 
-            self.client.delete_folder(folder)
-            self.assertFalse(self.client.folder_exists(folder))
+                self.client.select_folder(folder)
+                self.client.close_folder()
+
+                self.client.delete_folder(folder)
+                self.assertFalse(self.client.folder_exists(folder))
+        finally:
+            self.client.folder_encode = True
+
 
     def test_rename_folder(self):
         folders = self.add_prefix_to_folders([
