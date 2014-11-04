@@ -163,7 +163,6 @@ class IMAPClient(object):
         """Logout, returning the server response.
         """
         typ, data = self._imap.logout()
-        data = from_bytes(data)
         self._check_resp('BYE', 'logout', typ, data)
         return data[0]
 
@@ -322,10 +321,9 @@ class IMAPClient(object):
         directory = self._normalise_folder(directory)
         pattern = self._normalise_folder(pattern)
         typ, dat = self._imap._simple_command(cmd, directory, pattern)
-        dat = from_bytes(dat)
         self._checkok(cmd, typ, dat)
         typ, dat = self._imap._untagged_response(typ, dat, cmd)
-        return self._proc_folder_list(from_bytes(dat))
+        return self._proc_folder_list(dat)
 
     def _proc_folder_list(self, folder_data):
         # Filter out empty strings and None's.
@@ -433,7 +431,7 @@ class IMAPClient(object):
         See :rfc:`2177` for more information about the IDLE extension.
         """
         self._idle_tag = self._imap._command('IDLE')
-        resp = from_bytes(self._imap._get_response())
+        resp = self._imap._get_response()
         if resp is not None:
             raise self.Error('Unexpected IDLE response: %s' % resp)
 
@@ -468,7 +466,7 @@ class IMAPClient(object):
             if rs:
                 while True:
                     try:
-                        line = from_bytes(self._imap._get_line())
+                        line = self._imap._get_line()
                     except (socket.timeout, socket.error):
                         break
                     except IMAPClient.AbortError:
@@ -610,8 +608,6 @@ class IMAPClient(object):
             typ, data = self._imap.uid('SEARCH', *args)
         else:
             typ, data = self._imap.search(charset, *criteria)
-
-        data = from_bytes(data)
 
         self._checkok('search', typ, data)
         data = data[0]
@@ -819,10 +815,9 @@ class IMAPClient(object):
             args.insert(0, 'UID')
         tag = self._imap._command(*args)
         typ, data = self._imap._command_complete('FETCH', tag)
-        data = from_bytes(data)
         self._checkok('fetch', typ, data)
         typ, data = self._imap._untagged_response(typ, data, 'FETCH')
-        return parse_fetch_response(from_bytes(data), self.normalise_times, self.use_uid)
+        return parse_fetch_response(data, self.normalise_times, self.use_uid)
 
     def append(self, folder, msg, flags=(), msg_time=None):
         """Append a message to *folder*.
@@ -923,9 +918,8 @@ class IMAPClient(object):
             line = self._imap._get_response()
             if tagged_commands[tag]:
                 break
-            resps.append(_parse_untagged_response(from_bytes(line)))
+            resps.append(_parse_untagged_response(line))
         typ, data = tagged_commands.pop(tag)
-        data = from_bytes(data)
         self._checkok(command, typ, data)
         return data[0], resps
 
@@ -939,7 +933,6 @@ class IMAPClient(object):
         else:
             meth = getattr(self._imap, command)
             typ, data = meth(*args)
-        data = from_bytes(data)
         self._checkok(command, typ, data)
         if unpack:
             return data[0]
@@ -1000,7 +993,9 @@ def _quote(arg):
         arg = arg.replace(b'"', b'\\"')
         return b'"' + arg + b'"'
 
-# XXX these have to work in unicode because imaplib does things with flags and sort criteria that assume these are passed as unicode
+# normalise_text_list, seq_to_parentstr etc have to return unicode
+# because imaplib handles flags and sort criteria assuming these are
+# passed as unicode
 def normalise_text_list(items):
     return list(_normalise_text_list(items))
 
@@ -1075,32 +1070,12 @@ def as_pairs(items):
             last_item = item
         i += 1
 
-#XXX
 def to_unicode(s):
     if isinstance(s, binary_type):
         return s.decode('ascii')
     return s
 
-#XXX
 def to_bytes(s):
     if isinstance(s, text_type):
         return s.encode('ascii')
     return s
-
-def from_bytes(data):
-    """Convert bytes to string in lists, tuples and dicts.
-    """
-    #XXX
-    return data
-    if isinstance(data, dict):
-        decoded = {}
-        for key, value in iteritems(data):
-            decoded[from_bytes(key)] = from_bytes(value)
-        return decoded
-    elif isinstance(data, list):
-        return [from_bytes(item) for item in data]
-    elif isinstance(data, tuple):
-        return tuple([from_bytes(item) for item in data])
-    elif isinstance(data, binary_type):
-        return data.decode('latin-1')
-    return data
