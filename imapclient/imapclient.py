@@ -679,7 +679,7 @@ class IMAPClient(object):
         msgid1: [flag1, flag2, ... ], }``.
         """
         response = self.fetch(messages, ['FLAGS'])
-        return self._filter_fetch_dict(response, 'FLAGS')
+        return self._filter_fetch_dict(response, b'FLAGS')
 
     def add_flags(self, messages, flags):
         """Add *flags* to *messages*.
@@ -689,7 +689,7 @@ class IMAPClient(object):
         Returns the flags set for each modified message (see
         *get_flags*).
         """
-        return self._store('+FLAGS', messages, flags, 'FLAGS')
+        return self._store('+FLAGS', messages, flags, b'FLAGS')
 
     def remove_flags(self, messages, flags):
         """Remove one or more *flags* from *messages*.
@@ -699,7 +699,7 @@ class IMAPClient(object):
         Returns the flags set for each modified message (see
         *get_flags*).
         """
-        return self._store('-FLAGS', messages, flags, 'FLAGS')
+        return self._store('-FLAGS', messages, flags, b'FLAGS')
 
     def set_flags(self, messages, flags):
         """Set the *flags* for *messages*.
@@ -709,7 +709,7 @@ class IMAPClient(object):
         Returns the flags set for each modified message (see
         *get_flags*).
         """
-        return self._store('FLAGS', messages, flags, 'FLAGS')
+        return self._store('FLAGS', messages, flags, b'FLAGS')
 
     def get_gmail_labels(self, messages):
         """Return the label set for each message in *messages*.
@@ -734,7 +734,7 @@ class IMAPClient(object):
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
         """
-        return self._store('+X-GM-LABELS', messages, labels, 'X-GM-LABELS')
+        return self._store('+X-GM-LABELS', messages, labels, b'X-GM-LABELS')
 
     def remove_gmail_labels(self, messages, labels):
         """Remove one or more *labels* from *messages*.
@@ -747,7 +747,7 @@ class IMAPClient(object):
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
         """
-        return self._store('-X-GM-LABELS', messages, labels, 'X-GM-LABELS')
+        return self._store('-X-GM-LABELS', messages, labels, b'X-GM-LABELS')
 
     def set_gmail_labels(self, messages, labels):
         """Set the *labels* for *messages*.
@@ -760,7 +760,7 @@ class IMAPClient(object):
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
         """
-        return self._store('X-GM-LABELS', messages, labels, 'X-GM-LABELS')
+        return self._store('X-GM-LABELS', messages, labels, b'X-GM-LABELS')
 
     def delete_messages(self, messages):
         """Delete one or more *messages* from the currently selected
