@@ -184,7 +184,9 @@ class IMAPClient(object):
 
         # If server returned an untagged CAPABILITY response (during
         # authentication), cache it and return that.
-        response = self._imap.untagged_responses.pop('CAPABILITY', None)
+
+        untagged = normalise_untagged_responses(self._imap.untagged_responses)
+        response = untagged.pop(b'CAPABILITY', None)
         if response:
             return self._save_capabilities(response[0])
 
@@ -368,22 +370,22 @@ class IMAPClient(object):
              'UIDVALIDITY': 1239278212}
         """
         self._command_and_check('select', self._normalise_folder(folder), readonly)
-        untagged = self._imap.untagged_responses
-        return self._process_select_response(from_bytes(untagged))
+        return self._process_select_response(self._imap.untagged_responses)
 
     def _process_select_response(self, resp):
+        untagged = normalise_untagged_responses(resp)
         out = {}
 
         # imaplib doesn't parse these correctly (broken regex) so replace
         # with the raw values out of the OK section
-        for line in resp.get(b'OK', []):
+        for line in untagged.get(b'OK', []):
             match = re.match(br'\[(?P<key>[A-Z-]+)( \((?P<data>.*)\))?\]', line)
             if match:
                 key = match.group('key')
                 if key == b'PERMANENTFLAGS':
                     out[key] = tuple(match.group('data').split())
 
-        for key, value in iteritems(resp):
+        for key, value in iteritems(untagged):
             key = key.upper()
             if key in (b'OK', b'PERMANENTFLAGS'):
                 continue  # already handled above
@@ -1035,6 +1037,11 @@ def _maybe_int_to_bytes(val):
         return str(val).encode('us-ascii')
     return to_bytes(val)
 
+def normalise_untagged_responses(untagged):
+    out = {}
+    for key, value in iteritems(untagged):
+        out[to_bytes(key)] = value
+    return out
 
 def datetime_to_imap(dt):
     """Convert a datetime instance to a IMAP datetime string.
