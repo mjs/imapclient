@@ -191,7 +191,7 @@ class TestAppend(IMAPClientTest):
         self.client.append('foobar', msg, ['FLAG', 'WAVE'], None)
 
         self.client._imap.append.assert_called_with(
-            b'"foobar"', b'(FLAG WAVE)', None, b'hi')
+            b'"foobar"', '(FLAG WAVE)', None, b'hi')
 
     @patch('imapclient.imapclient.datetime_to_imap')
     def test_with_msg_time(self, datetime_to_imap):
@@ -204,7 +204,7 @@ class TestAppend(IMAPClientTest):
 
         self.assertTrue(datetime_to_imap.called)
         self.client._imap.append.assert_called_with(
-            b'"foobar"', b'(FLAG WAVE)', '"somedate"', msg)
+            b'"foobar"', '(FLAG WAVE)', '"somedate"', msg)
 
 
 class TestAclMethods(IMAPClientTest):
@@ -514,7 +514,7 @@ class TestThread(IMAPClientTest):
 
         self.client.thread(algorithm='FOO', criteria='STUFF', charset='ASCII')
 
-        self.client._imap.uid.assert_called_once_with('thread', b'FOO', b'ASCII', b'(STUFF)')
+        self.client._imap.uid.assert_called_once_with('thread', b'FOO', b'ASCII', '(STUFF)')
 
     def test_all_args_without_uid(self):
         self.client.use_uid = False
@@ -523,4 +523,4 @@ class TestThread(IMAPClientTest):
 
         self.client.thread(algorithm='FOO', criteria='STUFF', charset='ASCII')
 
-        self.client._imap.thread.assert_called_once_with(b'FOO', b'ASCII', b'(STUFF)')
+        self.client._imap.thread.assert_called_once_with(b'FOO', b'ASCII', '(STUFF)')

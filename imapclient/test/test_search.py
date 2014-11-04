@@ -12,7 +12,7 @@ class TestSearch(IMAPClientTest):
 
         result = self.client.search('FOO')
 
-        self.client._imap.uid.assert_called_once_with('SEARCH', b'(FOO)')
+        self.client._imap.uid.assert_called_once_with('SEARCH', '(FOO)')
         self.assertEqual(result, [1, 2, 44])
 
     def test_without_uid(self):
@@ -21,7 +21,7 @@ class TestSearch(IMAPClientTest):
 
         result = self.client.search('FOO')
 
-        self.client._imap.search.assert_called_once_with(None, b'(FOO)')
+        self.client._imap.search.assert_called_once_with(None, '(FOO)')
         self.assertEqual(result, [1, 2, 44])
 
     def test_with_uid_with_charset(self):
@@ -33,7 +33,7 @@ class TestSearch(IMAPClientTest):
         self.client._imap.uid.assert_called_once_with(
             'SEARCH',
             b'CHARSET', 'UTF9',
-            b'(FOO)')
+            '(FOO)')
         self.assertEqual(result, [1, 2, 44])
 
     def test_without_uid_with_charset(self):
@@ -42,7 +42,7 @@ class TestSearch(IMAPClientTest):
 
         result = self.client.search('FOO', 'UTF9')
 
-        self.client._imap.search.assert_called_once_with('UTF9', b'(FOO)')
+        self.client._imap.search.assert_called_once_with('UTF9', '(FOO)')
         self.assertEqual(result, [1, 2, 44])
 
     def test_with_multiple_criteria_and_charset(self):
@@ -51,7 +51,7 @@ class TestSearch(IMAPClientTest):
 
         result = self.client.search(['FOO', 'BAR'], 'UTF9')
 
-        self.client._imap.search.assert_called_once_with('UTF9', b'(FOO)', b'(BAR)')
+        self.client._imap.search.assert_called_once_with('UTF9', '(FOO)', '(BAR)')
         self.assertEqual(result, [1, 2, 44])
 
     def test_error_from_server(self):

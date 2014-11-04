@@ -26,22 +26,22 @@ class Test_normalise_text_list(unittest.TestCase):
         self.assertEqual(normalise_text_list(items), expected)
 
     def test_unicode(self):
-        self.check('Foo', [b'Foo'])
+        self.check('Foo', ['Foo'])
 
     def test_binary(self):
-        self.check(b'FOO', [b'FOO'])
+        self.check(b'FOO', ['FOO'])
 
     def test_tuple(self):
-        self.check(('FOO', 'BAR'), [b'FOO', b'BAR'])
+        self.check(('FOO', 'BAR'), ['FOO', 'BAR'])
 
     def test_list(self):
-        self.check(['FOO', 'BAR'], [b'FOO', b'BAR'])
+        self.check(['FOO', 'BAR'], ['FOO', 'BAR'])
 
     def test_iter(self):
-        self.check(iter(['FOO', 'BAR']), [b'FOO', b'BAR'])
+        self.check(iter(['FOO', 'BAR']), ['FOO', 'BAR'])
 
     def test_mixed_list(self):
-        self.check(['FOO', b'Bar'], [b'FOO', b'Bar'])
+        self.check(['FOO', b'Bar'], ['FOO', 'Bar'])
 
 class Test_seq_to_parenstr(unittest.TestCase):
 
@@ -49,22 +49,22 @@ class Test_seq_to_parenstr(unittest.TestCase):
         self.assertEqual(seq_to_parenstr(items), expected)
 
     def test_unicode(self):
-        self.check('foO', b'(foO)')
+        self.check('foO', '(foO)')
 
     def test_binary(self):
-        self.check(b'Foo', b'(Foo)')
+        self.check(b'Foo', '(Foo)')
 
     def test_tuple(self):
-        self.check(('FOO', 'BAR'), b'(FOO BAR)')
+        self.check(('FOO', 'BAR'), '(FOO BAR)')
 
     def test_list(self):
-        self.check(['FOO', 'BAR'], b'(FOO BAR)')
+        self.check(['FOO', 'BAR'], '(FOO BAR)')
 
     def test_iter(self):
-        self.check(iter(['FOO', 'BAR']), b'(FOO BAR)')
+        self.check(iter(['FOO', 'BAR']), '(FOO BAR)')
 
     def test_mixed_list(self):
-        self.check(['foo', b'BAR'], b'(foo BAR)')
+        self.check(['foo', b'BAR'], '(foo BAR)')
 
 class Test_seq_to_parenstr_upper(unittest.TestCase):
 
@@ -72,22 +72,22 @@ class Test_seq_to_parenstr_upper(unittest.TestCase):
         self.assertEqual(seq_to_parenstr_upper(items), expected)
 
     def test_unicode(self):
-        self.check('foO', b'(FOO)')
+        self.check('foO', '(FOO)')
 
     def test_binary(self):
-        self.check(b'Foo', b'(FOO)')
+        self.check(b'Foo', '(FOO)')
 
     def test_tuple(self):
-        self.check(('foo', 'BAR'), b'(FOO BAR)')
+        self.check(('foo', 'BAR'), '(FOO BAR)')
 
     def test_list(self):
-        self.check(['FOO', 'bar'], b'(FOO BAR)')
+        self.check(['FOO', 'bar'], '(FOO BAR)')
 
     def test_iter(self):
-        self.check(iter(['FOO', 'BaR']), b'(FOO BAR)')
+        self.check(iter(['FOO', 'BaR']), '(FOO BAR)')
 
     def test_mixed_list(self):
-        self.check(['foo', b'BAR'], b'(FOO BAR)')
+        self.check(['foo', b'BAR'], '(FOO BAR)')
 
 class Test_messages_to_str(unittest.TestCase):
 
@@ -124,19 +124,19 @@ class Test_normalise_search_criteria(unittest.TestCase):
         self.assertEqual(normalise_search_criteria(criteria), expected)
 
     def test_unicode(self):
-        self.check('Foo', [b'(Foo)'])
+        self.check('Foo', ['(Foo)'])
 
     def test_binary(self):
-        self.check(b'FOO', [b'(FOO)'])
+        self.check(b'FOO', ['(FOO)'])
 
     def test_tuple(self):
-        self.check(('FOO', 'BAR'), [b'(FOO)', b'(BAR)'])
+        self.check(('FOO', 'BAR'), ['(FOO)', '(BAR)'])
 
     def test_list(self):
-        self.check(['FOO', 'BAR'], [b'(FOO)', b'(BAR)'])
+        self.check(['FOO', 'BAR'], ['(FOO)', '(BAR)'])
 
     def test_mixed_list(self):
-        self.check(['FOO', b'BAR'], [b'(FOO)', b'(BAR)'])
+        self.check(['FOO', b'BAR'], ['(FOO)', '(BAR)'])
 
     def test_None(self):
         self.assertRaises(ValueError, normalise_search_criteria, None)

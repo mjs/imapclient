@@ -998,6 +998,7 @@ def _quote(arg):
         arg = arg.replace(b'"', b'\\"')
         return b'"' + arg + b'"'
 
+# XXX these have to work in unicode because imaplib does things with flags and sort criteria that assume these are passed as unicode
 def normalise_text_list(items):
     return list(_normalise_text_list(items))
 
@@ -1006,6 +1007,19 @@ def seq_to_parenstr(items):
 
 def seq_to_parenstr_upper(items):
     return _join_and_paren(item.upper() for item in _normalise_text_list(items))
+
+def normalise_search_criteria(criteria):
+    if not criteria:
+        raise ValueError('no criteria specified')
+    return ['(' + item + ')' for item in _normalise_text_list(criteria)]
+
+def _join_and_paren(items):
+    return '(' + ' '.join(items) + ')'
+
+def _normalise_text_list(items):
+    if isinstance(items, (text_type, binary_type)):
+        items = (to_unicode(items),)
+    return (to_unicode(c) for c in items)
 
 #XXX name?
 def messages_to_str(messages):
@@ -1021,18 +1035,6 @@ def _maybe_int_to_bytes(val):
         return str(val).encode('us-ascii')
     return to_bytes(val)
 
-def normalise_search_criteria(criteria):
-    if not criteria:
-        raise ValueError('no criteria specified')
-    return [b'(' + item + b')' for item in _normalise_text_list(criteria)]
-
-def _join_and_paren(items):
-    return b'(' + b' '.join(items) + b')'
-
-def _normalise_text_list(items):
-    if isinstance(items, (text_type, binary_type)):
-        items = (to_bytes(items),)
-    return (to_bytes(c) for c in items)
 
 def datetime_to_imap(dt):
     """Convert a datetime instance to a IMAP datetime string.
