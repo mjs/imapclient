@@ -239,7 +239,7 @@ class TestGeneral(_TestBase):
     def test_gmail_xlist(self):
         caps = self.client.capabilities()
         if self.is_gmail():
-            self.assertIn("XLIST", caps, "expected XLIST in Gmail's capabilities")
+            self.assertIn(b"XLIST", caps, "expected XLIST in Gmail's capabilities")
 
     def test_xlist(self):
         self.skip_unless_capable('XLIST')
@@ -249,7 +249,7 @@ class TestGeneral(_TestBase):
 
         foundInbox = False
         for flags, _, _  in result:
-            if r'\INBOX' in [flag.upper() for flag in flags]:
+            if br'\INBOX' in [flag.upper() for flag in flags]:
                 foundInbox = True
                 break
         if not foundInbox:
@@ -529,15 +529,15 @@ def createUidTestClass(conf, use_uid):
                 actual_labels = set(answer[msg_id])
                 self.assertSetEqual(actual_labels, set(expected_labels))
 
-            base_labels = ['_imapclient_foo', '_imapclient_bar']
+            base_labels = [b'_imapclient_foo', b'_imapclient_bar']
             try:
                 _labeltest(self.client.set_gmail_labels, [base_labels], base_labels)
                 _labeltest(self.client.get_gmail_labels, [], base_labels)
-                _labeltest(self.client.add_gmail_labels, ['_imapclient_baz'], base_labels + ['_imapclient_baz'])
-                _labeltest(self.client.remove_gmail_labels, ['_imapclient_baz'], base_labels)
+                _labeltest(self.client.add_gmail_labels, [b'_imapclient_baz'], base_labels + [b'_imapclient_baz'])
+                _labeltest(self.client.remove_gmail_labels, [b'_imapclient_baz'], base_labels)
             finally:
                 # Clean up
-                for label in ['_imapclient_baz'] + base_labels:
+                for label in [b'_imapclient_baz'] + base_labels:
                     if self.client.folder_exists(label):
                         self.client.delete_folder(label)
 
@@ -756,7 +756,7 @@ def createUidTestClass(conf, use_uid):
                     for expected_and_actual in zip(e, a):
                         self.check_BODYSTRUCTURE(*expected_and_actual)
                 else:
-                    if e == ('charset', 'us-ascii') and a is None:
+                    if e == (b'charset', b'us-ascii') and a is None:
                         pass  # Some servers (eg. Gmail) don't return a charset when it's us-ascii
                     else:
                         a = maybe_lower(a)
