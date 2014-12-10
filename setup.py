@@ -12,8 +12,11 @@ use_setuptools()
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
+import sys
 import imapclient
 version = imapclient.__version__
+
+IS_OLD_PYTHON = sys.version_info[:2] <= (2, 6)
 
 desc = """\
 IMAPClient is an easy-to-use, Pythonic and complete IMAP client library.
@@ -44,7 +47,10 @@ class TestDiscoverCommand(TestCommand):
 
     def run_tests(self):
         from imapclient.test.util import unittest   # this will import unittest2
-        unittest.main(argv=['', 'discover'])
+        module = "__main__"
+        if IS_OLD_PYTHON:
+            module = None
+        unittest.main(argv=['', 'discover'], module=module)
 
 
 setup(name='IMAPClient',
