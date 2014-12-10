@@ -52,6 +52,9 @@ class TestDiscoverCommand(TestCommand):
             module = None
         unittest.main(argv=['', 'discover'], module=module)
 
+test_deps = ['mock==0.8.0']
+if IS_OLD_PYTHON:
+    test_deps.append('unittest2')
 
 setup(name='IMAPClient',
       version=version,
@@ -62,7 +65,7 @@ setup(name='IMAPClient',
       download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.zip' % version,
       packages=find_packages(),
       package_data=dict(imapclient=['examples/*.py']),
-      tests_require=['mock==0.8.0'],
+      tests_require=test_deps,
       description="Easy-to-use, Pythonic and complete IMAP client library",
       long_description=desc,
       classifiers=[
