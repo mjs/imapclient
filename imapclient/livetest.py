@@ -786,9 +786,9 @@ def createUidTestClass(conf, use_uid):
             self.skip_unless_capable('ACL')
 
             folder = self.add_prefix_to_folder('test_acl')
-            who = conf['username']
             self.client.create_folder(folder)
 
+            who = to_bytes(conf['username'])
             rights = self.client.getacl(folder)
             self.assertIn(who, [u for u, r in rights])
 
