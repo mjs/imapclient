@@ -6,3 +6,6 @@ doc/html/
 .tox/
 ^mock-.+.egg.*
 ^setuptools-.+
+^unittest2-.+
+^six-.+
+^argparse-.+\.egg$
