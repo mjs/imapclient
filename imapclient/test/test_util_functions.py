@@ -10,7 +10,7 @@ from mock import patch
 
 from imapclient.imapclient import (
     datetime_to_imap,
-    messages_to_str,
+    join_message_ids,
     normalise_search_criteria,
     normalise_text_list,
     seq_to_parenstr,
@@ -89,10 +89,10 @@ class Test_seq_to_parenstr_upper(unittest.TestCase):
     def test_mixed_list(self):
         self.check(['foo', b'BAR'], '(FOO BAR)')
 
-class Test_messages_to_str(unittest.TestCase):
+class Test_join_message_ids(unittest.TestCase):
 
     def check(self, items, expected):
-        self.assertEqual(messages_to_str(items), expected)
+        self.assertEqual(join_message_ids(items), expected)
 
     def test_int(self):
         self.check(123, b'123')

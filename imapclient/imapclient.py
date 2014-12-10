@@ -807,7 +807,7 @@ class IMAPClient(object):
 
         args = [
             'FETCH',
-            messages_to_str(messages),
+            join_message_ids(messages),
             seq_to_parenstr_upper(data),
             seq_to_parenstr_upper(modifiers) if modifiers else None
         ]
@@ -857,7 +857,7 @@ class IMAPClient(object):
         server.
         """
         return self._command_and_check('copy',
-                                       messages_to_str(messages),
+                                       join_message_ids(messages),
                                        self._normalise_folder(folder),
                                        uid=True, unpack=True)
 
@@ -949,7 +949,7 @@ class IMAPClient(object):
         if not messages:
             return {}
         data = self._command_and_check('store',
-                                       messages_to_str(messages),
+                                       join_message_ids(messages),
                                        cmd,
                                        seq_to_parenstr(flags),
                                        uid=True)
@@ -1018,10 +1018,9 @@ def _normalise_text_list(items):
         items = (to_unicode(items),)
     return (to_unicode(c) for c in items)
 
-#XXX name?
-def messages_to_str(messages):
+def join_message_ids(messages):
     """Convert a sequence of messages ids or a single integer message id
-    into an id list string for use with IMAP commands
+    into an id byte string for use with IMAP commands
     """
     if isinstance(messages, (text_type, binary_type, integer_types)):
         messages = (to_bytes(messages),)
