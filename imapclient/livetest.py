@@ -749,19 +749,15 @@ def createUidTestClass(conf, use_uid):
             if multipart is not None:
                 self.assertEqual(actual.is_multipart, multipart)
 
-            # BODYSTRUCTURE lengths can various according to the server so
-            # compare up until what is returned
-            for e, a in zip(expected, actual):
-                if have_matching_types(e, a, (list, tuple)):
-                    for expected_and_actual in zip(e, a):
-                        self.check_BODYSTRUCTURE(*expected_and_actual)
-                else:
-                    if e == (b'charset', b'us-ascii') and a is None:
-                        pass  # Some servers (eg. Gmail) don't return a charset when it's us-ascii
-                    else:
-                        a = maybe_lower(a)
-                        e = maybe_lower(e)
-                        self.assertEqual(a, e)
+            if have_matching_types(expected, actual, (list, tuple)):
+                # BODYSTRUCTURE lengths can various according to the
+                # server so compare up until what is returned
+                for pair in zip(expected, actual):
+                    self.check_BODYSTRUCTURE(*pair)
+            elif expected == (b'charset', b'us-ascii') and actual is None:
+                pass  # Some servers don't return a charset when it's us-ascii
+            else:
+                self.assertEqual(maybe_lower(expected), maybe_lower(actual))
 
         def test_expunge(self):
             self.client.select_folder(self.base_folder)
