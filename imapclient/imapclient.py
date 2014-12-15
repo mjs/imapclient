@@ -151,13 +151,13 @@ class IMAPClient(object):
         else:
             raise self.Error('The optional oauth2 package is needed for OAUTH authentication')
 
-    def oauth2_login(self, user, access_token):
+    def oauth2_login(self, user, access_token, mech='XOAUTH2'):
         """Authenticate using the OAUTH2 method.
 
-        This only works with IMAP servers that support OAUTH2 (e.g. Gmail).
+        Gmail supports the 'XOAUTH2' SASL mechanism, but Yahoo! supports 'OAUTH2'
         """
         auth_string = lambda x: 'user=%s\1auth=Bearer %s\1\1' % (user, access_token)
-        return self._command_and_check('authenticate', 'XOAUTH2', auth_string)
+        return self._command_and_check('authenticate', mech, auth_string)
 
     def logout(self):
         """Logout, returning the server response.
