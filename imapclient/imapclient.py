@@ -255,21 +255,6 @@ class IMAPClient(object):
                 parts.append(tuple(converted))
         return Namespace(*parts)
 
-    def get_folder_delimiter(self):
-        """Return the folder separator used by the IMAP server.
-
-        .. warning::
-
-            The implementation just picks the first folder separator
-            from the first namespace returned. This is not
-            particularly sensible. Use namespace instead().
-        """
-        warnings.warn(DeprecationWarning('get_folder_delimiter is going away. Use namespace() instead.'))
-        for part in self.namespace():
-            for ns in part:
-                return ns[1]
-        raise self.Error('could not determine folder separator')
-
     def list_folders(self, directory="", pattern="*"):
         """Get a listing of folders on the server as a list of
         ``(flags, delimiter, name)`` tuples.

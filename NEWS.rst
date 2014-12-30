@@ -33,6 +33,10 @@ version of Python being used).
 
 Thanks to Chris Arndt for this change.
 
+Minor Changes
+-------------
+The deprecated get_folder_delimiter() method has been removed.
+
 ========
  0.11.1
 ========
