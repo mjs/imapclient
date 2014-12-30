@@ -301,15 +301,15 @@ class IMAPClient(object):
 
         A ``XLIST`` response could look something like::
 
-            [([u'\\HasNoChildren', u'\\Inbox'], '/', u'Inbox'),
-             ([u'\\Noselect', u'\\HasChildren'], '/', u'[Gmail]'),
-             ([u'\\HasNoChildren', u'\\AllMail'], '/', u'[Gmail]/All Mail'),
-             ([u'\\HasNoChildren', u'\\Drafts'], '/', u'[Gmail]/Drafts'),
-             ([u'\\HasNoChildren', u'\\Important'], '/', u'[Gmail]/Important'),
-             ([u'\\HasNoChildren', u'\\Sent'], '/', u'[Gmail]/Sent Mail'),
-             ([u'\\HasNoChildren', u'\\Spam'], '/', u'[Gmail]/Spam'),
-             ([u'\\HasNoChildren', u'\\Starred'], '/', u'[Gmail]/Starred'),
-             ([u'\\HasNoChildren', u'\\Trash'], '/', u'[Gmail]/Trash')]
+            [((b'\\HasNoChildren', b'\\Inbox'), b'/', u'Inbox'),
+             ((b'\\Noselect', b'\\HasChildren'), b'/', u'[Gmail]'),
+             ((b'\\HasNoChildren', b'\\AllMail'), b'/', u'[Gmail]/All Mail'),
+             ((b'\\HasNoChildren', b'\\Drafts'), b'/', u'[Gmail]/Drafts'),
+             ((b'\\HasNoChildren', b'\\Important'), b'/', u'[Gmail]/Important'),
+             ((b'\\HasNoChildren', b'\\Sent'), b'/', u'[Gmail]/Sent Mail'),
+             ((b'\\HasNoChildren', b'\\Spam'), b'/', u'[Gmail]/Spam'),
+             ((b'\\HasNoChildren', b'\\Starred'), b'/', u'[Gmail]/Starred'),
+             ((b'\\HasNoChildren', b'\\Trash'), b'/', u'[Gmail]/Trash')]
 
         This is a *deprecated* Gmail-specific IMAP extension (See
         https://developers.google.com/gmail/imap_extensions#xlist_is_deprecated
@@ -371,16 +371,16 @@ class IMAPClient(object):
         the selected folder.
 
         Returns a dictionary containing the ``SELECT`` response. At least
-        the ``EXISTS``, ``FLAGS`` and ``RECENT`` keys are guaranteed
+        the ``b'EXISTS'``, ``b'FLAGS'`` and ``b'RECENT'`` keys are guaranteed
         to exist. An example::
 
-            {'EXISTS': 3,
-             'FLAGS': ('\\Answered', '\\Flagged', '\\Deleted', ... ),
-             'RECENT': 0,
-             'PERMANENTFLAGS': ('\\Answered', '\\Flagged', '\\Deleted', ... ),
-             'READ-WRITE': True,
-             'UIDNEXT': 11,
-             'UIDVALIDITY': 1239278212}
+            {b'EXISTS': 3,
+             b'FLAGS': (b'\\Answered', b'\\Flagged', b'\\Deleted', ... ),
+             b'RECENT': 0,
+             b'PERMANENTFLAGS': (b'\\Answered', b'\\Flagged', b'\\Deleted', ... ),
+             b'READ-WRITE': True,
+             b'UIDNEXT': 11,
+             b'UIDVALIDITY': 1239278212}
         """
         self._command_and_check('select', self._normalise_folder(folder), readonly)
         return self._process_select_response(self._imap.untagged_responses)
@@ -421,10 +421,10 @@ class IMAPClient(object):
         The return value is the server command response message
         followed by a list of status responses. For example::
 
-            ('NOOP completed.',
-             [(4, 'EXISTS'),
-              (3, 'FETCH', ('FLAGS', ('bar', 'sne'))),
-              (6, 'FETCH', ('FLAGS', ('sne',)))])
+            (b'NOOP completed.',
+             [(4, b'EXISTS'),
+              (3, b'FETCH', (b'FLAGS', (b'bar', b'sne'))),
+              (6, b'FETCH', (b'FLAGS', (b'sne',)))])
 
         """
         tag = self._imap._command('NOOP')
@@ -464,9 +464,9 @@ class IMAPClient(object):
         will be parsed with values converted to appropriate types. For
         example::
 
-            [('OK', 'Still here'),
-             (1, 'EXISTS'),
-             (1, 'FETCH', ('FLAGS', ('\\NotJunk',)))]
+            [(b'OK', b'Still here'),
+             (1, b'EXISTS'),
+             (1, b'FETCH', (b'FLAGS', (b'\\NotJunk',)))]
         """
         # In py2, imaplib has sslobj (for SSL connections), and sock for non-SSL.
         # In the py3 version it's just sock.
@@ -506,7 +506,7 @@ class IMAPClient(object):
 
         The return value is of the form ``(command_text,
         idle_responses)`` where *command_text* is the text sent by the
-        server when the IDLE command finished (eg. ``'Idle
+        server when the IDLE command finished (eg. ``b'Idle
         terminated'``) and *idle_responses* is a list of parsed idle
         responses received since the last call to ``idle_check()`` (if
         any). These are returned in parsed form as per
@@ -598,9 +598,7 @@ class IMAPClient(object):
         """Search using Gmail's X-GM-RAW attribute.
 
         *query* should be a valid Gmail search query string. For
-         example::
-
-            'has:attachment in:unread'
+        example: ``has:attachment in:unread``
 
         See https://developers.google.com/gmail/imap_extensions#extension_of_the_search_command_x-gm-raw
         for more info.
@@ -687,7 +685,7 @@ class IMAPClient(object):
         """Return the flags set for each message in *messages*.
 
         The return value is a dictionary structured like this: ``{
-        msgid1: [flag1, flag2, ... ], }``.
+        msgid1: (flag1, flag2, ... ), }``.
         """
         response = self.fetch(messages, ['FLAGS'])
         return self._filter_fetch_dict(response, b'FLAGS')
@@ -726,7 +724,7 @@ class IMAPClient(object):
         """Return the label set for each message in *messages*.
 
         The return value is a dictionary structured like this: ``{
-        msgid1: [label1, label2, ... ], }``.
+        msgid1: (label1, label2, ... ), }``.
 
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
@@ -801,6 +799,9 @@ class IMAPClient(object):
         instances and ENVELOPE responses will be returned as
         :py:class:`Envelope <imapclient.response_types.Envelope>` instances.
 
+        String data will generally be returned as bytes (Python 3) or
+        str (Python 2).
+
         In addition to an element for each *data* item, the dict
         returned for each message also contains a *SEQ* key containing
         the sequence number for the message. This allows for mapping
@@ -810,12 +811,13 @@ class IMAPClient(object):
         Example::
 
             >> c.fetch([3293, 3230], ['INTERNALDATE', 'FLAGS'])
-            {3230: {'FLAGS': ('\\Seen',),
-                    'INTERNALDATE': datetime.datetime(2011, 1, 30, 13, 32, 9),
-                    'SEQ': 84},
-             3293: {'FLAGS': (),
-                    'INTERNALDATE': datetime.datetime(2011, 2, 24, 19, 30, 36),
-                    'SEQ': 110}}
+            {3230: {b'FLAGS': (b'\\Seen',),
+                    b'INTERNALDATE': datetime.datetime(2011, 1, 30, 13, 32, 9),
+                    b'SEQ': 84},
+             3293: {b'FLAGS': (),
+                    b'INTERNALDATE': datetime.datetime(2011, 2, 24, 19, 30, 36),
+                    b'SEQ': 110}}
+
         """
         if not messages:
             return {}
