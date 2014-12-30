@@ -423,6 +423,11 @@ class TestNamespace(IMAPClientTest):
         self.set_return(b'(("&AP8-." "/")) NIL NIL')
         self.assertEqual(self.client.namespace(), ((('\xff.', '/'),), None, None))
 
+    def test_without_folder_decoding(self):
+        self.set_return(b'(("&AP8-." "/")) NIL NIL')
+        self.client.folder_encode = False
+        self.assertEqual(self.client.namespace(), (((b'&AP8-.', '/'),), None, None))
+
     def test_other_only(self):
         self.set_return(b'NIL NIL (("" "."))')
         self.assertEqual(self.client.namespace(), (None, None, (("", "."),)))
