@@ -1,3 +1,38 @@
+======
+ 0.12
+======
+
+Fixed unicode handling [API CHANGE]
+-----------------------------------
+During the work to support Python 3, IMAPClient was changed to do
+return unicode for most responses. This was a bad decision, especially
+because it effectively breaks content that uses multiple encodings
+(e.g. RFC822 responses). This release includes major changes so that
+most responses are returned as bytes (Python 3) or str (Python
+2). This means that correct handling of response data is now possible
+by code using IMAPClient.
+
+Folder name handling has also been cleaned up as part of this work. If
+the ``folder_encode`` attribute is ``True`` (the default) then folder
+names will **always** be returned as unicode. If ``folder_encode`` is
+False then folder names will always be returned as bytes/strs.
+
+Code using IMAPClient will most likely need to be updated to account
+these unicode handling changes.
+
+Many thanks to Inbox (https://www.inboxapp.com/) for sponsoring this
+work.
+
+Extra __init__ keyword args are passed through [NEW]
+----------------------------------------------------
+Any unused keyword arguments passed to the IMAPClient initialiser will
+now be passed through to the underlying imaplib IMAP4, IMAP4_SSL or
+IMAP4_stream class. This is specifically to allow the use of imaplib
+features that control certificate validation (if available with the
+version of Python being used).
+
+Thanks to Chris Arndt for this change.
+
 ========
  0.11.1
 ========
