@@ -16,7 +16,7 @@ from datetime import datetime
 from email.utils import make_msgid
 
 from .fixed_offset import FixedOffset
-from .imapclient import IMAPClient, DELETED, to_unicode
+from .imapclient import IMAPClient, DELETED, to_unicode, to_bytes, normalise_untagged_responses
 from .response_types import Envelope, Address
 from .six import binary_type, text_type, PY3
 from .test.util import unittest
@@ -87,10 +87,14 @@ class _TestBase(unittest.TestCase):
             self.skipTest("Server doesn't support %s" % name)
 
     def just_folder_names(self, dat):
+        if self.client.folder_encode:
+            gmail_special_prefix = '['
+        else:
+            gmail_special_prefix = b'['
         ret = []
         for _, _, folder_name in dat:
             # gmail's "special" folders start with '['
-            if not folder_name.startswith('['):
+            if not folder_name.startswith(gmail_special_prefix):
                 ret.append(folder_name)
         return ret
 
@@ -124,7 +128,7 @@ class _TestBase(unittest.TestCase):
         # Sort folders depth first because some implementations
         # (e.g. MS Exchange) will delete child folders when a
         # parent is deleted.
-        return folder.count(self.folder_delimiter)
+        return folder.count(self.folder_delimiter.encode('ascii'))
 
     def clear_folder(self, folder):
         self.client.select_folder(folder)
@@ -196,23 +200,25 @@ class TestGeneral(_TestBase):
 
     def test_select_and_close(self):
         resp = self.client.select_folder(self.base_folder)
-        self.assertEqual(resp['EXISTS'], 0)
-        self.assertIsInstance(resp['RECENT'], int)
-        self.assertIsInstance(resp['FLAGS'], tuple)
-        self.assertGreater(len(resp['FLAGS']), 1)
+        self.assertEqual(resp[b'EXISTS'], 0)
+        self.assertIsInstance(resp[b'RECENT'], int)
+        self.assertIsInstance(resp[b'FLAGS'], tuple)
+        self.assertGreater(len(resp[b'FLAGS']), 1)
         self.client.close_folder()
 
     def test_select_read_only(self):
         self.append_msg(SIMPLE_MESSAGE)
-        self.assertNotIn('READ-ONLY', self.client._imap.untagged_responses)
+        untagged = normalise_untagged_responses(self.client._imap.untagged_responses)
+        self.assertNotIn(b'READ-ONLY', untagged)
 
         resp = self.client.select_folder(self.base_folder, readonly=True)
 
-        self.assertIn('READ-ONLY', self.client._imap.untagged_responses)
-        self.assertEqual(resp['EXISTS'], 1)
-        self.assertIsInstance(resp['RECENT'], int)
-        self.assertIsInstance(resp['FLAGS'], tuple)
-        self.assertGreater(len(resp['FLAGS']), 1)
+        untagged = normalise_untagged_responses(self.client._imap.untagged_responses)
+        self.assertIn(b'READ-ONLY', untagged)
+        self.assertEqual(resp[b'EXISTS'], 1)
+        self.assertIsInstance(resp[b'RECENT'], int)
+        self.assertIsInstance(resp[b'FLAGS'], tuple)
+        self.assertGreater(len(resp[b'FLAGS']), 1)
 
     def test_list_folders(self):
         some_folders = ['simple', b'simple2', 'L\xffR']
@@ -233,7 +239,7 @@ class TestGeneral(_TestBase):
     def test_gmail_xlist(self):
         caps = self.client.capabilities()
         if self.is_gmail():
-            self.assertIn("XLIST", caps, "expected XLIST in Gmail's capabilities")
+            self.assertIn(b"XLIST", caps, "expected XLIST in Gmail's capabilities")
 
     def test_xlist(self):
         self.skip_unless_capable('XLIST')
@@ -243,7 +249,7 @@ class TestGeneral(_TestBase):
 
         foundInbox = False
         for flags, _, _  in result:
-            if r'\INBOX' in [flag.upper() for flag in flags]:
+            if br'\INBOX' in [flag.upper() for flag in flags]:
                 foundInbox = True
                 break
         if not foundInbox:
@@ -297,11 +303,7 @@ class TestGeneral(_TestBase):
             ])
 
         # Run folder tests with folder_encode off
-        self.client.folder_encode = False
-        try:
-            self.run_folder_tests(folders)
-        finally:
-            self.client.folder_encode = True
+        self.run_folder_tests(folders, False)
 
         # Now with folder_encode on, adding in names that only work
         # when this is enabled.
@@ -310,24 +312,33 @@ class TestGeneral(_TestBase):
             'stuff & things',
             b'stuff & things',
         ])
-        self.run_folder_tests(folders)
+        self.run_folder_tests(folders, True)
 
-    def run_folder_tests(self, folder_names):
-        folder_names = self.add_prefix_to_folders(folder_names)
+    def run_folder_tests(self, folder_names, folder_encode):
+        self.client.folder_encode = folder_encode
+        try:
+            folder_names = self.add_prefix_to_folders(folder_names)
 
-        for folder in folder_names:
-            self.assertFalse(self.client.folder_exists(folder))
+            for folder in folder_names:
+                self.assertFalse(self.client.folder_exists(folder))
 
-            self.client.create_folder(folder)
+                self.client.create_folder(folder)
 
-            self.assertTrue(self.client.folder_exists(folder))
-            self.assertIn(to_unicode(folder), self.all_test_folder_names())
+                self.assertTrue(self.client.folder_exists(folder))
 
-            self.client.select_folder(folder)
-            self.client.close_folder()
+                self.assertIn(
+                    to_unicode(folder) if folder_encode else to_bytes(folder),
+                    self.all_test_folder_names()
+                )
 
-            self.client.delete_folder(folder)
-            self.assertFalse(self.client.folder_exists(folder))
+                self.client.select_folder(folder)
+                self.client.close_folder()
+
+                self.client.delete_folder(folder)
+                self.assertFalse(self.client.folder_exists(folder))
+        finally:
+            self.client.folder_encode = True
+
 
     def test_rename_folder(self):
         folders = self.add_prefix_to_folders([
@@ -348,7 +359,7 @@ class TestGeneral(_TestBase):
                 new_folder = folder + 'x'
 
             resp = self.client.rename_folder(folder, new_folder)
-            self.assertIsInstance(resp, text_type)
+            self.assertIsInstance(resp, binary_type)
             self.assertTrue(len(resp) > 0)
 
             self.assertFalse(self.client.folder_exists(folder))
@@ -362,18 +373,18 @@ class TestGeneral(_TestBase):
         self.client.create_folder(new_folder)
         try:
             status = self.client.folder_status(new_folder)
-            self.assertEqual(status['MESSAGES'], 0)
-            self.assertEqual(status['RECENT'], 0)
-            self.assertEqual(status['UNSEEN'], 0)
+            self.assertEqual(status[b'MESSAGES'], 0)
+            self.assertEqual(status[b'RECENT'], 0)
+            self.assertEqual(status[b'UNSEEN'], 0)
 
             # Add a message to the folder, it should show up now.
             self.append_msg(SIMPLE_MESSAGE, new_folder)
 
             status = self.client.folder_status(new_folder)
-            self.assertEqual(status['MESSAGES'], 1)
+            self.assertEqual(status[b'MESSAGES'], 1)
             if not self.is_gmail():
-                self.assertEqual(status['RECENT'], 1)
-            self.assertEqual(status['UNSEEN'], 1)
+                self.assertEqual(status[b'RECENT'], 1)
+            self.assertEqual(status[b'UNSEEN'], 1)
         finally:
             self.client.delete_folder(new_folder)
 
@@ -396,8 +407,8 @@ class TestGeneral(_TestBase):
             responses = self.client.idle_check(timeout=5)
         finally:
             text, more_responses = self.client.idle_done()
-        self.assertIn((1, 'EXISTS'), responses)
-        self.assertTrue(isinstance(text, text_type))
+        self.assertIn((1, b'EXISTS'), responses)
+        self.assertTrue(isinstance(text, binary_type))
         self.assertGreater(len(text), 0)
         self.assertTrue(isinstance(more_responses, list))
 
@@ -415,8 +426,8 @@ class TestGeneral(_TestBase):
             time.sleep(2)    # Allow some time for the IDLE response to be sent
         finally:
             text, responses = self.client.idle_done()
-        self.assertIn((2, 'EXISTS'), responses)
-        self.assertTrue(isinstance(text, text_type))
+        self.assertIn((2, b'EXISTS'), responses)
+        self.assertTrue(isinstance(text, binary_type))
         self.assertGreater(len(text), 0)
 
     def test_noop(self):
@@ -424,7 +435,7 @@ class TestGeneral(_TestBase):
 
         # Initially there should be no responses
         text, resps = self.client.noop()
-        self.assertTrue(isinstance(text, text_type))
+        self.assertTrue(isinstance(text, binary_type))
         self.assertGreater(len(text), 0)
         self.assertEqual(resps, [])
 
@@ -436,10 +447,10 @@ class TestGeneral(_TestBase):
 
         # Check for this addition in the NOOP data
         msg, resps = self.client.noop()
-        self.assertTrue(isinstance(text, text_type))
+        self.assertTrue(isinstance(text, binary_type))
         self.assertGreater(len(text), 0)
         self.assertTrue(isinstance(resps, list))
-        self.assertIn((1, 'EXISTS'), resps)
+        self.assertIn((1, b'EXISTS'), resps)
 
 
 def createUidTestClass(conf, use_uid):
@@ -467,10 +478,10 @@ def createUidTestClass(conf, use_uid):
 
             # Append message
             resp = self.client.append(self.base_folder, in_message, ('abc', 'def'), msg_time)
-            self.assertIsInstance(resp, text_type)
+            self.assertIsInstance(resp, binary_type)
 
             # Retrieve the just added message and check that all looks well
-            self.assertEqual(self.client.select_folder(self.base_folder)['EXISTS'], 1)
+            self.assertEqual(self.client.select_folder(self.base_folder)[b'EXISTS'], 1)
 
             resp = self.client.fetch(self.client.search()[0], ('RFC822', 'FLAGS', 'INTERNALDATE'))
 
@@ -478,16 +489,16 @@ def createUidTestClass(conf, use_uid):
             msginfo = tuple(resp.values())[0]
 
             # Time should match the time we specified
-            returned_msg_time = msginfo['INTERNALDATE']
+            returned_msg_time = msginfo[b'INTERNALDATE']
             self.assertIsNone(returned_msg_time.tzinfo)
             self.assertEqual(returned_msg_time, msg_time)
 
             # Flags should be the same
-            self.assertIn('abc', msginfo['FLAGS'])
-            self.assertIn('def', msginfo['FLAGS'])
+            self.assertIn(b'abc', msginfo[b'FLAGS'])
+            self.assertIn(b'def', msginfo[b'FLAGS'])
 
             # Message body should match
-            self.assertEqual(msginfo['RFC822'], out_message)
+            self.assertEqual(msginfo[b'RFC822'], to_bytes(out_message))
 
         def test_flags(self):
             self.append_msg(SIMPLE_MESSAGE)
@@ -497,8 +508,8 @@ def createUidTestClass(conf, use_uid):
                 answer = func(msg_id, *args)
                 self.assertTrue(msg_id in answer)
                 answer_flags = set(answer[msg_id])
-                answer_flags.discard(r'\Recent')  # Might be present but don't care
-                self.assertSetEqual(answer_flags, set(expected_flags))
+                answer_flags.discard(br'\Recent')  # Might be present but don't care
+                self.assertSetEqual(answer_flags, set(to_bytes(f) for f in expected_flags))
 
             base_flags = ['abc', 'def']
             _flagtest(self.client.set_flags, [base_flags], base_flags)
@@ -518,15 +529,15 @@ def createUidTestClass(conf, use_uid):
                 actual_labels = set(answer[msg_id])
                 self.assertSetEqual(actual_labels, set(expected_labels))
 
-            base_labels = ['_imapclient_foo', '_imapclient_bar']
+            base_labels = [b'_imapclient_foo', b'_imapclient_bar']
             try:
                 _labeltest(self.client.set_gmail_labels, [base_labels], base_labels)
                 _labeltest(self.client.get_gmail_labels, [], base_labels)
-                _labeltest(self.client.add_gmail_labels, ['_imapclient_baz'], base_labels + ['_imapclient_baz'])
-                _labeltest(self.client.remove_gmail_labels, ['_imapclient_baz'], base_labels)
+                _labeltest(self.client.add_gmail_labels, [b'_imapclient_baz'], base_labels + [b'_imapclient_baz'])
+                _labeltest(self.client.remove_gmail_labels, [b'_imapclient_baz'], base_labels)
             finally:
                 # Clean up
-                for label in ['_imapclient_baz'] + base_labels:
+                for label in [b'_imapclient_baz'] + base_labels:
                     if self.client.folder_exists(label):
                         self.client.delete_folder(label)
 
@@ -598,8 +609,8 @@ def createUidTestClass(conf, use_uid):
         def test_thread(self):
             thread_algo = None
             for cap in self.client.capabilities():
-                if cap.startswith('THREAD='):
-                    thread_algo = cap.split('=')[-1]
+                if cap.startswith(b'THREAD='):
+                    thread_algo = cap.split(b'=')[-1]
                     break
             if not thread_algo:
                 return self.skipTest("Server doesn't support THREAD")
@@ -630,7 +641,7 @@ def createUidTestClass(conf, use_uid):
             msgs = self.client.search()
             self.assertEqual(len(msgs), 1)
             msg_id = msgs[0]
-            self.assertIn('something', self.client.fetch(msg_id, ['RFC822'])[msg_id]['RFC822'])
+            self.assertIn(b'something', self.client.fetch(msg_id, ['RFC822'])[msg_id][b'RFC822'])
 
         def test_fetch(self):
             # Generate a fresh message-id each time because Gmail is
@@ -653,22 +664,22 @@ def createUidTestClass(conf, use_uid):
 
             self.assertSetEqual(
                 set(msginfo.keys()),
-                set([to_unicode(f) for f in fields] + ['SEQ'])
+                set([to_bytes(f) for f in fields] + [b'SEQ'])
             )
-            self.assertEqual(msginfo['SEQ'], 1)
-            self.assertMultiLineEqual(msginfo['RFC822'], msg)
-            self.assertIsInstance(msginfo['INTERNALDATE'], datetime)
-            self.assertIsInstance(msginfo['FLAGS'], tuple)
-            self.assertSequenceEqual(msginfo['ENVELOPE'],
+            self.assertEqual(msginfo[b'SEQ'], 1)
+            self.assertEqual(msginfo[b'RFC822'], to_bytes(msg))
+            self.assertIsInstance(msginfo[b'INTERNALDATE'], datetime)
+            self.assertIsInstance(msginfo[b'FLAGS'], tuple)
+            self.assertSequenceEqual(msginfo[b'ENVELOPE'],
                 Envelope(
                     datetime(2010, 3, 16, 16, 45, 32, tzinfo=FixedOffset(0)),
-                    'A multipart message',
-                    (Address('Bob Smith', None, 'bob', 'smith.com'),),
-                    (Address('Bob Smith', None, 'bob', 'smith.com'),),
-                    (Address('Bob Smith', None, 'bob', 'smith.com'),),
-                    (Address('Some One', None, 'some', 'one.com'),
-                     Address(None, None, 'foo', 'foo.com')),
-                    None, None, None, msg_id_header))
+                    b'A multipart message',
+                    (Address(b'Bob Smith', None, b'bob', b'smith.com'),),
+                    (Address(b'Bob Smith', None, b'bob', b'smith.com'),),
+                    (Address(b'Bob Smith', None, b'bob', b'smith.com'),),
+                    (Address(b'Some One',  None, b'some', b'one.com'),
+                     Address(None, None, b'foo', b'foo.com')),
+                    None, None, None, to_bytes(msg_id_header)))
 
         def test_partial_fetch(self):
             self.client.append(self.base_folder, MULTIPART_MESSAGE)
@@ -676,14 +687,14 @@ def createUidTestClass(conf, use_uid):
             msg_id = self.client.search()[0]
 
             resp = self.client.fetch(msg_id, ['BODY[]<0.20>'])
-            body = resp[msg_id]['BODY[]<0>']
+            body = resp[msg_id][b'BODY[]<0>']
             self.assertEqual(len(body), 20)
-            self.assertTrue(body.startswith('From: Bob Smith'))
+            self.assertTrue(body.startswith(b'From: Bob Smith'))
 
             resp = self.client.fetch(msg_id, ['BODY[]<2.25>'])
-            body = resp[msg_id]['BODY[]<2>']
+            body = resp[msg_id][b'BODY[]<2>']
             self.assertEqual(len(body), 25)
-            self.assertTrue(body.startswith('om: Bob Smith'))
+            self.assertTrue(body.startswith(b'om: Bob Smith'))
 
         def test_fetch_modifiers(self):
             # CONDSTORE (RFC 4551) provides a good way to use FETCH
@@ -700,15 +711,15 @@ def createUidTestClass(conf, use_uid):
             self.clear_folder(self.base_folder)
 
             # Actual testing starts here
-            maxModSeq = self.client.select_folder(self.base_folder)['HIGHESTMODSEQ']
+            maxModSeq = self.client.select_folder(self.base_folder)[b'HIGHESTMODSEQ']
             self.append_msg(SIMPLE_MESSAGE)
             msg_id = self.client.search()[0]
             resp = self.client.fetch(msg_id, ['FLAGS'], ['CHANGEDSINCE %d' % maxModSeq])
-            self.assertIn('MODSEQ', resp[msg_id])
+            self.assertIn(b'MODSEQ', resp[msg_id])
 
             # Prove that the modifier is actually being used
             resp = self.client.fetch(msg_id, ['FLAGS'], ['CHANGEDSINCE %d' % (maxModSeq + 1)])
-            self.assertFalse(resp)
+            self.assertEqual(resp, {})
 
         def test_BODYSTRUCTURE(self):
             self.client.select_folder(self.base_folder)
@@ -722,66 +733,62 @@ def createUidTestClass(conf, use_uid):
             # since we can't predicate what the server we're testing against
             # will return.
 
-            expected = ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 5, 1)
-            self.check_BODYSTRUCTURE(expected, fetched[msgs[0]]['BODY'], multipart=False)
-            self.check_BODYSTRUCTURE(expected, fetched[msgs[0]]['BODYSTRUCTURE'], multipart=False)
+            expected = (b'text', b'plain', (b'charset', b'us-ascii'), None, None, b'7bit', 5, 1)
+            self.check_BODYSTRUCTURE(expected, fetched[msgs[0]][b'BODY'], multipart=False)
+            self.check_BODYSTRUCTURE(expected, fetched[msgs[0]][b'BODYSTRUCTURE'], multipart=False)
 
-            expected = ([('text', 'html', ('charset', 'us-ascii'), None, None, 'quoted-printable', 55, 3),
-                         ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 26, 1),
+            expected = ([(b'text', b'html', (b'charset', b'us-ascii'), None, None, b'quoted-printable', 55, 3),
+                         (b'text', b'plain', (b'charset', b'us-ascii'), None, None, b'7bit', 26, 1),
                          ],
-                        'mixed',
-                        ('boundary', '===============1534046211=='))
-            self.check_BODYSTRUCTURE(expected, fetched[msgs[1]]['BODY'], multipart=True)
-            self.check_BODYSTRUCTURE(expected, fetched[msgs[1]]['BODYSTRUCTURE'], multipart=True)
+                        b'mixed',
+                        (b'boundary', b'===============1534046211=='))
+            self.check_BODYSTRUCTURE(expected, fetched[msgs[1]][b'BODY'], multipart=True)
+            self.check_BODYSTRUCTURE(expected, fetched[msgs[1]][b'BODYSTRUCTURE'], multipart=True)
 
         def check_BODYSTRUCTURE(self, expected, actual, multipart=None):
             if multipart is not None:
                 self.assertEqual(actual.is_multipart, multipart)
 
-            # BODYSTRUCTURE lengths can various according to the server so
-            # compare up until what is returned
-            for e, a in zip(expected, actual):
-                if have_matching_types(e, a, (list, tuple)):
-                    for expected_and_actual in zip(e, a):
-                        self.check_BODYSTRUCTURE(*expected_and_actual)
-                else:
-                    if e == ('charset', 'us-ascii') and a is None:
-                        pass  # Some servers (eg. Gmail) don't return a charset when it's us-ascii
-                    else:
-                        a = lower_if_str(a)
-                        e = lower_if_str(e)
-                        self.assertEqual(a, e)
+            if have_matching_types(expected, actual, (list, tuple)):
+                # BODYSTRUCTURE lengths can various according to the
+                # server so compare up until what is returned
+                for pair in zip(expected, actual):
+                    self.check_BODYSTRUCTURE(*pair)
+            elif expected == (b'charset', b'us-ascii') and actual is None:
+                pass  # Some servers don't return a charset when it's us-ascii
+            else:
+                self.assertEqual(maybe_lower(expected), maybe_lower(actual))
 
         def test_expunge(self):
             self.client.select_folder(self.base_folder)
 
             # Test empty mailbox
             text, resps = self.client.expunge()
-            self.assertTrue(isinstance(text, text_type))
+            self.assertTrue(isinstance(text, binary_type))
             self.assertGreater(len(text), 0)
             # Some servers return nothing while others (e.g. Exchange) return (0, 'EXISTS')
-            self.assertIn(resps, ([], [(0, 'EXISTS')]))
+            self.assertIn(resps, ([], [(0, b'EXISTS')]))
 
             # Now try with a message to expunge
             self.client.append(self.base_folder, SIMPLE_MESSAGE, flags=[DELETED])
 
             msg, resps = self.client.expunge()
 
-            self.assertTrue(isinstance(text, text_type))
+            self.assertTrue(isinstance(text, binary_type))
             self.assertGreater(len(text), 0)
             self.assertTrue(isinstance(resps, list))
             if not self.is_gmail():
                 # GMail has an auto-expunge feature which might be
                 # on. EXPUNGE won't return anything in this case
-                self.assertIn((1, 'EXPUNGE'), resps)
+                self.assertIn((1, b'EXPUNGE'), resps)
 
         def test_getacl(self):
             self.skip_unless_capable('ACL')
 
             folder = self.add_prefix_to_folder('test_acl')
-            who = conf['username']
             self.client.create_folder(folder)
 
+            who = to_bytes(conf['username'])
             rights = self.client.getacl(folder)
             self.assertIn(who, [u for u, r in rights])
 
@@ -798,8 +805,8 @@ def quiet_logout(client):
     except IMAPClient.Error:
         pass
 
-def lower_if_str(val):
-    if isinstance(val, text_type):
+def maybe_lower(val):
+    if isinstance(val, (text_type, binary_type)):
         return val.lower()
     return val
 

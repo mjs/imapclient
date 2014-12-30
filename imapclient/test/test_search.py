@@ -32,7 +32,7 @@ class TestSearch(IMAPClientTest):
 
         self.client._imap.uid.assert_called_once_with(
             'SEARCH',
-            'CHARSET', 'UTF9',
+            b'CHARSET', 'UTF9',
             '(FOO)')
         self.assertEqual(result, [1, 2, 44])
 
@@ -59,7 +59,7 @@ class TestSearch(IMAPClientTest):
 
         self.assertRaisesRegex(IMAPClient.Error,
                                'bad karma',
-                               self.client.search, 'FOO')
+                               self.client.search, b'FOO')
 
 
 class TestGmailSearch(IMAPClientTest):
@@ -70,7 +70,7 @@ class TestGmailSearch(IMAPClientTest):
 
         result = self.client.gmail_search('FOO')
 
-        self.client._imap.uid.assert_called_once_with('SEARCH', 'X-GM-RAW')
+        self.client._imap.uid.assert_called_once_with('SEARCH', b'X-GM-RAW')
         self.assertEqual(self.client._imap.literal, b'FOO')
         self.assertEqual(result, [1, 2, 44])
 
@@ -80,7 +80,7 @@ class TestGmailSearch(IMAPClientTest):
 
         result = self.client.gmail_search('FOO')
 
-        self.client._imap.search.assert_called_once_with(None, 'X-GM-RAW')
+        self.client._imap.search.assert_called_once_with(None, b'X-GM-RAW')
         self.assertEqual(self.client._imap.literal, b'FOO')
         self.assertEqual(result, [1, 2, 44])
 
@@ -92,8 +92,8 @@ class TestGmailSearch(IMAPClientTest):
 
         self.client._imap.uid.assert_called_once_with(
             'SEARCH',
-            'CHARSET', 'UTF8',
-            'X-GM-RAW')
+            b'CHARSET', 'UTF8',
+            b'X-GM-RAW')
         self.assertEqual(self.client._imap.literal, b'\xe2\x98\xa0')
         self.assertEqual(result, [1, 2, 44])
 
@@ -103,7 +103,7 @@ class TestGmailSearch(IMAPClientTest):
 
         result = self.client.gmail_search('\u2620', 'UTF8')
 
-        self.client._imap.search.assert_called_once_with('UTF8', 'X-GM-RAW')
+        self.client._imap.search.assert_called_once_with('UTF8', b'X-GM-RAW')
         self.assertEqual(self.client._imap.literal, b'\xe2\x98\xa0')
         self.assertEqual(result, [1, 2, 44])
 
@@ -112,4 +112,4 @@ class TestGmailSearch(IMAPClientTest):
 
         self.assertRaisesRegex(IMAPClient.Error,
                                'bad karma',
-                               self.client.gmail_search, 'FOO')
+                               self.client.gmail_search, b'FOO')

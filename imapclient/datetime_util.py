@@ -19,6 +19,7 @@ def parse_to_datetime(timestamp, normalise=True):
     If normalise is False, then the returned datetime will be
     unadjusted but will contain timezone information as per the input.
     """
+    timestamp = timestamp.decode('latin-1')  # parsedate_tz only works with strings
     time_tuple = parsedate_tz(timestamp)
     if time_tuple == None:
         raise ValueError("couldn't parse datetime %r" % timestamp)
