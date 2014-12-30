@@ -69,7 +69,9 @@ DASH_ORD = byte2int(b'-')
 def decode(s):
     """Decode a folder name from IMAP modified UTF-7 encoding to unicode.
 
-    XXX expand
+    Input is bytes (Python 3) or str (Python 2); output is always
+    unicode. If non-bytes/str input is provided, the input is returned
+    unchanged.
     """
 
     if not isinstance(s, binary_type):
