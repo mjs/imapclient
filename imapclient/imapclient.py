@@ -982,16 +982,16 @@ class IMAPClient(object):
             folder_name = encode_utf7(folder_name)
         return _quote(folder_name)
 
-#XXX revisit
 def _quote(arg):
     if isinstance(arg, text_type):
         arg = arg.replace('\\', '\\\\')
         arg = arg.replace('"', '\\"')
-        return '"%s"' % arg
+        q = '"'
     else:
         arg = arg.replace(b'\\', b'\\\\')
         arg = arg.replace(b'"', b'\\"')
-        return b'"' + arg + b'"'
+        q = b'"'
+    return q + arg + q
 
 # normalise_text_list, seq_to_parentstr etc have to return unicode
 # because imaplib handles flags and sort criteria assuming these are
