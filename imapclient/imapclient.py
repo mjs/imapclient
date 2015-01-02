@@ -9,7 +9,6 @@ import select
 import socket
 import sys
 import re
-import warnings
 from datetime import datetime
 from operator import itemgetter
 
