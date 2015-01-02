@@ -14,6 +14,7 @@ class TestSearch(IMAPClientTest):
 
         self.client._imap.uid.assert_called_once_with('SEARCH', '(FOO)')
         self.assertEqual(result, [1, 2, 44])
+        self.assertEqual(result.modseq, None)
 
     def test_without_uid(self):
         self.client.use_uid = False
@@ -23,6 +24,7 @@ class TestSearch(IMAPClientTest):
 
         self.client._imap.search.assert_called_once_with(None, '(FOO)')
         self.assertEqual(result, [1, 2, 44])
+        self.assertEqual(result.modseq, None)
 
     def test_with_uid_with_charset(self):
         self.client.use_uid = True
@@ -61,6 +63,7 @@ class TestSearch(IMAPClientTest):
 
         self.client._imap.uid.assert_called_once_with('SEARCH', '(MODSEQ 40000)')
         self.assertEqual(result, [1, 2])
+        self.assertEqual(result.modseq, 51101)
 
     def test_error_from_server(self):
         self.client._imap.uid.return_value = ('NO', [b'bad karma'])

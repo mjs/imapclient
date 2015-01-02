@@ -49,3 +49,16 @@ class Address(namedtuple("Address", "name route mailbox host")):
 
     def __str__(self):
         return formataddr((self.name, self.mailbox + '@' + self.host))
+
+class SearchIds(list):
+    """
+    Contains a list of message ids as returned by IMAPClient.search().
+
+    The *modseq* attribute will contain the MODSEQ value returned by
+    the server (only if the SEARCH command sent involved the MODSEQ
+    criteria). See :rfc:`4551` for more details.
+    """
+
+    def __init__(self, *args):
+        list.__init__(self, *args)
+        self.modseq = None

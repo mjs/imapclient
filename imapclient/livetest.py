@@ -574,6 +574,35 @@ def createUidTestClass(conf, use_uid):
             self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "a"'])), 1)
             self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "c"'])), 0)
 
+        def test_search_with_modseq(self):
+            # CONDSTORE (RFC 4551) means that the server supports the
+            # MODSEQ search criteria and response.
+            if not self.client.has_capability('CONDSTORE'):
+                return self.skipTest("Server doesn't support CONDSTORE")
+
+            if self.is_gmail():
+                return self.skipTest("Gmail doesn't seem to return MODSEQ parts in SEARCH responses")
+
+            # A little dance to ensure MODSEQ tracking is turned on.
+            # TODO: use ENABLE for this instead
+            self.client.select_folder(self.base_folder)
+            self.append_msg(SIMPLE_MESSAGE)
+            msg_id = self.client.search()[0]
+            self.client.fetch(msg_id, ["MODSEQ"])
+            self.client.close_folder()
+            self.clear_folder(self.base_folder)
+
+            # Remember the initial MODSEQ
+            initial_modseq = self.client.select_folder(self.base_folder)[b'HIGHESTMODSEQ']
+
+            # Add a message so that the MODSEQ increases
+            self.append_msg(SIMPLE_MESSAGE)
+
+            # Ensure the message is seen and the new MODSEQ value is returned
+            ids = self.client.search(['MODSEQ %d' % initial_modseq])
+            self.assertEqual(len(ids), 1)
+            self.assertGreater(ids.modseq, initial_modseq)
+
         def test_gmail_search(self):
             self.skip_unless_capable('X-GM-EXT-1', 'Gmail search')
 

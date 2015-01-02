@@ -33,6 +33,13 @@ version of Python being used).
 
 Thanks to Chris Arndt for this change.
 
+MODSEQ parts in SEARCH responses are now handled
+------------------------------------------------
+If the CONDSTORE extension is supported by a server and a MODSEQ
+criteria was used with search(), a TypeError could occur. This has now
+been fixed and the MODSEQ value returned by the server is now
+available via an attribute on the returned list of ids.
+
 Minor Changes
 -------------
 The deprecated get_folder_delimiter() method has been removed.

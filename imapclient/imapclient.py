@@ -12,16 +12,16 @@ import re
 from datetime import datetime
 from operator import itemgetter
 
-from . import response_lexer
-
 # Confusingly, this module is for OAUTH v1, not v2
 try:
     import oauth2 as oauth_module
 except ImportError:
     oauth_module = None
 
+from . import response_lexer
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .fixed_offset import FixedOffset
+from .response_types import SearchIds
 from .six import moves, iteritems, text_type, integer_types, PY3, binary_type, string_types
 xrange = moves.xrange
 
@@ -575,6 +575,11 @@ class IMAPClient(object):
         criteria. It defaults to US-ASCII.
 
         See :rfc:`3501#section-6.4.4` for more details.
+
+        The returned list of message ids will have its *modseq*
+        attribute set if the server appended a MODSEQ value to the
+        search response (i.e. if a MODSEQ criteria was included in the
+        search).
         """
         return self._search(normalise_search_criteria(criteria), charset)
 
@@ -607,10 +612,14 @@ class IMAPClient(object):
             typ, data = self._imap.search(charset, *criteria)
 
         self._checkok('search', typ, data)
-        return [
-            item for item in parse_response(data)
-            if isinstance(item, int)
-        ]
+
+        ids = SearchIds()
+        for item in parse_response(data):
+            if isinstance(item, int):
+                ids.append(item)
+            elif isinstance(item, tuple) and len(item) == 2 and item[0].lower() == b'modseq':
+                ids.modseq = item[1]
+        return ids
 
     def thread(self, algorithm='REFERENCES', criteria='ALL', charset='UTF-8'):
         """Return a list of messages threads matching *criteria*.
