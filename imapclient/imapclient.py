@@ -607,10 +607,10 @@ class IMAPClient(object):
             typ, data = self._imap.search(charset, *criteria)
 
         self._checkok('search', typ, data)
-        data = data[0]
-        if data is None:    # no untagged responses...
-            return []
-        return [long(i) for i in data.split()]
+        return [
+            item for item in parse_response(data)
+            if isinstance(item, int)
+        ]
 
     def thread(self, algorithm='REFERENCES', criteria='ALL', charset='UTF-8'):
         """Return a list of messages threads matching *criteria*.

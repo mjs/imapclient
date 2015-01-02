@@ -54,6 +54,14 @@ class TestSearch(IMAPClientTest):
         self.client._imap.search.assert_called_once_with('UTF9', '(FOO)', '(BAR)')
         self.assertEqual(result, [1, 2, 44])
 
+    def test_modseq(self):
+        self.client._imap.uid.return_value = ('OK', [b'1 2 (MODSEQ 51101)'])
+
+        result = self.client.search(['MODSEQ 40000'])
+
+        self.client._imap.uid.assert_called_once_with('SEARCH', '(MODSEQ 40000)')
+        self.assertEqual(result, [1, 2])
+
     def test_error_from_server(self):
         self.client._imap.uid.return_value = ('NO', [b'bad karma'])
 
