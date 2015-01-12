@@ -45,7 +45,8 @@ Minor Changes
 * The deprecated get_folder_delimiter() method has been removed.
 * More control over OAUTH2 parameters. Thanks to Phil Peterson for
   this.
-  
+* Fixed livetest/interact OAUTH handling under Python 3.
+
 ========
  0.11.1
 ========
