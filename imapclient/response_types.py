@@ -5,6 +5,8 @@
 from collections import namedtuple
 from email.utils import formataddr
 
+from . import six
+
 
 class Envelope(namedtuple("Envelope", "date subject from_ sender reply_to to " +
                           "cc bcc in_reply_to message_id")):
@@ -49,3 +51,42 @@ class Address(namedtuple("Address", "name route mailbox host")):
 
     def __str__(self):
         return formataddr((self.name, self.mailbox + '@' + self.host))
+
+
+class SearchIds(list):
+    """
+    Contains a list of message ids as returned by IMAPClient.search().
+
+    The *modseq* attribute will contain the MODSEQ value returned by
+    the server (only if the SEARCH command sent involved the MODSEQ
+    criteria). See :rfc:`4551` for more details.
+    """
+
+    def __init__(self, *args):
+        list.__init__(self, *args)
+        self.modseq = None
+
+
+class BodyData(tuple):
+    """
+    Returned when parsing BODY and BODYSTRUCTURE responses.
+    """
+
+    @classmethod
+    def create(cls, response):
+        # In case of multipart messages we will see at least 2 tuples
+        # at the start. Nest these in to a list so that the returned
+        # response tuple always has a consistent number of elements
+        # regardless of whether the message is multipart or not.
+        if isinstance(response[0], tuple):
+            # Multipart, find where the message part tuples stop
+            for i, part in enumerate(response):
+                if isinstance(part, six.binary_type):
+                    break
+            return cls(([cls.create(part) for part in response[:i]],) + response[i:])
+        else:
+            return cls(response)
+
+    @property
+    def is_multipart(self):
+        return isinstance(self[0], list)

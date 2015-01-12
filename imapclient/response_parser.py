@@ -23,7 +23,7 @@ xrange = six.moves.xrange
 from .datetime_util import parse_to_datetime
 from .fixed_offset import FixedOffset
 from .response_lexer import TokenSource
-from .response_types import Envelope, Address
+from .response_types import BodyData, Envelope, Address
 
 try:
     import imaplib2 as imaplib
@@ -92,22 +92,22 @@ def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
 
         # always return the sequence of the message, so it is available
         # even if we return keyed by UID.
-        msg_data = {'SEQ': seq}
+        msg_data = {b'SEQ': seq}
         for i in xrange(0, len(msg_response), 2):
             word = msg_response[i].upper()
             value = msg_response[i+1]
 
-            if word == 'UID':
+            if word == b'UID':
                 uid = _int_or_error(value, 'invalid UID')
                 if uid_is_key:
                     msg_id = uid
                 else:
                     msg_data[word] = uid
-            elif word == 'INTERNALDATE':
+            elif word == b'INTERNALDATE':
                 msg_data[word] = _convert_INTERNALDATE(value, normalise_times)
-            elif word == 'ENVELOPE':
+            elif word == b'ENVELOPE':
                 msg_data[word] = _convert_ENVELOPE(value, normalise_times)
-            elif word in ('BODY', 'BODYSTRUCTURE'):
+            elif word in (b'BODY', b'BODYSTRUCTURE'):
                 msg_data[word] = BodyData.create(value)
             else:
                 msg_data[word] = value
@@ -124,31 +124,9 @@ def _int_or_error(value, error_text):
         raise ParseError('%s: %s' % (error_text, repr(value)))
 
 
-class BodyData(tuple):
-
-    @classmethod
-    def create(cls, response):
-        # In case of multipart messages we will see at least 2 tuples
-        # at the start. Nest these in to a list so that the returned
-        # response tuple always has a consistent number of elements
-        # regardless of whether the message is multipart or not.
-        if isinstance(response[0], tuple):
-            # Multipart, find where the message part tuples stop
-            for i, part in enumerate(response):
-                if isinstance(part, six.string_types):
-                    break
-            return cls(([cls.create(part) for part in response[:i]],) + response[i:])
-        else:
-            return cls(response)
-            
-    @property
-    def is_multipart(self):
-        return isinstance(self[0], list)
-    
-
 def _convert_INTERNALDATE(date_string, normalise_times=True):
-    date_msg = 'INTERNALDATE "%s"' % date_string
-    mo = imaplib.InternalDate.match(date_msg.encode('latin-1'))
+    date_msg = b'INTERNALDATE "' + date_string + b'"'
+    mo = imaplib.InternalDate.match(date_msg)
     if not mo:
         raise ValueError("couldn't parse date %r" % date_string)
 
@@ -198,11 +176,11 @@ def _convert_ENVELOPE(envelope_response, normalise_times=True):
     )
 
 def atom(src, token):
-    if token == '(':
+    if token == b'(':
         return parse_tuple(src)
-    elif token == 'NIL':
+    elif token == b'NIL':
         return None
-    elif token[:1] == '{':
+    elif token[:1] == b'{':
         literal_len = int(token[1:-1])
         literal_text = src.current_literal
         if literal_text is None:
@@ -211,7 +189,7 @@ def atom(src, token):
             raise ParseError('Expecting literal of size %d, got %d' % (
                                 literal_len, len(literal_text)))
         return literal_text
-    elif len(token) >= 2 and (token[:1] == token[-1:] == '"'):
+    elif len(token) >= 2 and (token[:1] == token[-1:] == b'"'):
         return token[1:-1]
     elif token.isdigit():
         return int(token)
@@ -221,7 +199,7 @@ def atom(src, token):
 def parse_tuple(src):
     out = []
     for token in src:
-        if token == ")":
+        if token == b")":
             return tuple(out)
         out.append(atom(src, token))
     # no terminator

@@ -31,7 +31,7 @@ explains IMAP in detail. Other RFCs also apply to various extensions
 to the base protocol. These are referred to in the documentation below
 where relevant.
 
-Python versions 2.6, 2.7, 3.2 and 3.3 are officially supported.
+Python versions 2.6, 2.7, 3.2, 3.3 and 3.4 are officially supported.
 
 A Simple Example
 ----------------
@@ -53,18 +53,18 @@ The output from this example could look something like this
     75 messages that aren't deleted
 
     Messages:
-       ID 38273: 1775 bytes, flags=('NonJunk',)
-       ID 36459: 2833 bytes, flags=('\\Flagged', '\\Seen')
-       ID 34693: 2874 bytes, flags=('\\Flagged', '\\Seen')
-       ID 38066: 5368 bytes, flags=('\\Flagged', '\\Seen')
-       ID 38154: 9079 bytes, flags=('\\Seen', 'NonJunk')
-       ID 14099: 3322 bytes, flags=('\\Flagged', '\\Seen', '$Label1')
-       ID 34196: 9163 bytes, flags=('\\Answered', '\\Seen')
-       ID 35349: 4266 bytes, flags=('\\Flagged', '\\Seen')
-       ID 29335: 5617 bytes, flags=('\\Flagged', '\\Seen', 'NonJunk')
-       ID 38041: 7649 bytes, flags=('\\Seen', 'NonJunk')
-       ID 22310: 976108 bytes, flags=('\\Flagged', '\\Seen', '$Label1')
-       ID 6439: 3792 bytes, flags=('\\Flagged', '\\Seen', '$Label1', 'Junk')
+       ID 38273: 1775 bytes, flags=(b'NonJunk',)
+       ID 36459: 2833 bytes, flags=(b'\\Flagged', v'\\Seen')
+       ID 34693: 2874 bytes, flags=(b'\\Flagged', v'\\Seen')
+       ID 38066: 5368 bytes, flags=(b'\\Flagged', v'\\Seen')
+       ID 38154: 9079 bytes, flags=(b'\\Seen', b'NonJunk')
+       ID 14099: 3322 bytes, flags=(b'\\Flagged', b'\\Seen', b'$Label1')
+       ID 34196: 9163 bytes, flags=(b'\\Answered', b'\\Seen')
+       ID 35349: 4266 bytes, flags=(b'\\Flagged', b'\\Seen')
+       ID 29335: 5617 bytes, flags=(b'\\Flagged', b'\\Seen', b'NonJunk')
+       ID 38041: 7649 bytes, flags=(b'\\Seen', b'NonJunk')
+       ID 22310: 976108 bytes, flags=(b'\\Flagged', b'\\Seen', b'$Label1')
+       ID 6439: 3792 bytes, flags=(b'\\Flagged', b'\\Seen', b'$Label1', b'Junk')
 
 
 Concepts
@@ -126,15 +126,16 @@ modified UTF-7 as specified by :rfc:`3501#section-5.1.3`.  This allows
 for arbitrary unicode characters (eg. non-English characters) to be
 used in folder names.
 
-All folder names returned by IMAPClient are always returned as unicode
-strings.
-
 The ampersand character ("&") has special meaning in IMAP folder
 names. IMAPClient automatically escapes and unescapes this character
 so that the caller doesn't have to.
 
 Automatic folder name encoding and decoding can be enabled or disabled
 with the *folder_encode* attribute. It defaults to True.
+
+If *folder_encode* is True, all folder names returned by IMAPClient
+are always returned as unicode strings. If *folder_encode* is False,
+folder names are returned as str (Python 2) or bytes (Python 3).
 
 Exceptions
 ~~~~~~~~~~
@@ -183,6 +184,8 @@ Various options are available to specify the IMAP server details. See
 the help (--help) for more details. You'll be prompted for a username
 and password if one isn't provided on the command line.
 
+The connected IMAPClient instance is available as the variable "c".
+
 If installed, IPython will be used as the embedded shell. Otherwise
 the basic built-in Python shell will be used.
 
@@ -195,26 +198,24 @@ Here's an example session::
     IMAPClient instance is "c"
     In [1]: c.select_folder('inbox')
     Out[1]: 
-    {'EXISTS': 2,
-     'FLAGS': ('\\Answered',
-      '\\Flagged',
-      '\\Deleted',
-      '\\Seen',
-      '\\Draft'),
-     'PERMANENTFLAGS': ('\\Answered',
-      '\\Flagged',
-      '\\Deleted',
-      '\\Seen',
-      '\\Draft'),
-     'READ-WRITE': True,
-     'RECENT': 0,
-     'UIDNEXT': 1339,
-     'UIDVALIDITY': 1239278212}
+    {b'EXISTS': 2,
+     b'FLAGS': (b'\\Answered',
+         b'\\Flagged',
+         b'\\Deleted',
+         b'\\Seen',
+         b'\\Draft'),
+     b'PERMANENTFLAGS': (b'\\Answered',
+         b'\\Flagged',
+         b'\\Deleted',
+         b'\\Seen',
+         b'\\Draft'),
+     b'READ-WRITE': True,
+     b'RECENT': 0,
+     b'UIDNEXT': 1339,
+     b'UIDVALIDITY': 1239278212}
 
     In [2]: c.search()
     Out[2]: [1123, 1233]
 
     In [3]: c.logout()
-    Out[3]: 'Logging out'
-
-Note that the connected IMAPClient instance is available as the variable "c".
+    Out[3]: b'Logging out'

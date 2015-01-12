@@ -44,8 +44,13 @@ John Louis del Rosario
      Gmail search support (X-GM-RAW).
 
 Naveen Nathan
-     ENVELOPE FETCH response parsing
-     
+     ENVELOPE FETCH response parsing.
+
+Chris Arndt
+     Pass-through imaplib kwargs.
+
+Phil Peterson
+     OAUTH2 improvements.
 
 Bug Reports
 ------------
@@ -59,7 +64,6 @@ Erik Quaeghebeur
 Benjamin Morrise
 Brandon Rhodes
 
-
 External Projects
 -----------------
 IMAPClient uses Michael's excellent 'Mock' package.
@@ -69,5 +73,7 @@ IMAPClient includes Benjamin Peterson's 'six' library to help achieve
 cross-version Python compatibility.
 (https://pypi.python.org/pypi/six)
 
+External Contributions
+----------------------
 The project was started while the author was working at NetBox Blue.
 (http://netboxblue.com/)

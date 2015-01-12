@@ -12,8 +12,13 @@ use_setuptools()
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
+import sys
 import imapclient
 version = imapclient.__version__
+
+MAJ_MIN = sys.version_info[:2]
+IS_PY_26_OR_OLDER = MAJ_MIN <= (2, 6)
+IS_PY_34_OR_NEWER = MAJ_MIN >= (3, 4)
 
 desc = """\
 IMAPClient is an easy-to-use, Pythonic and complete IMAP client library.
@@ -44,8 +49,14 @@ class TestDiscoverCommand(TestCommand):
 
     def run_tests(self):
         from imapclient.test.util import unittest   # this will import unittest2
-        unittest.main(module=None, argv=['', 'discover'])
+        module = "__main__"
+        if IS_PY_26_OR_OLDER or IS_PY_34_OR_NEWER:
+            module = None
+        unittest.main(argv=['', 'discover'], module=module)
 
+test_deps = ['mock==0.8.0']
+if IS_PY_26_OR_OLDER:
+    test_deps.append('unittest2')
 
 setup(name='IMAPClient',
       version=version,
@@ -56,7 +67,7 @@ setup(name='IMAPClient',
       download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.zip' % version,
       packages=find_packages(),
       package_data=dict(imapclient=['examples/*.py']),
-      tests_require=['mock==0.8.0'],
+      tests_require=test_deps,
       description="Easy-to-use, Pythonic and complete IMAP client library",
       long_description=desc,
       classifiers=[

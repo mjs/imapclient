@@ -9,140 +9,138 @@ Unit tests for the FetchTokeniser and FetchParser classes
 from __future__ import unicode_literals
 
 from datetime import datetime
-from textwrap import dedent
 
 from imapclient.fixed_offset import FixedOffset
 from imapclient.response_parser import parse_response, parse_fetch_response, ParseError
 from imapclient.response_types import Envelope, Address
 from imapclient.test.util import unittest
 
-#TODO: tokenising tests
 #TODO: test invalid dates and times
 
 
-CRLF = '\r\n'
+CRLF = b'\r\n'
 
 class TestParseResponse(unittest.TestCase):
 
     def test_unquoted(self):
-        self._test('FOO', 'FOO')
-        self._test('F.O:-O_0;', 'F.O:-O_0;')
-        self._test(r'\Seen', r'\Seen')
+        self._test(b'FOO', b'FOO')
+        self._test(b'F.O:-O_0;', b'F.O:-O_0;')
+        self._test(br'\Seen', br'\Seen')
 
     def test_string(self):
-        self._test('"TEST"', 'TEST')
+        self._test(b'"TEST"', b'TEST')
 
     def test_int(self):
-        self._test('45', 45)
+        self._test(b'45', 45)
 
     def test_nil(self):
-        self._test('NIL', None)
+        self._test(b'NIL', None)
 
     def test_empty_tuple(self):
-        self._test('()', ())
+        self._test(b'()', ())
 
     def test_tuple(self):
-        self._test('(123 "foo" GeE)', (123, 'foo', 'GeE'))
+        self._test(b'(123 "foo" GeE)', (123, b'foo', b'GeE'))
 
     def test_int_and_tuple(self):
-        self._test('1 (123 "foo")', (1, (123, 'foo')), wrap=False)
+        self._test(b'1 (123 "foo")', (1, (123, b'foo')), wrap=False)
 
     def test_nested_tuple(self):
-        self._test('(123 "foo" ("more" NIL) 66)',
-                   (123, "foo", ("more", None), 66))
+        self._test(b'(123 "foo" ("more" NIL) 66)',
+                   (123, b"foo", (b"more", None), 66))
 
     def test_deeper_nest_tuple(self):
-        self._test('(123 "foo" ((0 1 2) "more" NIL) 66)',
-                   (123, "foo", ((0, 1, 2), "more", None), 66))
+        self._test(b'(123 "foo" ((0 1 2) "more" NIL) 66)',
+                   (123, b"foo", ((0, 1, 2), b"more", None), 66))
 
     def test_complex_mixed(self):
-        self._test('((FOO "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 1152 23) '
-                   '("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "cc.diff") '
-                   '"<hi.there>" "foo" "BASE64" 4554 73) "MIXED")',
-                   (('FOO', 'PLAIN', ('CHARSET', 'US-ASCII'), None, None, '7BIT', 1152, 23),
-                    ('TEXT', 'PLAIN', ('CHARSET', 'US-ASCII', 'NAME', 'cc.diff'),
-                    '<hi.there>', 'foo', 'BASE64', 4554, 73), 'MIXED'))
+        self._test(b'((FOO "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 1152 23) '
+                   b'("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "cc.diff") '
+                   b'"<hi.there>" "foo" "BASE64" 4554 73) "MIXED")',
+                   ((b'FOO', b'PLAIN', (b'CHARSET', b'US-ASCII'), None, None, b'7BIT', 1152, 23),
+                    (b'TEXT', b'PLAIN', (b'CHARSET', b'US-ASCII', b'NAME', b'cc.diff'),
+                    b'<hi.there>', b'foo', b'BASE64', 4554, 73), b'MIXED'))
 
     def test_envelopey(self):
-        self._test('(UID 5 ENVELOPE ("internal_date" "subject" '
-                   '(("name" NIL "address1" "domain1.com")) '
-                   '((NIL NIL "address2" "domain2.com")) '
-                   '(("name" NIL "address3" "domain3.com")) '
-                   '((NIL NIL "address4" "domain4.com")) '
-                   'NIL NIL "<reply-to-id>" "<msg_id>"))',
-                   ('UID',
+        self._test(b'(UID 5 ENVELOPE ("internal_date" "subject" '
+                   b'(("name" NIL "address1" "domain1.com")) '
+                   b'((NIL NIL "address2" "domain2.com")) '
+                   b'(("name" NIL "address3" "domain3.com")) '
+                   b'((NIL NIL "address4" "domain4.com")) '
+                   b'NIL NIL "<reply-to-id>" "<msg_id>"))',
+                   (b'UID',
                     5,
-                    'ENVELOPE',
-                    ('internal_date',
-                     'subject',
-                     (('name', None, 'address1', 'domain1.com'),),
-                     ((None, None, 'address2', 'domain2.com'),),
-                     (('name', None, 'address3', 'domain3.com'),),
-                     ((None, None, 'address4', 'domain4.com'),),
+                    b'ENVELOPE',
+                    (b'internal_date',
+                     b'subject',
+                     ((b'name', None, b'address1', b'domain1.com'),),
+                     ((None, None, b'address2', b'domain2.com'),),
+                     ((b'name', None, b'address3', b'domain3.com'),),
+                     ((None, None, b'address4', b'domain4.com'),),
                      None,
                      None,
-                     '<reply-to-id>',
-                     '<msg_id>')))
+                     b'<reply-to-id>',
+                     b'<msg_id>')))
 
     def test_envelopey_quoted(self):
-        self._test('(UID 5 ENVELOPE ("internal_date" "subject with \\"quotes\\"" '
-                   '(("name" NIL "address1" "domain1.com")) '
-                   '((NIL NIL "address2" "domain2.com")) '
-                   '(("name" NIL "address3" "domain3.com")) '
-                   '((NIL NIL "address4" "domain4.com")) '
-                   'NIL NIL "<reply-to-id>" "<msg_id>"))',
-                   ('UID',
+        self._test(b'(UID 5 ENVELOPE ("internal_date" "subject with \\"quotes\\"" '
+                   b'(("name" NIL "address1" "domain1.com")) '
+                   b'((NIL NIL "address2" "domain2.com")) '
+                   b'(("name" NIL "address3" "domain3.com")) '
+                   b'((NIL NIL "address4" "domain4.com")) '
+                   b'NIL NIL "<reply-to-id>" "<msg_id>"))',
+                   (b'UID',
                     5,
-                    'ENVELOPE',
-                    ('internal_date',
-                     'subject with "quotes"',
-                     (('name', None, 'address1', 'domain1.com'),),
-                     ((None, None, 'address2', 'domain2.com'),),
-                     (('name', None, 'address3', 'domain3.com'),),
-                     ((None, None, 'address4', 'domain4.com'),),
+                    b'ENVELOPE',
+                    (b'internal_date',
+                     b'subject with "quotes"',
+                     ((b'name', None, b'address1', b'domain1.com'),),
+                     ((None, None, b'address2', b'domain2.com'),),
+                     ((b'name', None, b'address3', b'domain3.com'),),
+                     ((None, None, b'address4', b'domain4.com'),),
                      None,
                      None,
-                     '<reply-to-id>',
-                     '<msg_id>')))
+                     b'<reply-to-id>',
+                     b'<msg_id>')))
 
     def test_literal(self):
-        literal_text = add_crlf(dedent("""\
-            012
-            abc def XYZ
-            """))
-        self._test([('{18}', literal_text)], literal_text)
+        literal_text = add_crlf(
+            b"012\n"
+            b"abc def XYZ\n"
+        )
+        self._test([(b'{18}', literal_text)], literal_text)
 
 
     def test_literal_with_more(self):
-        literal_text = add_crlf(dedent("""\
-            012
-            abc def XYZ
-            """))
-        response = [('(12 "foo" {18}', literal_text), ")"]
-        self._test(response, (12, 'foo', literal_text))
+        literal_text = add_crlf(
+            b"012\n"
+            b"abc def XYZ\n"
+        )
+        response = [(b'(12 "foo" {18}', literal_text), b")"]
+        self._test(response, (12, b'foo', literal_text))
 
 
     def test_quoted_specials(self):
-        self._test(r'"\"foo bar\""', '"foo bar"')
-        self._test(r'"foo \"bar\""', 'foo "bar"')
-        self._test(r'"foo\\bar"', r'foo\bar')
+        self._test(br'"\"foo bar\""', b'"foo bar"')
+        self._test(br'"foo \"bar\""', b'foo "bar"')
+        self._test(br'"foo\\bar"', br'foo\bar')
 
     def test_square_brackets(self):
-        self._test('foo[bar rrr]', 'foo[bar rrr]')
-        self._test('"foo[bar rrr]"', 'foo[bar rrr]')
-        self._test('[foo bar]def', '[foo bar]def')
-        self._test('(foo [bar rrr])', ('foo', '[bar rrr]'))
-        self._test('(foo foo[bar rrr])', ('foo', 'foo[bar rrr]'))
+        self._test(b'foo[bar rrr]', b'foo[bar rrr]')
+        self._test(b'"foo[bar rrr]"', b'foo[bar rrr]')
+        self._test(b'[foo bar]def', b'[foo bar]def')
+        self._test(b'(foo [bar rrr])', (b'foo', b'[bar rrr]'))
+        self._test(b'(foo foo[bar rrr])', (b'foo', b'foo[bar rrr]'))
 
     def test_incomplete_tuple(self):
-        self._test_parse_error('abc (1 2', 'Tuple incomplete before "\(1 2"')
+        self._test_parse_error(b'abc (1 2', 'Tuple incomplete before "\(1 2"')
 
     def test_bad_literal(self):
-        self._test_parse_error([('{99}', 'abc')],
+        self._test_parse_error([(b'{99}', b'abc')],
                                'Expecting literal of size 99, got 3')
 
     def test_bad_quoting(self):
-        self._test_parse_error('"abc next', """No closing '"'""")
+        self._test_parse_error(b'"abc next', """No closing '"'""")
 
     def _test(self, to_parse, expected, wrap=True):
         if wrap:
@@ -163,7 +161,7 @@ class TestParseResponse(unittest.TestCase):
 class TestParseFetchResponse(unittest.TestCase):
 
     def test_basic(self):
-        self.assertEqual(parse_fetch_response('4 ()'), {4: {'SEQ': 4}})
+        self.assertEqual(parse_fetch_response([b'4 ()']), {4: {b'SEQ': 4}})
 
 
     def test_none_special_case(self):
@@ -171,129 +169,133 @@ class TestParseFetchResponse(unittest.TestCase):
 
 
     def test_bad_msgid(self):
-        self.assertRaises(ParseError, parse_fetch_response, ['abc ()'])
+        self.assertRaises(ParseError, parse_fetch_response, [b'abc ()'])
 
 
     def test_bad_data(self):
-        self.assertRaises(ParseError, parse_fetch_response, ['2 WHAT'])
+        self.assertRaises(ParseError, parse_fetch_response, [b'2 WHAT'])
 
 
     def test_missing_data(self):
-        self.assertRaises(ParseError, parse_fetch_response, ['2'])
+        self.assertRaises(ParseError, parse_fetch_response, [b'2'])
 
 
     def test_simple_pairs(self):
-        self.assertEqual(parse_fetch_response(['23 (ABC 123 StUfF "hello")']),
-                          {23: {'ABC': 123,
-                                'STUFF': 'hello',
-                                'SEQ': 23}})
+        self.assertEqual(parse_fetch_response([b'23 (ABC 123 StUfF "hello")']),
+                          {23: {b'ABC': 123,
+                                b'STUFF': b'hello',
+                                b'SEQ': 23}})
 
 
     def test_odd_pairs(self):
-        self.assertRaises(ParseError, parse_fetch_response, ['(ONE)'])
-        self.assertRaises(ParseError, parse_fetch_response, ['(ONE TWO THREE)'])
+        self.assertRaises(ParseError, parse_fetch_response, [b'(ONE)'])
+        self.assertRaises(ParseError, parse_fetch_response, [b'(ONE TWO THREE)'])
 
 
     def test_UID(self):
-        self.assertEqual(parse_fetch_response(['23 (UID 76)']),
-                         {76: {'SEQ': 23}})
-        self.assertEqual(parse_fetch_response(['23 (uiD 76)']),
-                         {76: {'SEQ': 23}})
+        self.assertEqual(parse_fetch_response([b'23 (UID 76)']),
+                         {76: {b'SEQ': 23}})
+        self.assertEqual(parse_fetch_response([b'23 (uiD 76)']),
+                         {76: {b'SEQ': 23}})
 
 
     def test_not_uid_is_key(self):
-        self.assertEqual(parse_fetch_response(['23 (UID 76)'], uid_is_key=False),
-                          {23: {'UID': 76,
-                                'SEQ': 23}})
+        self.assertEqual(parse_fetch_response([b'23 (UID 76)'], uid_is_key=False),
+                          {23: {b'UID': 76,
+                                b'SEQ': 23}})
 
 
     def test_bad_UID(self):
-        self.assertRaises(ParseError, parse_fetch_response, ['(UID X)'])
-        
+        self.assertRaises(ParseError, parse_fetch_response, [b'(UID X)'])
+
 
     def test_FLAGS(self):
-        self.assertEqual(parse_fetch_response(['23 (FLAGS (\Seen Stuff))']),
-                          {23: {'SEQ': 23, 'FLAGS': (r'\Seen', 'Stuff')}})
+        self.assertEqual(parse_fetch_response([b'23 (FLAGS (\Seen Stuff))']),
+                          {23: {b'SEQ': 23, b'FLAGS': (br'\Seen', b'Stuff')}})
 
 
     def test_multiple_messages(self):
         self.assertEqual(parse_fetch_response(
-                                    ["2 (FLAGS (Foo Bar)) ",
-                                     "7 (FLAGS (Baz Sneeve))"]),
+                                    [b"2 (FLAGS (Foo Bar)) ",
+                                     b"7 (FLAGS (Baz Sneeve))"]),
                          {
-                            2: {'FLAGS': ('Foo', 'Bar'), 'SEQ': 2},
-                            7: {'FLAGS': ('Baz', 'Sneeve'), 'SEQ': 7},
+                            2: {b'FLAGS': (b'Foo', b'Bar'), b'SEQ': 2},
+                            7: {b'FLAGS': (b'Baz', b'Sneeve'), b'SEQ': 7},
                          })
 
     def test_same_message_appearing_multiple_times(self):
         # This can occur when server sends unsolicited FETCH responses
         # (e.g. RFC 4551)
         self.assertEqual(parse_fetch_response(
-                                    ["2 (FLAGS (Foo Bar)) ",
-                                     "2 (MODSEQ 4)"]),
-                         {2: {'FLAGS': ('Foo', 'Bar'), 'SEQ': 2, 'MODSEQ': 4}})
+                                    [b"2 (FLAGS (Foo Bar)) ",
+                                     b"2 (MODSEQ 4)"]),
+                         {2: {b'FLAGS': (b'Foo', b'Bar'), b'SEQ': 2, b'MODSEQ': 4}})
 
     def test_literals(self):
-        self.assertEqual(parse_fetch_response([('1 (RFC822.TEXT {4}', 'body'),
-                                               (' RFC822 {21}', 'Subject: test\r\n\r\nbody'),
-                                               ')']),
-                          {1: {'RFC822.TEXT': 'body',
-                               'RFC822': 'Subject: test\r\n\r\nbody',
-                               'SEQ': 1}})
+        self.assertEqual(parse_fetch_response([(b'1 (RFC822.TEXT {4}', b'body'),
+                                               (b' RFC822 {21}', b'Subject: test\r\n\r\nbody'),
+                                               b')']),
+                          {1: {b'RFC822.TEXT': b'body',
+                               b'RFC822': b'Subject: test\r\n\r\nbody',
+                               b'SEQ': 1}})
 
 
     def test_literals_and_keys_with_square_brackets(self):
-        self.assertEqual(parse_fetch_response([('1 (BODY[TEXT] {11}', 'Hi there.\r\n'), ')']),
-                          { 1: {'BODY[TEXT]': 'Hi there.\r\n',
-                                'SEQ': 1}})
+        self.assertEqual(parse_fetch_response([(b'1 (BODY[TEXT] {11}', b'Hi there.\r\n'), b')']),
+                          { 1: {b'BODY[TEXT]': b'Hi there.\r\n',
+                                b'SEQ': 1}})
 
 
     def test_BODY_HEADER_FIELDS(self):
-        header_text = 'Subject: A subject\r\nFrom: Some one <someone@mail.com>\r\n\r\n'
+        header_text = b'Subject: A subject\r\nFrom: Some one <someone@mail.com>\r\n\r\n'
         self.assertEqual(parse_fetch_response(
-            [('123 (UID 31710 BODY[HEADER.FIELDS (from subject)] {57}', header_text), ')']),
-            { 31710: {'BODY[HEADER.FIELDS (FROM SUBJECT)]': header_text,
-                      'SEQ': 123}})
+            [(b'123 (UID 31710 BODY[HEADER.FIELDS (from subject)] {57}', header_text), b')']),
+            { 31710: {b'BODY[HEADER.FIELDS (FROM SUBJECT)]': header_text,
+                      b'SEQ': 123}})
 
     def test_BODY(self):
-         self.check_BODYish_single_part('BODY')
-         self.check_BODYish_multipart('BODY')
-         self.check_BODYish_nested_multipart('BODY')
+         self.check_BODYish_single_part(b'BODY')
+         self.check_BODYish_multipart(b'BODY')
+         self.check_BODYish_nested_multipart(b'BODY')
 
     def test_BODYSTRUCTURE(self):
-         self.check_BODYish_single_part('BODYSTRUCTURE')
-         self.check_BODYish_nested_multipart('BODYSTRUCTURE')
+         self.check_BODYish_single_part(b'BODYSTRUCTURE')
+         self.check_BODYish_nested_multipart(b'BODYSTRUCTURE')
     
     def check_BODYish_single_part(self, respType):
-        text =  '123 (UID 317 %s ("TEXT" "PLAIN" ("CHARSET" "us-ascii") NIL NIL "7BIT" 16 1))' % respType
+        text = b'123 (UID 317 ' + respType +  b'("TEXT" "PLAIN" ("CHARSET" "us-ascii") NIL NIL "7BIT" 16 1))'
         parsed = parse_fetch_response([text])
-        self.assertEqual(parsed, {317: {respType: ('TEXT', 'PLAIN', ('CHARSET', 'us-ascii'), None, None, '7BIT', 16, 1),
-                                         'SEQ': 123 }
-                                         })
+        self.assertEqual(parsed, {
+            317: {
+                respType: (b'TEXT', b'PLAIN', (b'CHARSET', b'us-ascii'), None, None, b'7BIT', 16, 1),
+                b'SEQ': 123
+            }
+        })
         self.assertFalse(parsed[317][respType].is_multipart)
 
     def check_BODYish_multipart(self, respType):
-        text = '123 (UID 269 %s (("TEXT" "HTML" ("CHARSET" "us-ascii") NIL NIL "QUOTED-PRINTABLE" 55 3)' \
-                                 '("TEXT" "PLAIN" ("CHARSET" "us-ascii") NIL NIL "7BIT" 26 1) "MIXED"))' \
-                                % respType
+        text = b'123 (UID 269 ' + respType + b' ' \
+               b'(("TEXT" "HTML" ("CHARSET" "us-ascii") NIL NIL "QUOTED-PRINTABLE" 55 3)' \
+               b'("TEXT" "PLAIN" ("CHARSET" "us-ascii") NIL NIL "7BIT" 26 1) "MIXED"))'
         parsed = parse_fetch_response([text])
-        self.assertEqual(parsed, {269: {respType: ([('TEXT', 'HTML', ('CHARSET', 'us-ascii'), None, None, 'QUOTED-PRINTABLE', 55, 3),
-                                                     ('TEXT', 'PLAIN', ('CHARSET', 'us-ascii'), None, None, '7BIT', 26, 1)],
-                                                     'MIXED'),
-                                        'SEQ': 123}
-                                        })
+        self.assertEqual(parsed, {
+            269: {
+                respType: ([(b'TEXT', b'HTML', (b'CHARSET', b'us-ascii'), None, None, b'QUOTED-PRINTABLE', 55, 3),
+                            (b'TEXT', b'PLAIN', (b'CHARSET', b'us-ascii'), None, None, b'7BIT', 26, 1)],
+                           b'MIXED'),
+                b'SEQ': 123}
+        })
         self.assertTrue(parsed[269][respType].is_multipart)
 
     def check_BODYish_nested_multipart(self, respType):
-        text = '1 (%s (' \
-               '(' \
-                 '("text" "html" ("charset" "utf-8") NIL NIL "7bit" 97 3 NIL NIL NIL NIL)' \
-                 '("text" "plain" ("charset" "utf-8") NIL NIL "7bit" 62 3 NIL NIL NIL NIL)' \
-                 '"alternative" ("boundary" "===============8211050864078048428==") NIL NIL NIL' \
-               ')' \
-               '("text" "plain" ("charset" "utf-8") NIL NIL "7bit" 16 1 NIL ("attachment" ("filename" "attachment.txt")) NIL NIL) ' \
-               '"mixed" ("boundary" "===============0373402508605428821==") NIL NIL NIL))' \
-               % respType
+        text = b'1 (' + respType + b'(' \
+               b'(' \
+                 b'("text" "html" ("charset" "utf-8") NIL NIL "7bit" 97 3 NIL NIL NIL NIL)' \
+                 b'("text" "plain" ("charset" "utf-8") NIL NIL "7bit" 62 3 NIL NIL NIL NIL)' \
+                 b'"alternative" ("boundary" "===============8211050864078048428==") NIL NIL NIL' \
+               b')' \
+               b'("text" "plain" ("charset" "utf-8") NIL NIL "7bit" 16 1 NIL ("attachment" ("filename" "attachment.txt")) NIL NIL) ' \
+               b'"mixed" ("boundary" "===============0373402508605428821==") NIL NIL NIL))'
 
         parsed = parse_fetch_response([text])
         self.assertEqual(parsed, {1: {
@@ -301,122 +303,125 @@ class TestParseFetchResponse(unittest.TestCase):
                 [
                     (
                         [
-                            ('text', 'html', ('charset', 'utf-8'), None, None, '7bit', 97, 3, None, None, None, None),
-                            ('text', 'plain', ('charset', 'utf-8'), None, None, '7bit', 62, 3, None, None, None, None)
-                        ], 'alternative', ('boundary', '===============8211050864078048428=='), None, None, None
+                            (b'text', b'html', (b'charset', b'utf-8'), None, None, b'7bit', 97, 3, None, None, None, None),
+                            (b'text', b'plain', (b'charset', b'utf-8'), None, None, b'7bit', 62, 3, None, None, None, None)
+                        ], b'alternative', (b'boundary', b'===============8211050864078048428=='), None, None, None
                     ),
-                    ('text', 'plain', ('charset', 'utf-8'), None, None, '7bit', 16, 1, None, ('attachment', ('filename', 'attachment.txt')), None, None)
-                ], 'mixed', ('boundary', '===============0373402508605428821=='), None, None, None,
+                    (b'text', b'plain', (b'charset', b'utf-8'), None, None, b'7bit', 16, 1, None, (b'attachment', (b'filename', b'attachment.txt')), None, None)
+                ], b'mixed', (b'boundary', b'===============0373402508605428821=='), None, None, None,
             ),
-            'SEQ': 1,
+            b'SEQ': 1,
         }})
         self.assertTrue(parsed[1][respType].is_multipart)
         self.assertTrue(parsed[1][respType][0][0].is_multipart)
         self.assertFalse(parsed[1][respType][0][0][0][0].is_multipart)
 
     def test_partial_fetch(self):
-        body = '01234567890123456789'
+        body = b'01234567890123456789'
         self.assertEqual(parse_fetch_response(
-            [('123 (UID 367 BODY[]<0> {20}', body), ')']),
-            { 367: {'BODY[]<0>': body,
-                    'SEQ': 123}})
+            [(b'123 (UID 367 BODY[]<0> {20}', body), b')']),
+            { 367: {b'BODY[]<0>': body,
+                    b'SEQ': 123}})
 
     def test_ENVELOPE(self):
-        envelope_str = ('1 (ENVELOPE ( '
-            '"Sun, 24 Mar 2013 22:06:10 +0200" '
-            '"subject" '
-            '(("name" NIL "address1" "domain1.com")) '
-            '((NIL NIL "address2" "domain2.com")) '
-            '(("name" NIL "address3" "domain3.com")) '
-            'NIL'
-            '((NIL NIL "address4" "domain4.com") '
-             '("person" NIL "address4b" "domain4b.com")) '
-            'NIL "<reply-to-id>" "<msg_id>"))')
+        envelope_str = (b'1 (ENVELOPE ( '
+            b'"Sun, 24 Mar 2013 22:06:10 +0200" '
+            b'"subject" '
+            b'(("name" NIL "address1" "domain1.com")) '
+            b'((NIL NIL "address2" "domain2.com")) '
+            b'(("name" NIL "address3" "domain3.com")) '
+            b'NIL'
+            b'((NIL NIL "address4" "domain4.com") '
+              b'("person" NIL "address4b" "domain4b.com")) '
+            b'NIL "<reply-to-id>" "<msg_id>"))')
 
         output = parse_fetch_response([envelope_str], normalise_times=False)
 
-        self.assertSequenceEqual(output[1]['ENVELOPE'],
+        self.assertSequenceEqual(output[1][b'ENVELOPE'],
             Envelope(
                 datetime(2013, 3, 24, 22, 6, 10, tzinfo=FixedOffset(120)),
-                "subject",
-                (Address("name", None, "address1", "domain1.com"),),
-                (Address(None, None, "address2", "domain2.com"),),
-                (Address("name", None, "address3", "domain3.com"),),
+                b"subject",
+                (Address(b"name", None, b"address1", b"domain1.com"),),
+                (Address(None, None, b"address2", b"domain2.com"),),
+                (Address(b"name", None, b"address3", b"domain3.com"),),
                 None,
-                (Address(None, None, "address4", "domain4.com"),
-                 Address("person", None, "address4b", "domain4b.com")),
-                None, "<reply-to-id>", "<msg_id>"
+                (Address(None, None, b"address4", b"domain4.com"),
+                 Address(b"person", None, b"address4b", b"domain4b.com")),
+                None, b"<reply-to-id>", b"<msg_id>"
             )
         )
 
     def test_ENVELOPE_with_no_date(self):
-        envelope_str = ('1 (ENVELOPE ( '
-            'NIL '
-            '"subject" '
-            '(("name" NIL "address1" "domain1.com")) '
-            '((NIL NIL "address2" "domain2.com")) '
-            '(("name" NIL "address3" "domain3.com")) '
-            'NIL'
-            '((NIL NIL "address4" "domain4.com") '
-             '("person" NIL "address4b" "domain4b.com")) '
-            'NIL "<reply-to-id>" "<msg_id>"))')
+        envelope_str = (b'1 (ENVELOPE ( '
+            b'NIL '
+            b'"subject" '
+            b'(("name" NIL "address1" "domain1.com")) '
+            b'((NIL NIL "address2" "domain2.com")) '
+            b'(("name" NIL "address3" "domain3.com")) '
+            b'NIL'
+            b'((NIL NIL "address4" "domain4.com") '
+             b'("person" NIL "address4b" "domain4b.com")) '
+            b'NIL "<reply-to-id>" "<msg_id>"))')
 
         output = parse_fetch_response([envelope_str], normalise_times=False)
 
-        self.assertSequenceEqual(output[1]['ENVELOPE'],
+        self.assertSequenceEqual(output[1][b'ENVELOPE'],
             Envelope(
                 None,
-                "subject",
-                (Address("name", None, "address1", "domain1.com"),),
-                (Address(None, None, "address2", "domain2.com"),),
-                (Address("name", None, "address3", "domain3.com"),),
+                b"subject",
+                (Address(b"name", None, b"address1", b"domain1.com"),),
+                (Address(None, None, b"address2", b"domain2.com"),),
+                (Address(b"name", None, b"address3", b"domain3.com"),),
                 None,
-                (Address(None, None, "address4", "domain4.com"),
-                 Address("person", None, "address4b", "domain4b.com")),
-                None, "<reply-to-id>", "<msg_id>"
+                (Address(None, None, b"address4", b"domain4.com"),
+                 Address(b"person", None, b"address4b", b"domain4b.com")),
+                None, b"<reply-to-id>", b"<msg_id>"
             )
         )
+
+    def test_INTERNALDATE(self):
+        def check(date_str, expected_dt):
+            output = parse_fetch_response([b'3 (INTERNALDATE "' + date_str + b'")'], normalise_times=False)
+            actual_dt = output[3][b'INTERNALDATE']
+            self.assertEqual(actual_dt, expected_dt)
+
+        check(b' 9-Feb-2007 17:08:08 -0430',
+              datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30)))
+
+        check(b'12-Feb-2007 17:08:08 +0200',
+              datetime(2007, 2, 12, 17, 8, 8, 0, FixedOffset(2*60)))
+
+        check(b' 9-Dec-2007 17:08:08 +0000',
+              datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
+
     def test_INTERNALDATE_normalised(self):
         def check(date_str, expected_dt):
-            output = parse_fetch_response(['3 (INTERNALDATE "%s")' % date_str])
-            actual_dt = output[3]['INTERNALDATE']
+            output = parse_fetch_response([b'3 (INTERNALDATE "' + date_str + b'")'])
+            actual_dt = output[3][b'INTERNALDATE']
             self.assertTrue(actual_dt.tzinfo is None)   # Returned date should be in local timezone
             expected_dt = datetime_to_native(expected_dt)
             self.assertEqual(actual_dt, expected_dt)
 
-        check(' 9-Feb-2007 17:08:08 -0430',
+        check(b' 9-Feb-2007 17:08:08 -0430',
               datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30)))
- 
-        check('12-Feb-2007 17:08:08 +0200',
-              datetime(2007, 2, 12, 17, 8, 8, 0, FixedOffset(2*60)))
- 
-        check(' 9-Dec-2007 17:08:08 +0000',
-              datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
 
-    def test_INTERNALDATE(self):
-        def check(date_str, expected_dt):
-            output = parse_fetch_response(['3 (INTERNALDATE "%s")' % date_str], normalise_times=False)
-            actual_dt = output[3]['INTERNALDATE']
-            self.assertEqual(actual_dt, expected_dt)
-
-        check(' 9-Feb-2007 17:08:08 -0430',
-              datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30)))
- 
-        check('12-Feb-2007 17:08:08 +0200',
+        check(b'12-Feb-2007 17:08:08 +0200',
               datetime(2007, 2, 12, 17, 8, 8, 0, FixedOffset(2*60)))
- 
-        check(' 9-Dec-2007 17:08:08 +0000',
+
+        check(b' 9-Dec-2007 17:08:08 +0000',
               datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
 
     def test_mixed_types(self):
-        self.assertEqual(parse_fetch_response([('1 (INTERNALDATE " 9-Feb-2007 17:08:08 +0100" RFC822 {21}',
-                                                'Subject: test\r\n\r\nbody'),
-                                               ')']),
-                          {1: {'INTERNALDATE': datetime_to_native(datetime(2007, 2, 9,
-                                                                           17, 8, 8, 0,
-                                                                           FixedOffset(60))),
-                               'RFC822': 'Subject: test\r\n\r\nbody',
-                               'SEQ': 1}})
+        self.assertEqual(parse_fetch_response([(
+            b'1 (INTERNALDATE " 9-Feb-2007 17:08:08 +0100" RFC822 {21}',
+            b'Subject: test\r\n\r\nbody'
+        ), b')']), {
+            1: {
+                b'INTERNALDATE': datetime_to_native(datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(60))),
+                b'RFC822': b'Subject: test\r\n\r\nbody',
+                b'SEQ': 1
+            }
+        })
 
 
 def add_crlf(text):
@@ -426,5 +431,3 @@ def add_crlf(text):
 system_offset = FixedOffset.for_system()
 def datetime_to_native(dt):
     return dt.astimezone(system_offset).replace(tzinfo=None)
-
-

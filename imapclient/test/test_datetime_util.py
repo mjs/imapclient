@@ -25,15 +25,15 @@ class TestParsing(unittest.TestCase):
 
     def test_rfc822_style(self):
         self.check_normalised_and_not(
-            'Sun, 24 Mar 2013 22:06:10 +0200',
+            b'Sun, 24 Mar 2013 22:06:10 +0200',
             datetime(2013, 3, 24, 22, 6, 10, 0, FixedOffset(120))
         )
 
     def test_internaldate_style(self):
         self.check_normalised_and_not(
-            ' 9-Feb-2007 17:08:08 -0430',
+            b' 9-Feb-2007 17:08:08 -0430',
             datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30))
         )
 
     def test_invalid(self):
-        self.assertRaises(ValueError, parse_to_datetime, 'ABC')
+        self.assertRaises(ValueError, parse_to_datetime, b'ABC')

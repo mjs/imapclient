@@ -10,7 +10,7 @@ from mock import patch
 
 from imapclient.imapclient import (
     datetime_to_imap,
-    messages_to_str,
+    join_message_ids,
     normalise_search_criteria,
     normalise_text_list,
     seq_to_parenstr,
@@ -89,34 +89,34 @@ class Test_seq_to_parenstr_upper(unittest.TestCase):
     def test_mixed_list(self):
         self.check(['foo', b'BAR'], '(FOO BAR)')
 
-class Test_messages_to_str(unittest.TestCase):
+class Test_join_message_ids(unittest.TestCase):
 
     def check(self, items, expected):
-        self.assertEqual(messages_to_str(items), expected)
+        self.assertEqual(join_message_ids(items), expected)
 
     def test_int(self):
-        self.check(123, '123')
+        self.check(123, b'123')
 
     def test_unicode(self):
-        self.check('123', '123')
+        self.check('123', b'123')
 
     def test_unicode_non_numeric(self):
-        self.check('2:*', '2:*')
+        self.check('2:*', b'2:*')
 
     def test_binary(self):
-        self.check(b'123', '123')
+        self.check(b'123', b'123')
 
     def test_binary_non_numeric(self):
-        self.check(b'2:*', '2:*')
+        self.check(b'2:*', b'2:*')
 
     def test_tuple(self):
-        self.check((123, 99), '123,99')
+        self.check((123, 99), b'123,99')
 
     def test_mixed_list(self):
-        self.check(['2:3', 123, b'44'], '2:3,123,44')
+        self.check(['2:3', 123, b'44'], b'2:3,123,44')
 
     def test_iter(self):
-        self.check(iter([123, 99]), '123,99')
+        self.check(iter([123, 99]), b'123,99')
 
 class Test_normalise_search_criteria(unittest.TestCase):
 

@@ -6,7 +6,8 @@ except ImportError:
     from configparser import SafeConfigParser, NoOptionError
 
 import imapclient
-import urllib
+from .six.moves.urllib.request import urlopen
+from .six.moves.urllib.parse import urlencode
 
 try:
     import json
@@ -66,13 +67,13 @@ def parse_config_file(path):
 def refresh_oauth2_token(client_id, client_secret, refresh_token):
     if not json:
         raise RuntimeError("livetest OAUTH2 functionality relies on 'json' module")
-    post = dict(client_id=client_id,
-                client_secret=client_secret,
-                refresh_token=refresh_token,
-                grant_type='refresh_token')
-    response = urllib.urlopen('https://accounts.google.com/o/oauth2/token',
-                              urllib.urlencode(post)).read()
-    return json.loads(response)['access_token']
+    post = dict(client_id=client_id.encode('ascii'),
+                client_secret=client_secret.encode('ascii'),
+                refresh_token=refresh_token.encode('ascii'),
+                grant_type=b'refresh_token')
+    response = urlopen('https://accounts.google.com/o/oauth2/token',
+                       urlencode(post).encode('ascii')).read()
+    return json.loads(response.decode('ascii'))['access_token']
 
 # Tokens are expensive to refresh so use the same one for the duration of the process.
 _oauth2_cache = {}
