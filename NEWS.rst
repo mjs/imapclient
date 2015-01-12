@@ -42,6 +42,7 @@ available via an attribute on the returned list of ids.
 
 Minor Changes
 -------------
+* Small tweaks to support Python 3.4.
 * The deprecated get_folder_delimiter() method has been removed.
 * More control over OAUTH2 parameters. Thanks to Phil Peterson for
   this.
