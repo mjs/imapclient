@@ -168,14 +168,14 @@ class IMAPClient(object):
     def oauth2_login(self, user, access_token, mech='XOAUTH2', vendor=None):
         """Authenticate using the OAUTH2 method.
 
-        Gmail and Yahoo both support the 'XOAUTH2' mechanism, but Yahoo requires 
+        Gmail and Yahoo both support the 'XOAUTH2' mechanism, but Yahoo requires
         the 'vendor' portion in the payload. 
         """
+        auth_string = 'user=%s\1auth=Bearer %s\1' % (user, access_token)
         if vendor:
-            auth_string = lambda x: 'user=%s\1auth=Bearer %s\1vendor=%s\1\1' % (user, access_token, vendor)
-        else:
-            auth_string = lambda x: 'user=%s\1auth=Bearer %s\1\1' % (user, access_token)
-        return self._command_and_check('authenticate', mech, auth_string)
+            auth_string += 'vendor=%s\1' % vendor
+        auth_string += '\1'
+        return self._command_and_check('authenticate', mech, lambda x: auth_string)
 
     def logout(self):
         """Logout, returning the server response.
