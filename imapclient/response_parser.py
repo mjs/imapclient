@@ -23,7 +23,7 @@ xrange = six.moves.xrange
 from .datetime_util import parse_to_datetime
 from .fixed_offset import FixedOffset
 from .response_lexer import TokenSource
-from .response_types import Envelope, Address
+from .response_types import BodyData, Envelope, Address
 
 try:
     import imaplib2 as imaplib
@@ -122,28 +122,6 @@ def _int_or_error(value, error_text):
         return int(value)
     except (TypeError, ValueError):
         raise ParseError('%s: %s' % (error_text, repr(value)))
-
-
-class BodyData(tuple):
-
-    @classmethod
-    def create(cls, response):
-        # In case of multipart messages we will see at least 2 tuples
-        # at the start. Nest these in to a list so that the returned
-        # response tuple always has a consistent number of elements
-        # regardless of whether the message is multipart or not.
-        if isinstance(response[0], tuple):
-            # Multipart, find where the message part tuples stop
-            for i, part in enumerate(response):
-                if isinstance(part, six.binary_type):
-                    break
-            return cls(([cls.create(part) for part in response[:i]],) + response[i:])
-        else:
-            return cls(response)
-
-    @property
-    def is_multipart(self):
-        return isinstance(self[0], list)
 
 
 def _convert_INTERNALDATE(date_string, normalise_times=True):
