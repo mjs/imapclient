@@ -42,8 +42,10 @@ available via an attribute on the returned list of ids.
 
 Minor Changes
 -------------
-The deprecated get_folder_delimiter() method has been removed.
-
+* The deprecated get_folder_delimiter() method has been removed.
+* More control over OAUTH2 parameters. Thanks to Phil Peterson for
+  this.
+  
 ========
  0.11.1
 ========
