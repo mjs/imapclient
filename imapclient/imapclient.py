@@ -13,7 +13,6 @@ import re
 from datetime import datetime
 from operator import itemgetter
 
-from .imaptls import IMAP4
 # Confusingly, this module is for OAUTH v1, not v2
 try:
     import oauth2 as oauth_module
@@ -21,6 +20,7 @@ except ImportError:
     oauth_module = None
 
 from . import response_lexer
+from .imaptls import IMAP4
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .fixed_offset import FixedOffset
 from .response_types import SearchIds
@@ -297,7 +297,7 @@ class IMAPClient(object):
         Folder names are always returned as unicode strings, and decoded from
         modifier utf-7, except if folder_decode is not set.
         """
-        return self._do_list('LIST', directory, pattern)
+        return self._do_list(b'LIST', directory, pattern)
 
     def xlist_folders(self, directory="", pattern="*"):
         """Execute the XLIST command, returning ``(flags, delimiter,
@@ -331,7 +331,7 @@ class IMAPClient(object):
         The *directory* and *pattern* arguments are as per
         list_folders().
         """
-        return self._do_list('XLIST', directory, pattern)
+        return self._do_list(b'XLIST', directory, pattern)
 
     def list_sub_folders(self, directory="", pattern="*"):
         """Return a list of subscribed folders on the server as
@@ -340,7 +340,7 @@ class IMAPClient(object):
         The default behaviour will list all subscribed folders. The
         *directory* and *pattern* arguments are as per list_folders().
         """
-        return self._do_list('LSUB', directory, pattern)
+        return self._do_list(b'LSUB', directory, pattern)
 
     def _do_list(self, cmd, directory, pattern):
         directory = self._normalise_folder(directory)
@@ -633,7 +633,7 @@ class IMAPClient(object):
             if charset:
                 args.extend([b'CHARSET', charset])
             args.extend(criteria)
-            typ, data = self._imap.uid('SEARCH', *args)
+            typ, data = self._imap.uid(b'SEARCH', *args)
         else:
             typ, data = self._imap.search(charset, *criteria)
 
