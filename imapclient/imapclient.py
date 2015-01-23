@@ -20,7 +20,7 @@ except ImportError:
     oauth_module = None
 
 from . import response_lexer
-from .imaptls import IMAP4
+from .tls import IMAP4
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .fixed_offset import FixedOffset
 from .response_types import SearchIds
