@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-version_info = (0, 11, 0, 'final')
+version_info = (1, 0, 0, 'alpha')
 
 def _imapclient_version_string(vinfo):
     major, minor, micro, releaselevel = vinfo
