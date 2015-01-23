@@ -57,6 +57,12 @@ class TestDiscoverCommand(TestCommand):
             module = None
         unittest.main(argv=['', 'discover'], module=module)
 
+deps = [
+    'six',
+    'pyopenssl',
+    'service_identity'
+],
+
 test_deps = ['mock==0.8.0']
 if IS_PY_26_OR_OLDER:
     test_deps.append('unittest2')
@@ -70,12 +76,9 @@ setup(name='IMAPClient',
       download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.zip' % info['version'],
       packages=find_packages(),
       package_data=dict(imapclient=['examples/*.py']),
+      setup_requires=deps,
+      install_requires=deps,
       tests_require=test_deps,
-      install_requires=[
-        'six',
-        'pyopenssl',
-        'service_identity'
-      ],
       description="Easy-to-use, Pythonic and complete IMAP client library",
       long_description=desc,
       classifiers=[
