@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """STARTTLS support for imaplib for Python 2.6+ and 3.3+ built on pyOpenSSL."""
 
-__all__ = ('IMAP4', 'ssl_default_context')
+__all__ = ('IMAP4', 'get_default_context')
 
 import sys
 import imaplib
@@ -36,7 +36,7 @@ _RESTRICTED_SERVER_CIPHERS = (
 )
 
 
-def ssl_default_context(cafile=None, capath=None, check_hostname=True):
+def get_default_context(cafile=None, capath=None, check_hostname=True):
     """Create a SSL.Context object with reasonably secure default settings.
 
     This SSL context is configured only to be used for client connections, do
@@ -121,7 +121,7 @@ class IMAP4(imaplib.IMAP4):
             raise self.abort('STARTTLS not supported by server')
 
         if not ssl_context:
-            ssl_context = ssl_default_context()
+            ssl_context = get_default_context()
 
         type_, dat = self._simple_command(name)
 
