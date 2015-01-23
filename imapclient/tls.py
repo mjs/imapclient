@@ -95,20 +95,8 @@ def get_default_context(cafile=None, capath=None, check_hostname=True):
     return context
 
 
-class _SSLConnection(SSL.Connection):
-    """Wrapper for OpenSSL.SSL.Connection for socket compatibility."""
-
-    def shutdown(self, *args):
-        # Fix method signature incompatibility bewteen pyOpenSSL.SSL.Connection
-        # and socket.socket
-        SSL.Connection.shutdown(self)
-
-    def makefile(self, mode='rb', *args, **kwargs):
-        # Support only arguments needed by imaplib
-        return _socketfileobj(self, mode)
-
-
 class IMAP4(imaplib.IMAP4):
+
     def starttls(self, ssl_context=None):
         """Send a STARTTLS command and wrap the socket with TLS."""
         name = 'STARTTLS'
@@ -145,6 +133,19 @@ class IMAP4(imaplib.IMAP4):
             raise self.Error("Couldn't establish TLS session")
 
         return self._untagged_response(type_, dat, name)
+
+
+class _SSLConnection(SSL.Connection):
+    """Wrapper for OpenSSL.SSL.Connection for socket compatibility."""
+
+    def shutdown(self, *args):
+        # Fix method signature incompatibility bewteen pyOpenSSL.SSL.Connection
+        # and socket.socket
+        SSL.Connection.shutdown(self)
+
+    def makefile(self, mode='rb', *args, **kwargs):
+        # Support only arguments needed by imaplib
+        return _socketfileobj(self, mode)
 
 
 # lifted from backports.ssl
