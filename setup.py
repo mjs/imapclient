@@ -4,7 +4,8 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from os.path import join
+import sys
+from os import path
 
 # bootstrap setuptools if necessary
 from ez_setup import use_setuptools
@@ -13,11 +14,9 @@ use_setuptools()
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
-import sys
-# read meta-data from release.py
+# Read version info (without importing the whole imapclient package)
 info = {}
-metamod = join('imapclient', 'version.py')
-exec(compile(open(metamod).read(), metamod, 'exec'), {}, info)
+execfile(path.join('imapclient', 'version.py'), {}, info)
 
 MAJ_MIN = sys.version_info[:2]
 IS_PY_26_OR_OLDER = MAJ_MIN <= (2, 6)
