@@ -20,7 +20,7 @@ False then folder names will always be returned as bytes/strs.
 Code using IMAPClient will most likely need to be updated to account
 these unicode handling changes.
 
-Many thanks to Inbox (https://www.inboxapp.com/) for sponsoring this
+Many thanks to Inbox (now Nilas, https://nilas.com/) for sponsoring this
 work.
 
 Extra __init__ keyword args are passed through [NEW]

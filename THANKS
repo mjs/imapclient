@@ -73,7 +73,10 @@ IMAPClient includes Benjamin Peterson's 'six' library to help achieve
 cross-version Python compatibility.
 (https://pypi.python.org/pypi/six)
 
-External Contributions
-----------------------
+Other Contributions
+-------------------
+Nilas supports development of IMAPClient.
+(http://nilas.com/)
+
 The project was started while the author was working at NetBox Blue.
 (http://netboxblue.com/)
