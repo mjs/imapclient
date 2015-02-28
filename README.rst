@@ -19,6 +19,9 @@ Features:
 
 Python versions 2.6, 2.7, 3.2, 3.3 and 3.4 are officially supported.
 
+The current stable version of IMAPClient is 0.12. It is licensed under
+the New BSD License.
+
 Why IMAPClient?
 ---------------
 You may ask: "why create another IMAP client library for Python?
@@ -37,6 +40,44 @@ just did was successful.
 IMAPClient actually uses imaplib internally. This may change at some
 point in the future.
 
+Installing IMAPClient
+---------------------
+IMAPClient is listed on the PyPI (Python Package Index). To install
+via PyPI use the pip or easy_install tools::
+
+    pip install imapclient
+
+    easy_install IMAPClient
+
+The source distributions of all IMAPClient versions are available at
+http://freshfoo.com/projects/IMAPClient/. Alternatively you can also
+use the PyPI page at https://pypi.python.org/pypi/IMAPClient/.
+
+To install from source run::
+
+    python setup.py install
+
+The project is packaged using Distribute (mostly compatible with
+setuptools) and all the usual setup.py installation options are
+available. See http://packages.python.org/distribute/ for more info.
+
+Documentation
+-------------
+IMAPClient's manual is available at http://imapclient.readthedocs.org/
+
+The `NEWS <https://bitbucket.org/mjs0/imapclient/src/tip/NEWS.rst>`_
+file also has useful information.
+
+The HTML manual can also be found at doc/html in the source
+distribution. The Sphinx source is at doc/src. If Sphinx is installed,
+the documentation can be rebuilt using::
+
+    python setup.py build_sphinx
+
+See imapclient/examples/example.py for a sample of how to use
+IMAPClient. If the IMAPClient was installed from PyPI, the examples
+subdirectory can be found under the imapclient package installation
+directory.
 
 Current Status
 --------------
@@ -52,39 +93,6 @@ The project's home page is a Trac instance at: http://imapclient.freshfoo.com/
 
 Details about upcoming versions and planned features/fixes can be
 found there.
-
-Using IMAPClient
-----------------
-IMAPClient is listed on the PyPI (Python Package Index). To install
-via PyPI use the pip or easy_install tools::
-
-    pip install imapclient
-
-    easy_install IMAPClient
-
-To install from the source distribution::
-
-    python setup.py install
-
-The project is packaged using Distribute (mostly compatible with
-setuptools) and all the usual setup.py installation options are
-available. See http://packages.python.org/distribute/ for more info.
-
-Documentation
--------------
-HTML documentation can be found at doc/html in the source
-distribution. The documentation is also available online at:
-http://imapclient.readthedocs.org/
-
-The Sphinx source is at doc/src. If Sphinx is installed, the
-documentation can be rebuilt using::
-
-    python setup.py build_sphinx
-
-See imapclient/examples/example.py for a sample of how to use
-IMAPClient. If the IMAPClient was installed from PyPI the examples
-subdirectory can be found under the imapclient package installation
-directory.
 
 Mailing List
 ------------
