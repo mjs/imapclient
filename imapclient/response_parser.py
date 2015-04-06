@@ -164,7 +164,8 @@ def _convert_ENVELOPE(envelope_response, normalise_times=True):
         addrs = []
         if addr_list:
             for addr_tuple in addr_list:
-                 addrs.append(Address(*addr_tuple))
+                if addr_tuple:
+                    addrs.append(Address(*addr_tuple))
             addresses.append(tuple(addrs))
         else:
             addresses.append(None)
