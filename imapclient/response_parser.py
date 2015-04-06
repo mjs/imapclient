@@ -43,6 +43,8 @@ def parse_response(data):
 
     Returns nested tuples of appropriately typed objects.
     """
+    if data == [None]:
+        return []
     return tuple(gen_parsed_response(data))
 
 
