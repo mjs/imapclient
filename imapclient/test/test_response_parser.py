@@ -327,13 +327,15 @@ class TestParseFetchResponse(unittest.TestCase):
         envelope_str = (b'1 (ENVELOPE ( '
             b'"Sun, 24 Mar 2013 22:06:10 +0200" '
             b'"subject" '
-            b'(("name" NIL "address1" "domain1.com")) '
-            b'((NIL NIL "address2" "domain2.com")) '
-            b'(("name" NIL "address3" "domain3.com")) '
-            b'NIL'
-            b'((NIL NIL "address4" "domain4.com") '
+            b'(("name" NIL "address1" "domain1.com")) '     # from (name and address)
+            b'((NIL NIL "address2" "domain2.com")) '        # sender (just address)
+            b'(("name" NIL "address3" "domain3.com") NIL) ' # reply to
+            b'NIL'                                          # to (no address)
+            b'((NIL NIL "address4" "domain4.com") '         # cc
               b'("person" NIL "address4b" "domain4b.com")) '
-            b'NIL "<reply-to-id>" "<msg_id>"))')
+            b'NIL '                                         # bcc
+            b'"<reply-to-id>" '
+            b'"<msg_id>"))')
 
         output = parse_fetch_response([envelope_str], normalise_times=False)
 
@@ -352,16 +354,19 @@ class TestParseFetchResponse(unittest.TestCase):
         )
 
     def test_ENVELOPE_with_no_date(self):
-        envelope_str = (b'1 (ENVELOPE ( '
+        envelope_str = (
+            b'1 (ENVELOPE ( '
             b'NIL '
             b'"subject" '
-            b'(("name" NIL "address1" "domain1.com")) '
-            b'((NIL NIL "address2" "domain2.com")) '
-            b'(("name" NIL "address3" "domain3.com")) '
-            b'NIL'
-            b'((NIL NIL "address4" "domain4.com") '
-             b'("person" NIL "address4b" "domain4b.com")) '
-            b'NIL "<reply-to-id>" "<msg_id>"))')
+            b'NIL '
+            b'NIL '
+            b'NIL '
+            b'NIL '
+            b'NIL '
+            b'NIL '
+            b'"<reply-to-id>" '
+            b'"<msg_id>"))'
+        )
 
         output = parse_fetch_response([envelope_str], normalise_times=False)
 
@@ -369,23 +374,23 @@ class TestParseFetchResponse(unittest.TestCase):
             Envelope(
                 None,
                 b"subject",
-                (Address(b"name", None, b"address1", b"domain1.com"),),
-                (Address(None, None, b"address2", b"domain2.com"),),
-                (Address(b"name", None, b"address3", b"domain3.com"),),
                 None,
-                (Address(None, None, b"address4", b"domain4.com"),
-                 Address(b"person", None, b"address4b", b"domain4b.com")),
-                None, b"<reply-to-id>", b"<msg_id>"
+                None,
+                None,
+                None,
+                None,
+                None,
+                b"<reply-to-id>", b"<msg_id>"
             )
         )
 
-    def test_ENVELOPE_with_empty_address(self):
+    def test_ENVELOPE_with_empty_addresses(self):
         envelope_str = (b'1 (ENVELOPE ( '
             b'NIL '
             b'"subject" '
             b'(("name" NIL "address1" "domain1.com") NIL) '
-            b'((NIL NIL "address2" "domain2.com")) '
-            b'(("name" NIL "address3" "domain3.com")) '
+            b'(NIL (NIL NIL "address2" "domain2.com")) '
+            b'(("name" NIL "address3" "domain3.com") NIL ("name" NIL "address3b" "domain3b.com")) '
             b'NIL'
             b'((NIL NIL "address4" "domain4.com") '
              b'("person" NIL "address4b" "domain4b.com")) '
@@ -399,7 +404,8 @@ class TestParseFetchResponse(unittest.TestCase):
                 b"subject",
                 (Address(b"name", None, b"address1", b"domain1.com"),),
                 (Address(None, None, b"address2", b"domain2.com"),),
-                (Address(b"name", None, b"address3", b"domain3.com"),),
+                (Address(b"name", None, b"address3", b"domain3.com"),
+                 Address(b"name", None, b"address3b", b"domain3b.com")),
                 None,
                 (Address(None, None, b"address4", b"domain4.com"),
                  Address(b"person", None, b"address4b", b"domain4b.com")),
