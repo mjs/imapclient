@@ -1,3 +1,16 @@
+=====
+ Dev
+=====
+
+Fix exception with NIL address in envelope address list.
+--------------------------------------------------------
+Thanks to Thomas Steinacher for this fix.
+
+Fixed handling of NIL in SEARCH response
+----------------------------------------
+Fixed a regression in the handling of NIL/None SEARCH
+responses. Thanks again to Thomas Steinacher.
+
 ======
  0.12
 ======

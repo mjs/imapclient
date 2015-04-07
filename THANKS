@@ -52,6 +52,9 @@ Chris Arndt
 Phil Peterson
      OAUTH2 improvements.
 
+Thomas Steinacher
+     NIL handling fixes.
+
 Bug Reports
 ------------
 Brian Jackson
