@@ -16,7 +16,10 @@ from setuptools.command.test import test as TestCommand
 
 # Read version info (without importing the whole imapclient package)
 info = {}
-execfile(path.join('imapclient', 'version.py'), {}, info)
+with open(path.join('imapclient', 'version.py')) as f:
+   code = compile(f.read(), path.join('imapclient', 'version.py'), 'exec')
+   exec(code, {}, info)
+
 
 MAJ_MIN = sys.version_info[:2]
 IS_PY_26_OR_OLDER = MAJ_MIN <= (2, 6)
