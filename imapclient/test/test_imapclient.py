@@ -15,6 +15,7 @@ from imapclient.fixed_offset import FixedOffset
 from .testable_imapclient import TestableIMAPClient as IMAPClient
 from .imapclient_test import IMAPClientTest
 
+
 class TestListFolders(IMAPClientTest):
 
     def test_list_folders(self):
@@ -442,6 +443,7 @@ class TestNamespace(IMAPClientTest):
             (("#shared/", "/"), ("#public/", "/"), ("#ftp/", "/"), ("#news.", ".")),
             ))
 
+
 class TestCapabilities(IMAPClientTest):
 
     def test_preauth(self):
@@ -484,6 +486,7 @@ class TestCapabilities(IMAPClientTest):
         self.assertTrue(self.client.has_capability('FOO'))
         self.assertTrue(self.client.has_capability('foo'))
         self.assertFalse(self.client.has_capability('BAR'))
+
 
 class TestThread(IMAPClientTest):
 
@@ -530,6 +533,7 @@ class TestThread(IMAPClientTest):
 
         self.client._imap.thread.assert_called_once_with(b'FOO', b'ASCII', '(STUFF)')
 
+
 class TestId(IMAPClientTest):
 
     def test_id(self):
@@ -540,9 +544,11 @@ class TestId(IMAPClientTest):
 
         id_response = self.client.id_({'name': 'IMAPClient'})
         self.client._imap._simple_command.assert_called_with(
-            'ID', u'("name" "IMAPClient")')
+            'ID', '("name" "IMAPClient")')
 
-        assert id_response == (('name', 'GImap', 'vendor', 'Google, Inc.'),)
+        self.assertSequenceEqual(
+            id_response,
+            ((b'name', b'GImap', b'vendor', b'Google, Inc.'),))
 
     def test_no_support(self):
         self.client._cached_capabilities = (b'IMAP4rev1',)
