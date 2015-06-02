@@ -529,3 +529,24 @@ class TestThread(IMAPClientTest):
         self.client.thread(algorithm='FOO', criteria='STUFF', charset='ASCII')
 
         self.client._imap.thread.assert_called_once_with(b'FOO', b'ASCII', '(STUFF)')
+
+class TestId(IMAPClientTest):
+
+    def test_id(self):
+        self.client._cached_capabilities = (b'ID',)
+        self.client._imap._simple_command.return_value = ('OK', [b'Success'])
+        self.client._imap._untagged_response.return_value = (
+            b'OK', [b'("name" "GImap" "vendor" "Google, Inc.")'])
+
+        id_response = self.client.id_({'name': 'IMAPClient'})
+        self.client._imap._simple_command.assert_called_with(
+            'ID', u'("name" "IMAPClient")')
+
+        assert id_response == (('name', 'GImap', 'vendor', 'Google, Inc.'),)
+
+    def test_no_support(self):
+        self.client._cached_capabilities = (b'IMAP4rev1',)
+        self.assertRaises(ValueError, self.client.id_)
+
+    def test_invalid_parameters(self):
+        self.assertRaises(TypeError, self.client.id_, 'bananarama')

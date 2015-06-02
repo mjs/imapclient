@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 
 import imaplib
+import itertools
 import select
 import socket
 import sys
@@ -40,6 +41,13 @@ if 'XLIST' not in imaplib.Commands:
 # ...and IDLE
 if 'IDLE' not in imaplib.Commands:
   imaplib.Commands['IDLE'] = imaplib.Commands['APPEND']
+
+
+# and ID. RFC2971 says that this command is valid in all states, but not that
+# some servers (*cough* FastMail *cough*) don't seem to accept it in state
+# NONAUTH.
+if 'ID' not in imaplib.Commands:
+  imaplib.Commands['ID'] = ('NONAUTH', 'AUTH', 'SELECTED')
 
 
 # System flags
@@ -169,7 +177,7 @@ class IMAPClient(object):
         """Authenticate using the OAUTH2 method.
 
         Gmail and Yahoo both support the 'XOAUTH2' mechanism, but Yahoo requires
-        the 'vendor' portion in the payload. 
+        the 'vendor' portion in the payload.
         """
         auth_string = 'user=%s\1auth=Bearer %s\1' % (user, access_token)
         if vendor:
@@ -183,6 +191,28 @@ class IMAPClient(object):
         typ, data = self._imap.logout()
         self._check_resp('BYE', 'logout', typ, data)
         return data[0]
+
+    def id_(self, parameters=None):
+        """Issue an ID command.
+
+        *parameters* should be specified as a dictionary of field/value pairs,
+        for example ```{"name": "IMAPClient", "version": "0.12"}``
+        """
+        if not self.has_capability('ID'):
+            raise ValueError('server does not support IMAP ID extension')
+        if parameters is None:
+            args = 'NIL'
+        else:
+            if not isinstance(parameters, dict):
+                raise TypeError("'parameters' should be a dictionary")
+            args = seq_to_parenstr(
+                _quote(v) for v in
+                itertools.chain.from_iterable(parameters.items()))
+
+        typ, data = self._imap._simple_command('ID', args)
+        self._checkok('id', typ, data)
+        typ, data = self._imap._untagged_response(typ, data, 'ID')
+        return parse_response(data)
 
     def capabilities(self):
         """Returns the server capability list.
