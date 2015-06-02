@@ -1,6 +1,6 @@
-=====
- Dev
-=====
+======
+ 0.13
+======
 
 Fix exception with NIL address in envelope address list.
 --------------------------------------------------------
@@ -10,6 +10,11 @@ Fixed handling of NIL in SEARCH response
 ----------------------------------------
 Fixed a regression in the handling of NIL/None SEARCH
 responses. Thanks again to Thomas Steinacher.
+
+Added support for the ID command
+--------------------------------
+As per RFC2971. Thanks to Eben Freeman from Nylas.
+
 
 ======
  0.12
