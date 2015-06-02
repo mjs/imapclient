@@ -193,10 +193,11 @@ class IMAPClient(object):
         return data[0]
 
     def id_(self, parameters=None):
-        """Issue an ID command.
+        """Issue the ID command, returning a dict of server implementation
+        fields.
 
         *parameters* should be specified as a dictionary of field/value pairs,
-        for example ```{"name": "IMAPClient", "version": "0.12"}``
+        for example: ``{"name": "IMAPClient", "version": "0.12"}``
         """
         if not self.has_capability('ID'):
             raise ValueError('server does not support IMAP ID extension')
