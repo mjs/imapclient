@@ -2,6 +2,10 @@
  0.13
 ======
 
+Added support for the ID command [NEW]
+--------------------------------------
+As per RFC2971. Thanks to Eben Freeman from Nylas.
+
 Fix exception with NIL address in envelope address list
 -------------------------------------------------------
 Thanks to Thomas Steinacher for this fix.
@@ -11,10 +15,13 @@ Fixed handling of NIL in SEARCH response
 Fixed a regression in the handling of NIL/None SEARCH
 responses. Thanks again to Thomas Steinacher.
 
-Added support for the ID command [NEW]
---------------------------------------
-As per RFC2971. Thanks to Eben Freeman from Nylas.
+Date parsing fixes
+------------------
+Don't traceback when an unparsable date is seen in ENVELOPE
+responses. None is returned instead.
 
+Support quirky timestamp strings which use dots for the time
+separator.
 
 ======
  0.12
