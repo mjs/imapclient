@@ -35,5 +35,20 @@ class TestParsing(unittest.TestCase):
             datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30))
         )
 
+    def test_dots_for_time_separator(self):
+        # As reported in issue #154.
+        self.check_normalised_and_not(
+            b'Sat, 8 May 2010 16.03.09 +0200',
+            datetime(2010, 5, 8, 16, 3, 9, 0, FixedOffset(120))
+        )
+        self.check_normalised_and_not(
+            b'Tue, 18 May 2010 16.03.09 -0200',
+            datetime(2010, 5, 18, 16, 3, 9, 0, FixedOffset(-120))
+        )
+        self.check_normalised_and_not(
+            b'Wednesday,18 August 2010 16.03.09 -0200',
+            datetime(2010, 8, 18, 16, 3, 9, 0, FixedOffset(-120))
+        )
+
     def test_invalid(self):
         self.assertRaises(ValueError, parse_to_datetime, b'ABC')
