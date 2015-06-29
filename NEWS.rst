@@ -26,6 +26,11 @@ separator.
 Removed horrible INTERNALDATE parsing code (use parse_to_datetime
 instead).
 
+datetime_to_imap has been moved to the datetime_util module and is now
+called datetime_to_INTERNALDATE. This will only affect you in the
+unlikely case that you were importing this function out of the
+IMAPClient package.
+
 ======
  0.12
 ======

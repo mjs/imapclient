@@ -20,8 +20,8 @@ except ImportError:
     oauth_module = None
 
 from . import response_lexer
+from .datetime_util import datetime_to_INTERNALDATE
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
-from .fixed_offset import FixedOffset
 from .response_types import SearchIds
 from .six import moves, iteritems, text_type, integer_types, PY3, binary_type, string_types
 xrange = moves.xrange
@@ -37,6 +37,7 @@ from .response_parser import parse_response, parse_fetch_response
 # We also offer the gmail-specific XLIST command...
 if 'XLIST' not in imaplib.Commands:
   imaplib.Commands['XLIST'] = imaplib.Commands['LIST']
+
 
 # ...and IDLE
 if 'IDLE' not in imaplib.Commands:
@@ -882,7 +883,7 @@ class IMAPClient(object):
         Returns the APPEND response as returned by the server.
         """
         if msg_time:
-            time_val = '"%s"' % datetime_to_imap(msg_time)
+            time_val = '"%s"' % datetime_to_INTERNALDATE(msg_time)
             if PY3:
                 time_val = to_unicode(time_val)
             else:
@@ -1081,16 +1082,6 @@ def normalise_untagged_responses(untagged):
     for key, value in iteritems(untagged):
         out[to_bytes(key)] = value
     return out
-
-def datetime_to_imap(dt):
-    """Convert a datetime instance to a IMAP datetime string.
-
-    If timezone information is missing the current system
-    timezone is used.
-    """
-    if not dt.tzinfo:
-        dt = dt.replace(tzinfo=FixedOffset.for_system())
-    return dt.strftime("%d-%b-%Y %H:%M:%S %z")
 
 def _parse_untagged_response(text):
     assert text.startswith(b'* ')

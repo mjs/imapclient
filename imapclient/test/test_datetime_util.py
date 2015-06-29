@@ -6,7 +6,9 @@ from __future__ import unicode_literals
 
 from datetime import datetime
 
-from ..datetime_util import parse_to_datetime, datetime_to_native
+from mock import patch
+
+from ..datetime_util import parse_to_datetime, datetime_to_native, datetime_to_INTERNALDATE
 from ..fixed_offset import FixedOffset
 from .util import unittest
 
@@ -56,3 +58,17 @@ class TestParsing(unittest.TestCase):
 
     def test_invalid(self):
         self.assertRaises(ValueError, parse_to_datetime, b'ABC')
+
+
+class TestDatetimeToINTERNALDATE(unittest.TestCase):
+
+    def test_with_timezone(self):
+        dt = datetime(2009, 1, 2, 3, 4, 5, 0, FixedOffset(2*60 + 30))
+        self.assertEqual(datetime_to_INTERNALDATE(dt), '02-Jan-2009 03:04:05 +0230')
+
+    @patch('imapclient.datetime_util.FixedOffset.for_system')
+    def test_without_timezone(self, for_system):
+        dt = datetime(2009, 1, 2, 3, 4, 5, 0)
+        for_system.return_value = FixedOffset(-5 * 60)
+
+        self.assertEqual(datetime_to_INTERNALDATE(dt), '02-Jan-2009 03:04:05 -0500')

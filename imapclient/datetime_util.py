@@ -38,6 +38,16 @@ def parse_to_datetime(timestamp, normalise=True):
 def datetime_to_native(dt):
     return dt.astimezone(FixedOffset.for_system()).replace(tzinfo=None)
 
+def datetime_to_INTERNALDATE(dt):
+    """Convert a datetime instance to a IMAP INTERNALDATE string.
+
+    If timezone information is missing the current system
+    timezone is used.
+    """
+    if not dt.tzinfo:
+        dt = dt.replace(tzinfo=FixedOffset.for_system())
+    return dt.strftime("%d-%b-%Y %H:%M:%S %z")
+
 
 # Matches timestamp strings where the time separator is a dot (see
 # issue #154). For example: 'Sat, 8 May 2010 16.03.09 +0200'
