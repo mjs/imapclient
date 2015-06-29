@@ -20,7 +20,7 @@ def parse_to_datetime(timestamp, normalise=True):
     If normalise is False, then the returned datetime will be
     unadjusted but will contain timezone information as per the input.
     """
-    time_tuple = parsedate_tz(_normalise(timestamp))
+    time_tuple = parsedate_tz(_munge(timestamp))
     if time_tuple == None:
         raise ValueError("couldn't parse datetime %r" % timestamp)
 
@@ -43,7 +43,7 @@ def datetime_to_native(dt):
 # issue #154). For example: 'Sat, 8 May 2010 16.03.09 +0200'
 _rfc822_dotted_time = re.compile("\w+, ?\d{1,2} \w+ \d\d(\d\d)? \d\d?\.\d\d?\.\d\d?.*")
 
-def _normalise(s):
+def _munge(s):
     s = s.decode('latin-1')  # parsedate_tz only works with strings
     if _rfc822_dotted_time.match(s):
         return s.replace(".", ":")
