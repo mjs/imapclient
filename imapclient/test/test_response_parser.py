@@ -10,6 +10,7 @@ from __future__ import unicode_literals
 
 from datetime import datetime
 
+from imapclient.datetime_util import datetime_to_native
 from imapclient.fixed_offset import FixedOffset
 from imapclient.response_parser import parse_response, parse_fetch_response, ParseError
 from imapclient.response_types import Envelope, Address
@@ -432,36 +433,21 @@ class TestParseFetchResponse(unittest.TestCase):
         )
 
     def test_INTERNALDATE(self):
-        def check(date_str, expected_dt):
-            output = parse_fetch_response([b'3 (INTERNALDATE "' + date_str + b'")'], normalise_times=False)
-            actual_dt = output[3][b'INTERNALDATE']
-            self.assertEqual(actual_dt, expected_dt)
-
-        check(b' 9-Feb-2007 17:08:08 -0430',
-              datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30)))
-
-        check(b'12-Feb-2007 17:08:08 +0200',
-              datetime(2007, 2, 12, 17, 8, 8, 0, FixedOffset(2*60)))
-
-        check(b' 9-Dec-2007 17:08:08 +0000',
-              datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
+        out = parse_fetch_response(
+            [b'1 (INTERNALDATE " 9-Feb-2007 17:08:08 -0430")'],
+            normalise_times=False
+        )
+        self.assertEqual(
+            out[1][b'INTERNALDATE'],
+            datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30))
+        )
 
     def test_INTERNALDATE_normalised(self):
-        def check(date_str, expected_dt):
-            output = parse_fetch_response([b'3 (INTERNALDATE "' + date_str + b'")'])
-            actual_dt = output[3][b'INTERNALDATE']
-            self.assertTrue(actual_dt.tzinfo is None)   # Returned date should be in local timezone
-            expected_dt = datetime_to_native(expected_dt)
-            self.assertEqual(actual_dt, expected_dt)
-
-        check(b' 9-Feb-2007 17:08:08 -0430',
-              datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30)))
-
-        check(b'12-Feb-2007 17:08:08 +0200',
-              datetime(2007, 2, 12, 17, 8, 8, 0, FixedOffset(2*60)))
-
-        check(b' 9-Dec-2007 17:08:08 +0000',
-              datetime(2007, 12, 9, 17, 8, 8, 0, FixedOffset(0)))
+        output = parse_fetch_response([b'3 (INTERNALDATE " 9-Feb-2007 17:08:08 -0430")'])
+        dt = output[3][b'INTERNALDATE']
+        self.assertTrue(dt.tzinfo is None)   # Returned date should be in local timezone
+        expected_dt = datetime_to_native(datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30)))
+        self.assertEqual(dt, expected_dt)
 
     def test_mixed_types(self):
         self.assertEqual(parse_fetch_response([(
@@ -478,8 +464,3 @@ class TestParseFetchResponse(unittest.TestCase):
 
 def add_crlf(text):
     return CRLF.join(text.splitlines()) + CRLF
-
-
-system_offset = FixedOffset.for_system()
-def datetime_to_native(dt):
-    return dt.astimezone(system_offset).replace(tzinfo=None)

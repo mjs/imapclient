@@ -34,6 +34,10 @@ class TestParsing(unittest.TestCase):
             b' 9-Feb-2007 17:08:08 -0430',
             datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30))
         )
+        self.check_normalised_and_not(
+            b'19-Feb-2007 17:08:08 0400',
+            datetime(2007, 2, 19, 17, 8, 8, 0, FixedOffset(4*60))
+        )
 
     def test_dots_for_time_separator(self):
         # As reported in issue #154.

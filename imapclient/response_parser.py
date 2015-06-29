@@ -15,21 +15,14 @@ from __future__ import unicode_literals
 
 import sys
 from collections import defaultdict
-from datetime import datetime
 
 from . import six
 xrange = six.moves.xrange
 
 from .datetime_util import parse_to_datetime
-from .fixed_offset import FixedOffset
 from .response_lexer import TokenSource
 from .response_types import BodyData, Envelope, Address
 
-try:
-    import imaplib2 as imaplib
-except ImportError:
-    imaplib2 = None
-    import imaplib
 
 __all__ = ['parse_response', 'ParseError']
 
@@ -127,30 +120,10 @@ def _int_or_error(value, error_text):
 
 
 def _convert_INTERNALDATE(date_string, normalise_times=True):
-    date_msg = b'INTERNALDATE "' + date_string + b'"'
-    mo = imaplib.InternalDate.match(date_msg)
-    if not mo:
-        raise ValueError("couldn't parse date %r" % date_string)
-
-    zoneh = int(mo.group('zoneh'))
-    zonem = (zoneh * 60) + int(mo.group('zonem'))
-    if mo.group('zonen') == b'-':
-        zonem = -zonem
-    tz = FixedOffset(zonem)
-
-    year = int(mo.group('year'))
-    mon = imaplib.Mon2num[mo.group('mon')]
-    day = int(mo.group('day'))
-    hour = int(mo.group('hour'))
-    min = int(mo.group('min'))
-    sec = int(mo.group('sec'))
-
-    dt = datetime(year, mon, day, hour, min, sec, 0, tz)
-
-    if normalise_times:
-        # Normalise to host system's timezone
-        return dt.astimezone(FixedOffset.for_system()).replace(tzinfo=None)
-    return dt
+    try:
+        return parse_to_datetime(date_string, normalise=normalise_times)
+    except ValueError:
+        return None
 
 def _convert_ENVELOPE(envelope_response, normalise_times=True):
     dt = None

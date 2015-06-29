@@ -23,6 +23,9 @@ responses. None is returned instead.
 Support quirky timestamp strings which use dots for the time
 separator.
 
+Removed horrible INTERNALDATE parsing code (use parse_to_datetime
+instead).
+
 ======
  0.12
 ======
