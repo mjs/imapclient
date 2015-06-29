@@ -384,6 +384,24 @@ class TestParseFetchResponse(unittest.TestCase):
             )
         )
 
+    def test_ENVELOPE_with_invalid_date(self):
+        envelope_str = (b'1 (ENVELOPE ( '
+            b'"wtf" '  # bad date
+            b'"subject" '
+            b'NIL NIL NIL NIL NIL NIL '
+            b'"<reply-to-id>" "<msg_id>"))')
+
+        output = parse_fetch_response([envelope_str], normalise_times=False)
+
+        self.assertSequenceEqual(output[1][b'ENVELOPE'],
+            Envelope(
+                None,
+                b"subject",
+                None, None, None, None, None, None,
+                b"<reply-to-id>", b"<msg_id>",
+            )
+        )
+
     def test_ENVELOPE_with_empty_addresses(self):
         envelope_str = (b'1 (ENVELOPE ( '
             b'NIL '
