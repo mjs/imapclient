@@ -31,6 +31,11 @@ called datetime_to_INTERNALDATE. This will only affect you in the
 unlikely case that you were importing this function out of the
 IMAPClient package.
 
+Documentation Updates
+---------------------
+The docs for various IMAPClient methods, and the HACKING.rst file have
+been updated.
+
 ======
  0.12
 ======
