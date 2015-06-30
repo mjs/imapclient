@@ -219,3 +219,9 @@ Here's an example session::
 
     In [3]: c.logout()
     Out[3]: b'Logging out'
+
+External Documentation
+----------------------
+The `Unofficial IMAP Protocol Wiki <http://www.imapwiki.org/>`_ is
+very useful when writing IMAP related software and is highly
+recommended.

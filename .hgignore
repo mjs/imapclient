@@ -9,3 +9,4 @@ doc/html/
 ^unittest2-.+
 ^six-.+
 ^argparse-.+\.egg$
+^.eggs/

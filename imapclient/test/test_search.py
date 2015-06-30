@@ -16,6 +16,16 @@ class TestSearch(IMAPClientTest):
         self.assertEqual(result, [1, 2, 44])
         self.assertEqual(result.modseq, None)
 
+    def test_with_uid_none(self):
+        self.client.use_uid = True
+        self.client._imap.uid.return_value = ('OK', [None])
+
+        result = self.client.search('FOO')
+
+        self.client._imap.uid.assert_called_once_with('SEARCH', '(FOO)')
+        self.assertEqual(result, [])
+        self.assertEqual(result.modseq, None)
+
     def test_without_uid(self):
         self.client.use_uid = False
         self.client._imap.search.return_value = ('OK', [b'1 2 44'])
