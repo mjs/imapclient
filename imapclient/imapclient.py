@@ -294,18 +294,22 @@ class IMAPClient(object):
         """Get a listing of folders on the server as a list of
         ``(flags, delimiter, name)`` tuples.
 
-        Calling list_folders with no arguments will list all
-        folders.
+        Specifying *directory* will limit returned folders to the
+        given base directory. The directory and any child directories
+        will returned.
 
-        Specifying *directory* will limit returned folders to that
-        base directory. Specifying *pattern* will limit returned
-        folders to those with matching names. The wildcards are
-        supported in *pattern*. ``*`` matches zero or more of any
-        character and ``%`` matches 0 or more characters except the
-        folder delimiter.
+        Specifying *pattern* will limit returned folders to those with
+        matching names. The wildcards are supported in
+        *pattern*. ``*`` matches zero or more of any character and
+        ``%`` matches 0 or more characters except the folder
+        delimiter.
 
-        Folder names are always returned as unicode strings, and decoded from
-        modifier utf-7, except if folder_decode is not set.
+        Calling list_folders with no arguments will recursively list
+        all folders available for the logged in user.
+
+        Folder names are always returned as unicode strings, and
+        decoded from modified UTF-7, except if folder_decode is not
+        set.
         """
         return self._do_list('LIST', directory, pattern)
 
@@ -333,10 +337,9 @@ class IMAPClient(object):
 
         This is a *deprecated* Gmail-specific IMAP extension (See
         https://developers.google.com/gmail/imap_extensions#xlist_is_deprecated
-        for more information).
-        It is the responsibility of the caller to either check for ``XLIST``
-        in the server capabilites, or to handle the error if the server
-        doesn't support this extension.
+        for more information). It is the responsibility of the caller
+        to either check for ``XLIST`` in the server capabilites, or to
+        handle the error if the server doesn't support this extension.
 
         The *directory* and *pattern* arguments are as per
         list_folders().
