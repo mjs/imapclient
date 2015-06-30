@@ -31,10 +31,12 @@ called datetime_to_INTERNALDATE. This will only affect you in the
 unlikely case that you were importing this function out of the
 IMAPClient package.
 
-Documentation Updates
----------------------
-The docs for various IMAPClient methods, and the HACKING.rst file have
-been updated.
+Other
+-----
+  * The docs for various IMAPClient methods, and the HACKING.rst file
+    have been updated.
+  * CONDSTORE live test is now more reliable (especially when running
+    against Gmail)
 
 ======
  0.12

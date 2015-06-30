@@ -739,15 +739,26 @@ def createUidTestClass(conf, use_uid):
             self.client.close_folder()
             self.clear_folder(self.base_folder)
 
+            #
             # Actual testing starts here
-            maxModSeq = self.client.select_folder(self.base_folder)[b'HIGHESTMODSEQ']
+            #
+
+            # Get the starting MODSEQ
+            modseq = self.client.select_folder(self.base_folder)[b'HIGHESTMODSEQ']
+
+            # Add a message so that the MODSEQ gets bumped
             self.append_msg(SIMPLE_MESSAGE)
             msg_id = self.client.search()[0]
-            resp = self.client.fetch(msg_id, ['FLAGS'], ['CHANGEDSINCE %d' % maxModSeq])
-            self.assertIn(b'MODSEQ', resp[msg_id])
 
-            # Prove that the modifier is actually being used
-            resp = self.client.fetch(msg_id, ['FLAGS'], ['CHANGEDSINCE %d' % (maxModSeq + 1)])
+            # Request changes since the starting MODSEQ: this should
+            # return the new message.
+            resp = self.client.fetch(msg_id, ['FLAGS'], ['CHANGEDSINCE %d' % modseq])
+            new_modseq = resp[msg_id][b"MODSEQ"][0]
+            self.assertGreater(new_modseq, modseq)
+
+            # Now asked for changes since the MODSEQ on the added
+            # message. These shouldn't be any.
+            resp = self.client.fetch(msg_id, ['FLAGS'], ['CHANGEDSINCE %d' % new_modseq])
             self.assertEqual(resp, {})
 
         def test_BODYSTRUCTURE(self):
