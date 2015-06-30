@@ -625,6 +625,9 @@ class IMAPClient(object):
         *query* should be a valid Gmail search query string. For
         example: ``has:attachment in:unread``
 
+        This method only works for IMAP servers that support X-GM-RAW,
+        which is only likely to be Gmail.
+
         See https://developers.google.com/gmail/imap_extensions#extension_of_the_search_command_x-gm-raw
         for more info.
 
