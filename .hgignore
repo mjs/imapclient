@@ -4,6 +4,7 @@ IMAPClient.egg-info
 doc/doctrees/
 doc/html/
 .tox/
+^.eggs/
 ^.+\.egg$
 ^setuptools-.+
 ^unittest2-.+
