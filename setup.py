@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2014, Menno Smits
+# Copyright (c) 2015, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -56,11 +56,13 @@ class TestDiscoverCommand(TestCommand):
             module = None
         unittest.main(argv=['', 'discover'], module=module)
 
-deps = [
+main_deps = [
     'six',
-    'pyopenssl',
-    'service_identity'
-],
+    'pyopenssl==0.15.1',
+    'service_identity==14.0.0',
+]
+
+setup_deps = main_deps + ['sphinx']
 
 test_deps = ['mock==0.8.0']
 if IS_PY_26_OR_OLDER:
@@ -75,8 +77,8 @@ setup(name='IMAPClient',
       download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.zip' % info['version'],
       packages=find_packages(),
       package_data=dict(imapclient=['examples/*.py']),
-      setup_requires=deps,
-      install_requires=deps,
+      setup_requires=setup_deps,
+      install_requires=main_deps,
       tests_require=test_deps,
       description="Easy-to-use, Pythonic and complete IMAP client library",
       long_description=desc,
