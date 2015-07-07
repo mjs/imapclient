@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 
 import imaplib
+import itertools
 import select
 import socket
 import sys
@@ -21,8 +22,8 @@ except ImportError:
 
 from . import response_lexer
 from . import tls
+from .datetime_util import datetime_to_INTERNALDATE
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
-from .fixed_offset import FixedOffset
 from .response_types import SearchIds
 from .six import moves, iteritems, text_type, integer_types, PY3, binary_type, string_types
 xrange = moves.xrange
@@ -46,6 +47,12 @@ if 'IDLE' not in imaplib.Commands:
 # ..and STARTTLS
 if 'STARTTLS' not in imaplib.Commands:
     imaplib.Commands['STARTTLS'] = ('NONAUTH',)
+
+# ...and ID. RFC2971 says that this command is valid in all states,
+# but not that some servers (*cough* FastMail *cough*) don't seem to
+# accept it in state NONAUTH.
+if 'ID' not in imaplib.Commands:
+  imaplib.Commands['ID'] = ('NONAUTH', 'AUTH', 'SELECTED')
 
 
 # System flags
@@ -210,7 +217,7 @@ class IMAPClient(object):
         """Authenticate using the OAUTH2 method.
 
         Gmail and Yahoo both support the 'XOAUTH2' mechanism, but Yahoo requires
-        the 'vendor' portion in the payload. 
+        the 'vendor' portion in the payload.
         """
         auth_string = 'user=%s\1auth=Bearer %s\1' % (user, access_token)
         if vendor:
@@ -224,6 +231,29 @@ class IMAPClient(object):
         typ, data = self._imap.logout()
         self._check_resp('BYE', 'logout', typ, data)
         return data[0]
+
+    def id_(self, parameters=None):
+        """Issue the ID command, returning a dict of server implementation
+        fields.
+
+        *parameters* should be specified as a dictionary of field/value pairs,
+        for example: ``{"name": "IMAPClient", "version": "0.12"}``
+        """
+        if not self.has_capability('ID'):
+            raise ValueError('server does not support IMAP ID extension')
+        if parameters is None:
+            args = 'NIL'
+        else:
+            if not isinstance(parameters, dict):
+                raise TypeError("'parameters' should be a dictionary")
+            args = seq_to_parenstr(
+                _quote(v) for v in
+                itertools.chain.from_iterable(parameters.items()))
+
+        typ, data = self._imap._simple_command('ID', args)
+        self._checkok('id', typ, data)
+        typ, data = self._imap._untagged_response(typ, data, 'ID')
+        return parse_response(data)
 
     def capabilities(self):
         """Returns the server capability list.
@@ -303,18 +333,22 @@ class IMAPClient(object):
         """Get a listing of folders on the server as a list of
         ``(flags, delimiter, name)`` tuples.
 
-        Calling list_folders with no arguments will list all
-        folders.
+        Specifying *directory* will limit returned folders to the
+        given base directory. The directory and any child directories
+        will returned.
 
-        Specifying *directory* will limit returned folders to that
-        base directory. Specifying *pattern* will limit returned
-        folders to those with matching names. The wildcards are
-        supported in *pattern*. ``*`` matches zero or more of any
-        character and ``%`` matches 0 or more characters except the
-        folder delimiter.
+        Specifying *pattern* will limit returned folders to those with
+        matching names. The wildcards are supported in
+        *pattern*. ``*`` matches zero or more of any character and
+        ``%`` matches 0 or more characters except the folder
+        delimiter.
 
-        Folder names are always returned as unicode strings, and decoded from
-        modifier utf-7, except if folder_decode is not set.
+        Calling list_folders with no arguments will recursively list
+        all folders available for the logged in user.
+
+        Folder names are always returned as unicode strings, and
+        decoded from modified UTF-7, except if folder_decode is not
+        set.
         """
         return self._do_list(b'LIST', directory, pattern)
 
@@ -342,10 +376,9 @@ class IMAPClient(object):
 
         This is a *deprecated* Gmail-specific IMAP extension (See
         https://developers.google.com/gmail/imap_extensions#xlist_is_deprecated
-        for more information).
-        It is the responsibility of the caller to either check for ``XLIST``
-        in the server capabilites, or to handle the error if the server
-        doesn't support this extension.
+        for more information). It is the responsibility of the caller
+        to either check for ``XLIST`` in the server capabilites, or to
+        handle the error if the server doesn't support this extension.
 
         The *directory* and *pattern* arguments are as per
         list_folders().
@@ -634,6 +667,9 @@ class IMAPClient(object):
         *query* should be a valid Gmail search query string. For
         example: ``has:attachment in:unread``
 
+        This method only works for IMAP servers that support X-GM-RAW,
+        which is only likely to be Gmail.
+
         See https://developers.google.com/gmail/imap_extensions#extension_of_the_search_command_x-gm-raw
         for more info.
 
@@ -892,7 +928,7 @@ class IMAPClient(object):
         Returns the APPEND response as returned by the server.
         """
         if msg_time:
-            time_val = '"%s"' % datetime_to_imap(msg_time)
+            time_val = '"%s"' % datetime_to_INTERNALDATE(msg_time)
             if PY3:
                 time_val = to_unicode(time_val)
             else:
@@ -1091,16 +1127,6 @@ def normalise_untagged_responses(untagged):
     for key, value in iteritems(untagged):
         out[to_bytes(key)] = value
     return out
-
-def datetime_to_imap(dt):
-    """Convert a datetime instance to a IMAP datetime string.
-
-    If timezone information is missing the current system
-    timezone is used.
-    """
-    if not dt.tzinfo:
-        dt = dt.replace(tzinfo=FixedOffset.for_system())
-    return dt.strftime("%d-%b-%Y %H:%M:%S %z")
 
 def _parse_untagged_response(text):
     assert text.startswith(b'* ')

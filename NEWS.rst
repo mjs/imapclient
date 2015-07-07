@@ -1,4 +1,44 @@
 ======
+ 0.13
+======
+
+Added support for the ID command [NEW]
+--------------------------------------
+As per RFC2971. Thanks to Eben Freeman from Nylas.
+
+Fix exception with NIL address in envelope address list
+-------------------------------------------------------
+Thanks to Thomas Steinacher for this fix.
+
+Fixed handling of NIL in SEARCH response
+----------------------------------------
+Fixed a regression in the handling of NIL/None SEARCH
+responses. Thanks again to Thomas Steinacher.
+
+Date parsing fixes
+------------------
+Don't traceback when an unparsable date is seen in ENVELOPE
+responses. None is returned instead.
+
+Support quirky timestamp strings which use dots for the time
+separator.
+
+Removed horrible INTERNALDATE parsing code (use parse_to_datetime
+instead).
+
+datetime_to_imap has been moved to the datetime_util module and is now
+called datetime_to_INTERNALDATE. This will only affect you in the
+unlikely case that you were importing this function out of the
+IMAPClient package.
+
+Other
+-----
+  * The docs for various IMAPClient methods, and the HACKING.rst file
+    have been updated.
+  * CONDSTORE live test is now more reliable (especially when running
+    against Gmail)
+
+======
  0.12
 ======
 
@@ -20,7 +60,7 @@ False then folder names will always be returned as bytes/strs.
 Code using IMAPClient will most likely need to be updated to account
 these unicode handling changes.
 
-Many thanks to Inbox (https://www.inboxapp.com/) for sponsoring this
+Many thanks to Inbox (now Nilas, https://nilas.com/) for sponsoring this
 work.
 
 Extra __init__ keyword args are passed through [NEW]

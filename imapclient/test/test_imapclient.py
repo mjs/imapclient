@@ -15,6 +15,7 @@ from imapclient.fixed_offset import FixedOffset
 from .testable_imapclient import TestableIMAPClient as IMAPClient
 from .imapclient_test import IMAPClientTest
 
+
 class TestListFolders(IMAPClientTest):
 
     def test_list_folders(self):
@@ -193,16 +194,16 @@ class TestAppend(IMAPClientTest):
         self.client._imap.append.assert_called_with(
             b'"foobar"', '(FLAG WAVE)', None, b'hi')
 
-    @patch('imapclient.imapclient.datetime_to_imap')
-    def test_with_msg_time(self, datetime_to_imap):
-        datetime_to_imap.return_value = 'somedate'
+    @patch('imapclient.imapclient.datetime_to_INTERNALDATE')
+    def test_with_msg_time(self, datetime_to_INTERNALDATE):
+        datetime_to_INTERNALDATE.return_value = 'somedate'
         self.client._imap.append.return_value = ('OK', [b'Good'])
         msg = b'bye'
 
         self.client.append('foobar', msg, ['FLAG', 'WAVE'],
                            datetime(2009, 4, 5, 11, 0, 5, 0, FixedOffset(2*60)))
 
-        self.assertTrue(datetime_to_imap.called)
+        self.assertTrue(datetime_to_INTERNALDATE.called)
         self.client._imap.append.assert_called_with(
             b'"foobar"', '(FLAG WAVE)', '"somedate"', msg)
 
@@ -442,6 +443,7 @@ class TestNamespace(IMAPClientTest):
             (("#shared/", "/"), ("#public/", "/"), ("#ftp/", "/"), ("#news.", ".")),
             ))
 
+
 class TestCapabilities(IMAPClientTest):
 
     def test_preauth(self):
@@ -484,6 +486,7 @@ class TestCapabilities(IMAPClientTest):
         self.assertTrue(self.client.has_capability('FOO'))
         self.assertTrue(self.client.has_capability('foo'))
         self.assertFalse(self.client.has_capability('BAR'))
+
 
 class TestThread(IMAPClientTest):
 
@@ -529,3 +532,27 @@ class TestThread(IMAPClientTest):
         self.client.thread(algorithm='FOO', criteria='STUFF', charset='ASCII')
 
         self.client._imap.thread.assert_called_once_with(b'FOO', b'ASCII', '(STUFF)')
+
+
+class TestId(IMAPClientTest):
+
+    def test_id(self):
+        self.client._cached_capabilities = (b'ID',)
+        self.client._imap._simple_command.return_value = ('OK', [b'Success'])
+        self.client._imap._untagged_response.return_value = (
+            b'OK', [b'("name" "GImap" "vendor" "Google, Inc.")'])
+
+        id_response = self.client.id_({'name': 'IMAPClient'})
+        self.client._imap._simple_command.assert_called_with(
+            'ID', '("name" "IMAPClient")')
+
+        self.assertSequenceEqual(
+            id_response,
+            ((b'name', b'GImap', b'vendor', b'Google, Inc.'),))
+
+    def test_no_support(self):
+        self.client._cached_capabilities = (b'IMAP4rev1',)
+        self.assertRaises(ValueError, self.client.id_)
+
+    def test_invalid_parameters(self):
+        self.assertRaises(TypeError, self.client.id_, 'bananarama')
