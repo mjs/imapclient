@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2015, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
+
+from __future__ import unicode_literals
 
 version_info = (1, 0, 0, 'alpha')
 
