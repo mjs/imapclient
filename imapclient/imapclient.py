@@ -20,7 +20,7 @@ except ImportError:
     oauth_module = None
 
 from . import response_lexer
-from .tls import IMAP4
+from . import tls
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .fixed_offset import FixedOffset
 from .response_types import SearchIds
@@ -42,6 +42,10 @@ if 'XLIST' not in imaplib.Commands:
 # ...and IDLE
 if 'IDLE' not in imaplib.Commands:
     imaplib.Commands['IDLE'] = imaplib.Commands['APPEND']
+
+# ..and STARTTLS
+if 'STARTTLS' not in imaplib.Commands:
+    imaplib.Commands['STARTTLS'] = ('NONAUTH',)
 
 
 # System flags
@@ -135,6 +139,7 @@ class IMAPClient(object):
         self.log_file = sys.stderr
         self.normalise_times = True
 
+        self._starttls_done = False
         self._cached_capabilities = None
         self._imap = self._create_IMAP4(**kwargs)
         self._imap._mesg = self._log    # patch in custom debug log method
@@ -144,7 +149,7 @@ class IMAPClient(object):
         # Create the IMAP instance in a separate method to make unit tests easier
         if self.stream:
             return imaplib.IMAP4_stream(self.host)
-        ImapClass = self.ssl and imaplib.IMAP4_SSL or IMAP4
+        ImapClass = self.ssl and imaplib.IMAP4_SSL or imaplib.IMAP4
         return ImapClass(self.host, self.port, **kwargs)
 
     def starttls(self, ssl_context=None):
@@ -163,15 +168,29 @@ class IMAPClient(object):
 
         Raises :py:exc:`AbortError` if the server does not support STARTTLS
         or an SSL connection is already established.
-
         """
-        return self._imap.starttls(ssl_context)
+        if self.ssl or self._starttls_done:
+            raise self.abort('TLS session already established')
+
+        typ, dat = self._imap._simple_command("STARTTLS")
+        if typ != 'OK':
+            raise self.Error("Couldn't establish TLS session")
+
+        self._tls_established = True
+        self._imap.sock = tls.wrap_socket(self._imap.sock, self.host, ssl_context)
+        self._imap.file = self._imap.sock.makefile()
+        return self._imap._untagged_response(typ, dat, "STARTTLS")
 
     def login(self, username, password):
         """Login using *username* and *password*, returning the
         server response.
         """
-        return self._command_and_check('login', username, password, unpack=True)
+        return self._command_and_check(
+            'login',
+            to_bytes(username),
+            to_bytes(password),
+            unpack=True,
+        )
 
     def oauth_login(self, url, oauth_token, oauth_token_secret,
                     consumer_key='anonymous', consumer_secret='anonymous'):

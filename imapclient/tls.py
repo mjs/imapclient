@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """STARTTLS support for imaplib for Python 2.6+ and 3.3+ built on pyOpenSSL."""
 
-__all__ = ('IMAP4', 'get_default_context')
+__all__ = ('get_default_context', 'wrap_socket')
 
 import sys
 import imaplib
@@ -17,16 +17,12 @@ if sys.platform == "win32":
     except ImportError:
         enum_certificates = lambda x: []
 
+
 # third-party dependencies
 from six import b, binary_type
 from OpenSSL import SSL
 from service_identity import VerificationError
 from service_identity.pyopenssl import verify_hostname
-
-
-# add STARTTLS command support in imaplib if necessary
-if 'STARTTLS' not in imaplib.Commands:
-    imaplib.Commands['STARTTLS'] = ('NONAUTH',)
 
 # taken from Python 3.4 ssl module
 _RESTRICTED_SERVER_CIPHERS = (
@@ -95,44 +91,25 @@ def get_default_context(cafile=None, capath=None, check_hostname=True):
     return context
 
 
-class IMAP4(imaplib.IMAP4):
+def wrap_socket(sock, host, ssl_context):
+    """XXX
+    """
+    if not ssl_context:
+        ssl_context = get_default_context()
 
-    def starttls(self, ssl_context=None):
-        """Send a STARTTLS command and wrap the socket with TLS."""
-        name = 'STARTTLS'
+    sock = _SSLConnection(ssl_context, sock)
+    sock.set_connect_state()
+    sock.do_handshake()
 
-        if (isinstance(self, imaplib.IMAP4_SSL) or
-                getattr(self, '_tls_established', False)):
-            raise self.abort('TLS session already established')
+    if getattr(ssl_context, 'check_hostname', True):
+        try:
+            verify_hostname(sock, host)
+        except VerificationError:
+            sock.shutdown()
+            sock.close()
+            raise imaplib.Error("Server certificate not valid for %s" % host)
 
-        if name not in self.capabilities:
-            raise self.abort('STARTTLS not supported by server')
-
-        if not ssl_context:
-            ssl_context = get_default_context()
-
-        type_, dat = self._simple_command(name)
-
-        if type_ == 'OK':
-            self.sock = _SSLConnection(ssl_context, self.sock)
-            self.sock.set_connect_state()
-            self.sock.do_handshake()
-
-            if getattr(ssl_context, 'check_hostname', True):
-                try:
-                    verify_hostname(self.sock, self.host)
-                except VerificationError:
-                    self.sock.shutdown()
-                    self.sock.close()
-                    raise self.abort(
-                        "Server certificate not valid for %s" % self.host)
-
-            self.file = self.sock.makefile()
-            self._tls_established = True
-        else:
-            raise self.Error("Couldn't establish TLS session")
-
-        return self._untagged_response(type_, dat, name)
+    return sock
 
 
 class _SSLConnection(SSL.Connection):
@@ -149,6 +126,7 @@ class _SSLConnection(SSL.Connection):
 
 
 # lifted from backports.ssl
+# XXX do we really have to copy this here?
 class _socketfileobj(object):
     """Custom file-like object to support socket.makefile for pyOpenSSL."""
 
