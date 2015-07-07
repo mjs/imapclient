@@ -14,13 +14,18 @@ use_setuptools()
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
-# Read version info (without importing the whole imapclient package)
-info = {}
-execfile(path.join('imapclient', 'version.py'), {}, info)
-
 MAJ_MIN = sys.version_info[:2]
+IS_PY3 = MAJ_MIN >= (3, 0)
 IS_PY_26_OR_OLDER = MAJ_MIN <= (2, 6)
 IS_PY_34_OR_NEWER = MAJ_MIN >= (3, 4)
+
+# Read version info
+version_file = path.join('imapclient', 'version.py')
+info = {}
+if IS_PY3:
+    exec(open(version_file).read(), {}, info)
+else:
+    execfile(version_file, {}, info)
 
 desc = """\
 IMAPClient is an easy-to-use, Pythonic and complete IMAP client library.
