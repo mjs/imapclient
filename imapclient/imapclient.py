@@ -177,16 +177,15 @@ class IMAPClient(object):
         or an SSL connection is already established.
         """
         if self.ssl or self._starttls_done:
-            raise self.abort('TLS session already established')
+            raise self.AbortError('TLS session already established')
 
-        typ, dat = self._imap._simple_command("STARTTLS")
-        if typ != 'OK':
-            raise self.Error("Couldn't establish TLS session")
+        typ, data = self._imap._simple_command("STARTTLS")
+        self._checkok('starttls', typ, data)
 
-        self._tls_established = True
+        self._starttls_done = True
         self._imap.sock = tls.wrap_socket(self._imap.sock, self.host, ssl_context)
         self._imap.file = self._imap.sock.makefile()
-        return self._imap._untagged_response(typ, dat, "STARTTLS")
+        return data[0]
 
     def login(self, username, password):
         """Login using *username* and *password*, returning the
@@ -1000,7 +999,7 @@ class IMAPClient(object):
         Raises IMAPClient.Error if the command fails.
         """
         if typ != expected:
-            raise self.Error('%s failed: %r' % (command, data[0]))
+            raise self.Error("%s failed: %s" % (command, to_unicode(data[0])))
 
     def _consume_until_tagged_response(self, tag, command):
         tagged_commands = self._imap.tagged_commands
