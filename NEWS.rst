@@ -1,3 +1,9 @@
+=======
+ 1.0.0
+=======
+
+XXX Removed kwargs support from constructor - replaced by ssl_context
+
 ======
  0.13
 ======

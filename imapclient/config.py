@@ -9,9 +9,12 @@ try:
 except ImportError:
     from configparser import SafeConfigParser, NoOptionError
 
+from backports import ssl
+
 import imapclient
 from .six.moves.urllib.request import urlopen
 from .six.moves.urllib.parse import urlencode
+from .tls import create_default_context
 
 try:
     import json
@@ -93,8 +96,17 @@ def get_oauth2_token(client_id, client_secret, refresh_token):
     return token
 
 def create_client_from_config(conf):
+    # FIXME: temporary until the config files are expanded to support TLS options.
+    ssl_context = None
+    if conf.ssl:
+       ssl_context = create_default_context()
+       ssl_context.check_hostname = False
+       ssl_context.verify_mode = ssl.CERT_NONE
+
     client = imapclient.IMAPClient(conf.host, port=conf.port,
-                                   ssl=conf.ssl, stream=conf.stream)
+                                   ssl=conf.ssl,
+                                   ssl_context=ssl_context,
+                                   stream=conf.stream)
 
     if conf.starttls:
         client.starttls()

@@ -1,17 +1,23 @@
-# -*- coding: utf-8 -*-
+# Copyright (c) 2015, Menno Smits
+# Released subject to the New BSD License
+# Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 """
-Solid TLS support for Python 2.6+ and 3.3+ built on backports.ssl/pyOpenSSL.
+Good TLS support for IMAPClient built on backports.ssl/pyOpenSSL.
+
+Works with Python 2.6+ and 3.3+.
 """
 
 __all__ = ('create_default_context', 'wrap_socket')
 
 
-import sys
 import imaplib
+import socket
+import sys
 
 from backports import ssl
 _ossl = ssl.ossl
+
 
 if sys.platform == "win32":
     try:
@@ -35,7 +41,8 @@ def create_default_context(cafile=None, capath=None, cadata=None):
 
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
 
-    # do certificate hostname checks.
+    # require certificate that matches the host name.
+    context.verify_mode = ssl.CERT_REQUIRED
     context.check_hostname = True
 
     # SSLv2 considered harmful.
@@ -96,8 +103,41 @@ def wrap_socket(sock, ssl_context, hostname):
         ssl_context = create_default_context()
 
     try:
-        return ssl_context.wrap_socket(sock, server_hostname=hostname)
+        newsock = ssl_context.wrap_socket(sock, server_hostname=hostname)
     except ssl.CertificateError:
         sock.shutdown()
         sock.close()
         raise imaplib.Error("server certificate not valid for %s" % hostname)
+
+    return _SSLSocketWithShutdown(newsock)
+
+
+class IMAP4_TLS(imaplib.IMAP4):
+    """IMAP4 client class for TLS/SSL connections.
+
+    Adapted from imaplib.IMAP4_SSL.
+    """
+
+    def __init__(self, host, port, ssl_context):
+        self.ssl_context = ssl_context
+        imaplib.IMAP4.__init__(self, host, port)
+
+    def open(self, host, port):
+        self.host = host
+        self.port = port
+        sock = socket.create_connection((host, port))
+        self.sock = wrap_socket(sock, self.ssl_context, host)
+        self.file = self.sock.makefile('rb')
+
+
+# TODO: get shutdown added in backports.ssl.SSLSocket
+class _SSLSocketWithShutdown(object):
+
+    def __init__(self, sslsock):
+        self.sslsock = sslsock
+
+    def shutdown(self, _):
+        return self.sslsock._conn.shutdown()
+
+    def __getattr__(self, name):
+        return getattr(self.sslsock, name)

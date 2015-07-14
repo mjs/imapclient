@@ -1,4 +1,4 @@
-# Copyright (c) 2014, Menno Smits
+# Copyright (c) 2015, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -84,24 +84,15 @@ class IMAPClient(object):
     If *ssl* is ``True`` an SSL connection will be made (defaults to
     ``False``).
 
+    If *ssl* is ``True`` the optional *ssl_context* argument can be
+    used to provide a ``backports.ssl.SSLContext`` instance used to
+    control SSL/TLS connection parameters. If this is not provided a
+    sensible default context will be used.
+
     If *stream* is ``True`` then *host* is used as the command to run
     to establish a connection to the IMAP server (defaults to
     ``False``). This is useful for exotic connection or authentication
     setups.
-
-    Additional keyword arguments are passed through to the constructor
-    of the :py:class:`imaplib.IMAP4` class, or
-    :py:class:`imaplib.IMAP4_SSL` when *ssl* is ``True`` (these are
-    used by ``IMAPClient`` internally). This allows passing SSL
-    related parameters such as *keyfile*, *certfile* and *ssl_context*
-    (Python version dependent). For details, see the :py:mod:`imaplib`
-    documentation in the standard library reference.
-
-    .. note::
-
-       Support for passthrough keyword arguments may be removed in
-       some future version of IMAPClient. Backwards compatibility is
-       not guaranteed for this feature.
 
     The *normalise_times* attribute specifies whether datetimes
     returned by ``fetch()`` are normalised to the local system time
@@ -128,7 +119,7 @@ class IMAPClient(object):
     ReadOnlyError = imaplib.IMAP4.readonly
 
     def __init__(self, host, port=None, use_uid=True, ssl=False, stream=False,
-                 **kwargs):
+                 ssl_context=None):
         if stream:
             if port is not None:
                 raise ValueError("can't set 'port' when 'stream' True")
@@ -140,6 +131,7 @@ class IMAPClient(object):
         self.host = host
         self.port = port
         self.ssl = ssl
+        self.ssl_context = ssl_context
         self.stream = stream
         self.use_uid = use_uid
         self.folder_encode = True
@@ -148,16 +140,18 @@ class IMAPClient(object):
 
         self._starttls_done = False
         self._cached_capabilities = None
-        self._imap = self._create_IMAP4(**kwargs)
+        self._imap = self._create_IMAP4()
         self._imap._mesg = self._log    # patch in custom debug log method
         self._idle_tag = None
 
-    def _create_IMAP4(self, **kwargs):
-        # Create the IMAP instance in a separate method to make unit tests easier
+    def _create_IMAP4(self):
         if self.stream:
             return imaplib.IMAP4_stream(self.host)
-        ImapClass = self.ssl and imaplib.IMAP4_SSL or imaplib.IMAP4
-        return ImapClass(self.host, self.port, **kwargs)
+
+        if self.ssl:
+            return tls.IMAP4_TLS(self.host, self.port, self.ssl_context)
+
+        return imaplib.IMAP4(self.host, self.port)
 
     def starttls(self, ssl_context=None):
         """Switch to an SSL encrypted connection by sending a STARTTLS command.
