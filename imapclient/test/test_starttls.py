@@ -35,8 +35,8 @@ class TestStarttls(IMAPClientTest):
 
         self.tls.wrap_socket.assert_called_once_with(
             sentinel.old_sock,
-            sentinel.host,
             sentinel.ssl_context,
+            sentinel.host,
         )
         self.new_sock.makefile.assert_called_once_with()
         self.assertEqual(self.client._imap.file, sentinel.file)

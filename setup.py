@@ -62,9 +62,9 @@ class TestDiscoverCommand(TestCommand):
         unittest.main(argv=['', 'discover'], module=module)
 
 main_deps = [
+    'backports.ssl>=0.0.6',
+    'pyopenssl>=0.15.1',
     'six',
-    'pyopenssl==0.15.1',
-    'service_identity==14.0.0',
 ]
 
 setup_deps = main_deps + ['sphinx']
