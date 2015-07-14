@@ -26,7 +26,7 @@ class TestListFolders(IMAPClientTest):
         folders = self.client.list_folders('foo', 'bar')
 
         self.client._imap._simple_command.assert_called_once_with(
-            'LIST', b'"foo"', b'"bar"')
+            b'LIST', b'"foo"', b'"bar"')
         self.assertEqual(self.client._proc_folder_list.call_args, ((sentinel.folder_data,), {}))
         self.assertTrue(folders is sentinel.folder_list)
 
@@ -38,7 +38,7 @@ class TestListFolders(IMAPClientTest):
         folders = self.client.list_sub_folders('foo', 'bar')
 
         self.client._imap._simple_command.assert_called_once_with(
-            'LSUB', b'"foo"', b'"bar"')
+            b'LSUB', b'"foo"', b'"bar"')
         self.assertEqual(self.client._proc_folder_list.call_args, ((sentinel.folder_data,), {}))
         self.assertTrue(folders is sentinel.folder_list)
 
@@ -62,7 +62,7 @@ class TestListFolders(IMAPClientTest):
 
         folders = self.client.list_folders('foo', 'bar')
 
-        self.client._imap._simple_command.assert_called_once_with('LIST', b'"foo"', b'"bar"')
+        self.client._imap._simple_command.assert_called_once_with(b'LIST', b'"foo"', b'"bar"')
         self.assertEqual(folders, [((b'\\HasNoChildren',), b'/', 'A'),
                                    ((b'\\HasNoChildren',), b'/', 'Hello\xffworld')])
 
@@ -77,7 +77,7 @@ class TestListFolders(IMAPClientTest):
 
         folders = self.client.list_folders('foo', 'bar')
 
-        self.client._imap._simple_command.assert_called_once_with('LIST', '"foo"', '"bar"')
+        self.client._imap._simple_command.assert_called_once_with(b'LIST', '"foo"', '"bar"')
         self.assertEqual(folders, [((b'\\HasNoChildren',), b'/', b'A'),
                                    ((b'\\HasNoChildren',), b'/', b'Hello&AP8-world')])
 
