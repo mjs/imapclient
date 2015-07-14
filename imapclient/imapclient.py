@@ -163,8 +163,9 @@ class IMAPClient(object):
         """Switch to an SSL encrypted connection by sending a STARTTLS command.
 
         The *ssl_context* argument is optional and should be a
-        :py:class:`OpenSSL.SSL.Context` object. If no SSL context is given, a
-        default SSL context with reasonably secure settings will be created.
+        :py:class:`backports.ssl.SSLContext` object. If no SSL context
+        is given, a default SSL context with reasonable default
+        settings will be created.
 
         You can enable checking of the hostname in the certificate presented
         by the server  against the hostname which was used for connecting, by
