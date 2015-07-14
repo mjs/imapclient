@@ -42,6 +42,19 @@ class TestStarttls(IMAPClientTest):
         self.assertEqual(self.client._imap.file, sentinel.file)
         self.assertEqual(resp, b'start TLS negotiation')
 
+    def test_clears_cached_capabilities(self):
+        # As per https://tools.ietf.org/html/rfc2595#section-3.1
+
+        self.client._save_capabilities(b"FOO BAR")
+        self.assertEqual(self.client.capabilities(), (b"FOO", b"BAR"))
+
+        self.client.starttls(sentinel.ssl_context)
+
+        # Now verify that the cache has been cleared and new
+        # capabilities are read.
+        self.client._imap.untagged_responses = {'CAPABILITY': [b'META']}
+        self.assertEqual(self.client.capabilities(), (b"META",))
+
     def test_command_fails(self):
         self.client._imap._simple_command.return_value = "NO", [b'sorry']
 

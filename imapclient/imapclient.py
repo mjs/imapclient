@@ -183,6 +183,11 @@ class IMAPClient(object):
         self._checkok('starttls', typ, data)
 
         self._starttls_done = True
+
+        # Clear cached capabilities as per
+        # https://tools.ietf.org/html/rfc2595#section-3.1
+        self._cached_capabilities = None
+
         self._imap.sock = tls.wrap_socket(self._imap.sock, self.host, ssl_context)
         self._imap.file = self._imap.sock.makefile()
         return data[0]
