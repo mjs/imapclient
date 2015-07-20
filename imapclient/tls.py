@@ -15,7 +15,11 @@ import imaplib
 import socket
 import sys
 
-from backports import ssl
+try:
+    from backports import ssl
+except ImportError:
+    raise ImportError("backports.ssl is not installed")
+
 _ossl = ssl.ossl
 
 
