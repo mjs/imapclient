@@ -8,7 +8,7 @@ Good TLS support for IMAPClient built on backports.ssl/pyOpenSSL.
 Works with Python 2.6+ and 3.3+.
 """
 
-__all__ = ('create_default_context', 'wrap_socket')
+__all__ = ('create_default_context',)
 
 
 import imaplib
