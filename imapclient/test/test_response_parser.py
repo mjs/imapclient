@@ -12,7 +12,7 @@ from datetime import datetime
 
 from imapclient.datetime_util import datetime_to_native
 from imapclient.fixed_offset import FixedOffset
-from imapclient.response_parser import parse_response, parse_fetch_response, ParseError
+from imapclient.response_parser import parse_response, parse_message_list, parse_fetch_response, ParseError
 from imapclient.response_types import Envelope, Address
 from imapclient.test.util import unittest
 
@@ -157,6 +157,33 @@ class TestParseResponse(unittest.TestCase):
             to_parse = [to_parse]
         self.assertRaisesRegex(ParseError, expected_msg,
                                parse_response, to_parse)
+
+
+class TestParseMessageList(unittest.TestCase):
+
+    def test_basic(self):
+        out = parse_message_list([b'1 2 3'])
+        self.assertSequenceEqual(out, [1, 2, 3])
+        self.assertEqual(out.modseq, None)
+
+    def test_one_id(self):
+        self.assertSequenceEqual(parse_message_list([b'4']), [4])
+
+    def test_modseq(self):
+        out = parse_message_list([b'1 2 3 (modseq 999)'])
+        self.assertSequenceEqual(out, [1, 2, 3])
+        self.assertEqual(out.modseq, 999)
+
+    def test_modseq_no_space(self):
+        out = parse_message_list([b'1 2 3(modseq 999)'])
+        self.assertSequenceEqual(out, [1, 2, 3])
+        self.assertEqual(out.modseq, 999)
+
+    def test_modseq_interleaved(self):
+        # Unlikely but test it anyway.
+        out = parse_message_list([b'1 2 (modseq 9) 3 4'])
+        self.assertSequenceEqual(out, [1, 2, 3, 4])
+        self.assertEqual(out.modseq, 9)
 
 
 class TestParseFetchResponse(unittest.TestCase):
