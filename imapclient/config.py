@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 
+# TODO: can't six do this for us?
 try:
     from ConfigParser import SafeConfigParser, NoOptionError
 except ImportError:
@@ -45,44 +46,59 @@ def parse_config_file(filename):
         oauth2_client_id=None,
         oauth2_client_secret=None,
         oauth2_refresh_token=None,
+        expect_failure=None,
         ))
     with open(filename, 'r') as fh:
         parser.readfp(fh)
-    section = 'main'
-    assert parser.sections() == [section], 'Only expected a [main] section'
 
-    try:
-        port = parser.getint(section, 'port')
-    except NoOptionError:
-        port = None
+    conf = _read_config_section(parser, "DEFAULT")
+    if conf.expect_failure:
+        raise ValueError("expect_failure should not be set for the DEFAULT section")
 
-    ssl_ca_file = parser.get(section, 'ssl_ca_file')
+    conf.alternates = {}
+    for section in parser.sections():
+        conf.alternates[section] = _read_config_section(parser, section)
+
+    return conf
+
+def _read_config_section(parser, section):
+    get = lambda name: parser.get(section, name)
+    getboolean = lambda name: parser.getboolean(section, name)
+    def getint(name):
+        try:
+            return parser.getint(section, name)
+        except NoOptionError:
+            return None
+
+    ssl_ca_file = get('ssl_ca_file')
     if ssl_ca_file:
         ssl_ca_file = path.expanduser(ssl_ca_file)
 
     return Bunch(
-        host=parser.get(section, 'host'),
-        port=port,
-        ssl=parser.getboolean(section, 'ssl'),
-        starttls=parser.getboolean(section, 'starttls'),
-        ssl_check_hostname=parser.getboolean(section, 'ssl_check_hostname'),
-        ssl_verify_cert=parser.getboolean(section, 'ssl_verify_cert'),
+        host=get('host'),
+        port=getint('port'),
+        ssl=getboolean('ssl'),
+        starttls=getboolean('starttls'),
+        ssl_check_hostname=getboolean('ssl_check_hostname'),
+        ssl_verify_cert=getboolean('ssl_verify_cert'),
         ssl_ca_file=ssl_ca_file,
 
-        stream=parser.getboolean(section, 'stream'),
+        stream=getboolean('stream'),
 
-        username=parser.get(section, 'username'),
-        password=parser.get(section, 'password'),
+        username=get('username'),
+        password=get('password'),
 
-        oauth=parser.getboolean(section, 'oauth'),
-        oauth_url=parser.get(section, 'oauth_url'),
-        oauth_token=parser.get(section, 'oauth_token'),
-        oauth_token_secret=parser.get(section, 'oauth_token_secret'),
+        oauth=getboolean('oauth'),
+        oauth_url=get('oauth_url'),
+        oauth_token=get('oauth_token'),
+        oauth_token_secret=get('oauth_token_secret'),
 
-        oauth2=parser.getboolean(section, 'oauth2'),
-        oauth2_client_id=parser.get(section, 'oauth2_client_id'),
-        oauth2_client_secret=parser.get(section, 'oauth2_client_secret'),
-        oauth2_refresh_token=parser.get(section, 'oauth2_refresh_token'),
+        oauth2=getboolean('oauth2'),
+        oauth2_client_id=get('oauth2_client_id'),
+        oauth2_client_secret=get('oauth2_client_secret'),
+        oauth2_refresh_token=get('oauth2_refresh_token'),
+
+        expect_failure=get('expect_failure')
     )
 
 def refresh_oauth2_token(client_id, client_secret, refresh_token):

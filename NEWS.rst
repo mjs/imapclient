@@ -2,7 +2,9 @@
  1.0.0
 =======
 
+XXX TLS support
 XXX Removed kwargs support from constructor - replaced by ssl_context
+XXX livetest config file change re DEFAULT
 
 ======
  0.13
