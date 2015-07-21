@@ -193,8 +193,8 @@ class IMAPClient(object):
         """
         return self._command_and_check(
             'login',
-            to_bytes(username),
-            to_bytes(password),
+            to_unicode(username),
+            to_unicode(password),
             unpack=True,
         )
 
@@ -349,7 +349,7 @@ class IMAPClient(object):
         decoded from modified UTF-7, except if folder_decode is not
         set.
         """
-        return self._do_list(b'LIST', directory, pattern)
+        return self._do_list('LIST', directory, pattern)
 
     def xlist_folders(self, directory="", pattern="*"):
         """Execute the XLIST command, returning ``(flags, delimiter,
@@ -382,7 +382,7 @@ class IMAPClient(object):
         The *directory* and *pattern* arguments are as per
         list_folders().
         """
-        return self._do_list(b'XLIST', directory, pattern)
+        return self._do_list('XLIST', directory, pattern)
 
     def list_sub_folders(self, directory="", pattern="*"):
         """Return a list of subscribed folders on the server as
@@ -391,7 +391,7 @@ class IMAPClient(object):
         The default behaviour will list all subscribed folders. The
         *directory* and *pattern* arguments are as per list_folders().
         """
-        return self._do_list(b'LSUB', directory, pattern)
+        return self._do_list('LSUB', directory, pattern)
 
     def _do_list(self, cmd, directory, pattern):
         directory = self._normalise_folder(directory)
@@ -687,7 +687,7 @@ class IMAPClient(object):
             if charset:
                 args.extend([b'CHARSET', charset])
             args.extend(criteria)
-            typ, data = self._imap.uid(b'SEARCH', *args)
+            typ, data = self._imap.uid('SEARCH', *args)
         else:
             typ, data = self._imap.search(charset, *criteria)
 

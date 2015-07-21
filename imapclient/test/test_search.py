@@ -16,7 +16,7 @@ class TestSearch(IMAPClientTest):
 
         result = self.client.search('FOO')
 
-        self.client._imap.uid.assert_called_once_with(b'SEARCH', '(FOO)')
+        self.client._imap.uid.assert_called_once_with('SEARCH', '(FOO)')
         self.assertEqual(result, [1, 2, 44])
         self.assertEqual(result.modseq, None)
 
@@ -26,7 +26,7 @@ class TestSearch(IMAPClientTest):
 
         result = self.client.search('FOO')
 
-        self.client._imap.uid.assert_called_once_with(b'SEARCH', '(FOO)')
+        self.client._imap.uid.assert_called_once_with('SEARCH', '(FOO)')
         self.assertEqual(result, [])
         self.assertEqual(result.modseq, None)
 
@@ -47,7 +47,7 @@ class TestSearch(IMAPClientTest):
         result = self.client.search('FOO', 'UTF9')
 
         self.client._imap.uid.assert_called_once_with(
-            b'SEARCH',
+            'SEARCH',
             b'CHARSET', 'UTF9',
             '(FOO)')
         self.assertEqual(result, [1, 2, 44])
@@ -75,7 +75,7 @@ class TestSearch(IMAPClientTest):
 
         result = self.client.search(['MODSEQ 40000'])
 
-        self.client._imap.uid.assert_called_once_with(b'SEARCH', '(MODSEQ 40000)')
+        self.client._imap.uid.assert_called_once_with('SEARCH', '(MODSEQ 40000)')
         self.assertEqual(result, [1, 2])
         self.assertEqual(result.modseq, 51101)
 
@@ -95,7 +95,7 @@ class TestGmailSearch(IMAPClientTest):
 
         result = self.client.gmail_search('FOO')
 
-        self.client._imap.uid.assert_called_once_with(b'SEARCH', b'X-GM-RAW')
+        self.client._imap.uid.assert_called_once_with('SEARCH', b'X-GM-RAW')
         self.assertEqual(self.client._imap.literal, b'FOO')
         self.assertEqual(result, [1, 2, 44])
 
@@ -116,7 +116,7 @@ class TestGmailSearch(IMAPClientTest):
         result = self.client.gmail_search('\u2620', 'UTF8')
 
         self.client._imap.uid.assert_called_once_with(
-            b'SEARCH',
+            'SEARCH',
             b'CHARSET', 'UTF8',
             b'X-GM-RAW')
         self.assertEqual(self.client._imap.literal, b'\xe2\x98\xa0')
