@@ -109,9 +109,9 @@ def wrap_socket(sock, ssl_context, hostname):
     try:
         return ssl_context.wrap_socket(sock, server_hostname=hostname)
     except ssl.CertificateError:
-        sock.shutdown()
+        sock.shutdown(socket.SHUT_RDWR)
         sock.close()
-        raise imaplib.Error("server certificate not valid for %s" % hostname)
+        raise imaplib.IMAP4.error("server certificate not valid for %s" % hostname)
 
 
 class IMAP4_TLS(imaplib.IMAP4):
