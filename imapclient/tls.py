@@ -107,13 +107,11 @@ def wrap_socket(sock, ssl_context, hostname):
         ssl_context = create_default_context()
 
     try:
-        newsock = ssl_context.wrap_socket(sock, server_hostname=hostname)
+        return ssl_context.wrap_socket(sock, server_hostname=hostname)
     except ssl.CertificateError:
         sock.shutdown()
         sock.close()
         raise imaplib.Error("server certificate not valid for %s" % hostname)
-
-    return _SSLSocketWithShutdown(newsock)
 
 
 class IMAP4_TLS(imaplib.IMAP4):
@@ -133,15 +131,21 @@ class IMAP4_TLS(imaplib.IMAP4):
         self.sock = wrap_socket(sock, self.ssl_context, host)
         self.file = self.sock.makefile('rb')
 
+    def read(self, size):
+        return self.file.read(size)
 
-# TODO: get shutdown added in backports.ssl.SSLSocket
-class _SSLSocketWithShutdown(object):
+    def readline(self):
+        return self.file.readline()
 
-    def __init__(self, sslsock):
-        self.sslsock = sslsock
+    def send(self, data):
+        remaining = len(data)
+        while remaining > 0:
+            sent = self.sock.send(data)
+            if sent == remaining:
+                break
+            data = data[sent:]
+            remaining -= sent
 
-    def shutdown(self, _):
-        return self.sslsock._conn.shutdown()
-
-    def __getattr__(self, name):
-        return getattr(self.sslsock, name)
+    def shutdown(self):
+        self.file.close()
+        self.sock.close()
