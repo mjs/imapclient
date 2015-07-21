@@ -9,6 +9,7 @@ try:
 except ImportError:
     from configparser import SafeConfigParser, NoOptionError
 
+from os import path
 from backports import ssl
 
 import imapclient
@@ -22,7 +23,7 @@ except ImportError:
     json = None
 
 
-def parse_config_file(path):
+def parse_config_file(filename):
     """Parse INI files containing IMAP connection details.
 
     Used by livetest.py and interact.py
@@ -31,6 +32,9 @@ def parse_config_file(path):
         username=None,
         password=None,
         ssl='false',
+        ssl_check_hostname='true',
+        ssl_verify_cert='true',
+        ssl_ca_file=None,
         starttls='false',
         stream='false',
         oauth='false',
@@ -42,7 +46,7 @@ def parse_config_file(path):
         oauth2_client_secret=None,
         oauth2_refresh_token=None,
         ))
-    with open(path, 'r') as fh:
+    with open(filename, 'r') as fh:
         parser.readfp(fh)
     section = 'main'
     assert parser.sections() == [section], 'Only expected a [main] section'
@@ -52,11 +56,19 @@ def parse_config_file(path):
     except NoOptionError:
         port = None
 
+    ssl_ca_file = parser.get(section, 'ssl_ca_file')
+    if ssl_ca_file:
+        ssl_ca_file = path.expanduser(ssl_ca_file)
+
     return Bunch(
         host=parser.get(section, 'host'),
         port=port,
         ssl=parser.getboolean(section, 'ssl'),
         starttls=parser.getboolean(section, 'starttls'),
+        ssl_check_hostname=parser.getboolean(section, 'ssl_check_hostname'),
+        ssl_verify_cert=parser.getboolean(section, 'ssl_verify_cert'),
+        ssl_ca_file=ssl_ca_file,
+
         stream=parser.getboolean(section, 'stream'),
 
         username=parser.get(section, 'username'),
@@ -96,12 +108,14 @@ def get_oauth2_token(client_id, client_secret, refresh_token):
     return token
 
 def create_client_from_config(conf):
-    # FIXME: temporary until the config files are expanded to support TLS options.
     ssl_context = None
     if conf.ssl:
-       ssl_context = create_default_context()
-       ssl_context.check_hostname = False
-       ssl_context.verify_mode = ssl.CERT_NONE
+        ssl_context = create_default_context()
+        ssl_context.check_hostname = conf.ssl_check_hostname
+        if not conf.ssl_verify_cert:
+            ssl_context.verify_mode = ssl.CERT_NONE
+        if conf.ssl_ca_file:
+            ssl_context.load_verify_locations(cafile=conf.ssl_ca_file)
 
     client = imapclient.IMAPClient(conf.host, port=conf.port,
                                    ssl=conf.ssl,
