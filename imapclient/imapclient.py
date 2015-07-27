@@ -22,7 +22,7 @@ except ImportError:
 from . import response_lexer
 from .datetime_util import datetime_to_INTERNALDATE
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
-from .response_types import SearchIds
+from .response_parser import parse_response, parse_message_list, parse_fetch_response
 from .six import moves, iteritems, text_type, integer_types, PY3, binary_type, string_types
 xrange = moves.xrange
 
@@ -32,7 +32,6 @@ if PY3:
 
 __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT', 'RECENT']
 
-from .response_parser import parse_response, parse_message_list, parse_fetch_response
 
 # We also offer the gmail-specific XLIST command...
 if 'XLIST' not in imaplib.Commands:
@@ -654,14 +653,7 @@ class IMAPClient(object):
             typ, data = self._imap.search(charset, *criteria)
 
         self._checkok('search', typ, data)
-
-        ids = SearchIds()
-        for item in parse_response(data):
-            if isinstance(item, int):
-                ids.append(item)
-            elif isinstance(item, tuple) and len(item) == 2 and item[0].lower() == b'modseq':
-                ids.modseq = item[1]
-        return ids
+        return parse_message_list(data)
 
     def thread(self, algorithm='REFERENCES', criteria='ALL', charset='UTF-8'):
         """Return a list of messages threads matching *criteria*.

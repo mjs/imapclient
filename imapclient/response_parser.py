@@ -71,7 +71,7 @@ def parse_message_list(data):
 
     ids = SearchIds(int(n) for n in m.group(1).split())
 
-    # Parse any non-numeric part on th end using parse_response (this
+    # Parse any non-numeric part on the end using parse_response (this
     # is likely to be the MODSEQ section).
     extra = data[m.end(1):]
     if extra:
