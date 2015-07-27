@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# This script builds the IMAPClient source distribution inside a
+# virtualenv.
+#
+# This is needed to work around this issue with setuptools:
+# https://bitbucket.org/pypa/setuptools/issue/141
+#
+# In summary: if a different version of one of the "setup_requires"
+# dependencies is globally installed, then setuptools will abort with
+# a VersionConflict exception. Building in a virtualenv works around
+# the bug.
+
+env=.build-env
+
+rm -rf $env
+virtualenv $env
+
+. $env/bin/activate
+python setup.py sdist --formats=zip --dist-dir .
+deactivate
+
+rm -rf $env
+
+# TODO: validation of the source tarball

@@ -55,7 +55,7 @@ class TestListFolders(IMAPClientTest):
     def test_utf7_decoding(self):
         self.client._imap._simple_command.return_value = ('OK', [b'something'])
         self.client._imap._untagged_response.return_value = (
-            b'LIST', [
+            'LIST', [
                 b'(\\HasNoChildren) "/" "A"',
                 b'(\\HasNoChildren) "/" "Hello&AP8-world"',
             ])
@@ -70,7 +70,7 @@ class TestListFolders(IMAPClientTest):
         self.client.folder_encode = False
         self.client._imap._simple_command.return_value = ('OK', [b'something'])
         self.client._imap._untagged_response.return_value = (
-            b'LIST', [
+            'LIST', [
                 b'(\\HasNoChildren) "/" "A"',
                 b'(\\HasNoChildren) "/" "Hello&AP8-world"',
             ])

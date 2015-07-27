@@ -1,4 +1,4 @@
-# Copyright (c) 2014, Menno Smits
+# Copyright (c) 2015, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -10,6 +10,7 @@ import select
 import socket
 import sys
 import re
+
 from datetime import datetime
 from operator import itemgetter
 
@@ -20,6 +21,7 @@ except ImportError:
     oauth_module = None
 
 from . import response_lexer
+from . import tls
 from .datetime_util import datetime_to_INTERNALDATE
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .response_parser import parse_response, parse_message_list, parse_fetch_response
@@ -35,17 +37,19 @@ __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT', 'REC
 
 # We also offer the gmail-specific XLIST command...
 if 'XLIST' not in imaplib.Commands:
-  imaplib.Commands['XLIST'] = imaplib.Commands['LIST']
-
+    imaplib.Commands['XLIST'] = imaplib.Commands['LIST']
 
 # ...and IDLE
 if 'IDLE' not in imaplib.Commands:
-  imaplib.Commands['IDLE'] = imaplib.Commands['APPEND']
+    imaplib.Commands['IDLE'] = imaplib.Commands['APPEND']
 
+# ..and STARTTLS
+if 'STARTTLS' not in imaplib.Commands:
+    imaplib.Commands['STARTTLS'] = ('NONAUTH',)
 
-# and ID. RFC2971 says that this command is valid in all states, but not that
-# some servers (*cough* FastMail *cough*) don't seem to accept it in state
-# NONAUTH.
+# ...and ID. RFC2971 says that this command is valid in all states,
+# but not that some servers (*cough* FastMail *cough*) don't seem to
+# accept it in state NONAUTH.
 if 'ID' not in imaplib.Commands:
   imaplib.Commands['ID'] = ('NONAUTH', 'AUTH', 'SELECTED')
 
@@ -79,24 +83,15 @@ class IMAPClient(object):
     If *ssl* is ``True`` an SSL connection will be made (defaults to
     ``False``).
 
+    If *ssl* is ``True`` the optional *ssl_context* argument can be
+    used to provide a ``backports.ssl.SSLContext`` instance used to
+    control SSL/TLS connection parameters. If this is not provided a
+    sensible default context will be used.
+
     If *stream* is ``True`` then *host* is used as the command to run
     to establish a connection to the IMAP server (defaults to
     ``False``). This is useful for exotic connection or authentication
     setups.
-
-    Additional keyword arguments are passed through to the constructor
-    of the :py:class:`imaplib.IMAP4` class, or
-    :py:class:`imaplib.IMAP4_SSL` when *ssl* is ``True`` (these are
-    used by ``IMAPClient`` internally). This allows passing SSL
-    related parameters such as *keyfile*, *certfile* and *ssl_context*
-    (Python version dependent). For details, see the :py:mod:`imaplib`
-    documentation in the standard library reference.
-
-    .. note::
-
-       Support for passthrough keyword arguments may be removed in
-       some future version of IMAPClient. Backwards compatibility is
-       not guaranteed for this feature.
 
     The *normalise_times* attribute specifies whether datetimes
     returned by ``fetch()`` are normalised to the local system time
@@ -123,7 +118,7 @@ class IMAPClient(object):
     ReadOnlyError = imaplib.IMAP4.readonly
 
     def __init__(self, host, port=None, use_uid=True, ssl=False, stream=False,
-                 **kwargs):
+                 ssl_context=None):
         if stream:
             if port is not None:
                 raise ValueError("can't set 'port' when 'stream' True")
@@ -135,29 +130,72 @@ class IMAPClient(object):
         self.host = host
         self.port = port
         self.ssl = ssl
+        self.ssl_context = ssl_context
         self.stream = stream
         self.use_uid = use_uid
         self.folder_encode = True
         self.log_file = sys.stderr
         self.normalise_times = True
 
+        self._starttls_done = False
         self._cached_capabilities = None
-        self._imap = self._create_IMAP4(**kwargs)
+        self._imap = self._create_IMAP4()
         self._imap._mesg = self._log    # patch in custom debug log method
         self._idle_tag = None
 
-    def _create_IMAP4(self, **kwargs):
-        # Create the IMAP instance in a separate method to make unit tests easier
+    def _create_IMAP4(self):
         if self.stream:
             return imaplib.IMAP4_stream(self.host)
-        ImapClass = self.ssl and imaplib.IMAP4_SSL or imaplib.IMAP4
-        return ImapClass(self.host, self.port, **kwargs)
+
+        if self.ssl:
+            return tls.IMAP4_TLS(self.host, self.port, self.ssl_context)
+
+        return imaplib.IMAP4(self.host, self.port)
+
+    def starttls(self, ssl_context=None):
+        """Switch to an SSL encrypted connection by sending a STARTTLS command.
+
+        The *ssl_context* argument is optional and should be a
+        :py:class:`backports.ssl.SSLContext` object. If no SSL context
+        is given, a default SSL context with reasonable default
+        settings will be created.
+
+        You can enable checking of the hostname in the certificate presented
+        by the server  against the hostname which was used for connecting, by
+        setting the *check_hostname* attribute of the SSL context to ``True``.
+        The default SSL context has this setting enabled.
+
+        Raises :py:exc:`Error` if the SSL connection could not be established.
+
+        Raises :py:exc:`AbortError` if the server does not support STARTTLS
+        or an SSL connection is already established.
+        """
+        if self.ssl or self._starttls_done:
+            raise self.AbortError('TLS session already established')
+
+        typ, data = self._imap._simple_command("STARTTLS")
+        self._checkok('starttls', typ, data)
+
+        self._starttls_done = True
+
+        # Clear cached capabilities as per
+        # https://tools.ietf.org/html/rfc2595#section-3.1
+        self._cached_capabilities = None
+
+        self._imap.sock = tls.wrap_socket(self._imap.sock, ssl_context, self.host)
+        self._imap.file = self._imap.sock.makefile()
+        return data[0]
 
     def login(self, username, password):
         """Login using *username* and *password*, returning the
         server response.
         """
-        return self._command_and_check('login', username, password, unpack=True)
+        return self._command_and_check(
+            'login',
+            to_unicode(username),
+            to_unicode(password),
+            unpack=True,
+        )
 
     def oauth_login(self, url, oauth_token, oauth_token_secret,
                     consumer_key='anonymous', consumer_secret='anonymous'):
@@ -956,7 +994,7 @@ class IMAPClient(object):
         Raises IMAPClient.Error if the command fails.
         """
         if typ != expected:
-            raise self.Error('%s failed: %r' % (command, data[0]))
+            raise self.Error("%s failed: %s" % (command, to_unicode(data[0])))
 
     def _consume_until_tagged_response(self, tag, command):
         tagged_commands = self._imap.tagged_commands

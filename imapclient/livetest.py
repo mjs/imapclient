@@ -18,7 +18,7 @@ from email.utils import make_msgid
 from .fixed_offset import FixedOffset
 from .imapclient import IMAPClient, DELETED, RECENT, to_unicode, to_bytes, normalise_untagged_responses
 from .response_types import Envelope, Address
-from .six import binary_type, text_type, PY3
+from .six import binary_type, text_type, PY3, iteritems
 from .test.util import unittest
 from .config import parse_config_file, create_client_from_config
 
@@ -173,6 +173,25 @@ class TestGeneral(_TestBase):
     """
     Tests that don't involve message number/UID functionality.
     """
+
+    def test_alternates(self):
+        # Check alternate connection/login configurations.
+        for name, conf in iteritems(self.conf.alternates):
+            if PY3 and conf.oauth:
+                print("Skipping OAUTH test %r on Python 3 (not compatible)" % name)
+                continue
+            try:
+                client = create_client_from_config(conf)
+                client.logout()
+            except Exception as err:
+                if conf.expect_failure:
+                    if conf.expect_failure not in str(err):
+                        self.fail("connection test %r failed with %r, expected %r" % (name, err, conf.expect_failure))
+                else:
+                    self.fail("connection test %r failed unexpectedly with %r" % (name, err))
+            else:
+                if conf.expect_failure:
+                    self.fail("connection test %r didn't fail, expected %r" % (name, conf.expect_failure))
 
     def test_capabilities(self):
         caps = self.client.capabilities()

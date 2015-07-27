@@ -2,6 +2,10 @@
  1.0.0
 =======
 
+XXX TLS support
+XXX Removed kwargs support from constructor - replaced by ssl_context
+XXX livetest config file change re DEFAULT
+
 Performance optimsation for parsing message id lists
 ----------------------------------------------------
 A short circuit is now used when parsing a list of message ids which
