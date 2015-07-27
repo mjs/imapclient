@@ -779,7 +779,7 @@ class IMAPClient(object):
         attribute (eg. Gmail).
         """
         return self._store(b'+X-GM-LABELS', messages,
-                           self._normalise_label_list(labels), b'X-GM-LABELS')
+                           self._normalise_labels(labels), b'X-GM-LABELS')
 
     def remove_gmail_labels(self, messages, labels):
         """Remove one or more *labels* from *messages*.
@@ -793,7 +793,7 @@ class IMAPClient(object):
         attribute (eg. Gmail).
         """
         return self._store(b'-X-GM-LABELS', messages,
-                           self._normalise_label_list(labels), b'X-GM-LABELS')
+                           self._normalise_labels(labels), b'X-GM-LABELS')
 
     def set_gmail_labels(self, messages, labels):
         """Set the *labels* for *messages*.
@@ -807,7 +807,7 @@ class IMAPClient(object):
         attribute (eg. Gmail).
         """
         return self._store(b'X-GM-LABELS', messages,
-                           self._normalise_label_list(labels), b'X-GM-LABELS')
+                           self._normalise_labels(labels), b'X-GM-LABELS')
 
     def delete_messages(self, messages):
         """Delete one or more *messages* from the currently selected
@@ -1037,8 +1037,8 @@ class IMAPClient(object):
             folder_name = encode_utf7(folder_name)
         return _quote(folder_name)
 
-    def _normalise_label_list(self, labels):
-        return iter(self._imap._quote(l) for l in labels)
+    def _normalise_labels(self, labels):
+        return [_quote(l) for l in labels]
 
 
 def _quote(arg):

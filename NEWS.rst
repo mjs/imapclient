@@ -1,3 +1,12 @@
+=======
+ 1.0.0
+=======
+
+Other
+-----
+  * Perform quoting of Gmail labels. Thanks to Pawel Sz for the fix.
+
+
 ======
  0.13
 ======

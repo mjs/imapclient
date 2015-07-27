@@ -399,16 +399,22 @@ class TestGmailLabels(IMAPClientTest):
                                    444: [b'foo']})
 
     def test_add(self):
-        self.client.add_gmail_labels(sentinel.messages, sentinel.labels)
-        self.client._store.assert_called_with(b'+X-GM-LABELS', sentinel.messages, sentinel.labels, b'X-GM-LABELS')
+        self.client.add_gmail_labels(sentinel.messages, ['foo', 'B"A"R'])
+        self.client._store.assert_called_with(
+            b'+X-GM-LABELS', sentinel.messages,
+            ['"foo"', '"B\\"A\\"R"'], b'X-GM-LABELS')
 
     def test_remove(self):
-        self.client.remove_gmail_labels(sentinel.messages, sentinel.labels)
-        self.client._store.assert_called_with(b'-X-GM-LABELS', sentinel.messages, sentinel.labels, b'X-GM-LABELS')
+        self.client.remove_gmail_labels(sentinel.messages, ['q\\ux'])
+        self.client._store.assert_called_with(
+            b'-X-GM-LABELS', sentinel.messages,
+            ['"q\\\\ux"'], b'X-GM-LABELS')
 
     def test_set(self):
-        self.client.set_gmail_labels(sentinel.messages, sentinel.labels)
-        self.client._store.assert_called_with(b'X-GM-LABELS', sentinel.messages, sentinel.labels, b'X-GM-LABELS')
+        self.client.set_gmail_labels(sentinel.messages, ['faz', 'baz'])
+        self.client._store.assert_called_with(
+            b'X-GM-LABELS', sentinel.messages,
+            ['"faz"', '"baz"'], b'X-GM-LABELS')
 
 
 class TestNamespace(IMAPClientTest):
