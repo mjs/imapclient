@@ -16,7 +16,7 @@ from datetime import datetime
 from email.utils import make_msgid
 
 from .fixed_offset import FixedOffset
-from .imapclient import IMAPClient, DELETED, to_unicode, to_bytes, normalise_untagged_responses
+from .imapclient import IMAPClient, DELETED, RECENT, to_unicode, to_bytes, normalise_untagged_responses
 from .response_types import Envelope, Address
 from .six import binary_type, text_type, PY3
 from .test.util import unittest
@@ -508,7 +508,7 @@ def createUidTestClass(conf, use_uid):
                 answer = func(msg_id, *args)
                 self.assertTrue(msg_id in answer)
                 answer_flags = set(answer[msg_id])
-                answer_flags.discard(br'\Recent')  # Might be present but don't care
+                answer_flags.discard(RECENT)  # Might be present but don't care
                 self.assertSetEqual(answer_flags, set(to_bytes(f) for f in expected_flags))
 
             base_flags = ['abc', 'def']

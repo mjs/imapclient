@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 from mock import patch, sentinel, Mock
 
-from imapclient import six
+from imapclient import six, DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT
 from imapclient.fixed_offset import FixedOffset
 from .testable_imapclient import TestableIMAPClient as IMAPClient
 from .imapclient_test import IMAPClientTest
@@ -562,3 +562,11 @@ class TestId(IMAPClientTest):
 
     def test_invalid_parameters(self):
         self.assertRaises(TypeError, self.client.id_, 'bananarama')
+
+
+class TestFlags(IMAPClientTest):
+
+    def test_flags_are_bytes(self):
+        for flag in DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT:
+            if not isinstance(flag, six.binary_type):
+                self.fail("%r flag is not bytes" % flag)

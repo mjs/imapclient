@@ -51,12 +51,12 @@ if 'ID' not in imaplib.Commands:
 
 
 # System flags
-DELETED = r'\Deleted'
-SEEN = r'\Seen'
-ANSWERED = r'\Answered'
-FLAGGED = r'\Flagged'
-DRAFT = r'\Draft'
-RECENT = r'\Recent'         # This flag is read-only
+DELETED = br'\Deleted'
+SEEN = br'\Seen'
+ANSWERED = br'\Answered'
+FLAGGED = br'\Flagged'
+DRAFT = br'\Draft'
+RECENT = br'\Recent'         # This flag is read-only
 
 class Namespace(tuple):
     def __new__(cls, personal, other, shared):
