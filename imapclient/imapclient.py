@@ -32,7 +32,7 @@ if PY3:
 
 __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT', 'RECENT']
 
-from .response_parser import parse_response, parse_fetch_response
+from .response_parser import parse_response, parse_message_list, parse_fetch_response
 
 # We also offer the gmail-specific XLIST command...
 if 'XLIST' not in imaplib.Commands:
@@ -1051,6 +1051,7 @@ def _quote(arg):
         arg = arg.replace(b'"', b'\\"')
         q = b'"'
     return q + arg + q
+
 
 # normalise_text_list, seq_to_parentstr etc have to return unicode
 # because imaplib handles flags and sort criteria assuming these are

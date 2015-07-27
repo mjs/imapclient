@@ -13,6 +13,7 @@ Initially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 
 from __future__ import unicode_literals
 
+import re
 import sys
 from collections import defaultdict
 
@@ -21,10 +22,10 @@ xrange = six.moves.xrange
 
 from .datetime_util import parse_to_datetime
 from .response_lexer import TokenSource
-from .response_types import BodyData, Envelope, Address
+from .response_types import BodyData, Envelope, Address, SearchIds
 
 
-__all__ = ['parse_response', 'ParseError']
+__all__ = ['parse_response', 'parse_message_list', 'ParseError']
 
 
 class ParseError(ValueError):
@@ -39,6 +40,47 @@ def parse_response(data):
     if data == [None]:
         return []
     return tuple(gen_parsed_response(data))
+
+
+_msg_id_pattern = re.compile("(\d+(?: +\d+)*)")
+
+def parse_message_list(data):
+    """Parse a list of message ids and return them as a list.
+
+    parse_response is also capable of doing this but this is
+    faster. This also has special handling of the optional MODSEQ part
+    of a SEARCH response.
+
+    The returned list is a SearchIds instance which has a *modseq*
+    attribute which contains the MODSEQ response (if returned by the
+    server).
+    """
+    if len(data) != 1:
+        raise ValueError("unexpected message list data")
+
+    data = data[0]
+    if not data:
+        return SearchIds()
+
+    if six.PY3 and isinstance(data, six.binary_type):
+        data = data.decode('ascii')
+
+    m = _msg_id_pattern.match(data)
+    if not m:
+        raise ValueError("unexpected message list format")
+
+    ids = SearchIds(int(n) for n in m.group(1).split())
+
+    # Parse any non-numeric part on th end using parse_response (this
+    # is likely to be the MODSEQ section).
+    extra = data[m.end(1):]
+    if extra:
+        for item in parse_response([extra.encode('ascii')]):
+            if isinstance(item, tuple) and len(item) == 2 and item[0].lower() == b'modseq':
+                ids.modseq = item[1]
+            elif isinstance(item, int):
+                ids.append(item)
+    return ids
 
 
 def gen_parsed_response(text):

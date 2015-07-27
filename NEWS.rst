@@ -2,9 +2,15 @@
  1.0.0
 =======
 
+Performance optimsation for parsing message id lists
+----------------------------------------------------
+A short circuit is now used when parsing a list of message ids which
+greatly speeds up parsing time.
+
 Other
 -----
   * Perform quoting of Gmail labels. Thanks to Pawel Sz for the fix.
+
 
 
 ======
