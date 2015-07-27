@@ -24,14 +24,18 @@
 
 from __future__ import unicode_literals
 
-from .six import text_type, binary_type, iteritems
+from .six import binary_type, text_type, byte2int, iterbytes, unichr
+
 
 PRINTABLE = set(range(0x20, 0x26)) | set(range(0x27, 0x7f))
+
+# TODO: module needs refactoring (e.g. variable names suck)
 
 def encode(s):
     """Encode a folder name using IMAP modified UTF-7 encoding.
 
-    Despite the function's name, the output is still a unicode string.
+    Input is unicode; output is bytes (Python 3) or str (Python 2). If
+    non-unicode input is provided, the input is returned unchanged.
     """
     if not isinstance(s, text_type):
         return s
@@ -41,60 +45,63 @@ def encode(s):
 
     def extend_result_if_chars_buffered():
         if _in:
-            r.extend(['&', modified_utf7(''.join(_in)), '-'])
+            r.extend([b'&', modified_utf7(''.join(_in)), b'-'])
             del _in[:]
 
     for c in s:
         if ord(c) in PRINTABLE:
             extend_result_if_chars_buffered()
-            r.append(c)
+            r.append(c.encode('latin-1'))
         elif c == '&':
             extend_result_if_chars_buffered()
-            r.append('&-')
+            r.append(b'&-')
         else:
             _in.append(c)
 
     extend_result_if_chars_buffered()
 
-    return ''.join(r)
+    return b''.join(r)
+
+
+AMPERSAND_ORD = byte2int(b'&')
+DASH_ORD = byte2int(b'-')
 
 def decode(s):
     """Decode a folder name from IMAP modified UTF-7 encoding to unicode.
 
-    Despite the function's name, the input may still be a unicode
-    string. If the input is bytes, it's first decoded to unicode.
+    Input is bytes (Python 3) or str (Python 2); output is always
+    unicode. If non-bytes/str input is provided, the input is returned
+    unchanged.
     """
-    if isinstance(s, binary_type):
-        s = s.decode('latin-1')
-    if not isinstance(s, text_type):
+
+    if not isinstance(s, binary_type):
         return s
 
     r = []
-    _in = []
-    for c in s:
-        if c == '&' and not _in:
-            _in.append('&')
-        elif c == '-' and _in:
+    _in = bytearray()
+    for c in iterbytes(s):
+        if c == AMPERSAND_ORD and not _in:
+            _in.append(c)
+        elif c == DASH_ORD and _in:
             if len(_in) == 1:
                 r.append('&')
             else:
-                r.append(modified_deutf7(''.join(_in[1:])))
-            _in = []
+                r.append(modified_deutf7(_in[1:]))
+            _in = bytearray()
         elif _in:
             _in.append(c)
         else:
-            r.append(c)
+            r.append(unichr(c))
     if _in:
-        r.append(modified_deutf7(''.join(_in[1:])))
-
+        r.append(modified_deutf7(_in[1:]))
     return ''.join(r)
 
+
 def modified_utf7(s):
-    # encode to utf-7: '\xff' => b'+AP8-', decode from latin-1 => '+AP8-'
-    s_utf7 = s.encode('utf-7').decode('latin-1')
-    return s_utf7[1:-1].replace('/', ',')
+    s_utf7 = s.encode('utf-7')
+    return s_utf7[1:-1].replace(b'/', b',')
+
 
 def modified_deutf7(s):
-    s_utf7 = '+' + s.replace(',', '/') + '-'
-    # encode to latin-1: '+AP8-' => b'+AP8-', decode from utf-7 => '\xff'
-    return s_utf7.encode('latin-1').decode('utf-7')
+    s_utf7 = b'+' + s.replace(b',', b'/') + b'-'
+    return s_utf7.decode('utf-7')

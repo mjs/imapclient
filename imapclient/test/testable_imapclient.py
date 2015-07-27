@@ -14,12 +14,4 @@ class TestableIMAPClient(IMAPClient):
         super(TestableIMAPClient, self).__init__('somehost')
 
     def _create_IMAP4(self):
-        mock_IMAP4 = Mock()
-        mock_IMAP4._quote = self._quote
-        return mock_IMAP4
-
-    def _quote(self, arg):
-        """The real code from IMAP4._quote."""
-        arg = arg.replace('\\', '\\\\')
-        arg = arg.replace('"', '\\"')
-        return '"%s"' % arg
+        return Mock()
