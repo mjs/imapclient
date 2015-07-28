@@ -9,7 +9,7 @@ from os import path
 
 # bootstrap setuptools if necessary
 from ez_setup import use_setuptools
-use_setuptools()
+use_setuptools(version="17.1")
 
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
@@ -69,7 +69,7 @@ main_deps = [
 
 setup_deps = main_deps + ['sphinx']
 
-test_deps = ['mock==0.8.0']
+test_deps = ['mock==1.3.0']
 if IS_PY_26_OR_OLDER:
     test_deps.append('unittest2')
 
