@@ -31,6 +31,9 @@ greatly speeds up parsing time.
 Other
 -----
   * Perform quoting of Gmail labels. Thanks to Pawel Sz for the fix.
+  * The type of the various flag constants was fixed. Thanks to Thomi
+    Richards for pointing this out.
+  * Now using mock 1.3.0. Thanks to Thomi Richards for the patch.
 
 ======
  0.13
