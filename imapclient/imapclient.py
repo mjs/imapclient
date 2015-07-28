@@ -1068,6 +1068,8 @@ class IMAPClient(object):
         return _quote(folder_name)
 
     def _normalise_labels(self, labels):
+        if isinstance(labels, (text_type, binary_type)):
+            labels = (labels,)
         return [_quote(l) for l in labels]
 
 

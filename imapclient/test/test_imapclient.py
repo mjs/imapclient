@@ -399,10 +399,10 @@ class TestGmailLabels(IMAPClientTest):
                                    444: [b'foo']})
 
     def test_add(self):
-        self.client.add_gmail_labels(sentinel.messages, ['foo', 'B"A"R'])
+        self.client.add_gmail_labels(sentinel.messages, 'f"o"o')
         self.client._store.assert_called_with(
             b'+X-GM-LABELS', sentinel.messages,
-            ['"foo"', '"B\\"A\\"R"'], b'X-GM-LABELS')
+            ['"f\\"o\\"o"'], b'X-GM-LABELS')
 
     def test_remove(self):
         self.client.remove_gmail_labels(sentinel.messages, ['q\\ux'])
