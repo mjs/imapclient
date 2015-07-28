@@ -548,15 +548,19 @@ def createUidTestClass(conf, use_uid):
                 actual_labels = set(answer[msg_id])
                 self.assertSetEqual(actual_labels, set(expected_labels))
 
-            base_labels = [b'_imapclient_foo', b'_imapclient_bar']
+            FOO = b'_imapclient_foo'
+            BAR = b'_imapclient_bar'
+            BAZ = b'_imapclient_baz'
+            all_labels = [FOO, BAR, BAZ]
+            base_labels = [FOO, BAR]
             try:
                 _labeltest(self.client.set_gmail_labels, [base_labels], base_labels)
                 _labeltest(self.client.get_gmail_labels, [], base_labels)
-                _labeltest(self.client.add_gmail_labels, [b'_imapclient_baz'], base_labels + [b'_imapclient_baz'])
-                _labeltest(self.client.remove_gmail_labels, [b'_imapclient_baz'], base_labels)
+                _labeltest(self.client.add_gmail_labels, [BAZ], all_labels)
+                _labeltest(self.client.remove_gmail_labels, [BAZ], base_labels)
             finally:
-                # Clean up
-                for label in [b'_imapclient_baz'] + base_labels:
+                # Clean up folders created by assigning labels.
+                for label in all_labels:
                     if self.client.folder_exists(label):
                         self.client.delete_folder(label)
 
