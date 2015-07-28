@@ -3,10 +3,13 @@
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 """
-Good TLS support for IMAPClient built on backports.ssl/pyOpenSSL.
+This module contains IMAPClient's functionality related to Transport
+Layer Security (TLS a.k.a. SSL).
 
-Works with Python 2.6+ and 3.3+.
+It uses ``backports.ssl`` to provide consistent TLS functionality
+across Python versions.
 """
+
 
 __all__ = ('create_default_context',)
 
@@ -39,7 +42,23 @@ _RESTRICTED_SERVER_CIPHERS = (
 
 # TODO: get this into backports.ssl
 def create_default_context(cafile=None, capath=None, cadata=None):
-    """Create a SSLContext object with sensible default settings.
+    """Return a backports.ssl.SSLContext object configured with sensible
+    default settings.
+
+    The optional *cafile* argument is path to a file of concatenated
+    CA certificates in PEM format.
+
+    The optional *capath* argument is a path to a directory containing
+    several CA certificates in PEM format, following an OpenSSL
+    specific layout.
+
+    The optional *cadata* argument is either an ASCII string of one or
+    more PEM-encoded certificates or a bytes-like object of
+    DER-encoded certificates.
+
+    If *cafile*, *capath* and *cadata* are all None then
+    system-installed CA certificates will be loaded (if available).
+
     """
     # adapted from Python 3.4's ssl.create_default_context
 

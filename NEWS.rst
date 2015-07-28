@@ -2,9 +2,26 @@
  1.0.0
 =======
 
-XXX TLS support
-XXX Removed kwargs support from constructor - replaced by ssl_context
-XXX livetest config file change re DEFAULT
+Enhanced TLS support
+--------------------
+The way that IMAPClient establishes TLS/SSL connections has been
+completed reworked. By default IMAPClient will attempt certificate
+verification, certificate hostname checking, and will not use
+known-insecure TLS settings and protocols. In addition, TLS parameters
+are now highly configurable.
+
+XXX new dependencies
+XXX compatibility: dropped Python 3.2 support
+XXX compatibility: Removed kwargs support from constructor - replaced by ssl_context
+XXX compatibility: default is to do cert checks (pointer to docs on how to disable)
+
+XXX Thank people who contributed
+
+STARTTLS support
+----------------
+XXX
+
+XXX Thank people who contributed (Chris?)
 
 Performance optimsation for parsing message id lists
 ----------------------------------------------------
@@ -14,8 +31,6 @@ greatly speeds up parsing time.
 Other
 -----
   * Perform quoting of Gmail labels. Thanks to Pawel Sz for the fix.
-
-
 
 ======
  0.13

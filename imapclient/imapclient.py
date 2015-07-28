@@ -157,8 +157,7 @@ class IMAPClient(object):
 
         The *ssl_context* argument is optional and should be a
         :py:class:`backports.ssl.SSLContext` object. If no SSL context
-        is given, a default SSL context with reasonable default
-        settings will be created.
+        is given, a SSL context with reasonable default settings will be used.
 
         You can enable checking of the hostname in the certificate presented
         by the server  against the hostname which was used for connecting, by
