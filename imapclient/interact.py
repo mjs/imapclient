@@ -43,6 +43,10 @@ def command_line():
             if not getattr(opts, opt_name):
                 setattr(opts, opt_name, getpass(opt_name + ': '))
         # Options not supported on the command line
+        opts.ssl_check_hostname = False
+        opts.ssl_verify_cert = False
+        opts.ssl_ca_file = None
+        opts.starttls = False
         opts.oauth = False
         opts.oauth2 = False
         opts.stream = False
