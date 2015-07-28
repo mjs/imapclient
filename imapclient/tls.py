@@ -106,12 +106,20 @@ def wrap_socket(sock, ssl_context, hostname):
     if not ssl_context:
         ssl_context = create_default_context()
 
-    try:
-        return ssl_context.wrap_socket(sock, server_hostname=hostname)
-    except ssl.CertificateError:
+    def killsock():
         sock.shutdown(socket.SHUT_RDWR)
         sock.close()
-        raise imaplib.IMAP4.error("server certificate not valid for %s" % hostname)
+
+    try:
+        newsock = ssl_context.wrap_socket(sock, server_hostname=hostname)
+    except ssl.CertificateError as err:
+        killsock()
+        raise imaplib.IMAP4.error("certificate error for %s: %s" % (hostname, str(err)))
+    except ssl.SSLError as err:
+        killsock()
+        raise imaplib.IMAP4.error("SSL error for %s: %s" % (hostname, err.args[-1]))
+
+    return _SSLSocketWithShutdown(newsock)
 
 
 class IMAP4_TLS(imaplib.IMAP4):
@@ -148,4 +156,18 @@ class IMAP4_TLS(imaplib.IMAP4):
 
     def shutdown(self):
         self.file.close()
+        self.sock._conn.shutdown()
         self.sock.close()
+
+
+# TODO: get shutdown added in backports.ssl.SSLSocket
+class _SSLSocketWithShutdown(object):
+
+    def __init__(self, sslsock):
+        self.sslsock = sslsock
+
+    def shutdown(self, how):
+        return self.sslsock._conn.sock_shutdown(how)
+
+    def __getattr__(self, name):
+        return getattr(self.sslsock, name)
