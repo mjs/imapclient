@@ -137,23 +137,26 @@ def create_client_from_config(conf):
                                    ssl=conf.ssl,
                                    ssl_context=ssl_context,
                                    stream=conf.stream)
+    try:
+        if conf.starttls:
+            client.starttls()
 
-    if conf.starttls:
-        client.starttls()
+        if conf.oauth:
+            client.oauth_login(conf.oauth_url,
+                            conf.oauth_token,
+                            conf.oauth_token_secret)
+        elif conf.oauth2:
+            access_token = get_oauth2_token(conf.oauth2_client_id,
+                                            conf.oauth2_client_secret,
+                                            conf.oauth2_refresh_token)
+            client.oauth2_login(conf.username, access_token)
 
-    if conf.oauth:
-        client.oauth_login(conf.oauth_url,
-                           conf.oauth_token,
-                           conf.oauth_token_secret)
-    elif conf.oauth2:
-        access_token = get_oauth2_token(conf.oauth2_client_id,
-                                        conf.oauth2_client_secret,
-                                        conf.oauth2_refresh_token)
-        client.oauth2_login(conf.username, access_token)
-
-    elif not conf.stream:
-        client.login(conf.username, conf.password)
-    return client
+        elif not conf.stream:
+            client.login(conf.username, conf.password)
+        return client
+    except:
+        client.shutdown()
+        raise
 
 class Bunch(dict):
 
