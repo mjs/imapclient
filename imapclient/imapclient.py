@@ -412,7 +412,7 @@ class IMAPClient(object):
             flags, delim, name = parsed[:3]
             parsed = parsed[3:]
 
-            if isinstance(name, int):
+            if isinstance(name, (int, long)):
                 # Some IMAP implementations return integer folder names
                 # with quotes. These get parsed to ints so convert them
                 # back to strings.
