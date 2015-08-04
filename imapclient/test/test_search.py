@@ -4,8 +4,13 @@
 
 from __future__ import unicode_literals
 
+from six import PY3
+
 from .imapclient_test import IMAPClientTest
 from .testable_imapclient import TestableIMAPClient as IMAPClient
+
+
+search_command = 'search' if PY3 else b'search'
 
 
 class TestSearch(IMAPClientTest):
@@ -16,7 +21,7 @@ class TestSearch(IMAPClientTest):
 
         result = self.client.search('FOO')
 
-        self.client._imap.uid.assert_called_once_with('SEARCH', '(FOO)')
+        self.client._imap.uid.assert_called_once_with(search_command, b'(FOO)')
         self.assertEqual(result, [1, 2, 44])
         self.assertEqual(result.modseq, None)
 
@@ -26,7 +31,7 @@ class TestSearch(IMAPClientTest):
 
         result = self.client.search('FOO')
 
-        self.client._imap.uid.assert_called_once_with('SEARCH', '(FOO)')
+        self.client._imap.uid.assert_called_once_with(search_command, b'(FOO)')
         self.assertEqual(result, [])
         self.assertEqual(result.modseq, None)
 
@@ -36,7 +41,7 @@ class TestSearch(IMAPClientTest):
 
         result = self.client.search('FOO')
 
-        self.client._imap.search.assert_called_once_with(None, '(FOO)')
+        self.client._imap.search.assert_called_once_with(None, b'(FOO)')
         self.assertEqual(result, [1, 2, 44])
         self.assertEqual(result.modseq, None)
 
@@ -44,30 +49,27 @@ class TestSearch(IMAPClientTest):
         self.client.use_uid = True
         self.client._imap.uid.return_value = ('OK', [b'1 2 44'])
 
-        result = self.client.search('FOO', 'UTF9')
+        result = self.client.search(['UNDELETED', 'TEXT "\u2639"'], 'UTF-8')
 
         self.client._imap.uid.assert_called_once_with(
-            'SEARCH',
-            b'CHARSET', 'UTF9',
-            '(FOO)')
+            search_command,
+            b'CHARSET', b'UTF-8',
+            b'(UNDELETED)',
+            b'(TEXT "\xe2\x98\xb9")',
+        )
         self.assertEqual(result, [1, 2, 44])
 
     def test_without_uid_with_charset(self):
         self.client.use_uid = False
         self.client._imap.search.return_value = ('OK', [b'1 2 44'])
 
-        result = self.client.search('FOO', 'UTF9')
+        result = self.client.search(['UNDELETED', 'TEXT "\u2639"'], 'UTF-8')
 
-        self.client._imap.search.assert_called_once_with('UTF9', '(FOO)')
-        self.assertEqual(result, [1, 2, 44])
-
-    def test_with_multiple_criteria_and_charset(self):
-        self.client.use_uid = False
-        self.client._imap.search.return_value = ('OK', [b'1 2 44'])
-
-        result = self.client.search(['FOO', 'BAR'], 'UTF9')
-
-        self.client._imap.search.assert_called_once_with('UTF9', '(FOO)', '(BAR)')
+        self.client._imap.search.assert_called_once_with(
+            b'UTF-8',
+            b'(UNDELETED)',
+            b'(TEXT "\xe2\x98\xb9")',
+        )
         self.assertEqual(result, [1, 2, 44])
 
     def test_modseq(self):
@@ -75,7 +77,7 @@ class TestSearch(IMAPClientTest):
 
         result = self.client.search(['MODSEQ 40000'])
 
-        self.client._imap.uid.assert_called_once_with('SEARCH', '(MODSEQ 40000)')
+        self.client._imap.uid.assert_called_once_with(search_command, b'(MODSEQ 40000)')
         self.assertEqual(result, [1, 2])
         self.assertEqual(result.modseq, 51101)
 
@@ -95,7 +97,7 @@ class TestGmailSearch(IMAPClientTest):
 
         result = self.client.gmail_search('FOO')
 
-        self.client._imap.uid.assert_called_once_with('SEARCH', b'X-GM-RAW')
+        self.client._imap.uid.assert_called_once_with(search_command, b'X-GM-RAW')
         self.assertEqual(self.client._imap.literal, b'FOO')
         self.assertEqual(result, [1, 2, 44])
 
@@ -113,11 +115,11 @@ class TestGmailSearch(IMAPClientTest):
         self.client.use_uid = True
         self.client._imap.uid.return_value = ('OK', [b'1 2 44'])
 
-        result = self.client.gmail_search('\u2620', 'UTF8')
+        result = self.client.gmail_search('\u2620', 'UTF-8')
 
         self.client._imap.uid.assert_called_once_with(
-            'SEARCH',
-            b'CHARSET', 'UTF8',
+            search_command,
+            b'CHARSET', b'UTF-8',
             b'X-GM-RAW')
         self.assertEqual(self.client._imap.literal, b'\xe2\x98\xa0')
         self.assertEqual(result, [1, 2, 44])
@@ -126,9 +128,9 @@ class TestGmailSearch(IMAPClientTest):
         self.client.use_uid = False
         self.client._imap.search.return_value = ('OK', [b'1 2 44'])
 
-        result = self.client.gmail_search('\u2620', 'UTF8')
+        result = self.client.gmail_search('\u2620', 'UTF-8')
 
-        self.client._imap.search.assert_called_once_with('UTF8', b'X-GM-RAW')
+        self.client._imap.search.assert_called_once_with(b'UTF-8', b'X-GM-RAW')
         self.assertEqual(self.client._imap.literal, b'\xe2\x98\xa0')
         self.assertEqual(result, [1, 2, 44])
 

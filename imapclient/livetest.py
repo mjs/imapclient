@@ -54,6 +54,18 @@ Here is the second part.
 --===============1534046211==--
 """.replace('\n', '\r\n')
 
+
+SMILE = '\u263a'
+FROWN = '\u2639'
+
+SMILE_MESSAGE = b"""\
+Subject: stuff
+Content-Type: text/plain; charset="UTF-8"
+
+'\xe2\x98\xba'
+""".replace(b'\n', b'\r\n')
+
+
 class _TestBase(unittest.TestCase):
 
     conf = None
@@ -626,13 +638,20 @@ def createUidTestClass(conf, use_uid):
             self.assertEqual(len(ids), 1)
             self.assertGreater(ids.modseq, initial_modseq)
 
+        def test_search_with_unicode(self):
+            self.client.append(self.base_folder, SMILE_MESSAGE)
+
+            self.assertEqual(len(self.client.search('TEXT "%s"' % SMILE, charset='UTF-8')), 1)
+            self.assertEqual(len(self.client.search(['TEXT "%s"' % SMILE], charset='UTF-8')), 1)
+
+            self.assertEqual(len(self.client.search('TEXT "%s"' % FROWN, charset='UTF-8')), 0)
+
         def test_gmail_search(self):
             self.skip_unless_capable('X-GM-EXT-1', 'Gmail search')
 
             random_string = ''.join(random.sample(string.ascii_letters*20, 64))
             msg = 'Subject: something\r\n\r\nFoo\r\n%s\r\n' % random_string
             self.client.append(self.base_folder, msg)
-            self.client.noop()    # For Gmail
 
             ids = self.client.gmail_search(random_string)
             self.assertEqual(len(ids), 1)
@@ -641,8 +660,7 @@ def createUidTestClass(conf, use_uid):
             self.assertEqual(len(ids), 0)
 
         def test_sort(self):
-            if not self.client.has_capability('SORT'):
-                return self.skipTest("Server doesn't support SORT")
+            self.skip_unless_capable('SORT')
 
             # Add some test messages
             msg_tmpl = 'Subject: Test\r\n\r\nBody'
@@ -658,14 +676,19 @@ def createUidTestClass(conf, use_uid):
             expected = [first_id, first_id - 1, first_id - 2]
             self.assertListEqual(messages, expected)
 
+        def test_sort_with_unicode(self):
+            self.skip_unless_capable('SORT')
+
+            self.client.append(self.base_folder, SMILE_MESSAGE)
+
+            messages = self.client.sort('ARRIVAL', ['TEXT "%s"' % SMILE])
+            self.assertEqual(len(messages), 1)
+
+            messages = self.client.sort('ARRIVAL', ['TEXT "%s"' % FROWN])
+            self.assertEqual(len(messages), 0)
+
         def test_thread(self):
-            thread_algo = None
-            for cap in self.client.capabilities():
-                if cap.startswith(b'THREAD='):
-                    thread_algo = cap.split(b'=')[-1]
-                    break
-            if not thread_algo:
-                return self.skipTest("Server doesn't support THREAD")
+            self.skip_unless_capable('THREAD=REFERENCES')
 
             msg_tmpl = 'Subject: %s\r\n\r\nBody'
             subjects = ('a', 'b', 'c')
@@ -680,6 +703,18 @@ def createUidTestClass(conf, use_uid):
             first_id = messages[0][0]
             expected = ((first_id,), (first_id + 1,), (first_id + 2,))
             self.assertTupleEqual(messages, expected)
+
+        def test_thread_with_unicode(self):
+            self.skip_unless_capable('THREAD=REFERENCES')
+
+            self.client.append(self.base_folder, SMILE_MESSAGE)
+
+            threads = self.client.thread(criteria=['TEXT "%s"' % SMILE])
+            self.assertEqual(len(threads), 1)
+            self.assertEqual(len(threads[0]), 1)
+
+            threads = self.client.thread(criteria=['TEXT "%s"' % FROWN])
+            self.assertEqual(len(threads), 0)
 
         def test_copy(self):
             self.append_msg(SIMPLE_MESSAGE)

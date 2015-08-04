@@ -23,6 +23,23 @@ XXX
 
 XXX Thank people who contributed (Chris?)
 
+Fixed charset handling for search, sort and thread
+--------------------------------------------------
+The handling of the *charset* argument for the search, sort and thread
+methods has been fixed.
+
+Any unicode criteria given will now be encoded using the supplied
+charset. The charset must refer to an encoding that is capable of
+handling the criteria's characters or an error will occur.
+
+Any criteria given as bytes will not be changed by IMAPClient, but the
+provided charset will still be passed to the IMAP server. The encoding
+referred to by *charset* should match the actual encoding used for the
+critera.
+
+The tests and documentation for search, sort and thread has updated to
+account for these changes and have also been generally improved.
+
 Performance optimsation for parsing message id lists
 ----------------------------------------------------
 A short circuit is now used when parsing a list of message ids which

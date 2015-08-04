@@ -522,13 +522,30 @@ class TestThread(IMAPClientTest):
         self.client._cached_capabilities = (b'THREAD=FOO',)
         self.assertRaises(ValueError, self.client.thread)
 
+    def test_charset_with_uid(self):
+        self.client._cached_capabilities = (b'THREAD=REFERENCES',)
+        self.client._imap.uid.return_value = ('OK', [])
+
+        self.client.thread(criteria='\u261e', charset='utf-8')
+
+        self.client._imap.uid.assert_called_once_with('thread', b'REFERENCES', b'utf-8', b'(\xe2\x98\x9e)')
+
+    def test_charset_without_uid(self):
+        self.client._cached_capabilities = (b'THREAD=REFERENCES',)
+        self.client.use_uid = False
+        self.client._imap.thread.return_value = ('OK', [])
+
+        self.client.thread(criteria='\u261e', charset='utf-8')
+
+        self.client._imap.thread.assert_called_once_with(b'REFERENCES', b'utf-8', b'(\xe2\x98\x9e)')
+
     def test_all_args_with_uid(self):
         self.client._cached_capabilities = (b'THREAD=FOO',)
         self.client._imap.uid.return_value = ('OK', [])
 
         self.client.thread(algorithm='FOO', criteria='STUFF', charset='ASCII')
 
-        self.client._imap.uid.assert_called_once_with('thread', b'FOO', b'ASCII', '(STUFF)')
+        self.client._imap.uid.assert_called_once_with('thread', b'FOO', b'ASCII', b'(STUFF)')
 
     def test_all_args_without_uid(self):
         self.client.use_uid = False
@@ -537,7 +554,7 @@ class TestThread(IMAPClientTest):
 
         self.client.thread(algorithm='FOO', criteria='STUFF', charset='ASCII')
 
-        self.client._imap.thread.assert_called_once_with(b'FOO', b'ASCII', '(STUFF)')
+        self.client._imap.thread.assert_called_once_with(b'FOO', b'ASCII', b'(STUFF)')
 
 
 class TestId(IMAPClientTest):

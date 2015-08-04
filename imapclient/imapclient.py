@@ -646,8 +646,16 @@ class IMAPClient(object):
              'UNSEEN'
              'SINCE 1-Feb-2011'
 
-        *charset* specifies the character set of the strings in the
-        criteria. It defaults to US-ASCII.
+        *charset* specifies the character set of the criteria. It
+        defaults to US-ASCII as this is the only charset that a server
+        is required to support by the RFC.
+
+        Any criteria specified using unicode will be encoded as per
+        *charset*. Specifying a unicode criteria that can not be
+        encoded using *charset* will result in an error.
+
+        Any criteria specified using bytes will not be modified but
+        should use an encoding that matches *charset*.
 
         See :rfc:`3501#section-6.4.4` for more details.
 
@@ -656,7 +664,8 @@ class IMAPClient(object):
         search response (i.e. if a MODSEQ criteria was included in the
         search).
         """
-        return self._search(normalise_search_criteria(criteria), charset)
+        criteria = normalise_search_criteria(criteria, charset)
+        return self._search(criteria, charset)
 
     def gmail_search(self, query, charset=None):
         """Search using Gmail's X-GM-RAW attribute.
@@ -665,39 +674,79 @@ class IMAPClient(object):
         example: ``has:attachment in:unread``
 
         This method only works for IMAP servers that support X-GM-RAW,
-        which is only likely to be Gmail.
+        which is only like to be Gmail.
 
         See https://developers.google.com/gmail/imap_extensions#extension_of_the_search_command_x-gm-raw
         for more info.
 
-        *charset* specifies the character set used to encode the
-        search string. It defaults to US-ASCII.
+        *charset* specifies the encoding for the query string. The
+        documentation for *charset* for :py:meth:`.search`
+        also applies here.
         """
-        # the the query is sent as a literal to allow for 7-bit query strings
-        if isinstance(query, string_types):
-            query = query.encode(charset or 'us-ascii')
-        self._imap.literal = query
+        # the the query is sent as a literal to allow for 8-bit query strings
+        self._imap.literal = to_bytes(query, charset or 'us-ascii')
         return self._search([b'X-GM-RAW'], charset)
 
     def _search(self, criteria, charset):
+        charset = to_bytes(charset)
+
         if self.use_uid:
             args = []
             if charset:
                 args.extend([b'CHARSET', charset])
             args.extend(criteria)
-            typ, data = self._imap.uid('SEARCH', *args)
+            typ, data = self._imap.uid('search' if PY3 else b'search', *args)
         else:
             typ, data = self._imap.search(charset, *criteria)
 
-        self._checkok('search', typ, data)
+        self._checkok(b'search', typ, data)
         return parse_message_list(data)
+
+    def sort(self, sort_criteria, criteria='ALL', charset='UTF-8'):
+        """Return a list of message ids sorted by *sort_criteria* and
+        optionally filtered by *criteria*.
+
+        Example values for *sort_criteria* include::
+
+            ARRIVAL
+            REVERSE SIZE
+            SUBJECT
+
+        The *criteria* and *charset* arguments are as per
+        :py:meth:`.search`.
+
+        See :rfc:`5256` for full details.
+
+        Note that SORT is an extension to the IMAP4 standard so it may
+        not be supported by all IMAP servers.
+        """
+        if not self.has_capability('SORT'):
+            raise self.Error('The server does not support the SORT extension')
+
+        ids = self._command_and_check(
+            b'sort',
+            _normalise_sort_criteria(sort_criteria),
+            to_bytes(charset),
+            *normalise_search_criteria(criteria, charset),
+            uid=True, unpack=True)
+        return [long(i) for i in ids.split()]
 
     def thread(self, algorithm='REFERENCES', criteria='ALL', charset='UTF-8'):
         """Return a list of messages threads matching *criteria*.
 
-        Each thread is a list of messages ids.
+        Each returned thread is a list of messages ids. An example
+        return value containing three message threads::
+
+            ((1, 2), (3,), (4, 5, 6))
+
+        The optional *algorithm* argument specifies the threading
+        algorithm to use.
+
+        The *criteria* and *charset* arguments are as per
+        :py:meth:`.search`.
 
         See :rfc:`5256` for more details.
+
         """
         algorithm = to_bytes(algorithm)
         if not self.has_capability(b'THREAD=' + algorithm):
@@ -710,40 +759,10 @@ class IMAPClient(object):
         args = [algorithm]
         if charset:
             args.append(to_bytes(charset))
-        args.extend(normalise_search_criteria(criteria))
+        args.extend(normalise_search_criteria(criteria, charset))
 
-        data = self._command_and_check('thread', *args, uid=True)
+        data = self._command_and_check(b'thread', *args, uid=True)
         return parse_response(data)
-
-    def sort(self, sort_criteria, criteria='ALL', charset='UTF-8'):
-        """Return a list of message ids sorted by *sort_criteria* and
-        optionally filtered by *criteria*.
-
-        Example values for *sort_criteria* include::
-
-            ARRIVAL
-            REVERSE SIZE
-            SUBJECT
-
-        The *criteria* argument is as per search().
-
-        See :rfc:`5256` for full details.
-
-        Note that SORT is an extension to the IMAP4 standard so it may
-        not be supported by all IMAP servers.
-        """
-        if not criteria:
-            raise ValueError('no criteria specified')
-
-        if not self.has_capability('SORT'):
-            raise self.Error('The server does not support the SORT extension')
-
-        ids = self._command_and_check('sort',
-                                      seq_to_parenstr_upper(sort_criteria),
-                                      charset,
-                                      *normalise_search_criteria(criteria),
-                                      uid=True, unpack=True)
-        return [long(i) for i in ids.split()]
 
     def get_flags(self, messages):
         """Return the flags set for each message in *messages*.
@@ -1013,9 +1032,11 @@ class IMAPClient(object):
         assert not kwargs, "unexpected keyword args: " + ', '.join(kwargs)
 
         if uid and self.use_uid:
+            if PY3:
+                command = to_unicode(command) # imaplib must die
             typ, data = self._imap.uid(command, *args)
         else:
-            meth = getattr(self._imap, command)
+            meth = getattr(self._imap, to_unicode(command))
             typ, data = meth(*args)
         self._checkok(command, typ, data)
         if unpack:
@@ -1096,17 +1117,30 @@ def seq_to_parenstr(items):
 def seq_to_parenstr_upper(items):
     return _join_and_paren(item.upper() for item in _normalise_text_list(items))
 
-def normalise_search_criteria(criteria):
+def normalise_search_criteria(criteria, charset=None):
     if not criteria:
         raise ValueError('no criteria specified')
-    return ['(' + item + ')' for item in _normalise_text_list(criteria)]
+    if isinstance(criteria, (text_type, binary_type)):
+        criteria = (criteria,)
+    if not charset:
+        charset = 'us-ascii'
+    return [b'(' + to_bytes(item, charset) + b')' for item in criteria]
+
+def _normalise_sort_criteria(criteria, charset=None):
+    if isinstance(criteria, (text_type, binary_type)):
+        criteria = (criteria,)
+    # This is because imaplib's implementation varies between Python 2 and 3.
+    if PY3:
+        return '(' + ' '.join(to_unicode(item).upper() for item in criteria) + ')'
+    else:
+        return b'(' + b' '.join(to_bytes(item).upper() for item in criteria) + b')'
 
 def _join_and_paren(items):
     return '(' + ' '.join(items) + ')'
 
 def _normalise_text_list(items):
     if isinstance(items, (text_type, binary_type)):
-        items = (to_unicode(items),)
+        items = (items,)
     return (to_unicode(c) for c in items)
 
 def join_message_ids(messages):
@@ -1155,7 +1189,7 @@ def to_unicode(s):
         return s.decode('ascii')
     return s
 
-def to_bytes(s):
+def to_bytes(s, charset='ascii'):
     if isinstance(s, text_type):
-        return s.encode('ascii')
+        return s.encode(charset)
     return s
