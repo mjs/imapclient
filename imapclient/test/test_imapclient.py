@@ -105,8 +105,8 @@ class TestListFolders(IMAPClientTest):
 
     def test_unqouted_numeric_folder_name_parsed_as_long(self):
         # big enough numeric values might get parsed as longs
-        folder_name = str(sys.maxint + 1)
-        folders = self.client._proc_folder_list([b'(\\HasNoChildren) "/" %s' % folder_name])
+        folder_name = str(sys.maxsize + 1)
+        folders = self.client._proc_folder_list([b'(\\HasNoChildren) "/" ' + folder_name.encode('ascii')])
         self.assertEqual(folders, [((b'\\HasNoChildren', ), b'/', folder_name)])
 
     def test_mixed(self):
