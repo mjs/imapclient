@@ -51,6 +51,8 @@ Other
   * The type of the various flag constants was fixed. Thanks to Thomi
     Richards for pointing this out.
   * Now using mock 1.3.0. Thanks to Thomi Richards for the patch.
+  * Fixed handling of very long numeric only folder names. Thanks to
+    Paweł Gorzelany for the patch.
 
 ======
  0.13
