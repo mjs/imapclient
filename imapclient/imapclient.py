@@ -1077,7 +1077,10 @@ class IMAPClient(object):
     debug = property(__debug_get, __debug_set)
 
     def _log(self, text):
-        self.log_file.write('%s %s\n' % (datetime.now().strftime('%M:%S.%f'), text))
+        timestamp = datetime.now().strftime('%M:%S.%f')
+        if isinstance(text, binary_type):
+            text = repr(text)[1:-1]
+        self.log_file.write(timestamp + ' ' + text + '\n')
         self.log_file.flush()
 
     def _normalise_folder(self, folder_name):
