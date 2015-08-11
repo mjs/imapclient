@@ -10,9 +10,10 @@ import select
 import socket
 import sys
 import re
-
 from datetime import datetime
 from operator import itemgetter
+
+from six import moves, iteritems, text_type, integer_types, PY3, binary_type
 
 # Confusingly, this module is for OAUTH v1, not v2
 try:
@@ -25,7 +26,6 @@ from . import tls
 from .datetime_util import datetime_to_INTERNALDATE
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .response_parser import parse_response, parse_message_list, parse_fetch_response
-from .six import moves, iteritems, text_type, integer_types, PY3, binary_type, string_types
 xrange = moves.xrange
 
 if PY3:

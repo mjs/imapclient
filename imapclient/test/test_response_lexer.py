@@ -4,8 +4,9 @@
 
 from __future__ import unicode_literals
 
+from six import next
+
 from imapclient.response_lexer import TokenSource
-from imapclient.six import next
 from imapclient.test.util import unittest
 
 

@@ -24,7 +24,7 @@
 
 from __future__ import unicode_literals
 
-from .six import binary_type, text_type, byte2int, iterbytes, unichr
+from six import binary_type, text_type, byte2int, iterbytes, unichr
 
 
 PRINTABLE = set(range(0x20, 0x26)) | set(range(0x27, 0x7f))

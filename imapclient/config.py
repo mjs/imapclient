@@ -13,9 +13,10 @@ except ImportError:
 from os import path
 from backports import ssl
 
+from six.moves.urllib.request import urlopen
+from six.moves.urllib.parse import urlencode
+
 import imapclient
-from .six.moves.urllib.request import urlopen
-from .six.moves.urllib.parse import urlencode
 from .tls import create_default_context
 
 try:

@@ -5,7 +5,7 @@
 from collections import namedtuple
 from email.utils import formataddr
 
-from . import six
+import six
 
 
 class Envelope(namedtuple("Envelope", "date subject from_ sender reply_to to " +

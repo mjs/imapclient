@@ -15,10 +15,11 @@ import time
 from datetime import datetime
 from email.utils import make_msgid
 
+from six import binary_type, text_type, PY3, iteritems
+
 from .fixed_offset import FixedOffset
 from .imapclient import IMAPClient, DELETED, RECENT, to_unicode, to_bytes, normalise_untagged_responses
 from .response_types import Envelope, Address
-from .six import binary_type, text_type, PY3, iteritems
 from .test.util import unittest
 from .config import parse_config_file, create_client_from_config
 

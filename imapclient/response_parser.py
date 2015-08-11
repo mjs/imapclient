@@ -17,7 +17,7 @@ import re
 import sys
 from collections import defaultdict
 
-from . import six
+import six
 xrange = six.moves.xrange
 
 from .datetime_util import parse_to_datetime

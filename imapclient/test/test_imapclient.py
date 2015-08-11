@@ -8,9 +8,11 @@ import itertools
 import socket
 import sys
 from datetime import datetime
+
+import six
 from mock import patch, sentinel, Mock
 
-from imapclient import six, DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT
+from imapclient import DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT
 from imapclient.fixed_offset import FixedOffset
 from .testable_imapclient import TestableIMAPClient as IMAPClient
 from .imapclient_test import IMAPClientTest

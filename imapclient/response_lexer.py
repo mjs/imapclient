@@ -11,7 +11,7 @@ external callers.
 
 from __future__ import unicode_literals
 
-from . import six
+import six
 
 __all__ = ["TokenSource"]
 
