@@ -10,18 +10,43 @@ verification, certificate hostname checking, and will not use
 known-insecure TLS settings and protocols. In addition, TLS parameters
 are now highly configurable.
 
-XXX new dependencies
-XXX compatibility: dropped Python 3.2 support
-XXX compatibility: Removed kwargs support from constructor - replaced by ssl_context
-XXX compatibility: default is to do cert checks (pointer to docs on how to disable)
+By leveraging pyOpenSSL and backports.ssl, all Python versions
+supported by IMAPClient enjoy the same TLS functionality and
+API.
 
-XXX Thank people who contributed
+These packages mean that IMAPClient now has a number of new
+dependencies. These should be installed automatically as required but
+there will no doubt be complications.
+
+Compatibility breaks:
+
+1. Due to lack of support in some of the dependent libraries,
+   IMAPClient no longer supports Python 3.2.
+2. The passthrough keyword arguments that the IMAPClient constructor
+   took in past versions are no longer accepted. These were in place
+   to provide access to imaplib's SSL arguments which are no longer
+   relevant. Please pass a SSL context object instead.
+3. When using the default SSL context that IMAPClient creates
+   (recommended), certificate verification is enabled. This means that
+   IMAPClient connections to servers that used to work before,
+   may fail now (especially if a self-signed certificate is used by
+   the server). Refer to the documentation for details of how to
+   supply alternate CA certificates or disable verification.
+
+Please refer to the "TLS/SSL" section of the manual for more details
+on all of the above.
+
+Many thanks to Chris Arndt and Marc-Antoine Parent for their input
+into these TLS improvements.
 
 STARTTLS support
 ----------------
-XXX
+When the server supports it, IMAPClient can now establish an encrypted
+connection after initially connection unencrypted via STARTTLS. The
+starttls method takes an SSL context object for controlling the
+parameters of the TLS negotiation.
 
-XXX Thank people who contributed (Chris?)
+Many thanks to Chris Arndt for his extensive initial work on this.
 
 Fixed charset handling for search, sort and thread
 --------------------------------------------------

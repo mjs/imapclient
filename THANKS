@@ -48,6 +48,7 @@ Naveen Nathan
 
 Chris Arndt
      Pass-through imaplib kwargs.
+     Initial STARTTLS and improved TLS support.
 
 Phil Peterson
      OAUTH2 improvements.
