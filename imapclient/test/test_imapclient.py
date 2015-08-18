@@ -593,3 +593,66 @@ class TestFlags(IMAPClientTest):
         for flag in DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT:
             if not isinstance(flag, six.binary_type):
                 self.fail("%r flag is not bytes" % flag)
+
+
+class TestRawCommand(IMAPClientTest):
+
+    def setUp(self):
+        super(TestRawCommand, self).setUp()
+        self.client._imap._get_response.return_value = None
+        self.client._imap._command_complete.return_value = ('OK', ['done'])
+
+    def check(self, command, args, expected):
+        typ, data = self.client._raw_command(command, args)
+        self.assertEqual(typ, 'OK')
+        self.assertEqual(data, ['done'])
+        self.assertEqual(self.client._imap.sent, expected)
+
+    def test_plain(self):
+        self.check(b'search', [b'ALL'],
+            b'tag UID SEARCH ALL\r\n',
+        )
+
+    def test_not_uid(self):
+        self.client.use_uid = False
+        self.check(b'search', [b'ALL'],
+            b'tag SEARCH ALL\r\n',
+        )
+
+    def test_literal_at_end(self):
+        self.check(b'search', [b'TEXT', b'\xfe\xff'],
+            b'tag UID SEARCH TEXT {2}\r\n'
+            b'\xfe\xff\r\n'
+        )
+
+    def test_embedded_literal(self):
+        self.check(b'search', [b'TEXT', b'\xfe\xff', b'DELETED'],
+            b'tag UID SEARCH TEXT {2}\r\n'
+            b'\xfe\xff DELETED\r\n'
+        )
+
+    def test_multiple_literals(self):
+        self.check(b'search', [b'TEXT', b'\xfe\xff', b'TEXT', b'\xcc'],
+            b'tag UID SEARCH TEXT {2}\r\n'
+            b'\xfe\xff TEXT {1}\r\n'
+            b'\xcc\r\n'
+        )
+
+    def test_complex(self):
+        self.check(b'search', [b'FLAGGED', b'TEXT', b'\xfe\xff', b'TEXT', b'\xcc', b'TEXT', b'foo'],
+            b'tag UID SEARCH FLAGGED TEXT {2}\r\n'
+            b'\xfe\xff TEXT {1}\r\n'
+            b'\xcc TEXT foo\r\n'
+        )
+
+    def test_invalid_input_type(self):
+        self.assertRaises(ValueError, self.client._raw_command, 'foo', [])
+        self.assertRaises(ValueError, self.client._raw_command, u'foo', ['foo'])
+
+    def test_failed_continuation_wait(self):
+        self.client._imap._get_response.return_value = b'blah'
+        self.client._imap.tagged_commands['tag'] = ('NO', ['go away'])
+
+        expected_error = "unexpected response while waiting for continuation response: \('NO', \['go away'\]\)"
+        with self.assertRaisesRegex(IMAPClient.AbortError, expected_error):
+            self.client._raw_command(b'FOO', [b'\xff'])

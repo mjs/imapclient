@@ -25,7 +25,7 @@ from . import tls
 from .datetime_util import datetime_to_INTERNALDATE
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .response_parser import parse_response, parse_message_list, parse_fetch_response
-from .six import moves, iteritems, text_type, integer_types, PY3, binary_type, string_types
+from .six import moves, iteritems, text_type, integer_types, PY3, binary_type, iterbytes
 xrange = moves.xrange
 
 if PY3:
@@ -664,7 +664,6 @@ class IMAPClient(object):
         search response (i.e. if a MODSEQ criteria was included in the
         search).
         """
-        criteria = normalise_search_criteria(criteria, charset)
         return self._search(criteria, charset)
 
     def gmail_search(self, query, charset=None):
@@ -683,23 +682,15 @@ class IMAPClient(object):
         documentation for *charset* for :py:meth:`.search`
         also applies here.
         """
-        # the the query is sent as a literal to allow for 8-bit query strings
-        self._imap.literal = to_bytes(query, charset or 'us-ascii')
-        return self._search([b'X-GM-RAW'], charset)
+        return self._search([b'X-GM-RAW', query], charset)
 
     def _search(self, criteria, charset):
-        charset = to_bytes(charset)
+        args = []
+        if charset:
+            args.extend([b'CHARSET', to_bytes(charset)])
+        args.extend(_normalise_search_criteria(criteria, charset))
 
-        if self.use_uid:
-            args = []
-            if charset:
-                args.extend([b'CHARSET', charset])
-            args.extend(criteria)
-            typ, data = self._imap.uid('search' if PY3 else b'search', *args)
-        else:
-            typ, data = self._imap.search(charset, *criteria)
-
-        self._checkok(b'search', typ, data)
+        data = self._raw_command_untagged(b'SEARCH', args)
         return parse_message_list(data)
 
     def sort(self, sort_criteria, criteria='ALL', charset='UTF-8'):
@@ -723,12 +714,12 @@ class IMAPClient(object):
         if not self.has_capability('SORT'):
             raise self.Error('The server does not support the SORT extension')
 
-        ids = self._command_and_check(
-            b'sort',
+        args = [
             _normalise_sort_criteria(sort_criteria),
             to_bytes(charset),
-            *normalise_search_criteria(criteria, charset),
-            uid=True, unpack=True)
+        ]
+        args.extend(_normalise_search_criteria(criteria, charset))
+        ids = self._raw_command_untagged(b'SORT', args, unpack=True)
         return [long(i) for i in ids.split()]
 
     def thread(self, algorithm='REFERENCES', criteria='ALL', charset='UTF-8'):
@@ -746,22 +737,18 @@ class IMAPClient(object):
         :py:meth:`.search`.
 
         See :rfc:`5256` for more details.
-
         """
         algorithm = to_bytes(algorithm)
         if not self.has_capability(b'THREAD=' + algorithm):
             raise ValueError('server does not support %s threading algorithm'
                              % algorithm)
 
-        if not criteria:
-            raise ValueError('no criteria specified')
-
         args = [algorithm]
         if charset:
             args.append(to_bytes(charset))
-        args.extend(normalise_search_criteria(criteria, charset))
+        args.extend(_normalise_search_criteria(criteria, charset))
 
-        data = self._command_and_check(b'thread', *args, uid=True)
+        data = self._raw_command_untagged(b'THREAD', args)
         return parse_response(data)
 
     def get_flags(self, messages):
@@ -1026,6 +1013,92 @@ class IMAPClient(object):
         self._checkok(command, typ, data)
         return data[0], resps
 
+    def _raw_command_untagged(self, command, args, unpack=False):
+        # TODO: eventually this should replace _command_and_check (call it _command)
+        typ, data = self._raw_command(command, args)
+        typ, data = self._imap._untagged_response(typ, data, to_unicode(command))
+        self._checkok(to_unicode(command), typ, data)
+        if unpack:
+            return data[0]
+        return data
+
+    def _raw_command(self, command, args):
+        """Run the specific command with the arguments given. 8-bit arguments
+        are sent as literals. The return value is (typ, data).
+
+        This sidesteps much of imaplib's command sending
+        infrastructure because imaplib can't send more than one
+        literal.
+
+        *command* should be specified as bytes.
+        *args* should be specified as a list of bytes.
+        """
+        if self.debug >= 4:
+            self._log_ts()
+            self._log_write('> ')
+
+        command = command.upper()
+
+        if isinstance(args, tuple):
+            args = list(args)
+        if not isinstance(args, list):
+           args = [args]
+
+        tag = self._imap._new_tag()
+        prefix = [to_bytes(tag)]
+        if self.use_uid:
+            prefix.append(b'UID')
+        prefix.append(command)
+
+        line = []
+        for item, is_last in _iter_with_last(prefix + args):
+            if not isinstance(item, bytes):
+                raise ValueError("command args must be passed as bytes")
+
+            if _is8bit(item):
+                if line:
+                    out = b' '.join(line)
+                    if self.debug >= 4:
+                        self._log_write(out)
+                    self._imap.send(out)
+                    line = []
+                self._send_literal(tag, item)
+                if not is_last:
+                    self._imap.send(b' ')
+            else:
+                line.append(item)
+
+        if line:
+            out = b' '.join(line)
+            if self.debug >= 4:
+                self._log_write(out)
+            self._imap.send(out)
+
+        self._imap.send(b'\r\n')
+        if self.debug >= 4:
+            self._log_write("", end=True)
+
+        return self._imap._command_complete(to_unicode(command), tag)
+
+    def _send_literal(self, tag, item):
+        """Send a single literal for the command with *tag*.
+        """
+        out = b' {' + str(len(item)).encode('ascii') + b'}\r\n'
+        if self.debug >= 4:
+            self._log_write(out, end=True)
+        self._imap.send(out)
+
+        # Wait for continuation response
+        while self._imap._get_response():
+            tagged_resp = self._imap.tagged_commands.get(tag)
+            if tagged_resp:
+                raise self.AbortError("unexpected response while waiting for continuation response: " + repr(tagged_resp))
+
+        if self.debug >= 4:
+            self._log_write("   (literal) > ")
+            self._log_write(item)
+        self._imap.send(item)
+
     def _command_and_check(self, command, *args, **kwargs):
         unpack = pop_with_default(kwargs, 'unpack', False)
         uid = pop_with_default(kwargs, 'uid', False)
@@ -1076,9 +1149,25 @@ class IMAPClient(object):
 
     debug = property(__debug_get, __debug_set)
 
+    def _log_ts(self):
+        self.log_file.write(datetime.now().strftime('%M:%S.%f') + ' ')
+
+    def _log_write(self, text, end=False):
+        if isinstance(text, binary_type):
+            text = repr(text)
+            for i, c in enumerate(text):
+                if c in "\"'":
+                    break
+            text = text[i+1:-1]
+        self.log_file.write(text)
+
+        if end:
+            self.log_file.write('\n')
+            self.log_file.flush()
+
     def _log(self, text):
-        self.log_file.write('%s %s\n' % (datetime.now().strftime('%M:%S.%f'), text))
-        self.log_file.flush()
+        self._log_ts()
+        self._log_write(text, end=True)
 
     def _normalise_folder(self, folder_name):
         if isinstance(folder_name, binary_type):
@@ -1105,6 +1194,17 @@ def _quote(arg):
     return q + arg + q
 
 
+def _maybe_quote(arg):
+    """Apply quoting, but only if it's required - otherwise return the
+    input unchanged.
+    """
+    out = arg.replace(b'\\', b'\\\\')
+    out = out.replace(b'"', b'\\"')
+    if out != arg or b' ' in out:
+        return b'"' + out + b'"'
+    return arg
+
+
 # normalise_text_list, seq_to_parentstr etc have to return unicode
 # because imaplib handles flags and sort criteria assuming these are
 # passed as unicode
@@ -1117,23 +1217,19 @@ def seq_to_parenstr(items):
 def seq_to_parenstr_upper(items):
     return _join_and_paren(item.upper() for item in _normalise_text_list(items))
 
-def normalise_search_criteria(criteria, charset=None):
+def _normalise_search_criteria(criteria, charset=None):
     if not criteria:
         raise ValueError('no criteria specified')
     if isinstance(criteria, (text_type, binary_type)):
-        criteria = (criteria,)
+        criteria = [criteria]
     if not charset:
         charset = 'us-ascii'
-    return [b'(' + to_bytes(item, charset) + b')' for item in criteria]
+    return [_maybe_quote(to_bytes(item, charset)) for item in criteria]
 
 def _normalise_sort_criteria(criteria, charset=None):
     if isinstance(criteria, (text_type, binary_type)):
-        criteria = (criteria,)
-    # This is because imaplib's implementation varies between Python 2 and 3.
-    if PY3:
-        return '(' + ' '.join(to_unicode(item).upper() for item in criteria) + ')'
-    else:
-        return b'(' + b' '.join(to_bytes(item).upper() for item in criteria) + b')'
+        criteria = [criteria]
+    return b'(' + b' '.join(to_bytes(item).upper() for item in criteria) + b')'
 
 def _join_and_paren(items):
     return '(' + ' '.join(items) + ')'
@@ -1193,3 +1289,11 @@ def to_bytes(s, charset='ascii'):
     if isinstance(s, text_type):
         return s.encode(charset)
     return s
+
+def _is8bit(data):
+    return any(b > 127 for b in iterbytes(data))
+
+def _iter_with_last(items):
+    last_i = len(items) - 1
+    for i, item in enumerate(items):
+        yield item, i == last_i

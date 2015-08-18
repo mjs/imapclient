@@ -601,13 +601,12 @@ def createUidTestClass(conf, use_uid):
             # Single criteria
             if not self.is_gmail():
                 self.assertEqual(len(self.client.search('DELETED')), 1)
-                self.assertEqual(len(self.client.search('NOT DELETED')), len(subjects) - 1)
-            self.assertListEqual(self.client.search('NOT DELETED'), self.client.search(['NOT DELETED']))
+                self.assertEqual(len(self.client.search(['NOT', 'DELETED'])), len(subjects) - 1)
 
             # Multiple criteria
-            self.assertEqual(len(self.client.search(['NOT DELETED', 'SMALLER 500'])), len(subjects) - 1)
-            self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "a"'])), 1)
-            self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "c"'])), 0)
+            self.assertEqual(len(self.client.search(['NOT', 'DELETED', 'SMALLER', '500'])), len(subjects) - 1)
+            self.assertEqual(len(self.client.search(['NOT', 'DELETED', 'SUBJECT', 'a'])), 1)
+            self.assertEqual(len(self.client.search(['NOT', 'DELETED', 'SUBJECT', 'c'])), 0)
 
         def test_search_with_modseq(self):
             # CONDSTORE (RFC 4551) means that the server supports the
@@ -634,17 +633,18 @@ def createUidTestClass(conf, use_uid):
             self.append_msg(SIMPLE_MESSAGE)
 
             # Ensure the message is seen and the new MODSEQ value is returned
-            ids = self.client.search(['MODSEQ %d' % initial_modseq])
+            ids = self.client.search(['MODSEQ', str(initial_modseq)])
             self.assertEqual(len(ids), 1)
             self.assertGreater(ids.modseq, initial_modseq)
 
         def test_search_with_unicode(self):
             self.client.append(self.base_folder, SMILE_MESSAGE)
 
-            self.assertEqual(len(self.client.search('TEXT "%s"' % SMILE, charset='UTF-8')), 1)
-            self.assertEqual(len(self.client.search(['TEXT "%s"' % SMILE], charset='UTF-8')), 1)
+            self.assertEqual(len(self.client.search(['TEXT', SMILE], charset='UTF-8')), 1)
+            self.assertEqual(len(self.client.search(['TEXT', FROWN], charset='UTF-8')), 0)
 
-            self.assertEqual(len(self.client.search('TEXT "%s"' % FROWN, charset='UTF-8')), 0)
+            # Try multiple criteria too
+            self.assertEqual(len(self.client.search(['TEXT', SMILE, 'NOT', 'DELETED'], charset='UTF-8')), 1)
 
         def test_gmail_search(self):
             self.skip_unless_capable('X-GM-EXT-1', 'Gmail search')
@@ -681,10 +681,10 @@ def createUidTestClass(conf, use_uid):
 
             self.client.append(self.base_folder, SMILE_MESSAGE)
 
-            messages = self.client.sort('ARRIVAL', ['TEXT "%s"' % SMILE])
+            messages = self.client.sort('ARRIVAL', ['TEXT', SMILE])
             self.assertEqual(len(messages), 1)
 
-            messages = self.client.sort('ARRIVAL', ['TEXT "%s"' % FROWN])
+            messages = self.client.sort('ARRIVAL', ['TEXT', FROWN])
             self.assertEqual(len(messages), 0)
 
         def test_thread(self):
@@ -709,11 +709,11 @@ def createUidTestClass(conf, use_uid):
 
             self.client.append(self.base_folder, SMILE_MESSAGE)
 
-            threads = self.client.thread(criteria=['TEXT "%s"' % SMILE])
+            threads = self.client.thread(criteria=['TEXT', SMILE])
             self.assertEqual(len(threads), 1)
             self.assertEqual(len(threads[0]), 1)
 
-            threads = self.client.thread(criteria=['TEXT "%s"' % FROWN])
+            threads = self.client.thread(criteria=['TEXT', FROWN])
             self.assertEqual(len(threads), 0)
 
         def test_copy(self):
