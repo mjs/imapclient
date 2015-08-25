@@ -638,31 +638,51 @@ class IMAPClient(object):
     def search(self, criteria='ALL', charset=None):
         """Return a list of messages ids matching *criteria*.
 
-        *criteria* should be a list of of one or more criteria
-        specifications or a single critera string. Example values
-        include::
+        *criteria* should be a sequence of one or more criteria
+        items. Each criteria item may be either unicode or
+        bytes. Example values::
 
-             'NOT DELETED'
-             'UNSEEN'
-             'SINCE 1-Feb-2011'
+            [u'UNSEEN']
+            [u'SMALLER', 500]
+            [b'NOT', b'DELETED']
+            [u'TEXT', u'foo bar', u'FLAGGED', u'SUBJECT', u'baz']
+
+        IMAPClient will perform conversion and quoting as
+        required. The caller shouldn't do this.
+
+        It is also possible (but not recommended) to pass criteria as
+        a single string. In this case IMAPClient won't perform
+        quoting, allowing lower-level specification of
+        criteria. Examples of this style::
+
+            u'UNSEEN'
+            u'SMALLER 500'
+            b'NOT DELETED'
+            u'TEXT "foo bar" FLAGGED SUBJECT "baz"'
 
         *charset* specifies the character set of the criteria. It
         defaults to US-ASCII as this is the only charset that a server
-        is required to support by the RFC.
+        is required to support by the RFC. UTF-8 is commonly supported
+        however.
 
         Any criteria specified using unicode will be encoded as per
         *charset*. Specifying a unicode criteria that can not be
         encoded using *charset* will result in an error.
 
-        Any criteria specified using bytes will not be modified but
-        should use an encoding that matches *charset*.
+        Any criteria specified using bytes will be sent as-is but
+        should use an encoding that matches *charset* (the character
+        set given is still passed on to the server).
 
         See :rfc:`3501#section-6.4.4` for more details.
 
-        The returned list of message ids will have its *modseq*
-        attribute set if the server appended a MODSEQ value to the
-        search response (i.e. if a MODSEQ criteria was included in the
-        search).
+        Note that criteria arguments that are 8-bit will be
+        transparently sent by IMAPClient as IMAP literals to ensure
+        adherence to IMAP standards.
+
+        The returned list of message ids will have a special *modseq*
+        attribute. This is set if the server included a MODSEQ value
+        to the search response (i.e. if a MODSEQ criteria was included
+        in the search).
         """
         return self._search(criteria, charset)
 
@@ -670,17 +690,15 @@ class IMAPClient(object):
         """Search using Gmail's X-GM-RAW attribute.
 
         *query* should be a valid Gmail search query string. For
-        example: ``has:attachment in:unread``
+        example: ``has:attachment in:unread``. The search string may
+        be unicode and will be encoded using the specified *charset*
+        (defaulting to UTF-8).
 
         This method only works for IMAP servers that support X-GM-RAW,
-        which is only like to be Gmail.
+        which is only likely to be Gmail.
 
         See https://developers.google.com/gmail/imap_extensions#extension_of_the_search_command_x-gm-raw
         for more info.
-
-        *charset* specifies the encoding for the query string. The
-        documentation for *charset* for :py:meth:`.search`
-        also applies here.
         """
         return self._search([b'X-GM-RAW', query], charset)
 
@@ -697,11 +715,14 @@ class IMAPClient(object):
         """Return a list of message ids sorted by *sort_criteria* and
         optionally filtered by *criteria*.
 
-        Example values for *sort_criteria* include::
+        *sort_criteria* may be specified as a sequence of strings or a
+        single string. IMAPClient will take care any required
+        conversions. Valid *sort_criteria* values::
 
-            ARRIVAL
-            REVERSE SIZE
-            SUBJECT
+            ['ARRIVAL']
+            ['SUBJECT', 'ARRIVAL']
+            'ARRIVAL'
+            'REVERSE SIZE'
 
         The *criteria* and *charset* arguments are as per
         :py:meth:`.search`.
