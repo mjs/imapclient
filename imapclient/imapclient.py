@@ -712,7 +712,7 @@ class IMAPClient(object):
         not be supported by all IMAP servers.
         """
         if not self.has_capability('SORT'):
-            raise self.Error('The server does not support the SORT extension')
+            raise ValueError('The server does not support the SORT extension')
 
         args = [
             _normalise_sort_criteria(sort_criteria),
@@ -743,11 +743,8 @@ class IMAPClient(object):
             raise ValueError('server does not support %s threading algorithm'
                              % algorithm)
 
-        args = [algorithm]
-        if charset:
-            args.append(to_bytes(charset))
-        args.extend(_normalise_search_criteria(criteria, charset))
-
+        args = [algorithm, to_bytes(charset)] + \
+               _normalise_search_criteria(criteria, charset)
         data = self._raw_command_untagged(b'THREAD', args)
         return parse_response(data)
 
