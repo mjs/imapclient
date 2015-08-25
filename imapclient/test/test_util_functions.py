@@ -118,6 +118,18 @@ class Test_normalise_search_criteria(unittest.TestCase):
     def check(self, criteria, charset, expected):
         self.assertEqual(_normalise_search_criteria(criteria, charset), expected)
 
+    def test_list(self):
+        self.check(['FOO', '\u263a'], 'utf-8', [b'FOO', b'\xe2\x98\xba'])
+
+    def test_tuple(self):
+        self.check(('FOO', 'BAR'), None, [b'FOO', b'BAR'])
+
+    def test_mixed_list(self):
+        self.check(['FOO', b'BAR'], None, [b'FOO', b'BAR'])
+
+    def test_quoting(self):
+        self.check(['foo bar'], None, [b'"foo bar"'])
+
     def test_unicode(self):
         self.check('Foo', None, [b'Foo'])
 
@@ -128,16 +140,11 @@ class Test_normalise_search_criteria(unittest.TestCase):
         self.check('\u263a', 'UTF-8', [b'\xe2\x98\xba'])
 
     def test_binary_with_charset(self):
+        # charset is unused when criteria is binary.
         self.check(b'FOO', 'UTF-9', [b'FOO'])
 
-    def test_tuple(self):
-        self.check(('FOO', 'BAR'), None, [b'FOO', b'BAR'])
-
-    def test_list(self):
-        self.check(['FOO', 'BAR'], None, [b'FOO', b'BAR'])
-
-    def test_mixed_list(self):
-        self.check(['FOO', b'BAR'], None, [b'FOO', b'BAR'])
+    def test_no_quoting_when_criteria_given_as_string(self):
+        self.check('foo bar', None, [b'foo bar'])
 
     def test_None(self):
         self.assertRaises(ValueError, _normalise_search_criteria, None, None)
