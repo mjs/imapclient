@@ -65,11 +65,12 @@ main_deps = [
     'backports.ssl>=0.0.6',
     'pyopenssl>=0.15.1',
     'six',
+    'mock==1.3.0'
 ]
 
 setup_deps = main_deps + ['sphinx']
 
-test_deps = ['mock==1.3.0']
+test_deps = []
 if IS_PY_26_OR_OLDER:
     test_deps.append('unittest2')
 
