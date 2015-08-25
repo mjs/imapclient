@@ -1221,7 +1221,12 @@ def _normalise_search_criteria(criteria, charset=None):
         charset = 'us-ascii'
     if isinstance(criteria, (text_type, binary_type)):
         return [to_bytes(criteria, charset)]
-    return [_maybe_quote(to_bytes(item, charset)) for item in criteria]
+    return [_handle_one_search_criteria(item, charset) for item in criteria]
+
+def _handle_one_search_criteria(item, charset):
+    if isinstance(item, int):
+        return str(item).encode('ascii')
+    return _maybe_quote(to_bytes(item, charset))
 
 def _normalise_sort_criteria(criteria, charset=None):
     if isinstance(criteria, (text_type, binary_type)):

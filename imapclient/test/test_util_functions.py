@@ -130,6 +130,9 @@ class Test_normalise_search_criteria(unittest.TestCase):
     def test_quoting(self):
         self.check(['foo bar'], None, [b'"foo bar"'])
 
+    def test_ints(self):
+        self.check(['modseq', 500], None, [b'modseq', b'500'])
+
     def test_unicode(self):
         self.check('Foo', None, [b'Foo'])
 
