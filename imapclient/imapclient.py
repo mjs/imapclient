@@ -666,7 +666,7 @@ class IMAPClient(object):
         """
         return self._search(criteria, charset)
 
-    def gmail_search(self, query, charset=None):
+    def gmail_search(self, query, charset='UTF-8'):
         """Search using Gmail's X-GM-RAW attribute.
 
         *query* should be a valid Gmail search query string. For
