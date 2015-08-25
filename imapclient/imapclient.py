@@ -650,9 +650,9 @@ class IMAPClient(object):
         IMAPClient will perform conversion and quoting as
         required. The caller shouldn't do this.
 
-        It is also possible (but not recommended) to pass criteria as
-        a single string. In this case IMAPClient won't perform
-        quoting, allowing lower-level specification of
+        It is also possible (but not recommended) to pass the combined
+        criteria as a single string. In this case IMAPClient won't
+        perform quoting, allowing lower-level specification of
         criteria. Examples of this style::
 
             u'UNSEEN'
@@ -683,6 +683,7 @@ class IMAPClient(object):
         attribute. This is set if the server included a MODSEQ value
         to the search response (i.e. if a MODSEQ criteria was included
         in the search).
+
         """
         return self._search(criteria, charset)
 
