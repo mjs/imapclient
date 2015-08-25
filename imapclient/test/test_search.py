@@ -4,139 +4,88 @@
 
 from __future__ import unicode_literals
 
-from six import PY3
+from mock import Mock
 
 from .imapclient_test import IMAPClientTest
-from .testable_imapclient import TestableIMAPClient as IMAPClient
 
 
-search_command = 'search' if PY3 else b'search'
+class TestSearchBase(IMAPClientTest):
+
+    def setUp(self):
+        super(TestSearchBase, self).setUp()
+        self.client._raw_command_untagged = Mock()
+        self.client._raw_command_untagged.return_value = [b'1 2 44']
+
+    def check_call(self, expected_args):
+        self.client._raw_command_untagged.assert_called_once_with(
+            b'SEARCH', expected_args)
 
 
-class TestSearch(IMAPClientTest):
+class TestSearch(TestSearchBase):
 
-    def test_with_uid(self):
-        self.client.use_uid = True
-        self.client._imap.uid.return_value = ('OK', [b'1 2 44'])
+    def test_bytes_criteria(self):
+        result = self.client.search([b'FOO', b'BAR'])
 
-        result = self.client.search('FOO')
-
-        self.client._imap.uid.assert_called_once_with(search_command, b'(FOO)')
+        self.check_call([b'FOO', b'BAR'])
         self.assertEqual(result, [1, 2, 44])
         self.assertEqual(result.modseq, None)
 
-    def test_with_uid_none(self):
-        self.client.use_uid = True
-        self.client._imap.uid.return_value = ('OK', [None])
+    def test_bytes_criteria_with_charset(self):
+        self.client.search([b'FOO', b'BAR'], 'utf-92')
 
-        result = self.client.search('FOO')
+        self.check_call([b'CHARSET', b'utf-92', b'FOO', b'BAR'])
 
-        self.client._imap.uid.assert_called_once_with(search_command, b'(FOO)')
+    def test_unicode_criteria(self):
+        result = self.client.search(['FOO', 'BAR'])
+
+        # Default conversion using us-ascii.
+        self.check_call([b'FOO', b'BAR'])
+        self.assertEqual(result, [1, 2, 44])
+        self.assertEqual(result.modseq, None)
+
+    def test_unicode_criteria_with_charset(self):
+        self.client.search(['FOO', '\u2639'], 'utf-8')
+
+        # Default conversion using us-ascii.
+        self.check_call([b'CHARSET', b'utf-8', b'FOO', b'\xe2\x98\xb9'])
+
+    def test_quoting(self):
+        self.client.search(['TEXT', 'foo bar'])
+
+        self.check_call([b'TEXT', b'"foo bar"'])
+
+    def test_no_results(self):
+        self.client._raw_command_untagged.return_value = [None]
+
+        result = self.client.search(['FOO'])
         self.assertEqual(result, [])
         self.assertEqual(result.modseq, None)
 
-    def test_without_uid(self):
-        self.client.use_uid = False
-        self.client._imap.search.return_value = ('OK', [b'1 2 44'])
-
-        result = self.client.search('FOO')
-
-        self.client._imap.search.assert_called_once_with(None, b'(FOO)')
-        self.assertEqual(result, [1, 2, 44])
-        self.assertEqual(result.modseq, None)
-
-    def test_with_uid_with_charset(self):
-        self.client.use_uid = True
-        self.client._imap.uid.return_value = ('OK', [b'1 2 44'])
-
-        result = self.client.search(['UNDELETED', 'TEXT "\u2639"'], 'UTF-8')
-
-        self.client._imap.uid.assert_called_once_with(
-            search_command,
-            b'CHARSET', b'UTF-8',
-            b'(UNDELETED)',
-            b'(TEXT "\xe2\x98\xb9")',
-        )
-        self.assertEqual(result, [1, 2, 44])
-
-    def test_without_uid_with_charset(self):
-        self.client.use_uid = False
-        self.client._imap.search.return_value = ('OK', [b'1 2 44'])
-
-        result = self.client.search(['UNDELETED', 'TEXT "\u2639"'], 'UTF-8')
-
-        self.client._imap.search.assert_called_once_with(
-            b'UTF-8',
-            b'(UNDELETED)',
-            b'(TEXT "\xe2\x98\xb9")',
-        )
-        self.assertEqual(result, [1, 2, 44])
-
     def test_modseq(self):
-        self.client._imap.uid.return_value = ('OK', [b'1 2 (MODSEQ 51101)'])
+        self.client._raw_command_untagged.return_value = [b'1 2 (MODSEQ 51101)']
 
-        result = self.client.search(['MODSEQ 40000'])
+        result = self.client.search(['MODSEQ', '40000'])
 
-        self.client._imap.uid.assert_called_once_with(search_command, b'(MODSEQ 40000)')
+        self.check_call([b'MODSEQ', b'40000'])
         self.assertEqual(result, [1, 2])
         self.assertEqual(result.modseq, 51101)
 
-    def test_error_from_server(self):
-        self.client._imap.uid.return_value = ('NO', [b'bad karma'])
 
-        self.assertRaisesRegex(IMAPClient.Error,
-                               'bad karma',
-                               self.client.search, b'FOO')
+class TestGmailSearch(TestSearchBase):
 
+    def test_bytes_query(self):
+        result = self.client.gmail_search(b'foo bar')
 
-class TestGmailSearch(IMAPClientTest):
-
-    def test_with_uid(self):
-        self.client.use_uid = True
-        self.client._imap.uid.return_value = ('OK', [b'1 2 44'])
-
-        result = self.client.gmail_search('FOO')
-
-        self.client._imap.uid.assert_called_once_with(search_command, b'X-GM-RAW')
-        self.assertEqual(self.client._imap.literal, b'FOO')
+        self.check_call([b'CHARSET', b'UTF-8', b'X-GM-RAW', b'"foo bar"'])
         self.assertEqual(result, [1, 2, 44])
 
-    def test_without_uid(self):
-        self.client.use_uid = False
-        self.client._imap.search.return_value = ('OK', [b'1 2 44'])
+    def test_bytes_query_with_charset(self):
+        result = self.client.gmail_search(b'foo bar', 'utf-42')
 
-        result = self.client.gmail_search('FOO')
-
-        self.client._imap.search.assert_called_once_with(None, b'X-GM-RAW')
-        self.assertEqual(self.client._imap.literal, b'FOO')
+        self.check_call([b'CHARSET', b'utf-42', b'X-GM-RAW', b'"foo bar"'])
         self.assertEqual(result, [1, 2, 44])
 
-    def test_with_uid_with_charset(self):
-        self.client.use_uid = True
-        self.client._imap.uid.return_value = ('OK', [b'1 2 44'])
+    def test_unicode_criteria_with_charset(self):
+        self.client.gmail_search('foo \u2639', 'utf-8')
 
-        result = self.client.gmail_search('\u2620', 'UTF-8')
-
-        self.client._imap.uid.assert_called_once_with(
-            search_command,
-            b'CHARSET', b'UTF-8',
-            b'X-GM-RAW')
-        self.assertEqual(self.client._imap.literal, b'\xe2\x98\xa0')
-        self.assertEqual(result, [1, 2, 44])
-
-    def test_without_uid_with_charset(self):
-        self.client.use_uid = False
-        self.client._imap.search.return_value = ('OK', [b'1 2 44'])
-
-        result = self.client.gmail_search('\u2620', 'UTF-8')
-
-        self.client._imap.search.assert_called_once_with(b'UTF-8', b'X-GM-RAW')
-        self.assertEqual(self.client._imap.literal, b'\xe2\x98\xa0')
-        self.assertEqual(result, [1, 2, 44])
-
-    def test_error_from_server(self):
-        self.client._imap.uid.return_value = ('NO', [b'bad karma'])
-
-        self.assertRaisesRegex(IMAPClient.Error,
-                               'bad karma',
-                               self.client.gmail_search, b'FOO')
+        self.check_call([b'CHARSET', b'utf-8', b'X-GM-RAW', b'"foo \xe2\x98\xb9"'])

@@ -57,13 +57,13 @@ Here is the second part.
 
 
 SMILE = '\u263a'
-FROWN = '\u2639'
+MICRO = '\u00b5'
 
 SMILE_MESSAGE = b"""\
 Subject: stuff
 Content-Type: text/plain; charset="UTF-8"
 
-'\xe2\x98\xba'
+\xe2\x98\xba
 """.replace(b'\n', b'\r\n')
 
 
@@ -599,16 +599,19 @@ def createUidTestClass(conf, use_uid):
                 self.assertEqual(len(messages_all), len(subjects))
             self.assertListEqual(self.client.search(), messages_all)      # Check default
 
-            # Single criteria
             if not self.is_gmail():
+                # Delete behaviour is dependent on a setting with Gmail.
                 self.assertEqual(len(self.client.search('DELETED')), 1)
-                self.assertEqual(len(self.client.search('NOT DELETED')), len(subjects) - 1)
-            self.assertListEqual(self.client.search('NOT DELETED'), self.client.search(['NOT DELETED']))
 
-            # Multiple criteria
-            self.assertEqual(len(self.client.search(['NOT DELETED', 'SMALLER 500'])), len(subjects) - 1)
-            self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "a"'])), 1)
-            self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "c"'])), 0)
+            self.assertEqual(len(self.client.search(['NOT', 'DELETED'])), len(subjects) - 1)
+            self.assertEqual(len(self.client.search(['NOT', 'DELETED', 'SMALLER', 500])), len(subjects) - 1)
+            self.assertEqual(len(self.client.search(['NOT', 'DELETED', 'SMALLER', 5])), 0)
+            self.assertEqual(len(self.client.search(['NOT', 'DELETED', 'SUBJECT', 'a'])), 1)
+            self.assertEqual(len(self.client.search(['NOT', 'DELETED', 'SUBJECT', 'c'])), 0)
+
+            # Exercise "raw" strings where all criteria are provided as a single string.
+            self.assertEqual(len(self.client.search('SUBJECT "a" NOT DELETED')), 1)
+            self.assertEqual(len(self.client.search('NOT DELETED SUBJECT SMALLER 5')), 0)
 
         def test_search_with_modseq(self):
             # CONDSTORE (RFC 4551) means that the server supports the
@@ -635,30 +638,39 @@ def createUidTestClass(conf, use_uid):
             self.append_msg(SIMPLE_MESSAGE)
 
             # Ensure the message is seen and the new MODSEQ value is returned
-            ids = self.client.search(['MODSEQ %d' % initial_modseq])
+            ids = self.client.search(['MODSEQ', str(initial_modseq)])
             self.assertEqual(len(ids), 1)
             self.assertGreater(ids.modseq, initial_modseq)
 
         def test_search_with_unicode(self):
             self.client.append(self.base_folder, SMILE_MESSAGE)
 
-            self.assertEqual(len(self.client.search('TEXT "%s"' % SMILE, charset='UTF-8')), 1)
-            self.assertEqual(len(self.client.search(['TEXT "%s"' % SMILE], charset='UTF-8')), 1)
+            self.assertEqual(len(self.client.search(['BODY', SMILE], charset='UTF-8')), 1)
+            self.assertEqual(len(self.client.search(['BODY', MICRO], charset='UTF-8')), 0)
 
-            self.assertEqual(len(self.client.search('TEXT "%s"' % FROWN, charset='UTF-8')), 0)
+            # Try multiple criteria too
+            self.assertEqual(len(self.client.search(['TEXT', SMILE, 'NOT', 'DELETED'], charset='UTF-8')), 1)
 
         def test_gmail_search(self):
             self.skip_unless_capable('X-GM-EXT-1', 'Gmail search')
 
             random_string = ''.join(random.sample(string.ascii_letters*20, 64))
             msg = 'Subject: something\r\n\r\nFoo\r\n%s\r\n' % random_string
-            self.client.append(self.base_folder, msg)
+            self.append_msg(msg)
+
+            self.append_msg(SMILE_MESSAGE)
 
             ids = self.client.gmail_search(random_string)
             self.assertEqual(len(ids), 1)
 
             ids = self.client.gmail_search('s0mewh4t unl1kely')
             self.assertEqual(len(ids), 0)
+
+            # Test encoded queries
+            ids = self.client.gmail_search(MICRO)
+            self.assertEqual(len(ids), 0)
+            ids = self.client.gmail_search(SMILE)
+            self.assertGreater(len(ids), 0)
 
         def test_sort(self):
             self.skip_unless_capable('SORT')
@@ -677,15 +689,20 @@ def createUidTestClass(conf, use_uid):
             expected = [first_id, first_id - 1, first_id - 2]
             self.assertListEqual(messages, expected)
 
+            messages = self.client.sort('REVERSE SIZE', ['NOT', 'DELETED'])
+            self.assertListEqual(messages, expected)
+
+            messages = self.client.sort('REVERSE SIZE', 'NOT DELETED')
+            self.assertListEqual(messages, expected)
+
         def test_sort_with_unicode(self):
             self.skip_unless_capable('SORT')
+            self.append_msg(SMILE_MESSAGE)
 
-            self.client.append(self.base_folder, SMILE_MESSAGE)
-
-            messages = self.client.sort('ARRIVAL', ['TEXT "%s"' % SMILE])
+            messages = self.client.sort('ARRIVAL', ['TEXT', SMILE])
             self.assertEqual(len(messages), 1)
 
-            messages = self.client.sort('ARRIVAL', ['TEXT "%s"' % FROWN])
+            messages = self.client.sort('ARRIVAL', ['TEXT', MICRO])
             self.assertEqual(len(messages), 0)
 
         def test_thread(self):
@@ -694,27 +711,32 @@ def createUidTestClass(conf, use_uid):
             msg_tmpl = 'Subject: %s\r\n\r\nBody'
             subjects = ('a', 'b', 'c')
             for subject in subjects:
-                msg = msg_tmpl % subject
-                self.client.append(self.base_folder, msg)
+                self.append_msg(msg_tmpl % subject)
 
-            messages = self.client.thread()
+            threads = self.client.thread()
 
-            self.assertEqual(len(messages), 3)
-            self.assertIsInstance(messages[0], tuple)
-            first_id = messages[0][0]
+            self.assertEqual(len(threads), 3)
+            self.assertIsInstance(threads[0], tuple)
+            first_id = threads[0][0]
             expected = ((first_id,), (first_id + 1,), (first_id + 2,))
-            self.assertTupleEqual(messages, expected)
+            self.assertTupleEqual(threads, expected)
+
+            threads = self.client.thread(criteria=['NOT', 'DELETED'])
+            self.assertTupleEqual(threads, expected)
+
+            threads = self.client.thread(criteria='NOT DELETED')
+            self.assertTupleEqual(threads, expected)
 
         def test_thread_with_unicode(self):
             self.skip_unless_capable('THREAD=REFERENCES')
 
-            self.client.append(self.base_folder, SMILE_MESSAGE)
+            self.append_msg(SMILE_MESSAGE)
 
-            threads = self.client.thread(criteria=['TEXT "%s"' % SMILE])
+            threads = self.client.thread(criteria=['TEXT', SMILE])
             self.assertEqual(len(threads), 1)
             self.assertEqual(len(threads[0]), 1)
 
-            threads = self.client.thread(criteria=['TEXT "%s"' % FROWN])
+            threads = self.client.thread(criteria=['TEXT', MICRO])
             self.assertEqual(len(threads), 0)
 
         def test_copy(self):

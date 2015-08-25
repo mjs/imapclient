@@ -502,69 +502,6 @@ class TestCapabilities(IMAPClientTest):
         self.assertFalse(self.client.has_capability('BAR'))
 
 
-class TestThread(IMAPClientTest):
-
-    def test_thread_without_uid(self):
-        self.client._cached_capabilities = (b'THREAD=REFERENCES',)
-        self.client.use_uid = False
-        self.client._imap.thread.return_value = ('OK', [b'(1 2)(3)(4 5 6)'])
-
-        threads = self.client.thread()
-
-        self.assertSequenceEqual(threads, ((1, 2), (3,), (4, 5, 6)))
-
-    def test_thread_with_uid(self):
-        self.client._cached_capabilities = (b'THREAD=REFERENCES',)
-        self.client.use_uid = True
-        self.client._imap.uid.return_value = ('OK', [b'(1 2)(3)(4 5 6)'])
-
-        threads = self.client.thread()
-
-        self.assertSequenceEqual(threads, ((1, 2), (3,), (4, 5, 6)))
-
-    def test_no_support(self):
-        self.client._cached_capabilities = (b'NOT-THREAD',)
-        self.assertRaises(ValueError, self.client.thread)
-
-    def test_no_support2(self):
-        self.client._cached_capabilities = (b'THREAD=FOO',)
-        self.assertRaises(ValueError, self.client.thread)
-
-    def test_charset_with_uid(self):
-        self.client._cached_capabilities = (b'THREAD=REFERENCES',)
-        self.client._imap.uid.return_value = ('OK', [])
-
-        self.client.thread(criteria='\u261e', charset='utf-8')
-
-        self.client._imap.uid.assert_called_once_with('thread', b'REFERENCES', b'utf-8', b'(\xe2\x98\x9e)')
-
-    def test_charset_without_uid(self):
-        self.client._cached_capabilities = (b'THREAD=REFERENCES',)
-        self.client.use_uid = False
-        self.client._imap.thread.return_value = ('OK', [])
-
-        self.client.thread(criteria='\u261e', charset='utf-8')
-
-        self.client._imap.thread.assert_called_once_with(b'REFERENCES', b'utf-8', b'(\xe2\x98\x9e)')
-
-    def test_all_args_with_uid(self):
-        self.client._cached_capabilities = (b'THREAD=FOO',)
-        self.client._imap.uid.return_value = ('OK', [])
-
-        self.client.thread(algorithm='FOO', criteria='STUFF', charset='ASCII')
-
-        self.client._imap.uid.assert_called_once_with('thread', b'FOO', b'ASCII', b'(STUFF)')
-
-    def test_all_args_without_uid(self):
-        self.client.use_uid = False
-        self.client._cached_capabilities = (b'THREAD=FOO',)
-        self.client._imap.thread.return_value = ('OK', [])
-
-        self.client.thread(algorithm='FOO', criteria='STUFF', charset='ASCII')
-
-        self.client._imap.thread.assert_called_once_with(b'FOO', b'ASCII', b'(STUFF)')
-
-
 class TestId(IMAPClientTest):
 
     def test_id(self):
@@ -595,3 +532,66 @@ class TestFlags(IMAPClientTest):
         for flag in DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT:
             if not isinstance(flag, six.binary_type):
                 self.fail("%r flag is not bytes" % flag)
+
+
+class TestRawCommand(IMAPClientTest):
+
+    def setUp(self):
+        super(TestRawCommand, self).setUp()
+        self.client._imap._get_response.return_value = None
+        self.client._imap._command_complete.return_value = ('OK', ['done'])
+
+    def check(self, command, args, expected):
+        typ, data = self.client._raw_command(command, args)
+        self.assertEqual(typ, 'OK')
+        self.assertEqual(data, ['done'])
+        self.assertEqual(self.client._imap.sent, expected)
+
+    def test_plain(self):
+        self.check(b'search', [b'ALL'],
+            b'tag UID SEARCH ALL\r\n',
+        )
+
+    def test_not_uid(self):
+        self.client.use_uid = False
+        self.check(b'search', [b'ALL'],
+            b'tag SEARCH ALL\r\n',
+        )
+
+    def test_literal_at_end(self):
+        self.check(b'search', [b'TEXT', b'\xfe\xff'],
+            b'tag UID SEARCH TEXT {2}\r\n'
+            b'\xfe\xff\r\n'
+        )
+
+    def test_embedded_literal(self):
+        self.check(b'search', [b'TEXT', b'\xfe\xff', b'DELETED'],
+            b'tag UID SEARCH TEXT {2}\r\n'
+            b'\xfe\xff DELETED\r\n'
+        )
+
+    def test_multiple_literals(self):
+        self.check(b'search', [b'TEXT', b'\xfe\xff', b'TEXT', b'\xcc'],
+            b'tag UID SEARCH TEXT {2}\r\n'
+            b'\xfe\xff TEXT {1}\r\n'
+            b'\xcc\r\n'
+        )
+
+    def test_complex(self):
+        self.check(b'search', [b'FLAGGED', b'TEXT', b'\xfe\xff', b'TEXT', b'\xcc', b'TEXT', b'foo'],
+            b'tag UID SEARCH FLAGGED TEXT {2}\r\n'
+            b'\xfe\xff TEXT {1}\r\n'
+            b'\xcc TEXT foo\r\n'
+        )
+
+    def test_invalid_input_type(self):
+        self.assertRaises(ValueError, self.client._raw_command, 'foo', [])
+        self.assertRaises(ValueError, self.client._raw_command, u'foo', ['foo'])
+
+    def test_failed_continuation_wait(self):
+        self.client._imap._get_response.return_value = b'blah'
+        self.client._imap.tagged_commands['tag'] = ('NO', ['go away'])
+
+        expected_error = "unexpected response while waiting for continuation response: \(u?'NO', \[u?'go away'\]\)"
+        with self.assertRaisesRegex(IMAPClient.AbortError, expected_error):
+            self.client._raw_command(b'FOO', [b'\xff'])

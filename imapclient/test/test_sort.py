@@ -4,12 +4,9 @@
 
 from __future__ import unicode_literals
 
-from six import PY3
+from mock import Mock
 
 from .imapclient_test import IMAPClientTest
-
-
-sort_command = 'sort' if PY3 else b'sort'
 
 
 class TestSort(IMAPClientTest):
@@ -17,58 +14,29 @@ class TestSort(IMAPClientTest):
     def setUp(self):
         super(TestSort, self).setUp()
         self.client._cached_capabilities = (b'SORT',)
+        self.client._raw_command_untagged = Mock()
+        self.client._raw_command_untagged.return_value = b'9 8 7'
+
+    def check_call(self, expected_args):
+        self.client._raw_command_untagged.assert_called_once_with(
+            b'SORT', expected_args, unpack=True)
 
     def test_no_support(self):
         self.client._cached_capabilities = (b'BLAH',)
-        self.assertRaises(ValueError, self.client.thread)
+        self.assertRaises(ValueError, self.client.sort, 'ARRIVAL')
 
-    def test_without_uid(self):
-        self.client.use_uid = False
-        self.client._imap.sort.return_value = ('OK', [b'9 8 7'])
-
+    def test_single_criteria(self):
         ids = self.client.sort('arrival')
 
-        self.client._imap.sort.assert_called_once_with(
-            '(ARRIVAL)',
-            b'UTF-8',
-            b'(ALL)',
-        )
+        self.check_call([b'(ARRIVAL)', b'UTF-8', b'ALL'])
         self.assertSequenceEqual(ids, [9, 8, 7])
 
-    def test_with_uid(self):
-        self.client.use_uid = True
-        self.client._imap.uid.return_value = ('OK', [b'9 8 7'])
+    def test_multiple_criteria(self):
+        self.client.sort(['arrival', b'SUBJECT'])
 
-        ids = self.client.sort(['foo', 'bar'])
+        self.check_call([b'(ARRIVAL SUBJECT)', b'UTF-8', b'ALL'])
 
-        self.client._imap.uid.assert_called_once_with(
-            sort_command,
-            '(FOO BAR)',
-            b'UTF-8',
-            b'(ALL)',
-        )
-        self.assertSequenceEqual(ids, [9, 8, 7])
+    def test_all_args(self):
+        self.client.sort('arrival', ['TEXT', '\u261e'], 'UTF-7')
 
-    def test_charset_without_uid(self):
-        self.client.use_uid = False
-        self.client._imap.sort.return_value = ('OK', [''])
-
-        self.client.sort('arrival', criteria=['\u261e', 'UNDELETED'], charset='utf-7')
-
-        self.client._imap.sort.assert_called_once_with(
-            '(ARRIVAL)',
-            b'utf-7',
-            b'(+Jh4-)', b'(UNDELETED)',
-        )
-
-    def test_unicode_with_uid(self):
-        self.client._imap.uid.return_value = ('OK', [''])
-
-        self.client.sort('arrival', criteria=['\u261e', 'UNDELETED'], charset='utf-7')
-
-        self.client._imap.uid.assert_called_once_with(
-            sort_command,
-            '(ARRIVAL)',
-            b'utf-7',
-            b'(+Jh4-)', b'(UNDELETED)',
-        )
+        self.check_call([b'(ARRIVAL)', b'UTF-7', b'TEXT', b'+Jh4-'])
