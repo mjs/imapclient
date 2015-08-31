@@ -12,6 +12,7 @@ from optparse import OptionParser
 
 from .config import parse_config_file, create_client_from_config
 
+
 def command_line():
     p = OptionParser()
     p.add_option('-H', '--host', dest='host', action='store',
@@ -52,6 +53,7 @@ def command_line():
         opts.stream = False
     return opts
 
+
 def main():
     opts = command_line()
     print('Connecting...')
@@ -71,7 +73,7 @@ def main():
     def builtin(c):
         import code
         code.interact(banner, local=dict(c=c))
-    
+
     for shell_attempt in (ipython_011, ipython_010, builtin):
         try:
             shell_attempt(client)

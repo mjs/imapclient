@@ -37,6 +37,7 @@ class Test_normalise_text_list(unittest.TestCase):
     def test_mixed_list(self):
         self.check(['FOO', b'Bar'], ['FOO', 'Bar'])
 
+
 class Test_seq_to_parenstr(unittest.TestCase):
 
     def check(self, items, expected):
@@ -60,6 +61,7 @@ class Test_seq_to_parenstr(unittest.TestCase):
     def test_mixed_list(self):
         self.check(['foo', b'BAR'], '(foo BAR)')
 
+
 class Test_seq_to_parenstr_upper(unittest.TestCase):
 
     def check(self, items, expected):
@@ -82,6 +84,7 @@ class Test_seq_to_parenstr_upper(unittest.TestCase):
 
     def test_mixed_list(self):
         self.check(['foo', b'BAR'], '(FOO BAR)')
+
 
 class Test_join_message_ids(unittest.TestCase):
 

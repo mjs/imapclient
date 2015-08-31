@@ -20,7 +20,7 @@ class IMAP4UTF7TestCase(unittest.TestCase):
         ['Hello\xffworld', b'Hello&AP8-world'],
         ['\xff\xfe\xfd\xfc', b'&AP8A,gD9APw-'],
         ['~peter/mail/\u65e5\u672c\u8a9e/\u53f0\u5317',
-         b'~peter/mail/&ZeVnLIqe-/&U,BTFw-'], # example from RFC 2060
+         b'~peter/mail/&ZeVnLIqe-/&U,BTFw-'],  # example from RFC 2060
         ['\x00foo', b'&AAA-foo'],
     ]
 
@@ -29,7 +29,6 @@ class IMAP4UTF7TestCase(unittest.TestCase):
             encoded = encode(input)
             self.assertIsInstance(encoded, binary_type)
             self.assertEqual(encoded, output)
-
 
     def test_decode(self):
         for (input, output) in self.tests:

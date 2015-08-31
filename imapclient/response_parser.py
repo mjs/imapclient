@@ -9,7 +9,7 @@ returned by imaplib.
 Initially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 """
 
-#TODO more exact error reporting
+# TODO more exact error reporting
 
 from __future__ import unicode_literals
 
@@ -18,12 +18,12 @@ import sys
 from collections import defaultdict
 
 import six
-xrange = six.moves.xrange
 
 from .datetime_util import parse_to_datetime
 from .response_lexer import TokenSource
 from .response_types import BodyData, Envelope, Address, SearchIds
 
+xrange = six.moves.xrange
 
 __all__ = ['parse_response', 'parse_message_list', 'ParseError']
 
@@ -43,6 +43,7 @@ def parse_response(data):
 
 
 _msg_id_pattern = re.compile("(\d+(?: +\d+)*)")
+
 
 def parse_message_list(data):
     """Parse a list of message ids and return them as a list.
@@ -132,7 +133,7 @@ def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
         msg_data = {b'SEQ': seq}
         for i in xrange(0, len(msg_response), 2):
             word = msg_response[i].upper()
-            value = msg_response[i+1]
+            value = msg_response[i + 1]
 
             if word == b'UID':
                 uid = _int_or_error(value, 'invalid UID')
@@ -167,6 +168,7 @@ def _convert_INTERNALDATE(date_string, normalise_times=True):
     except ValueError:
         return None
 
+
 def _convert_ENVELOPE(envelope_response, normalise_times=True):
     dt = None
     if envelope_response[0]:
@@ -196,6 +198,7 @@ def _convert_ENVELOPE(envelope_response, normalise_times=True):
         message_id=envelope_response[9]
     )
 
+
 def atom(src, token):
     if token == b'(':
         return parse_tuple(src)
@@ -205,10 +208,10 @@ def atom(src, token):
         literal_len = int(token[1:-1])
         literal_text = src.current_literal
         if literal_text is None:
-           raise ParseError('No literal corresponds to %r' % token)
+            raise ParseError('No literal corresponds to %r' % token)
         if len(literal_text) != literal_len:
             raise ParseError('Expecting literal of size %d, got %d' % (
-                                literal_len, len(literal_text)))
+                literal_len, len(literal_text)))
         return literal_text
     elif len(token) >= 2 and (token[:1] == token[-1:] == b'"'):
         return token[1:-1]
@@ -216,6 +219,7 @@ def atom(src, token):
         return int(token)
     else:
         return token
+
 
 def parse_tuple(src):
     out = []
@@ -225,6 +229,7 @@ def parse_tuple(src):
         out.append(atom(src, token))
     # no terminator
     raise ParseError('Tuple incomplete before "(%s"' % _fmt_tuple(out))
+
 
 def _fmt_tuple(t):
     return ' '.join(str(item) for item in t)

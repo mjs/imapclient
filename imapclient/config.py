@@ -48,7 +48,7 @@ def parse_config_file(filename):
         oauth2_client_secret=None,
         oauth2_refresh_token=None,
         expect_failure=None,
-        ))
+    ))
     with open(filename, 'r') as fh:
         parser.readfp(fh)
 
@@ -62,9 +62,11 @@ def parse_config_file(filename):
 
     return conf
 
+
 def _read_config_section(parser, section):
     get = lambda name: parser.get(section, name)
     getboolean = lambda name: parser.getboolean(section, name)
+
     def getint(name):
         try:
             return parser.getint(section, name)
@@ -102,6 +104,7 @@ def _read_config_section(parser, section):
         expect_failure=get('expect_failure')
     )
 
+
 def refresh_oauth2_token(client_id, client_secret, refresh_token):
     if not json:
         raise RuntimeError("livetest OAUTH2 functionality relies on 'json' module")
@@ -115,6 +118,8 @@ def refresh_oauth2_token(client_id, client_secret, refresh_token):
 
 # Tokens are expensive to refresh so use the same one for the duration of the process.
 _oauth2_cache = {}
+
+
 def get_oauth2_token(client_id, client_secret, refresh_token):
     cache_key = (client_id, client_secret, refresh_token)
     token = _oauth2_cache.get(cache_key)
@@ -123,6 +128,7 @@ def get_oauth2_token(client_id, client_secret, refresh_token):
     token = refresh_oauth2_token(client_id, client_secret, refresh_token)
     _oauth2_cache[cache_key] = token
     return token
+
 
 def create_client_from_config(conf):
     ssl_context = None
@@ -144,8 +150,8 @@ def create_client_from_config(conf):
 
         if conf.oauth:
             client.oauth_login(conf.oauth_url,
-                            conf.oauth_token,
-                            conf.oauth_token_secret)
+                               conf.oauth_token,
+                               conf.oauth_token_secret)
         elif conf.oauth2:
             access_token = get_oauth2_token(conf.oauth2_client_id,
                                             conf.oauth2_client_secret,
@@ -158,6 +164,7 @@ def create_client_from_config(conf):
     except:
         client.shutdown()
         raise
+
 
 class Bunch(dict):
 

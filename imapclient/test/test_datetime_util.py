@@ -34,11 +34,11 @@ class TestParsing(unittest.TestCase):
     def test_internaldate_style(self):
         self.check_normalised_and_not(
             b' 9-Feb-2007 17:08:08 -0430',
-            datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30))
+            datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4 * 60 - 30))
         )
         self.check_normalised_and_not(
             b'19-Feb-2007 17:08:08 0400',
-            datetime(2007, 2, 19, 17, 8, 8, 0, FixedOffset(4*60))
+            datetime(2007, 2, 19, 17, 8, 8, 0, FixedOffset(4 * 60))
         )
 
     def test_dots_for_time_separator(self):
@@ -63,7 +63,7 @@ class TestParsing(unittest.TestCase):
 class TestDatetimeToINTERNALDATE(unittest.TestCase):
 
     def test_with_timezone(self):
-        dt = datetime(2009, 1, 2, 3, 4, 5, 0, FixedOffset(2*60 + 30))
+        dt = datetime(2009, 1, 2, 3, 4, 5, 0, FixedOffset(2 * 60 + 30))
         self.assertEqual(datetime_to_INTERNALDATE(dt), '02-Jan-2009 03:04:05 +0230')
 
     @patch('imapclient.datetime_util.FixedOffset.for_system')

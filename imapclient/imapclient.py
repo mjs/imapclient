@@ -51,7 +51,7 @@ if 'STARTTLS' not in imaplib.Commands:
 # but not that some servers (*cough* FastMail *cough*) don't seem to
 # accept it in state NONAUTH.
 if 'ID' not in imaplib.Commands:
-  imaplib.Commands['ID'] = ('NONAUTH', 'AUTH', 'SELECTED')
+    imaplib.Commands['ID'] = ('NONAUTH', 'AUTH', 'SELECTED')
 
 
 # System flags
@@ -62,7 +62,9 @@ FLAGGED = br'\Flagged'
 DRAFT = br'\Draft'
 RECENT = br'\Recent'         # This flag is read-only
 
+
 class Namespace(tuple):
+
     def __new__(cls, personal, other, shared):
         return tuple.__new__(cls, (personal, other, shared))
 
@@ -766,7 +768,7 @@ class IMAPClient(object):
                              % algorithm)
 
         args = [algorithm, to_bytes(charset)] + \
-               _normalise_search_criteria(criteria, charset)
+            _normalise_search_criteria(criteria, charset)
         data = self._raw_command_untagged(b'THREAD', args)
         return parse_response(data)
 
@@ -999,7 +1001,7 @@ class IMAPClient(object):
         data = self._command_and_check('getacl', self._normalise_folder(folder))
         parts = list(response_lexer.TokenSource(data))
         parts = parts[1:]       # First item is folder name
-        return [(parts[i], parts[i+1]) for i in xrange(0, len(parts), 2)]
+        return [(parts[i], parts[i + 1]) for i in xrange(0, len(parts), 2)]
 
     def setacl(self, folder, who, what):
         """Set an ACL (*what*) for user (*who*) for a folder.
@@ -1061,7 +1063,7 @@ class IMAPClient(object):
         if isinstance(args, tuple):
             args = list(args)
         if not isinstance(args, list):
-           args = [args]
+            args = [args]
 
         tag = self._imap._new_tag()
         prefix = [to_bytes(tag)]
@@ -1111,7 +1113,9 @@ class IMAPClient(object):
         while self._imap._get_response():
             tagged_resp = self._imap.tagged_commands.get(tag)
             if tagged_resp:
-                raise self.AbortError("unexpected response while waiting for continuation response: " + repr(tagged_resp))
+                raise self.AbortError(
+                    "unexpected response while waiting for continuation response: " +
+                    repr(tagged_resp))
 
         if self.debug >= 4:
             self._log_write("   (literal) > ")
@@ -1125,7 +1129,7 @@ class IMAPClient(object):
 
         if uid and self.use_uid:
             if PY3:
-                command = to_unicode(command) # imaplib must die
+                command = to_unicode(command)  # imaplib must die
             typ, data = self._imap.uid(command, *args)
         else:
             meth = getattr(self._imap, to_unicode(command))
@@ -1177,7 +1181,7 @@ class IMAPClient(object):
             for i, c in enumerate(text):
                 if c in "\"'":
                     break
-            text = text[i+1:-1]
+            text = text[i + 1:-1]
         self.log_file.write(text)
 
         if end:
@@ -1230,11 +1234,14 @@ def _maybe_quote(arg):
 def normalise_text_list(items):
     return list(_normalise_text_list(items))
 
+
 def seq_to_parenstr(items):
     return _join_and_paren(_normalise_text_list(items))
 
+
 def seq_to_parenstr_upper(items):
     return _join_and_paren(item.upper() for item in _normalise_text_list(items))
+
 
 def _normalise_search_criteria(criteria, charset=None):
     if not criteria:
@@ -1245,23 +1252,28 @@ def _normalise_search_criteria(criteria, charset=None):
         return [to_bytes(criteria, charset)]
     return [_handle_one_search_criteria(item, charset) for item in criteria]
 
+
 def _handle_one_search_criteria(item, charset):
     if isinstance(item, int):
         return str(item).encode('ascii')
     return _maybe_quote(to_bytes(item, charset))
+
 
 def _normalise_sort_criteria(criteria, charset=None):
     if isinstance(criteria, (text_type, binary_type)):
         criteria = [criteria]
     return b'(' + b' '.join(to_bytes(item).upper() for item in criteria) + b')'
 
+
 def _join_and_paren(items):
     return '(' + ' '.join(items) + ')'
+
 
 def _normalise_text_list(items):
     if isinstance(items, (text_type, binary_type)):
         items = (items,)
     return (to_unicode(c) for c in items)
+
 
 def join_message_ids(messages):
     """Convert a sequence of messages ids or a single integer message id
@@ -1271,16 +1283,19 @@ def join_message_ids(messages):
         messages = (to_bytes(messages),)
     return b','.join(_maybe_int_to_bytes(m) for m in messages)
 
+
 def _maybe_int_to_bytes(val):
     if isinstance(val, integer_types):
         return str(val).encode('us-ascii')
     return to_bytes(val)
+
 
 def normalise_untagged_responses(untagged):
     out = {}
     for key, value in iteritems(untagged):
         out[to_bytes(key)] = value
     return out
+
 
 def _parse_untagged_response(text):
     assert text.startswith(b'* ')
@@ -1289,10 +1304,12 @@ def _parse_untagged_response(text):
         return tuple(text.split(b' ', 1))
     return parse_response([text])
 
+
 def pop_with_default(dct, key, default):
     if key in dct:
         return dct.pop(key)
     return default
+
 
 def as_pairs(items):
     i = 0
@@ -1304,18 +1321,22 @@ def as_pairs(items):
             last_item = item
         i += 1
 
+
 def to_unicode(s):
     if isinstance(s, binary_type):
         return s.decode('ascii')
     return s
+
 
 def to_bytes(s, charset='ascii'):
     if isinstance(s, text_type):
         return s.encode(charset)
     return s
 
+
 def _is8bit(data):
     return any(b > 127 for b in iterbytes(data))
+
 
 def _iter_with_last(items):
     last_i = len(items) - 1

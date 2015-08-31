@@ -10,10 +10,6 @@ It uses ``backports.ssl`` to provide consistent TLS functionality
 across Python versions.
 """
 
-
-__all__ = ('create_default_context',)
-
-
 import imaplib
 import socket
 import sys
@@ -22,6 +18,8 @@ try:
     from backports import ssl
 except ImportError:
     raise ImportError("backports.ssl is not installed")
+
+__all__ = ('create_default_context',)
 
 _ossl = ssl.ossl
 
@@ -41,6 +39,8 @@ _RESTRICTED_SERVER_CIPHERS = (
 )
 
 # TODO: get this into backports.ssl
+
+
 def create_default_context(cafile=None, capath=None, cadata=None):
     """Return a backports.ssl.SSLContext object configured with sensible
     default settings.

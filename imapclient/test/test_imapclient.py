@@ -44,11 +44,9 @@ class TestListFolders(IMAPClientTest):
         self.assertEqual(self.client._proc_folder_list.call_args, ((sentinel.folder_data,), {}))
         self.assertTrue(folders is sentinel.folder_list)
 
-
     def test_list_folders_NO(self):
         self.client._imap._simple_command.return_value = ('NO', [b'badness'])
         self.assertRaises(IMAPClient.Error, self.client.list_folders)
-
 
     def test_list_sub_folders_NO(self):
         self.client._imap._simple_command.return_value = ('NO', [b'badness'])
@@ -90,7 +88,6 @@ class TestListFolders(IMAPClientTest):
         self.assertEqual(folders, [((b'\\HasNoChildren',), b'/', 'A',),
                                    ((b'\\HasNoChildren',), b'/', 'Foo Bar')])
 
-
     def test_without_quotes(self):
         folders = self.client._proc_folder_list([b'(\\HasNoChildren) "/" A',
                                                  b'(\\HasNoChildren) "/" B',
@@ -108,7 +105,8 @@ class TestListFolders(IMAPClientTest):
     def test_unqouted_numeric_folder_name_parsed_as_long(self):
         # big enough numeric values might get parsed as longs
         folder_name = str(sys.maxsize + 1)
-        folders = self.client._proc_folder_list([b'(\\HasNoChildren) "/" ' + folder_name.encode('ascii')])
+        folders = self.client._proc_folder_list(
+            [b'(\\HasNoChildren) "/" ' + folder_name.encode('ascii')])
         self.assertEqual(folders, [((b'\\HasNoChildren', ), b'/', folder_name)])
 
     def test_mixed(self):
@@ -120,14 +118,12 @@ class TestListFolders(IMAPClientTest):
                                    ((b'\\HasNoChildren',), b'/', 'Foo Bar'),
                                    ((b'\\HasNoChildren',), b'/', 'C')])
 
-
     def test_funky_characters(self):
         folders = self.client._proc_folder_list([(b'(\\NoInferiors \\UnMarked) "/" {5}', 'bang\xff'),
                                                  b'',
                                                  b'(\\HasNoChildren \\UnMarked) "/" "INBOX"'])
         self.assertEqual(folders, [((b'\\NoInferiors', b'\\UnMarked'), b"/", 'bang\xff'),
                                    ((b'\\HasNoChildren', b'\\UnMarked'), b"/", 'INBOX')])
-
 
     def test_quoted_specials(self):
         folders = self.client._proc_folder_list([br'(\HasNoChildren) "/" "Test \"Folder\""',
@@ -145,7 +141,6 @@ class TestListFolders(IMAPClientTest):
 
     def test_empty_response(self):
         self.assertEqual(self.client._proc_folder_list([None]), [])
-
 
     def test_blanks(self):
         folders = self.client._proc_folder_list(['', None, br'(\HasNoChildren) "/" "last"'])
@@ -209,7 +204,7 @@ class TestAppend(IMAPClientTest):
         msg = b'bye'
 
         self.client.append('foobar', msg, ['FLAG', 'WAVE'],
-                           datetime(2009, 4, 5, 11, 0, 5, 0, FixedOffset(2*60)))
+                           datetime(2009, 4, 5, 11, 0, 5, 0, FixedOffset(2 * 60)))
 
         self.assertTrue(datetime_to_INTERNALDATE.called)
         self.client._imap.append.assert_called_with(
@@ -251,6 +246,7 @@ class TestIdleAndNoop(IMAPClientTest):
         self.client._imap.sock = self.client._imap.sslobj = mock_sock
         mock_select.return_value = ([True], [], [])
         counter = itertools.count()
+
         def fake_get_line():
             count = six.next(counter)
             if count == 0:
@@ -289,6 +285,7 @@ class TestIdleAndNoop(IMAPClientTest):
         self.client._imap.sock = self.client._imap.sslobj = mock_sock
         mock_select.return_value = ([True], [], [])
         counter = itertools.count()
+
         def fake_get_line():
             count = six.next(counter)
             if count == 0:
@@ -336,6 +333,7 @@ class TestIdleAndNoop(IMAPClientTest):
         client._imap.tagged_commands = {sentinel.tag: None}
 
         counter = itertools.count()
+
         def fake_get_response():
             count = six.next(counter)
             if count == 0:
@@ -365,6 +363,7 @@ class TestDebugLogging(IMAPClientTest):
         self.assertIn('one', output)
         self.assertIn('two', output)
 
+
 class TestTimeNormalisation(IMAPClientTest):
 
     def test_default(self):
@@ -393,7 +392,11 @@ class TestGmailLabels(IMAPClientTest):
 
     def setUp(self):
         super(TestGmailLabels, self).setUp()
-        patcher = patch.object(self.client, '_store', autospec=True, return_value=sentinel.label_set)
+        patcher = patch.object(
+            self.client,
+            '_store',
+            autospec=True,
+            return_value=sentinel.label_set)
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -455,7 +458,7 @@ class TestNamespace(IMAPClientTest):
             (("", "/"),),
             (("~", "/"),),
             (("#shared/", "/"), ("#public/", "/"), ("#ftp/", "/"), ("#news.", ".")),
-            ))
+        ))
 
 
 class TestCapabilities(IMAPClientTest):
@@ -549,40 +552,40 @@ class TestRawCommand(IMAPClientTest):
 
     def test_plain(self):
         self.check(b'search', [b'ALL'],
-            b'tag UID SEARCH ALL\r\n',
-        )
+                   b'tag UID SEARCH ALL\r\n',
+                   )
 
     def test_not_uid(self):
         self.client.use_uid = False
         self.check(b'search', [b'ALL'],
-            b'tag SEARCH ALL\r\n',
-        )
+                   b'tag SEARCH ALL\r\n',
+                   )
 
     def test_literal_at_end(self):
         self.check(b'search', [b'TEXT', b'\xfe\xff'],
-            b'tag UID SEARCH TEXT {2}\r\n'
-            b'\xfe\xff\r\n'
-        )
+                   b'tag UID SEARCH TEXT {2}\r\n'
+                   b'\xfe\xff\r\n'
+                   )
 
     def test_embedded_literal(self):
         self.check(b'search', [b'TEXT', b'\xfe\xff', b'DELETED'],
-            b'tag UID SEARCH TEXT {2}\r\n'
-            b'\xfe\xff DELETED\r\n'
-        )
+                   b'tag UID SEARCH TEXT {2}\r\n'
+                   b'\xfe\xff DELETED\r\n'
+                   )
 
     def test_multiple_literals(self):
         self.check(b'search', [b'TEXT', b'\xfe\xff', b'TEXT', b'\xcc'],
-            b'tag UID SEARCH TEXT {2}\r\n'
-            b'\xfe\xff TEXT {1}\r\n'
-            b'\xcc\r\n'
-        )
+                   b'tag UID SEARCH TEXT {2}\r\n'
+                   b'\xfe\xff TEXT {1}\r\n'
+                   b'\xcc\r\n'
+                   )
 
     def test_complex(self):
         self.check(b'search', [b'FLAGGED', b'TEXT', b'\xfe\xff', b'TEXT', b'\xcc', b'TEXT', b'foo'],
-            b'tag UID SEARCH FLAGGED TEXT {2}\r\n'
-            b'\xfe\xff TEXT {1}\r\n'
-            b'\xcc TEXT foo\r\n'
-        )
+                   b'tag UID SEARCH FLAGGED TEXT {2}\r\n'
+                   b'\xfe\xff TEXT {1}\r\n'
+                   b'\xcc TEXT foo\r\n'
+                   )
 
     def test_invalid_input_type(self):
         self.assertRaises(ValueError, self.client._raw_command, 'foo', [])

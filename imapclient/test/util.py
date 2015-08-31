@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 
+
 def find_unittest2():
     import unittest
     if hasattr(unittest, 'skip') and hasattr(unittest, 'loader'):
@@ -11,11 +12,13 @@ def find_unittest2():
     try:
         import unittest2   # try for a separately installed unittest2 package
     except ImportError:
-        raise ImportError('unittest2 not installed and unittest in standard library is not unittest2')
+        raise ImportError(
+            'unittest2 not installed and unittest in standard library is not unittest2')
     else:
         return unittest2
 
 unittest = find_unittest2()
+
 
 def patch_TestCase():
     TestCase = unittest.TestCase
@@ -24,6 +27,6 @@ def patch_TestCase():
     # when you use assertRaisesRegexp. This helps deal with the
     # mismatch.
     if not hasattr(TestCase, 'assertRaisesRegex'):
-         TestCase.assertRaisesRegex = TestCase.assertRaisesRegexp
+        TestCase.assertRaisesRegex = TestCase.assertRaisesRegexp
 
 patch_TestCase()

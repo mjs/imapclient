@@ -21,7 +21,7 @@ def parse_to_datetime(timestamp, normalise=True):
     unadjusted but will contain timezone information as per the input.
     """
     time_tuple = parsedate_tz(_munge(timestamp))
-    if time_tuple == None:
+    if time_tuple is None:
         raise ValueError("couldn't parse datetime %r" % timestamp)
 
     tz_offset_seconds = time_tuple[-1]
@@ -31,12 +31,14 @@ def parse_to_datetime(timestamp, normalise=True):
 
     dt = datetime(*time_tuple[:6], tzinfo=tz)
     if normalise and tz:
-       dt = datetime_to_native(dt)
+        dt = datetime_to_native(dt)
 
     return dt
 
+
 def datetime_to_native(dt):
     return dt.astimezone(FixedOffset.for_system()).replace(tzinfo=None)
+
 
 def datetime_to_INTERNALDATE(dt):
     """Convert a datetime instance to a IMAP INTERNALDATE string.
@@ -52,6 +54,7 @@ def datetime_to_INTERNALDATE(dt):
 # Matches timestamp strings where the time separator is a dot (see
 # issue #154). For example: 'Sat, 8 May 2010 16.03.09 +0200'
 _rfc822_dotted_time = re.compile("\w+, ?\d{1,2} \w+ \d\d(\d\d)? \d\d?\.\d\d?\.\d\d?.*")
+
 
 def _munge(s):
     s = s.decode('latin-1')  # parsedate_tz only works with strings

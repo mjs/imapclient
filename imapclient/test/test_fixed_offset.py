@@ -9,6 +9,7 @@ from mock import Mock, patch, DEFAULT
 from imapclient.test.util import unittest
 from imapclient.fixed_offset import FixedOffset
 
+
 class TestFixedOffset(unittest.TestCase):
 
     def _check(self, offset, expected_delta, expected_name):
@@ -25,7 +26,7 @@ class TestFixedOffset(unittest.TestCase):
                     timedelta(minutes=30), '+0030')
         self._check(FixedOffset(2 * 60),
                     timedelta(hours=2), '+0200')
-        self._check(FixedOffset(11*60 + 30),
+        self._check(FixedOffset(11 * 60 + 30),
                     timedelta(hours=11, minutes=30), '+1130')
 
     def test_negative(self):
@@ -33,11 +34,11 @@ class TestFixedOffset(unittest.TestCase):
                     timedelta(minutes=-30), '-0030')
         self._check(FixedOffset(-2 * 60),
                     timedelta(hours=-2), '-0200')
-        self._check(FixedOffset(-11*60 - 30),
-                    timedelta(minutes=(-11*60) - 30), '-1130')
+        self._check(FixedOffset(-11 * 60 - 30),
+                    timedelta(minutes=(-11 * 60) - 30), '-1130')
 
     @patch.multiple('imapclient.fixed_offset.time',
-                    daylight=True, timezone=15*60*60, localtime=DEFAULT)
+                    daylight=True, timezone=15 * 60 * 60, localtime=DEFAULT)
     def test_for_system_DST_not_active(self, localtime):
         localtime_mock = Mock()
         localtime_mock.tm_isdst = False
@@ -47,7 +48,7 @@ class TestFixedOffset(unittest.TestCase):
         self.assertEqual(offset.tzname(None), '-1500')
 
     @patch.multiple('imapclient.fixed_offset.time',
-                    daylight=True, altzone=15*60*60, localtime=DEFAULT)
+                    daylight=True, altzone=15 * 60 * 60, localtime=DEFAULT)
     def test_for_system_DST_active(self, localtime):
         localtime_mock = Mock()
         localtime_mock.tm_isdst = True
@@ -57,7 +58,7 @@ class TestFixedOffset(unittest.TestCase):
         self.assertEqual(offset.tzname(None), '-1500')
 
     @patch.multiple('imapclient.fixed_offset.time',
-                    daylight=False, timezone=-15*60*60)
+                    daylight=False, timezone=-15 * 60 * 60)
     def test_for_system_no_DST(self):
         offset = FixedOffset.for_system()
         self.assertEqual(offset.tzname(None), '+1500')

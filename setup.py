@@ -41,8 +41,10 @@ Features:
 
 Python versions 2.6, 2.7, 3.3 and 3.4 are officially supported.
 
-IMAPClient includes fairly comprehensive units tests and automated functional tests that can be run against a live IMAP server.
+IMAPClient includes comprehensive units tests and automated
+functional tests that can be run against a live IMAP server.
 """
+
 
 class TestDiscoverCommand(TestCommand):
     """
@@ -100,5 +102,4 @@ setup(name='IMAPClient',
           'Topic :: Internet',
           'Topic :: Software Development :: Libraries :: Python Modules',
           'Topic :: System :: Networking'],
-      cmdclass={'test': TestDiscoverCommand},
-)
+      cmdclass={'test': TestDiscoverCommand})
