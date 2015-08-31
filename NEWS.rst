@@ -137,6 +137,7 @@ Other
   * The default charset for gmail_search is now UTF-8. This makes it
     easier to use any unicode string as a search string and is safe
     because Gmail supports UTF-8 search criteria.
+  * PEP8 compliance fixed (except for some occasional long lines)
 
 ======
  0.13
