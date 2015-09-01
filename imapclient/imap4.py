@@ -8,10 +8,9 @@ import socket
 
 class IMAP4WithTimeout(imaplib.IMAP4):
 
-    def __init__(self, address, port, connection_timeout):
-        self._connection_timeout = connection_timeout
-        super(IMAP4WithTimeout, self).__init__(address, port)
+    def __init__(self, address, port, timeout):
+        self._timeout = timeout
+        imaplib.IMAP4.__init__(self, address, port)
 
     def _create_socket(self):
-        return socket.create_connection((self.host, self.port),
-                                        self._connection_timeout)
+        return socket.create_connection((self.host, self.port), self._timeout)
