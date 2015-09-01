@@ -147,6 +147,7 @@ Other
   * Added a "shutdown" method.
   * The embedded six package has been removed in favour of using an
     externally installed instance.
+  * Fixed handling of literals in STATUS responses.
 
 ======
  0.13

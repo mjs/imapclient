@@ -620,8 +620,8 @@ class IMAPClient(object):
             what = normalise_text_list(what)
         what_ = '(%s)' % (' '.join(what))
 
-        data = self._command_and_check('status', self._normalise_folder(folder), what_, unpack=True)
-        _, status_items = parse_response([data])
+        data = self._command_and_check('status', self._normalise_folder(folder), what_)
+        _, status_items = parse_response(data)
         return dict(as_pairs(status_items))
 
     def close_folder(self):
