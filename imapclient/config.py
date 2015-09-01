@@ -37,6 +37,7 @@ def parse_config_file(filename):
         ssl_check_hostname='true',
         ssl_verify_cert='true',
         ssl_ca_file=None,
+        timeout=None,
         starttls='false',
         stream='false',
         oauth='false',
@@ -67,11 +68,20 @@ def _read_config_section(parser, section):
     get = lambda name: parser.get(section, name)
     getboolean = lambda name: parser.getboolean(section, name)
 
-    def getint(name):
+    def get_allowing_none(name, typefunc):
         try:
-            return parser.getint(section, name)
+            v = parser.get(section, name)
         except NoOptionError:
             return None
+        if not v:
+            return None
+        return typefunc(v)
+
+    def getint(name):
+        return get_allowing_none(name, int)
+
+    def getfloat(name):
+        return get_allowing_none(name, float)
 
     ssl_ca_file = get('ssl_ca_file')
     if ssl_ca_file:
@@ -85,6 +95,7 @@ def _read_config_section(parser, section):
         ssl_check_hostname=getboolean('ssl_check_hostname'),
         ssl_verify_cert=getboolean('ssl_verify_cert'),
         ssl_ca_file=ssl_ca_file,
+        timeout=getfloat('timeout'),
 
         stream=getboolean('stream'),
 
@@ -143,7 +154,8 @@ def create_client_from_config(conf):
     client = imapclient.IMAPClient(conf.host, port=conf.port,
                                    ssl=conf.ssl,
                                    ssl_context=ssl_context,
-                                   stream=conf.stream)
+                                   stream=conf.stream,
+                                   timeout=conf.timeout)
     try:
         if conf.starttls:
             client.starttls()

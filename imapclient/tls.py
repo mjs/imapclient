@@ -147,14 +147,15 @@ class IMAP4_TLS(imaplib.IMAP4):
     Adapted from imaplib.IMAP4_SSL.
     """
 
-    def __init__(self, host, port, ssl_context):
+    def __init__(self, host, port, ssl_context, timeout):
         self.ssl_context = ssl_context
+        self._timeout = timeout
         imaplib.IMAP4.__init__(self, host, port)
 
     def open(self, host, port):
         self.host = host
         self.port = port
-        sock = socket.create_connection((host, port))
+        sock = socket.create_connection((host, port), self._timeout)
         self.sock = wrap_socket(sock, self.ssl_context, host)
         self.file = self.sock.makefile('rb')
 

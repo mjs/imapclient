@@ -2,8 +2,8 @@
  1.0.0
 =======
 
-Enhanced TLS support
---------------------
+Enhanced TLS support [API]
+--------------------------
 The way that IMAPClient establishes TLS/SSL connections has been
 completed reworked. By default IMAPClient will attempt certificate
 verification, certificate hostname checking, and will not use
@@ -39,8 +39,8 @@ on all of the above.
 Many thanks to Chris Arndt and Marc-Antoine Parent for their input
 into these TLS improvements.
 
-STARTTLS support
-----------------
+STARTTLS support [NEW]
+----------------------
 When the server supports it, IMAPClient can now establish an encrypted
 connection after initially connection unencrypted via STARTTLS. The
 starttls method takes an SSL context object for controlling the
@@ -120,6 +120,12 @@ The following are valid examples::
 
   c.search(['TEXT', u'\u263a'], 'utf-8')         # IMAPClient will apply UTF-8 encoding
   c.search([b'TEXT', b'\xe2\x98\xba'], 'utf-8')  # Caller has applied UTF-8 encoding
+
+Socket timeout support [NEW]
+----------------------------
+IMAPClient now accepts a timeout at creation time. The timeout applies
+while establishing the connection and for all operations on the socket
+connected to the IMAP server.
 
 Performance optimisation for parsing message id lists
 ----------------------------------------------------

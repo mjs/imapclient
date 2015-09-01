@@ -21,6 +21,7 @@ try:
 except ImportError:
     oauth_module = None
 
+from . import imap4
 from . import response_lexer
 from . import tls
 from .datetime_util import datetime_to_INTERNALDATE
@@ -95,6 +96,11 @@ class IMAPClient(object):
     ``False``). This is useful for exotic connection or authentication
     setups.
 
+    Use *timeout* to specify a timeout for the socket connected to the
+    IMAP server. The timeout applies during the initial connection to
+    the server and for all future socket reads and writes. The default
+    is for no timeout to be used.
+
     The *normalise_times* attribute specifies whether datetimes
     returned by ``fetch()`` are normalised to the local system time
     and include no timezone information (native), or are datetimes
@@ -120,7 +126,7 @@ class IMAPClient(object):
     ReadOnlyError = imaplib.IMAP4.readonly
 
     def __init__(self, host, port=None, use_uid=True, ssl=False, stream=False,
-                 ssl_context=None):
+                 ssl_context=None, timeout=None):
         if stream:
             if port is not None:
                 raise ValueError("can't set 'port' when 'stream' True")
@@ -139,20 +145,34 @@ class IMAPClient(object):
         self.log_file = sys.stderr
         self.normalise_times = True
 
+        self._timeout = timeout
         self._starttls_done = False
         self._cached_capabilities = None
         self._imap = self._create_IMAP4()
         self._imap._mesg = self._log    # patch in custom debug log method
         self._idle_tag = None
 
+        self._set_timeout()
+
     def _create_IMAP4(self):
         if self.stream:
             return imaplib.IMAP4_stream(self.host)
 
         if self.ssl:
-            return tls.IMAP4_TLS(self.host, self.port, self.ssl_context)
+            return tls.IMAP4_TLS(self.host, self.port, self.ssl_context,
+                                 self._timeout)
 
-        return imaplib.IMAP4(self.host, self.port)
+        return imap4.IMAP4WithTimeout(self.host, self.port, self._timeout)
+
+    def _set_timeout(self):
+        if self._timeout is not None:
+            self._sock.settimeout(self._timeout)
+
+    @property
+    def _sock(self):
+        # In py2, imaplib has sslobj (for SSL connections), and sock for non-SSL.
+        # In the py3 version it's just sock.
+        return getattr(self._imap, 'sslobj', self._imap.sock)
 
     def starttls(self, ssl_context=None):
         """Switch to an SSL encrypted connection by sending a STARTTLS command.
@@ -529,12 +549,11 @@ class IMAPClient(object):
              (1, b'EXISTS'),
              (1, b'FETCH', (b'FLAGS', (b'\\NotJunk',)))]
         """
-        # In py2, imaplib has sslobj (for SSL connections), and sock for non-SSL.
-        # In the py3 version it's just sock.
-        sock = getattr(self._imap, 'sslobj', self._imap.sock)
+        sock = self._sock
 
         # make the socket non-blocking so the timeout can be
         # implemented for this call
+        sock.settimeout(None)
         sock.setblocking(0)
         try:
             resps = []
@@ -558,6 +577,7 @@ class IMAPClient(object):
             return resps
         finally:
             sock.setblocking(1)
+            self._set_timeout()
 
     def idle_done(self):
         """Take the server out of IDLE mode.
