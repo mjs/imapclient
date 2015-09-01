@@ -599,3 +599,10 @@ class TestRawCommand(IMAPClientTest):
         expected_error = "unexpected response while waiting for continuation response: \(u?'NO', \[u?'go away'\]\)"
         with self.assertRaisesRegex(IMAPClient.AbortError, expected_error):
             self.client._raw_command(b'FOO', [b'\xff'])
+
+
+class TestShutdown(IMAPClientTest):
+
+    def test_shutdown(self):
+        self.client.shutdown()
+        self.client._imap.shutdown.assert_called_once_with()

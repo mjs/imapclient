@@ -251,6 +251,14 @@ class IMAPClient(object):
         self._check_resp('BYE', 'logout', typ, data)
         return data[0]
 
+    def shutdown(self):
+        """Close the connection to the IMAP server (without logging out)
+
+        In most cases, :py:meth:`.logout` should be used instead of
+        this. The logout method also shutdown down the connection.
+        """
+        self._imap.shutdown()
+
     def id_(self, parameters=None):
         """Issue the ID command, returning a dict of server implementation
         fields.

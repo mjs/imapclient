@@ -144,6 +144,9 @@ Other
     easier to use any unicode string as a search string and is safe
     because Gmail supports UTF-8 search criteria.
   * PEP8 compliance fixed (except for some occasional long lines)
+  * Added a "shutdown" method.
+  * The embedded six package has been removed in favour of using an
+    externally installed instance.
 
 ======
  0.13
