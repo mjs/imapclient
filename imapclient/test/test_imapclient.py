@@ -231,6 +231,13 @@ class TestAclMethods(IMAPClientTest):
 
 class TestIdleAndNoop(IMAPClientTest):
 
+    def assert_sock_calls(self, sock):
+        self.assertListEqual(sock.method_calls, [
+            ('settimeout', (None,), {}),
+            ('setblocking', (0,), {}),
+            ('setblocking', (1,), {}),
+        ])
+
     def test_idle(self):
         self.client._imap._command.return_value = sentinel.tag
         self.client._imap._get_response.return_value = None
@@ -260,9 +267,7 @@ class TestIdleAndNoop(IMAPClientTest):
         responses = self.client.idle_check()
 
         mock_select.assert_called_once_with([mock_sock], [], [], None)
-        self.assertListEqual(mock_sock.method_calls,
-                             [('setblocking', (0,), {}),
-                              ('setblocking', (1,), {})])
+        self.assert_sock_calls(mock_sock)
         self.assertListEqual([(1, b'EXISTS'), (0, b'EXPUNGE')], responses)
 
     @patch('imapclient.imapclient.select.select')
@@ -274,9 +279,7 @@ class TestIdleAndNoop(IMAPClientTest):
         responses = self.client.idle_check(timeout=0.5)
 
         mock_select.assert_called_once_with([mock_sock], [], [], 0.5)
-        self.assertListEqual(mock_sock.method_calls,
-                             [('setblocking', (0,), {}),
-                              ('setblocking', (1,), {})])
+        self.assert_sock_calls(mock_sock)
         self.assertListEqual([], responses)
 
     @patch('imapclient.imapclient.select.select')
@@ -297,9 +300,7 @@ class TestIdleAndNoop(IMAPClientTest):
         responses = self.client.idle_check()
 
         mock_select.assert_called_once_with([mock_sock], [], [], None)
-        self.assertListEqual(mock_sock.method_calls,
-                             [('setblocking', (0,), {}),
-                              ('setblocking', (1,), {})])
+        self.assert_sock_calls(mock_sock)
         self.assertListEqual([(99, b'EXISTS')], responses)
 
     def test_idle_done(self):
