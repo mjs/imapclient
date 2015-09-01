@@ -55,6 +55,7 @@ Phil Peterson
 
 Thomas Steinacher
      NIL handling fixes.
+     Socket timeout support.
 
 Eben Freeman
      ID support
