@@ -186,6 +186,24 @@ The above examples show some of the most common TLS parameter
 customisations but there are many other tweaks are possible. Consult
 the Python 3 :py:mod:`ssl` package documentation for further options.
 
+Using gevent with IMAPClient
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Some extra monkey patching is required to let gevent_ work with
+pyOpenSSL (used by IMAPClient for TLS support). The `gevent_openssl`_
+package performs this patching and can be used with IMAPClient like
+this::
+
+  from gevent import monkey; monkey.patch_all()
+  import gevent_openssl; gevent_openssl.monkey_patch()
+
+  import imapclient
+
+  client = imapclient.IMAPClient(...)
+  ...
+
+.. _gevent: http://www.gevent.org/
+.. _`gevent_openssl`: https://pypi.python.org/pypi/gevent_openssl/
+
 API Reference
 -------------
 
