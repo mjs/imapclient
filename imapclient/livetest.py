@@ -9,6 +9,7 @@ from __future__ import print_function, unicode_literals
 import imp
 import os
 import random
+import re
 import string
 import sys
 import time
@@ -199,7 +200,7 @@ class TestGeneral(_TestBase):
                 client.logout()
             except Exception as err:
                 if conf.expect_failure:
-                    if conf.expect_failure not in str(err):
+                    if not re.search(conf.expect_failure, str(err)):
                         self.fail(
                             "connection test %r failed with %r, expected %r" %
                             (name, err, conf.expect_failure))
