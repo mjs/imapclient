@@ -293,19 +293,18 @@ class IMAPClient(object):
         If the session is not yet authenticated, the cached
         capabilities determined at connection time will be returned.
         """
-        # if a capability response has been cached, use that
+        # If a capability response has been cached, use that.
         if self._cached_capabilities:
             return self._cached_capabilities
 
-        # If server returned an untagged CAPABILITY response (during
-        # authentication), cache it and return that.
-
-        untagged = normalise_untagged_responses(self._imap.untagged_responses)
+        # If the server returned an untagged CAPABILITY response
+        # (during authentication), cache it and return that.
+        untagged = _dict_bytes_normaliser(self._imap.untagged_responses)
         response = untagged.pop(b'CAPABILITY', None)
         if response:
             return self._save_capabilities(response[0])
 
-        # if authenticated, but don't have a capability reponse, ask for one
+        # If authenticated, but don't have a capability reponse, ask for one
         if self._imap.state in ('SELECTED', 'AUTH'):
             response = self._command_and_check('capability', unpack=True)
             return self._save_capabilities(response)
@@ -1370,3 +1369,32 @@ def _iter_with_last(items):
     last_i = len(items) - 1
     for i, item in enumerate(items):
         yield item, i == last_i
+
+
+_not_present = object()
+
+
+class _dict_bytes_normaliser(object):
+    """Wrap a dict with unicode/bytes keys and normalise the keys to
+    bytes.
+    """
+
+    def __init__(self, d):
+        self._d = d
+
+    def pop(self, ink, default=_not_present):
+        for k in self._gen_keys(ink):
+            try:
+                return self._d.pop(k)
+            except KeyError:
+                pass
+        if default == _not_present:
+            raise KeyError(ink)
+        return default
+
+    def _gen_keys(self, k):
+        yield k
+        if isinstance(k, binary_type):
+            yield to_unicode(k)
+        else:
+            yield to_bytes(k)

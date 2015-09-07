@@ -477,6 +477,7 @@ class TestCapabilities(IMAPClientTest):
         self.assertEqual(self.client._cached_capabilities, None)
         self.assertEqual(self.client.capabilities(), (b'FOO', b'MORE'))
         self.assertEqual(self.client._cached_capabilities, (b'FOO', b'MORE'))
+        self.assertEqual(self.client._imap.untagged_responses, {})
 
     def test_caching(self):
         self.client._imap.capabilities = ('FOO',)

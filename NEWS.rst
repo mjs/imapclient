@@ -148,6 +148,8 @@ Other
   * The embedded six package has been removed in favour of using an
     externally installed instance.
   * Fixed handling of literals in STATUS responses.
+  * Only use the untagged post-login CAPABILITY response once (if sent
+    by server).
 
 ======
  0.13
