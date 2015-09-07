@@ -474,7 +474,7 @@ class IMAPClient(object):
         return self._process_select_response(self._imap.untagged_responses)
 
     def _process_select_response(self, resp):
-        untagged = normalise_untagged_responses(resp)
+        untagged = _dict_bytes_normaliser(resp)
         out = {}
 
         # imaplib doesn't parse these correctly (broken regex) so replace
@@ -1317,13 +1317,6 @@ def _maybe_int_to_bytes(val):
     return to_bytes(val)
 
 
-def normalise_untagged_responses(untagged):
-    out = {}
-    for key, value in iteritems(untagged):
-        out[to_bytes(key)] = value
-    return out
-
-
 def _parse_untagged_response(text):
     assert text.startswith(b'* ')
     text = text[2:]
@@ -1381,6 +1374,23 @@ class _dict_bytes_normaliser(object):
 
     def __init__(self, d):
         self._d = d
+
+    def iteritems(self):
+        for key, value in iteritems(self._d):
+            yield to_bytes(key), value
+
+    # For Python 3 compatibility.
+    items = iteritems
+
+    def get(self, ink, default=_not_present):
+        for k in self._gen_keys(ink):
+            try:
+                return self._d.get(k)
+            except KeyError:
+                pass
+        if default == _not_present:
+            raise KeyError(ink)
+        return default
 
     def pop(self, ink, default=_not_present):
         for k in self._gen_keys(ink):
