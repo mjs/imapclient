@@ -1,8 +1,6 @@
-IMAPClient
-==========
-
-.. toctree::
-   :maxdepth: 1
+============
+ IMAPClient
+============
 
 :Author: `Menno Smits <http://freshfoo.com>`_
 :Version: |release|
@@ -287,3 +285,10 @@ External Documentation
 The `Unofficial IMAP Protocol Wiki <http://www.imapwiki.org/>`_ is
 very useful when writing IMAP related software and is highly
 recommended.
+
+Release History
+---------------
+.. toctree::
+   :maxdepth: 1
+
+   releases
