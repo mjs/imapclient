@@ -1382,10 +1382,16 @@ class _dict_bytes_normaliser(object):
     # For Python 3 compatibility.
     items = iteritems
 
+    def __contains__(self, ink):
+        for k in self._gen_keys(ink):
+            if k in self._d:
+                return True
+        return False
+
     def get(self, ink, default=_not_present):
         for k in self._gen_keys(ink):
             try:
-                return self._d.get(k)
+                return self._d[k]
             except KeyError:
                 pass
         if default == _not_present:

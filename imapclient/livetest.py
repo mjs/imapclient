@@ -19,7 +19,7 @@ from email.utils import make_msgid
 from six import binary_type, text_type, PY3, iteritems
 
 from .fixed_offset import FixedOffset
-from .imapclient import IMAPClient, DELETED, RECENT, to_unicode, to_bytes, normalise_untagged_responses
+from .imapclient import IMAPClient, DELETED, RECENT, to_unicode, to_bytes, _dict_bytes_normaliser
 from .response_types import Envelope, Address
 from .test.util import unittest
 from .config import parse_config_file, create_client_from_config
@@ -246,12 +246,12 @@ class TestGeneral(_TestBase):
 
     def test_select_read_only(self):
         self.append_msg(SIMPLE_MESSAGE)
-        untagged = normalise_untagged_responses(self.client._imap.untagged_responses)
+        untagged = _dict_bytes_normaliser(self.client._imap.untagged_responses)
         self.assertNotIn(b'READ-ONLY', untagged)
 
         resp = self.client.select_folder(self.base_folder, readonly=True)
 
-        untagged = normalise_untagged_responses(self.client._imap.untagged_responses)
+        untagged = _dict_bytes_normaliser(self.client._imap.untagged_responses)
         self.assertIn(b'READ-ONLY', untagged)
         self.assertEqual(resp[b'EXISTS'], 1)
         self.assertIsInstance(resp[b'RECENT'], int)
