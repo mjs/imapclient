@@ -13,6 +13,7 @@ except ImportError:
 from os import path
 from backports import ssl
 
+from six import iteritems
 from six.moves.urllib.request import urlopen
 from six.moves.urllib.parse import urlencode
 
@@ -24,32 +25,36 @@ try:
 except ImportError:
     json = None
 
+def get_config_defaults():
+    return dict(
+        username=None,
+        password=None,
+        ssl=False,
+        ssl_check_hostname=True,
+        ssl_verify_cert=True,
+        ssl_ca_file=None,
+        timeout=None,
+        starttls=False,
+        stream=False,
+        oauth=False,
+        oauth_token=None,
+        oauth_token_secret=None,
+        oauth_url=None,
+        oauth2=False,
+        oauth2_client_id=None,
+        oauth2_client_secret=None,
+        oauth2_refresh_token=None,
+        expect_failure=None,
+    )
+
 
 def parse_config_file(filename):
     """Parse INI files containing IMAP connection details.
 
     Used by livetest.py and interact.py
     """
-    parser = SafeConfigParser(dict(
-        username=None,
-        password=None,
-        ssl='false',
-        ssl_check_hostname='true',
-        ssl_verify_cert='true',
-        ssl_ca_file=None,
-        timeout=None,
-        starttls='false',
-        stream='false',
-        oauth='false',
-        oauth_token=None,
-        oauth_token_secret=None,
-        oauth_url=None,
-        oauth2='false',
-        oauth2_client_id=None,
-        oauth2_client_secret=None,
-        oauth2_refresh_token=None,
-        expect_failure=None,
-    ))
+
+    parser = SafeConfigParser(get_string_config_defaults())
     with open(filename, 'r') as fh:
         parser.readfp(fh)
 
@@ -62,6 +67,17 @@ def parse_config_file(filename):
         conf.alternates[section] = _read_config_section(parser, section)
 
     return conf
+
+
+def get_string_config_defaults():
+    out = {}
+    for k, v in iteritems(get_config_defaults()):
+        if v is True:
+            v = 'true'
+        elif v is False:
+            v = 'false'
+        out[k] = v
+    return out
 
 
 def _read_config_section(parser, section):
