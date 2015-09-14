@@ -4,6 +4,8 @@
 
 from __future__ import unicode_literals
 
+from datetime import date, datetime
+
 from mock import Mock
 
 from .imapclient_test import IMAPClientTest
@@ -49,9 +51,16 @@ class TestSearch(TestSearchBase):
         # Default conversion using us-ascii.
         self.check_call([b'CHARSET', b'utf-8', b'FOO', b'\xe2\x98\xb9'])
 
+    def test_with_date(self):
+        self.client.search(['SINCE', date(2005, 4, 3)])
+        self.check_call([b'SINCE', b'03-Apr-2005'])
+
+    def test_with_datetime(self):
+        self.client.search(['SINCE', datetime(2005, 4, 3, 2, 1, 0)])
+        self.check_call([b'SINCE', b'03-Apr-2005'])  # Time part is ignored
+
     def test_quoting(self):
         self.client.search(['TEXT', 'foo bar'])
-
         self.check_call([b'TEXT', b'"foo bar"'])
 
     def test_no_results(self):

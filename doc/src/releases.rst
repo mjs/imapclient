@@ -69,13 +69,14 @@ search criteria.
 
 Search criteria
 ~~~~~~~~~~~~~~~
-The preferred way to specify criteria is as a list of strings. Valid
-examples are::
+The preferred way to specify criteria is as a list of strings, ints
+and dates (where relevant). Valid examples are::
 
   c.search(['DELETED'])
   c.search(['NOT', 'DELETED'])
   c.search(['FLAGGED', 'SUBJECT', 'foo', 'BODY', 'hello world'])
   c.search(['NOT', 'DELETED', 'SMALLER', 1000])
+  c.search(['SINCE', date(2006, 5, 3)])
 
 IMAPClient will perform all required quoting and encoding. Callers
 should not attempt to do this themselves.
@@ -102,6 +103,7 @@ valid::
   c.search('NOT DELETED')
   c.search('TEXT "foo"')
   c.search('DELETED TEXT "foo" SMALLER 500')
+  c.search('SINCE 03-May-2006')
 
 Search charset
 ~~~~~~~~~~~~~~

@@ -10,7 +10,7 @@ import select
 import socket
 import sys
 import re
-from datetime import datetime
+from datetime import datetime, date
 from operator import itemgetter
 
 from six import moves, iteritems, text_type, integer_types, PY3, binary_type, iterbytes
@@ -24,7 +24,7 @@ except ImportError:
 from . import imap4
 from . import response_lexer
 from . import tls
-from .datetime_util import datetime_to_INTERNALDATE
+from .datetime_util import datetime_to_INTERNALDATE, format_criteria_date
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .response_parser import parse_response, parse_message_list, parse_fetch_response
 xrange = moves.xrange
@@ -675,6 +675,7 @@ class IMAPClient(object):
             [u'SMALLER', 500]
             [b'NOT', b'DELETED']
             [u'TEXT', u'foo bar', u'FLAGGED', u'SUBJECT', u'baz']
+            [u'SINCE', date(2005, 4, 3)]
 
         IMAPClient will perform conversion and quoting as
         required. The caller shouldn't do this.
@@ -688,6 +689,7 @@ class IMAPClient(object):
             u'SMALLER 500'
             b'NOT DELETED'
             u'TEXT "foo bar" FLAGGED SUBJECT "baz"'
+            b'SINCE 03-Apr-2005'
 
         *charset* specifies the character set of the criteria. It
         defaults to US-ASCII as this is the only charset that a server
@@ -712,7 +714,6 @@ class IMAPClient(object):
         attribute. This is set if the server included a MODSEQ value
         to the search response (i.e. if a MODSEQ criteria was included
         in the search).
-
         """
         return self._search(criteria, charset)
 
@@ -1283,6 +1284,8 @@ def _normalise_search_criteria(criteria, charset=None):
 def _handle_one_search_criteria(item, charset):
     if isinstance(item, int):
         return str(item).encode('ascii')
+    elif isinstance(item, (datetime, date)):
+        return format_criteria_date(item)
     return _maybe_quote(to_bytes(item, charset))
 
 

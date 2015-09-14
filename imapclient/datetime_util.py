@@ -10,6 +10,8 @@ from email.utils import parsedate_tz
 
 from .fixed_offset import FixedOffset
 
+_SHORT_MONTHS = ' Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ')
+
 
 def parse_to_datetime(timestamp, normalise=True):
     """Convert an IMAP datetime string to a datetime.
@@ -61,3 +63,10 @@ def _munge(s):
     if _rfc822_dotted_time.match(s):
         return s.replace(".", ":")
     return s
+
+
+def format_criteria_date(dt):
+    """Format a date or datetime instance for use in IMAP search criteria.
+    """
+    out = '%02d-%s-%d' % (dt.day, _SHORT_MONTHS[dt.month], dt.year)
+    return out.encode('ascii')
