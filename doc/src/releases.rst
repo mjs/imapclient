@@ -52,25 +52,22 @@ Many thanks to Chris Arndt for his extensive initial work on this.
 
 More robust criteria handling for search, sort and thread [API]
 ---------------------------------------------------------------
-The way search criteria are processed by the various methods that
-accept them has been changed to allow for easier and more robust
-handling. In addition, the way the *charset* argument interacts with
-search criteria has been improved.
-
-Unfortunately these changes will cause compatibility breaks that may
-required small changes in code that uses IMAPClient.
-
-The documentation and tests for search, gmail_search, sort and thread
-has updated to account for these changes and have also been generally
-improved.
-
-The details in the following sections apply to all methods that take
-search criteria.
+IMAPClient's methods that accept search criteria (search, sort,
+thread, gmail_search) have been changed to provide take criteria in
+a more straightforward and robust way. In addition, the way the
+*charset* argument interacts with search criteria has been
+improved. These changes make it easier to pass search criteria and
+have them handled correctly but unfortunately also mean that small
+changes may be required to existing code that uses IMAPClient.
 
 Search criteria
 ~~~~~~~~~~~~~~~
-The preferred way to specify criteria is as a list of strings, ints
-and dates (where relevant). Valid examples are::
+The preferred way to specify criteria now is as a list of strings,
+ints and dates (where relevant). The list should be flat with all the
+criteria parts run together. Where a criteria takes an argument, just
+provide it as the next element in the list.
+
+Some valid examples::
 
   c.search(['DELETED'])
   c.search(['NOT', 'DELETED'])
@@ -78,52 +75,65 @@ and dates (where relevant). Valid examples are::
   c.search(['NOT', 'DELETED', 'SMALLER', 1000])
   c.search(['SINCE', date(2006, 5, 3)])
 
-IMAPClient will perform all required quoting and encoding. Callers
-should not attempt to do this themselves.
+IMAPClient will perform all required conversion, quoting and
+encoding. Callers do not need to and should not attempt to do this
+themselves. IMAPClient will automatically send criteria parts as IMAP
+literals when required (i.e. when the encoded part is 8-bit).
 
-Following are some examples of how to update code written against
-older versions of IMAPClient::
+Some previously accepted ways of passing search criteria will not work
+as they did in previous versions of IMAPClient. Small changes will be
+required in these cases.  Here are some examples of how to update code
+written against older versions of IMAPClient::
 
   c.search(['NOT DELETED'])    # Before
   c.search(['NOT', 'DELETED']) # After
 
   c.search(['TEXT "foo"'])     # Before
-  c.search(['TEXT', 'foo'])    # After
+  c.search(['TEXT', 'foo'])    # After (IMAPClient will add the quotes)
 
   c.search(['DELETED', 'TEXT "foo"'])    # Before
   c.search(['DELETED', 'TEXT', 'foo'])   # After
 
-It is possible to pass a single string as the search
-criteria. IMAPClient will not attempt quoting in this case, allowing
-lower level specification of criteria. Specifying criteria using a
-sequence of strings is preferable however. The following examples are
-valid::
+  c.search(['SMALLER 1000'])    # Before
+  c.search(['SMALLER', 1000])   # After
 
-  c.search('ALL')
+It is also possible to pass a single string as the search
+criteria. IMAPClient will not attempt quoting in this case, allowing
+the caller to specify search criteria at a lower level. Specifying
+criteria using a sequence of strings is preferable however. The
+following examples (equivalent to those further above) are valid::
+
+  c.search('DELETED')
   c.search('NOT DELETED')
-  c.search('TEXT "foo"')
-  c.search('DELETED TEXT "foo" SMALLER 500')
+  c.search('FLAGGED SUBJECT "foo" BODY "hello world"')
+  c.search('NOT DELETED SMALLER 1000')
   c.search('SINCE 03-May-2006')
 
 Search charset
 ~~~~~~~~~~~~~~
-The way that the search *charset* argument is handled has as also
+The way that the search *charset* argument is handled has also
 changed.
 
-Any unicode criteria given will now be encoded using the supplied
-charset. The charset must refer to an encoding that is capable of
-handling the criteria's characters or an error will occur.
+Any unicode criteria arguments will now be encoded by IMAPClient using
+the supplied charset. The charset must refer to an encoding that is
+capable of handling the criteria's characters or an error will
+occur. The charset must obviously also be one that the server
+supports! (UTF-8 is common)
 
 Any criteria given as bytes will not be changed by IMAPClient, but the
-provided charset will still be passed to the IMAP server. The encoding
+provided charset will still be passed to the IMAP server. This allows
+already encoding criteria to be passed through as-is. The encoding
 referred to by *charset* should match the actual encoding used for the
-criteria. This allows to caller to easily pass criteria that have
-already been encoded.
+criteria.
 
 The following are valid examples::
 
   c.search(['TEXT', u'\u263a'], 'utf-8')         # IMAPClient will apply UTF-8 encoding
-  c.search([b'TEXT', b'\xe2\x98\xba'], 'utf-8')  # Caller has applied UTF-8 encoding
+  c.search([b'TEXT', b'\xe2\x98\xba'], 'utf-8')  # Caller has already applied UTF-8 encoding
+
+The documentation and tests for search, gmail_search, sort and thread
+has updated to account for these changes and have also been generally
+improved.
 
 Socket timeout support [NEW]
 ----------------------------
