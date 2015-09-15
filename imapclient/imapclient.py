@@ -650,9 +650,7 @@ class IMAPClient(object):
     def folder_exists(self, folder):
         """Return ``True`` if *folder* exists on the server.
         """
-        data = self._command_and_check('list', '""', self._normalise_folder(folder))
-        data = [x for x in data if x]
-        return len(data) == 1 and data[0] != None
+        return any(name == folder for _, _, name in self.list_folders())
 
     def subscribe_folder(self, folder):
         """Subscribe to *folder*, returning the server response string.
