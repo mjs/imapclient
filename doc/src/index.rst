@@ -70,32 +70,34 @@ Concepts
 
 Message Identifiers
 ~~~~~~~~~~~~~~~~~~~
-There are two ways to refer to messages using the IMAP protocol.
+In the IMAP protocol, messages are identified using an integer. These
+message ids are specific to a given folder.
 
-One way is by message sequence number where the messages in a mailbox
-are numbered from 1 to N where N is the number of messages. These
-numbers don't persist between sessions and may be reassigned after
-some operations such as a folder expunge.
+There are two types of message identifiers in the IMAP protocol.
+
+One type is the message sequence number where the messages in a folder
+are numbered from 1 to N where N is the number of messages in the
+folder. These numbers don't persist between sessions and may be
+reassigned after some operations such as an expunge.
 
 A more convenient approach is Unique Identifiers (UIDs). Unique
 Identifiers are integers assigned to each message by the IMAP server
 that will persist across sessions. They do not change when folders are
-expunged.
+expunged. Almost all IMAP servers support UIDs.
 
 Each call to the IMAP server can use either message sequence numbers
 or UIDs in the command arguments and return values. The client
-specifies to the server which type of identifier should be
-used. IMAPClient uses UIDs by default.
+specifies to the server which type of identifier should be used. You
+can set whether IMAPClient should use UIDs or message sequence number
+via the *use_uid* argument passed when an IMAPClient instance is
+created and the *use_uid* attribute. The *use_uid* attribute can be
+used to change the message id type between calls to the
+server. IMAPClient uses UIDs by default.
 
 Any method that accepts message ids takes either a sequence containing
 message ids (eg. ``[1,2,3]``), or a single message id integer, or a
 string representing sets and ranges of messages as supported by the
-IMAP protocol (e.g. ``'50-65'``, ``'2:*'`` or
-``'2,4:7,9,12:*'``). Whether these are interpreted as message sequence
-numbers or UIDs depends on the *use_uid* argument passed when an
-IMAPClient instance is created and the *use_uid* attribute. The
-*use_uid* attribute can be used to change the message id type between
-calls to the server.
+IMAP protocol (e.g. ``'50-65'``, ``'2:*'`` or ``'2,4:7,9,12:*'``).
 
 Message Flags
 ~~~~~~~~~~~~~

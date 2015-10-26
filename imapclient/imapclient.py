@@ -663,7 +663,8 @@ class IMAPClient(object):
         return self._command_and_check('unsubscribe', self._normalise_folder(folder))
 
     def search(self, criteria='ALL', charset=None):
-        """Return a list of messages ids matching *criteria*.
+        """Return a list of messages ids from the currently selected
+        folder matching *criteria*.
 
         *criteria* should be a sequence of one or more criteria
         items. Each criteria item may be either unicode or
@@ -741,8 +742,9 @@ class IMAPClient(object):
         return parse_message_list(data)
 
     def sort(self, sort_criteria, criteria='ALL', charset='UTF-8'):
-        """Return a list of message ids sorted by *sort_criteria* and
-        optionally filtered by *criteria*.
+        """Return a list of message ids from the currently selected
+        folder, sorted by *sort_criteria* and optionally filtered by
+        *criteria*.
 
         *sort_criteria* may be specified as a sequence of strings or a
         single string. IMAPClient will take care any required
@@ -773,7 +775,8 @@ class IMAPClient(object):
         return [long(i) for i in ids.split()]
 
     def thread(self, algorithm='REFERENCES', criteria='ALL', charset='UTF-8'):
-        """Return a list of messages threads matching *criteria*.
+        """Return a list of messages threads from the currently
+        selected folder which match *criteria*.
 
         Each returned thread is a list of messages ids. An example
         return value containing three message threads::
@@ -799,7 +802,8 @@ class IMAPClient(object):
         return parse_response(data)
 
     def get_flags(self, messages):
-        """Return the flags set for each message in *messages*.
+        """Return the flags set for each message in *messages* from
+        the currently selected folder.
 
         The return value is a dictionary structured like this: ``{
         msgid1: (flag1, flag2, ... ), }``.
@@ -808,7 +812,7 @@ class IMAPClient(object):
         return self._filter_fetch_dict(response, b'FLAGS')
 
     def add_flags(self, messages, flags):
-        """Add *flags* to *messages*.
+        """Add *flags* to *messages* in the currently selected folder.
 
         *flags* should be a sequence of strings.
 
@@ -818,7 +822,8 @@ class IMAPClient(object):
         return self._store(b'+FLAGS', messages, flags, b'FLAGS')
 
     def remove_flags(self, messages, flags):
-        """Remove one or more *flags* from *messages*.
+        """Remove one or more *flags* from *messages* in the currently
+        selected folder.
 
         *flags* should be a sequence of strings.
 
@@ -828,7 +833,8 @@ class IMAPClient(object):
         return self._store(b'-FLAGS', messages, flags, b'FLAGS')
 
     def set_flags(self, messages, flags):
-        """Set the *flags* for *messages*.
+        """Set the *flags* for *messages* in the currently selected
+        folder.
 
         *flags* should be a sequence of strings.
 
@@ -838,7 +844,8 @@ class IMAPClient(object):
         return self._store(b'FLAGS', messages, flags, b'FLAGS')
 
     def get_gmail_labels(self, messages):
-        """Return the label set for each message in *messages*.
+        """Return the label set for each message in *messages* in the
+        currently selected folder.
 
         The return value is a dictionary structured like this: ``{
         msgid1: (label1, label2, ... ), }``.
@@ -850,7 +857,7 @@ class IMAPClient(object):
         return self._filter_fetch_dict(response, b'X-GM-LABELS')
 
     def add_gmail_labels(self, messages, labels):
-        """Add *labels* to *messages*.
+        """Add *labels* to *messages* in the currently selected folder.
 
         *labels* should be a sequence of strings.
 
@@ -864,7 +871,8 @@ class IMAPClient(object):
                            self._normalise_labels(labels), b'X-GM-LABELS')
 
     def remove_gmail_labels(self, messages, labels):
-        """Remove one or more *labels* from *messages*.
+        """Remove one or more *labels* from *messages* in the
+        currently selected folder.
 
         *labels* should be a sequence of strings.
 
@@ -878,7 +886,8 @@ class IMAPClient(object):
                            self._normalise_labels(labels), b'X-GM-LABELS')
 
     def set_gmail_labels(self, messages, labels):
-        """Set the *labels* for *messages*.
+        """Set the *labels* for *messages* in the currently selected
+        folder.
 
         *labels* should be a sequence of strings.
 
@@ -901,7 +910,8 @@ class IMAPClient(object):
         return self.add_flags(messages, DELETED)
 
     def fetch(self, messages, data, modifiers=None):
-        """Retrieve selected *data* associated with one or more *messages*.
+        """Retrieve selected *data* associated with one or more
+        *messages* in the currently selected folder.
 
         *data* should be specified as a sequnce of strings, one item
         per data selector, for example ``['INTERNALDATE',
