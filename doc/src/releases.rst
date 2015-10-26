@@ -165,6 +165,7 @@ Other
   * Only use the untagged post-login CAPABILITY response once (if sent
     by server).
   * Release history made part of the main documentation.
+  * Clarified how message ids work in the docs.
 
 ==============
  Version 0.13
