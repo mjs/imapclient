@@ -141,6 +141,12 @@ IMAPClient now accepts a timeout at creation time. The timeout applies
 while establishing the connection and for all operations on the socket
 connected to the IMAP server.
 
+Semantic Versioning
+-------------------
+In order to better indicate version compatibility to users, IMAPClient
+will now strictly adhere to the `Semantic Versioning
+<http://semver.org>`_ scheme.
+
 Performance optimisation for parsing message id lists
 -----------------------------------------------------
 A short circuit is now used when parsing a list of message ids which

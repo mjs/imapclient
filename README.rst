@@ -96,6 +96,12 @@ tracker on Bitbucket. The maintainer also blogs about IMAPClient
 news. Those articles can be found `here
 <http://freshfoo.com/blog/tags/imapclient>`_.
 
+Versions
+--------
+In order to clearly communicate version compatibility, IMAPClient
+will strictly adhere to the `Semantic Versioning <http://semver.org>`_
+scheme from version 1.0 onwards.
+
 Mailing List
 ------------
 The IMAPClient mailing list can be used to ask IMAPClient related
