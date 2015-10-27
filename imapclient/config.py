@@ -131,31 +131,38 @@ def _read_config_section(parser, section):
         expect_failure=get('expect_failure')
     )
 
+OAUTH2_REFRESH_URLS = {
+    'imap.gmail.com': 'https://accounts.google.com/o/oauth2/token',
+    'imap.mail.yahoo.com': "https://api.login.yahoo.com/oauth2/get_token",
+}
 
-def refresh_oauth2_token(client_id, client_secret, refresh_token):
+def refresh_oauth2_token(hostname, client_id, client_secret, refresh_token):
     if not json:
-        raise RuntimeError("livetest OAUTH2 functionality relies on 'json' module")
+        raise RuntimeError("OAUTH2 functionality relies on 'json' module")
+
+    url = OAUTH2_REFRESH_URLS.get(hostname)
+    if not url:
+        raise ValueError("don't know where to refresh OAUTH2 token for %r" % hostname)
+
     post = dict(client_id=client_id.encode('ascii'),
                 client_secret=client_secret.encode('ascii'),
                 refresh_token=refresh_token.encode('ascii'),
                 grant_type=b'refresh_token')
-    response = urlopen('https://accounts.google.com/o/oauth2/token',
-                       urlencode(post).encode('ascii')).read()
+    response = urlopen(url, urlencode(post).encode('ascii')).read()
     return json.loads(response.decode('ascii'))['access_token']
 
 # Tokens are expensive to refresh so use the same one for the duration of the process.
 _oauth2_cache = {}
 
-
-def get_oauth2_token(client_id, client_secret, refresh_token):
-    cache_key = (client_id, client_secret, refresh_token)
+def get_oauth2_token(hostname, client_id, client_secret, refresh_token):
+    cache_key = (hostname, client_id, client_secret, refresh_token)
     token = _oauth2_cache.get(cache_key)
     if token:
         return token
-    token = refresh_oauth2_token(client_id, client_secret, refresh_token)
+
+    token = refresh_oauth2_token(hostname, client_id, client_secret, refresh_token)
     _oauth2_cache[cache_key] = token
     return token
-
 
 def create_client_from_config(conf):
     ssl_context = None
@@ -181,7 +188,8 @@ def create_client_from_config(conf):
                                conf.oauth_token,
                                conf.oauth_token_secret)
         elif conf.oauth2:
-            access_token = get_oauth2_token(conf.oauth2_client_id,
+            access_token = get_oauth2_token(conf.host,
+                                            conf.oauth2_client_id,
                                             conf.oauth2_client_secret,
                                             conf.oauth2_refresh_token)
             client.oauth2_login(conf.username, access_token)
