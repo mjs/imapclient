@@ -113,9 +113,9 @@ improving IMAPClient and contributing back to the project.
 IMAP Servers
 ------------
 IMAPClient is heavily tested against Dovecot, Gmail, Fastmail.fm
-(who use a modified Cyrus implementation) and occasionally Microsoft
-Exchange. Access to accounts on other IMAP servers/services for
-testing would be greatly appreciated.
+(who use a modified Cyrus implementation), Office365 and Yahoo. Access
+to accounts on other IMAP servers/services for testing would be
+greatly appreciated.
 
 Interactive Console
 -------------------
