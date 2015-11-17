@@ -34,12 +34,17 @@ Compatibility breaks:
    may fail now (especially if a self-signed certificate is used by
    the server). Refer to the documentation for details of how to
    supply alternate CA certificates or disable verification.
+4. There are some new exceptions that might be raised in response to
+   network issues or TLS protocol failures. Refer to the
+   Exceptions_ section of the manual for more details.
 
 Please refer to the "TLS/SSL" section of the manual for more details
 on all of the above.
 
 Many thanks to Chris Arndt and Marc-Antoine Parent for their input
 into these TLS improvements.
+
+.. _Exceptions: http://imapclient.readthedocs.org/en/latest/#exceptions
 
 STARTTLS support [NEW]
 ----------------------

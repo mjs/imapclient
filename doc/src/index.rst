@@ -137,17 +137,6 @@ If *folder_encode* is True, all folder names returned by IMAPClient
 are always returned as unicode strings. If *folder_encode* is False,
 folder names are returned as str (Python 2) or bytes (Python 3).
 
-Exceptions
-~~~~~~~~~~
-The IMAP related exceptions that will be raised by this class are:
-
-* IMAPClient.Error
-* IMAPClient.AbortError
-* IMAPClient.ReadOnlyError
-
-These are aliases for the imaplib.IMAP4 exceptions of the same name. Socket
-errors may also be raised in the case of network errors.
-
 TLS/SSL
 ~~~~~~~
 IMAPClient uses sensible TLS parameter defaults for encrypted
@@ -205,6 +194,30 @@ Here's an example of how gevent_openssl can be used with IMAPClient::
 
 .. _gevent: http://www.gevent.org/
 .. _`gevent_openssl`: https://pypi.python.org/pypi/gevent_openssl/
+
+
+Exceptions
+~~~~~~~~~~
+The following exceptions may be raised by IMAPClient directly. They
+are attached to the IMAPClient class.
+
+* IMAPClient.Error: the base class for IMAPClient's exceptions and the
+  most commonly used error.
+* IMAPClient.AbortError: raised if a serious error has occurred that
+  means the IMAP connection is no longer usable. The connection should
+  be dropped without logout if this occurs.
+* IMAPClient.ReadOnlyError: raised if a modifying operation was
+  attempted on a read-only folder.
+
+Exceptions from lower network layers are also possible, in particular:
+
+* socket.error
+* socket.timeout: raised if a timeout was specified when creating the
+  IMAPClient instance and a network operation takes too long.
+* backports.ssl.SSLError: the base class for network or SSL protocol
+  errors when ssl=True or starttls() is used.
+* backports.ssl.CertificateError: raised when TLS certification
+  verification fails. This is *not* a subclass of SSLError.
 
 API Reference
 -------------
