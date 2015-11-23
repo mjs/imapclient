@@ -178,6 +178,7 @@ Other
   * Release history made part of the main documentation.
   * Clarified how message ids work in the docs.
   * Livetest infrastructure now works with Yahoo's OAUTH2
+  * Fixed bytes handling in Address.__str__
 
 ==============
  Version 0.13
