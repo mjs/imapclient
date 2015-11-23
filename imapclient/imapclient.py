@@ -27,6 +27,7 @@ from . import tls
 from .datetime_util import datetime_to_INTERNALDATE, format_criteria_date
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .response_parser import parse_response, parse_message_list, parse_fetch_response
+from .util import to_bytes, to_unicode
 xrange = moves.xrange
 
 if PY3:
@@ -1252,6 +1253,29 @@ def _quote(arg):
         q = b'"'
     return q + arg + q
 
+def _normalise_search_criteria(criteria, charset=None):
+    if not criteria:
+        raise ValueError('no criteria specified')
+    if not charset:
+        charset = 'us-ascii'
+    if isinstance(criteria, (text_type, binary_type)):
+        return [to_bytes(criteria, charset)]
+    return [_handle_one_search_criteria(item, charset) for item in criteria]
+
+
+def _handle_one_search_criteria(item, charset):
+    if isinstance(item, int):
+        return str(item).encode('ascii')
+    elif isinstance(item, (datetime, date)):
+        return format_criteria_date(item)
+    return _maybe_quote(to_bytes(item, charset))
+
+
+def _normalise_sort_criteria(criteria, charset=None):
+    if isinstance(criteria, (text_type, binary_type)):
+        criteria = [criteria]
+    return b'(' + b' '.join(to_bytes(item).upper() for item in criteria) + b')'
+
 
 def _maybe_quote(arg):
     """Apply quoting, but only if it's required - otherwise return the
@@ -1279,30 +1303,6 @@ def seq_to_parenstr_upper(items):
     return _join_and_paren(item.upper() for item in _normalise_text_list(items))
 
 
-def _normalise_search_criteria(criteria, charset=None):
-    if not criteria:
-        raise ValueError('no criteria specified')
-    if not charset:
-        charset = 'us-ascii'
-    if isinstance(criteria, (text_type, binary_type)):
-        return [to_bytes(criteria, charset)]
-    return [_handle_one_search_criteria(item, charset) for item in criteria]
-
-
-def _handle_one_search_criteria(item, charset):
-    if isinstance(item, int):
-        return str(item).encode('ascii')
-    elif isinstance(item, (datetime, date)):
-        return format_criteria_date(item)
-    return _maybe_quote(to_bytes(item, charset))
-
-
-def _normalise_sort_criteria(criteria, charset=None):
-    if isinstance(criteria, (text_type, binary_type)):
-        criteria = [criteria]
-    return b'(' + b' '.join(to_bytes(item).upper() for item in criteria) + b')'
-
-
 def _join_and_paren(items):
     return '(' + ' '.join(items) + ')'
 
@@ -1311,7 +1311,6 @@ def _normalise_text_list(items):
     if isinstance(items, (text_type, binary_type)):
         items = (items,)
     return (to_unicode(c) for c in items)
-
 
 def join_message_ids(messages):
     """Convert a sequence of messages ids or a single integer message id
@@ -1351,18 +1350,6 @@ def as_pairs(items):
         else:
             last_item = item
         i += 1
-
-
-def to_unicode(s):
-    if isinstance(s, binary_type):
-        return s.decode('ascii')
-    return s
-
-
-def to_bytes(s, charset='ascii'):
-    if isinstance(s, text_type):
-        return s.encode(charset)
-    return s
 
 
 def _is8bit(data):

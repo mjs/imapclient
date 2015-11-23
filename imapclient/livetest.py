@@ -18,11 +18,12 @@ from email.utils import make_msgid
 
 from six import binary_type, text_type, PY3, iteritems
 
+from .config import parse_config_file, create_client_from_config
 from .fixed_offset import FixedOffset
-from .imapclient import IMAPClient, DELETED, RECENT, to_unicode, to_bytes, _dict_bytes_normaliser
+from .imapclient import IMAPClient, DELETED, RECENT
 from .response_types import Envelope, Address
 from .test.util import unittest
-from .config import parse_config_file, create_client_from_config
+from .util import to_bytes, to_unicode
 
 # TODO cleaner verbose output: avoid "__main__" and separator between classes
 
