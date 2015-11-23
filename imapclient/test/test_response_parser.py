@@ -484,6 +484,14 @@ class TestParseFetchResponse(unittest.TestCase):
             }
         })
 
+    def test_Address_str(self):
+        self.assertEqual(str(Address(b"Mary Jane", None, b"mary", b"jane.org")),
+                         "Mary Jane <mary@jane.org>")
+
+        self.assertEqual(str(Address("Mary Jane", None, "mary", "jane.org")),
+                         "Mary Jane <mary@jane.org>")
+
+
 
 def add_crlf(text):
     return CRLF.join(text.splitlines()) + CRLF
