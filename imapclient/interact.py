@@ -60,6 +60,11 @@ def main():
     print('Connected.')
     banner = '\nIMAPClient instance is "c"'
 
+    def ipython_400(c):
+        from IPython.terminal.embed import InteractiveShellEmbed
+        ipshell = InteractiveShellEmbed(banner1=banner)
+        ipshell('')
+
     def ipython_011(c):
         from IPython.frontend.terminal.embed import InteractiveShellEmbed
         ipshell = InteractiveShellEmbed(banner1=banner)
@@ -73,12 +78,19 @@ def main():
         import code
         code.interact(banner, local=dict(c=c))
 
-    for shell_attempt in (ipython_011, ipython_010, builtin):
+    shell_attempts = (
+        ipython_400,
+        ipython_011,
+        ipython_010,
+        builtin,
+    )
+    for shell in shell_attempts:
         try:
-            shell_attempt(client)
-            break
+            shell(client)
         except ImportError:
             pass
+        else:
+            break
 
 if __name__ == '__main__':
     main()
