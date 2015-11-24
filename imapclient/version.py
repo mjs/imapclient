@@ -9,9 +9,7 @@ version_info = (1, 0, 0, 'final')
 
 def _imapclient_version_string(vinfo):
     major, minor, micro, releaselevel = vinfo
-    v = '%d.%d' % (major, minor)
-    if micro != 0:
-        v += '.%d' % micro
+    v = '%d.%d.%d' % (major, minor, micro)
     if releaselevel != 'final':
         v += '-' + releaselevel
     return v
