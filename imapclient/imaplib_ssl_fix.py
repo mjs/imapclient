@@ -23,6 +23,7 @@ from __future__ import unicode_literals
 import sys
 import imaplib
 
+
 def _is_affected_version(sys_version):
     sys_version = sys_version[:3]
     if sys_version < (2, 5, 0):
@@ -33,17 +34,20 @@ def _is_affected_version(sys_version):
         return True
     return False
 
+
 def _fixed_readline(self):
     """Read line from remote."""
     line = []
-    while 1:
+    while True:
         char = self.sslobj.read(1)
         line.append(char)
-        if char in ("\n", ""): return ''.join(line)
+        if char in ("\n", ""):
+            return ''.join(line)
 
-_fixed_readline.patched = True    # Marker to indicate patched version 
+_fixed_readline.patched = True    # Marker to indicate patched version
 
 ssl_class = imaplib.IMAP4_SSL
+
 
 def apply_patch():
     if _is_affected_version(sys.version_info) and not hasattr(ssl_class.readline, 'patched'):

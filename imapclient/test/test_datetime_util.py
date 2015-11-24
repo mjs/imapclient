@@ -4,11 +4,16 @@
 
 from __future__ import unicode_literals
 
-from datetime import datetime
+from datetime import datetime, date
 
 from mock import patch
 
-from ..datetime_util import parse_to_datetime, datetime_to_native, datetime_to_INTERNALDATE
+from ..datetime_util import (
+    datetime_to_INTERNALDATE,
+    datetime_to_native,
+    format_criteria_date,
+    parse_to_datetime,
+)
 from ..fixed_offset import FixedOffset
 from .util import unittest
 
@@ -34,11 +39,11 @@ class TestParsing(unittest.TestCase):
     def test_internaldate_style(self):
         self.check_normalised_and_not(
             b' 9-Feb-2007 17:08:08 -0430',
-            datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4*60 - 30))
+            datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4 * 60 - 30))
         )
         self.check_normalised_and_not(
             b'19-Feb-2007 17:08:08 0400',
-            datetime(2007, 2, 19, 17, 8, 8, 0, FixedOffset(4*60))
+            datetime(2007, 2, 19, 17, 8, 8, 0, FixedOffset(4 * 60))
         )
 
     def test_dots_for_time_separator(self):
@@ -63,7 +68,7 @@ class TestParsing(unittest.TestCase):
 class TestDatetimeToINTERNALDATE(unittest.TestCase):
 
     def test_with_timezone(self):
-        dt = datetime(2009, 1, 2, 3, 4, 5, 0, FixedOffset(2*60 + 30))
+        dt = datetime(2009, 1, 2, 3, 4, 5, 0, FixedOffset(2 * 60 + 30))
         self.assertEqual(datetime_to_INTERNALDATE(dt), '02-Jan-2009 03:04:05 +0230')
 
     @patch('imapclient.datetime_util.FixedOffset.for_system')
@@ -72,3 +77,12 @@ class TestDatetimeToINTERNALDATE(unittest.TestCase):
         for_system.return_value = FixedOffset(-5 * 60)
 
         self.assertEqual(datetime_to_INTERNALDATE(dt), '02-Jan-2009 03:04:05 -0500')
+
+
+class TestCriteriaDateFormatting(unittest.TestCase):
+
+    def test_basic(self):
+        self.assertEqual(format_criteria_date(date(1996, 2, 22)), b'22-Feb-1996')
+
+    def test_single_digit_day(self):
+        self.assertEqual(format_criteria_date(date(1996, 4, 4)), b'04-Apr-1996')

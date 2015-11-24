@@ -1,8 +1,6 @@
-IMAPClient
-==========
-
-.. toctree::
-   :maxdepth: 1
+============
+ IMAPClient
+============
 
 :Author: `Menno Smits <http://freshfoo.com>`_
 :Version: |release|
@@ -31,7 +29,7 @@ explains IMAP in detail. Other RFCs also apply to various extensions
 to the base protocol. These are referred to in the documentation below
 where relevant.
 
-Python versions 2.6, 2.7, 3.2, 3.3 and 3.4 are officially supported.
+Python versions 2.6, 2.7, 3.3 and 3.4 are officially supported.
 
 A Simple Example
 ----------------
@@ -72,32 +70,34 @@ Concepts
 
 Message Identifiers
 ~~~~~~~~~~~~~~~~~~~
-There are two ways to refer to messages using the IMAP protocol.
+In the IMAP protocol, messages are identified using an integer. These
+message ids are specific to a given folder.
 
-One way is by message sequence number where the messages in a mailbox
-are numbered from 1 to N where N is the number of messages. These
-numbers don't persist between sessions and may be reassigned after
-some operations such as a folder expunge.
+There are two types of message identifiers in the IMAP protocol.
+
+One type is the message sequence number where the messages in a folder
+are numbered from 1 to N where N is the number of messages in the
+folder. These numbers don't persist between sessions and may be
+reassigned after some operations such as an expunge.
 
 A more convenient approach is Unique Identifiers (UIDs). Unique
 Identifiers are integers assigned to each message by the IMAP server
 that will persist across sessions. They do not change when folders are
-expunged.
+expunged. Almost all IMAP servers support UIDs.
 
 Each call to the IMAP server can use either message sequence numbers
 or UIDs in the command arguments and return values. The client
-specifies to the server which type of identifier should be
-used. IMAPClient uses UIDs by default.
+specifies to the server which type of identifier should be used. You
+can set whether IMAPClient should use UIDs or message sequence number
+via the *use_uid* argument passed when an IMAPClient instance is
+created and the *use_uid* attribute. The *use_uid* attribute can be
+used to change the message id type between calls to the
+server. IMAPClient uses UIDs by default.
 
 Any method that accepts message ids takes either a sequence containing
 message ids (eg. ``[1,2,3]``), or a single message id integer, or a
 string representing sets and ranges of messages as supported by the
-IMAP protocol (e.g. ``'50-65'``, ``'2:*'`` or
-``'2,4:7,9,12:*'``). Whether these are interpreted as message sequence
-numbers or UIDs depends on the *use_uid* argument passed when an
-IMAPClient instance is created and the *use_uid* attribute. The
-*use_uid* attribute can be used to change the message id type between
-calls to the server.
+IMAP protocol (e.g. ``'50-65'``, ``'2:*'`` or ``'2,4:7,9,12:*'``).
 
 Message Flags
 ~~~~~~~~~~~~~
@@ -107,12 +107,12 @@ clients to keep track of data related to a message.
 
 The IMAPClient package has constants for a number of commmonly used flags::
 
-    DELETED = r'\Deleted'
-    SEEN = r'\Seen'
-    ANSWERED = r'\Answered'
-    FLAGGED = r'\Flagged'
-    DRAFT = r'\Draft'
-    RECENT = r'\Recent'         # This flag is read-only
+    DELETED = br'\Deleted'
+    SEEN = br'\Seen'
+    ANSWERED = br'\Answered'
+    FLAGGED = br'\Flagged'
+    DRAFT = br'\Draft'
+    RECENT = br'\Recent'         # This flag is read-only
 
 Any method that accepts message flags takes either a sequence
 containing message flags (eg. ``[DELETED, 'foo', 'Bar']``) or a single
@@ -137,16 +137,87 @@ If *folder_encode* is True, all folder names returned by IMAPClient
 are always returned as unicode strings. If *folder_encode* is False,
 folder names are returned as str (Python 2) or bytes (Python 3).
 
+TLS/SSL
+~~~~~~~
+IMAPClient uses sensible TLS parameter defaults for encrypted
+connections and also allows for a high level of control of TLS
+parameters if required. To provide a consistent API and capabilities
+across Python versions the `backports.ssl <https://github.com/alekstorm/backports.ssl>`_
+library is used instead of the standard library ssl
+package. backports.ssl provides an API that aims to mimic the Python
+3.4 ssl package so it should be familiar to developers that have used
+the ssl package in recent versions of Python.
+
+TLS parameters are controlled by passing a ``backports.ssl.SSLContext``
+when creating an IMAPClient instance. When ``ssl=True`` is used
+without passing a SSLContext, a default context is used. The default
+context avoids the use of known insecure ciphers and SSL protocol
+versions, with certificate verification and hostname verification
+turned on. The default context will use system installed certificate
+authority trust chains, if available.
+
+:py:func:`IMAPClient.tls.create_default_context` returns IMAPClient's
+default context. When constructing a custom context it is usually best
+to start with the default context and modify it to suit your needs.
+
+The following example shows how to to disable certification
+verification and certificate host name checks if required.
+
+.. literalinclude:: ../../imapclient/examples/tls_no_checks.py
+
+The next example shows how to create a context that will use custom CA
+certificate. This is required to perform verification of a self-signed
+certificate used by the IMAP server.
+
+.. literalinclude:: ../../imapclient/examples/tls_cacert.py
+
+The above examples show some of the most common TLS parameter
+customisations but there are many other tweaks are possible. Consult
+the Python 3 :py:mod:`ssl` package documentation for further options.
+
+Using gevent with IMAPClient
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Some extra monkey patching is required so that the gevent_ package can
+work with pyOpenSSL (used by IMAPClient for TLS support). The
+`gevent_openssl`_ package performs this patching. Please use
+gevent_openssl 1.2 or later.
+
+Here's an example of how gevent_openssl can be used with IMAPClient::
+
+  from gevent import monkey; monkey.patch_all()
+  import gevent_openssl; gevent_openssl.monkey_patch()
+
+  import imapclient
+
+  client = imapclient.IMAPClient(...)
+  ...
+
+.. _gevent: http://www.gevent.org/
+.. _`gevent_openssl`: https://pypi.python.org/pypi/gevent_openssl/
+
+
 Exceptions
 ~~~~~~~~~~
-The IMAP related exceptions that will be raised by this class are:
+The following exceptions may be raised by IMAPClient directly. They
+are attached to the IMAPClient class.
 
-* IMAPClient.Error
-* IMAPClient.AbortError
-* IMAPClient.ReadOnlyError
+* IMAPClient.Error: the base class for IMAPClient's exceptions and the
+  most commonly used error.
+* IMAPClient.AbortError: raised if a serious error has occurred that
+  means the IMAP connection is no longer usable. The connection should
+  be dropped without logout if this occurs.
+* IMAPClient.ReadOnlyError: raised if a modifying operation was
+  attempted on a read-only folder.
 
-These are aliases for the imaplib.IMAP4 exceptions of the same name. Socket
-errors may also be raised in the case of network errors.
+Exceptions from lower network layers are also possible, in particular:
+
+* socket.error
+* socket.timeout: raised if a timeout was specified when creating the
+  IMAPClient instance and a network operation takes too long.
+* backports.ssl.SSLError: the base class for network or SSL protocol
+  errors when ssl=True or starttls() is used.
+* backports.ssl.CertificateError: raised when TLS certification
+  verification fails. This is *not* a subclass of SSLError.
 
 API Reference
 -------------
@@ -167,6 +238,12 @@ Various types may be used in the data structures returned by
 are encountered during parsing.
 
 .. automodule:: imapclient.response_types
+   :members:
+
+TLS Support
+~~~~~~~~~~~
+
+.. automodule:: imapclient.tls
    :members:
 
 Interactive Sessions
@@ -225,3 +302,10 @@ External Documentation
 The `Unofficial IMAP Protocol Wiki <http://www.imapwiki.org/>`_ is
 very useful when writing IMAP related software and is highly
 recommended.
+
+Release History
+---------------
+.. toctree::
+   :maxdepth: 1
+
+   releases

@@ -4,8 +4,9 @@
 
 from __future__ import unicode_literals
 
+from six import next
+
 from imapclient.response_lexer import TokenSource
-from imapclient.six import next
 from imapclient.test.util import unittest
 
 
@@ -30,12 +31,12 @@ class TestTokenSource(unittest.TestCase):
                    [b'abc', b'def'])
 
     def test_quoted_strings(self):
-         self.check([b'"abc def"'],
-                    [b'"abc def"'])
-         self.check([b'""'],
-                    [b'""'])
-         self.check([b'111 "abc def" 222'],
-                    [b'111', b'"abc def"', b'222'])
+        self.check([b'"abc def"'],
+                   [b'"abc def"'])
+        self.check([b'""'],
+                   [b'""'])
+        self.check([b'111 "abc def" 222'],
+                   [b'111', b'"abc def"', b'222'])
 
     def test_unterminated_strings(self):
         message = "No closing '\"'"
@@ -43,28 +44,28 @@ class TestTokenSource(unittest.TestCase):
         self.check_error([b'"aaa bbb'], message)
 
     def test_escaping(self):
-         self.check([br'"aaa\"bbb"'],
-                    [br'"aaa"bbb"'])
-         self.check([br'"aaa\\bbb"'],
-                    [br'"aaa\bbb"'])
-         self.check([br'"aaa\\bbb \"\""'],
-                    [br'"aaa\bbb """'])
+        self.check([br'"aaa\"bbb"'],
+                   [br'"aaa"bbb"'])
+        self.check([br'"aaa\\bbb"'],
+                   [br'"aaa\bbb"'])
+        self.check([br'"aaa\\bbb \"\""'],
+                   [br'"aaa\bbb """'])
 
     def test_invalid_escape(self):
-         self.check([br'"aaa\Zbbb"'],
-                    [br'"aaa\Zbbb"'])
+        self.check([br'"aaa\Zbbb"'],
+                   [br'"aaa\Zbbb"'])
 
     def test_lists(self):
-         self.check([b'()'],
-                    [b'(', b')'])
-         self.check([b'(aaa)'],
-                    [b'(', b'aaa', b')'])
-         self.check([b'(aaa "bbb def"   123)'],
-                    [b'(', b'aaa', b'"bbb def"', b'123', b')'])
-         self.check([b'(aaa)(bbb ccc)'],
-                    [b'(', b'aaa', b')', b'(', b'bbb', b'ccc', b')'])
-         self.check([b'(aaa (bbb ccc))'],
-                    [b'(', b'aaa', b'(', b'bbb', b'ccc', b')', b')'])
+        self.check([b'()'],
+                   [b'(', b')'])
+        self.check([b'(aaa)'],
+                   [b'(', b'aaa', b')'])
+        self.check([b'(aaa "bbb def"   123)'],
+                   [b'(', b'aaa', b'"bbb def"', b'123', b')'])
+        self.check([b'(aaa)(bbb ccc)'],
+                   [b'(', b'aaa', b')', b'(', b'bbb', b'ccc', b')'])
+        self.check([b'(aaa (bbb ccc))'],
+                   [b'(', b'aaa', b'(', b'bbb', b'ccc', b')', b')'])
 
     def test_square_brackets(self):
         self.check([b'[aaa bbb]'],
@@ -98,7 +99,7 @@ class TestTokenSource(unittest.TestCase):
         source = TokenSource([
             (b'abc {7}', b'foo bar'),
             (b'{5}', b'snafu'),
-             b')'])
+            b')'])
         tokens = iter(source)
         self.assertEqual(next(tokens), b'abc')
         self.assertEqual(next(tokens), b'{7}')

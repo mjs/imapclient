@@ -1,7 +1,12 @@
+# Copyright (c) 2015, Menno Smits
+# Released subject to the New BSD License
+# Please see http://en.wikipedia.org/wiki/BSD_licenses
+
 from __future__ import unicode_literals
 
-from imapclient import _imapclient_version_string
-from imapclient.test.util import unittest
+from ..version import _imapclient_version_string
+from .util import unittest
+
 
 class TestVersionString(unittest.TestCase):
 

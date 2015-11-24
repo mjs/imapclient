@@ -2,10 +2,14 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+from __future__ import unicode_literals
+
 from collections import namedtuple
 from email.utils import formataddr
 
-from . import six
+import six
+
+from .util import to_unicode
 
 
 class Envelope(namedtuple("Envelope", "date subject from_ sender reply_to to " +
@@ -50,7 +54,9 @@ class Address(namedtuple("Address", "name route mailbox host")):
     """
 
     def __str__(self):
-        return formataddr((self.name, self.mailbox + '@' + self.host))
+        return formataddr((
+            to_unicode(self.name),
+            to_unicode(self.mailbox) + '@' + to_unicode(self.host)))
 
 
 class SearchIds(list):

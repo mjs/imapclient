@@ -8,9 +8,11 @@ import itertools
 import socket
 import sys
 from datetime import datetime
+
+import six
 from mock import patch, sentinel, Mock
 
-from imapclient import six
+from imapclient import DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT
 from imapclient.fixed_offset import FixedOffset
 from .testable_imapclient import TestableIMAPClient as IMAPClient
 from .imapclient_test import IMAPClientTest
@@ -42,11 +44,9 @@ class TestListFolders(IMAPClientTest):
         self.assertEqual(self.client._proc_folder_list.call_args, ((sentinel.folder_data,), {}))
         self.assertTrue(folders is sentinel.folder_list)
 
-
     def test_list_folders_NO(self):
         self.client._imap._simple_command.return_value = ('NO', [b'badness'])
         self.assertRaises(IMAPClient.Error, self.client.list_folders)
-
 
     def test_list_sub_folders_NO(self):
         self.client._imap._simple_command.return_value = ('NO', [b'badness'])
@@ -55,7 +55,7 @@ class TestListFolders(IMAPClientTest):
     def test_utf7_decoding(self):
         self.client._imap._simple_command.return_value = ('OK', [b'something'])
         self.client._imap._untagged_response.return_value = (
-            b'LIST', [
+            'LIST', [
                 b'(\\HasNoChildren) "/" "A"',
                 b'(\\HasNoChildren) "/" "Hello&AP8-world"',
             ])
@@ -70,7 +70,7 @@ class TestListFolders(IMAPClientTest):
         self.client.folder_encode = False
         self.client._imap._simple_command.return_value = ('OK', [b'something'])
         self.client._imap._untagged_response.return_value = (
-            b'LIST', [
+            'LIST', [
                 b'(\\HasNoChildren) "/" "A"',
                 b'(\\HasNoChildren) "/" "Hello&AP8-world"',
             ])
@@ -88,7 +88,6 @@ class TestListFolders(IMAPClientTest):
         self.assertEqual(folders, [((b'\\HasNoChildren',), b'/', 'A',),
                                    ((b'\\HasNoChildren',), b'/', 'Foo Bar')])
 
-
     def test_without_quotes(self):
         folders = self.client._proc_folder_list([b'(\\HasNoChildren) "/" A',
                                                  b'(\\HasNoChildren) "/" B',
@@ -103,6 +102,13 @@ class TestListFolders(IMAPClientTest):
         folders = self.client._proc_folder_list([b'(\\HasNoChildren) "/" 123'])
         self.assertEqual(folders, [((b'\\HasNoChildren',), b'/', '123')])
 
+    def test_unqouted_numeric_folder_name_parsed_as_long(self):
+        # big enough numeric values might get parsed as longs
+        folder_name = str(sys.maxsize + 1)
+        folders = self.client._proc_folder_list(
+            [b'(\\HasNoChildren) "/" ' + folder_name.encode('ascii')])
+        self.assertEqual(folders, [((b'\\HasNoChildren', ), b'/', folder_name)])
+
     def test_mixed(self):
         folders = self.client._proc_folder_list([b'(\\HasNoChildren) "/" Alpha',
                                                  b'(\\HasNoChildren) "/" "Foo Bar"',
@@ -112,14 +118,12 @@ class TestListFolders(IMAPClientTest):
                                    ((b'\\HasNoChildren',), b'/', 'Foo Bar'),
                                    ((b'\\HasNoChildren',), b'/', 'C')])
 
-
     def test_funky_characters(self):
         folders = self.client._proc_folder_list([(b'(\\NoInferiors \\UnMarked) "/" {5}', 'bang\xff'),
                                                  b'',
                                                  b'(\\HasNoChildren \\UnMarked) "/" "INBOX"'])
         self.assertEqual(folders, [((b'\\NoInferiors', b'\\UnMarked'), b"/", 'bang\xff'),
                                    ((b'\\HasNoChildren', b'\\UnMarked'), b"/", 'INBOX')])
-
 
     def test_quoted_specials(self):
         folders = self.client._proc_folder_list([br'(\HasNoChildren) "/" "Test \"Folder\""',
@@ -137,7 +141,6 @@ class TestListFolders(IMAPClientTest):
 
     def test_empty_response(self):
         self.assertEqual(self.client._proc_folder_list([None]), [])
-
 
     def test_blanks(self):
         folders = self.client._proc_folder_list(['', None, br'(\HasNoChildren) "/" "last"'])
@@ -201,7 +204,7 @@ class TestAppend(IMAPClientTest):
         msg = b'bye'
 
         self.client.append('foobar', msg, ['FLAG', 'WAVE'],
-                           datetime(2009, 4, 5, 11, 0, 5, 0, FixedOffset(2*60)))
+                           datetime(2009, 4, 5, 11, 0, 5, 0, FixedOffset(2 * 60)))
 
         self.assertTrue(datetime_to_INTERNALDATE.called)
         self.client._imap.append.assert_called_with(
@@ -228,6 +231,13 @@ class TestAclMethods(IMAPClientTest):
 
 class TestIdleAndNoop(IMAPClientTest):
 
+    def assert_sock_calls(self, sock):
+        self.assertListEqual(sock.method_calls, [
+            ('settimeout', (None,), {}),
+            ('setblocking', (0,), {}),
+            ('setblocking', (1,), {}),
+        ])
+
     def test_idle(self):
         self.client._imap._command.return_value = sentinel.tag
         self.client._imap._get_response.return_value = None
@@ -243,6 +253,7 @@ class TestIdleAndNoop(IMAPClientTest):
         self.client._imap.sock = self.client._imap.sslobj = mock_sock
         mock_select.return_value = ([True], [], [])
         counter = itertools.count()
+
         def fake_get_line():
             count = six.next(counter)
             if count == 0:
@@ -256,9 +267,7 @@ class TestIdleAndNoop(IMAPClientTest):
         responses = self.client.idle_check()
 
         mock_select.assert_called_once_with([mock_sock], [], [], None)
-        self.assertListEqual(mock_sock.method_calls,
-                             [('setblocking', (0,), {}),
-                              ('setblocking', (1,), {})])
+        self.assert_sock_calls(mock_sock)
         self.assertListEqual([(1, b'EXISTS'), (0, b'EXPUNGE')], responses)
 
     @patch('imapclient.imapclient.select.select')
@@ -270,9 +279,7 @@ class TestIdleAndNoop(IMAPClientTest):
         responses = self.client.idle_check(timeout=0.5)
 
         mock_select.assert_called_once_with([mock_sock], [], [], 0.5)
-        self.assertListEqual(mock_sock.method_calls,
-                             [('setblocking', (0,), {}),
-                              ('setblocking', (1,), {})])
+        self.assert_sock_calls(mock_sock)
         self.assertListEqual([], responses)
 
     @patch('imapclient.imapclient.select.select')
@@ -281,6 +288,7 @@ class TestIdleAndNoop(IMAPClientTest):
         self.client._imap.sock = self.client._imap.sslobj = mock_sock
         mock_select.return_value = ([True], [], [])
         counter = itertools.count()
+
         def fake_get_line():
             count = six.next(counter)
             if count == 0:
@@ -292,9 +300,7 @@ class TestIdleAndNoop(IMAPClientTest):
         responses = self.client.idle_check()
 
         mock_select.assert_called_once_with([mock_sock], [], [], None)
-        self.assertListEqual(mock_sock.method_calls,
-                             [('setblocking', (0,), {}),
-                              ('setblocking', (1,), {})])
+        self.assert_sock_calls(mock_sock)
         self.assertListEqual([(99, b'EXISTS')], responses)
 
     def test_idle_done(self):
@@ -328,6 +334,7 @@ class TestIdleAndNoop(IMAPClientTest):
         client._imap.tagged_commands = {sentinel.tag: None}
 
         counter = itertools.count()
+
         def fake_get_response():
             count = six.next(counter)
             if count == 0:
@@ -357,6 +364,7 @@ class TestDebugLogging(IMAPClientTest):
         self.assertIn('one', output)
         self.assertIn('two', output)
 
+
 class TestTimeNormalisation(IMAPClientTest):
 
     def test_default(self):
@@ -385,7 +393,11 @@ class TestGmailLabels(IMAPClientTest):
 
     def setUp(self):
         super(TestGmailLabels, self).setUp()
-        patcher = patch.object(self.client, '_store', autospec=True, return_value=sentinel.label_set)
+        patcher = patch.object(
+            self.client,
+            '_store',
+            autospec=True,
+            return_value=sentinel.label_set)
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -399,16 +411,22 @@ class TestGmailLabels(IMAPClientTest):
                                    444: [b'foo']})
 
     def test_add(self):
-        self.client.add_gmail_labels(sentinel.messages, sentinel.labels)
-        self.client._store.assert_called_with(b'+X-GM-LABELS', sentinel.messages, sentinel.labels, b'X-GM-LABELS')
+        self.client.add_gmail_labels(sentinel.messages, 'f"o"o')
+        self.client._store.assert_called_with(
+            b'+X-GM-LABELS', sentinel.messages,
+            ['"f\\"o\\"o"'], b'X-GM-LABELS')
 
     def test_remove(self):
-        self.client.remove_gmail_labels(sentinel.messages, sentinel.labels)
-        self.client._store.assert_called_with(b'-X-GM-LABELS', sentinel.messages, sentinel.labels, b'X-GM-LABELS')
+        self.client.remove_gmail_labels(sentinel.messages, ['q\\ux'])
+        self.client._store.assert_called_with(
+            b'-X-GM-LABELS', sentinel.messages,
+            ['"q\\\\ux"'], b'X-GM-LABELS')
 
     def test_set(self):
-        self.client.set_gmail_labels(sentinel.messages, sentinel.labels)
-        self.client._store.assert_called_with(b'X-GM-LABELS', sentinel.messages, sentinel.labels, b'X-GM-LABELS')
+        self.client.set_gmail_labels(sentinel.messages, ['faz', 'baz'])
+        self.client._store.assert_called_with(
+            b'X-GM-LABELS', sentinel.messages,
+            ['"faz"', '"baz"'], b'X-GM-LABELS')
 
 
 class TestNamespace(IMAPClientTest):
@@ -441,7 +459,7 @@ class TestNamespace(IMAPClientTest):
             (("", "/"),),
             (("~", "/"),),
             (("#shared/", "/"), ("#public/", "/"), ("#ftp/", "/"), ("#news.", ".")),
-            ))
+        ))
 
 
 class TestCapabilities(IMAPClientTest):
@@ -459,6 +477,7 @@ class TestCapabilities(IMAPClientTest):
         self.assertEqual(self.client._cached_capabilities, None)
         self.assertEqual(self.client.capabilities(), (b'FOO', b'MORE'))
         self.assertEqual(self.client._cached_capabilities, (b'FOO', b'MORE'))
+        self.assertEqual(self.client._imap.untagged_responses, {})
 
     def test_caching(self):
         self.client._imap.capabilities = ('FOO',)
@@ -488,52 +507,6 @@ class TestCapabilities(IMAPClientTest):
         self.assertFalse(self.client.has_capability('BAR'))
 
 
-class TestThread(IMAPClientTest):
-
-    def test_thread_without_uid(self):
-        self.client._cached_capabilities = (b'THREAD=REFERENCES',)
-        self.client.use_uid = False
-        self.client._imap.thread.return_value = ('OK', [b'(1 2)(3)(4 5 6)'])
-
-        threads = self.client.thread()
-
-        self.assertSequenceEqual(threads, ((1, 2), (3,), (4, 5, 6)))
-
-    def test_thread_with_uid(self):
-        self.client._cached_capabilities = (b'THREAD=REFERENCES',)
-        self.client.use_uid = True
-        self.client._imap.uid.return_value = ('OK', [b'(1 2)(3)(4 5 6)'])
-
-        threads = self.client.thread()
-
-        self.assertSequenceEqual(threads, ((1, 2), (3,), (4, 5, 6)))
-
-    def test_no_support(self):
-        self.client._cached_capabilities = (b'NOT-THREAD',)
-        self.assertRaises(ValueError, self.client.thread)
-
-    def test_no_support2(self):
-        self.client._cached_capabilities = (b'THREAD=FOO',)
-        self.assertRaises(ValueError, self.client.thread)
-
-    def test_all_args_with_uid(self):
-        self.client._cached_capabilities = (b'THREAD=FOO',)
-        self.client._imap.uid.return_value = ('OK', [])
-
-        self.client.thread(algorithm='FOO', criteria='STUFF', charset='ASCII')
-
-        self.client._imap.uid.assert_called_once_with('thread', b'FOO', b'ASCII', '(STUFF)')
-
-    def test_all_args_without_uid(self):
-        self.client.use_uid = False
-        self.client._cached_capabilities = (b'THREAD=FOO',)
-        self.client._imap.thread.return_value = ('OK', [])
-
-        self.client.thread(algorithm='FOO', criteria='STUFF', charset='ASCII')
-
-        self.client._imap.thread.assert_called_once_with(b'FOO', b'ASCII', '(STUFF)')
-
-
 class TestId(IMAPClientTest):
 
     def test_id(self):
@@ -556,3 +529,81 @@ class TestId(IMAPClientTest):
 
     def test_invalid_parameters(self):
         self.assertRaises(TypeError, self.client.id_, 'bananarama')
+
+
+class TestFlags(IMAPClientTest):
+
+    def test_flags_are_bytes(self):
+        for flag in DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT:
+            if not isinstance(flag, six.binary_type):
+                self.fail("%r flag is not bytes" % flag)
+
+
+class TestRawCommand(IMAPClientTest):
+
+    def setUp(self):
+        super(TestRawCommand, self).setUp()
+        self.client._imap._get_response.return_value = None
+        self.client._imap._command_complete.return_value = ('OK', ['done'])
+
+    def check(self, command, args, expected):
+        typ, data = self.client._raw_command(command, args)
+        self.assertEqual(typ, 'OK')
+        self.assertEqual(data, ['done'])
+        self.assertEqual(self.client._imap.sent, expected)
+
+    def test_plain(self):
+        self.check(b'search', [b'ALL'],
+                   b'tag UID SEARCH ALL\r\n',
+                   )
+
+    def test_not_uid(self):
+        self.client.use_uid = False
+        self.check(b'search', [b'ALL'],
+                   b'tag SEARCH ALL\r\n',
+                   )
+
+    def test_literal_at_end(self):
+        self.check(b'search', [b'TEXT', b'\xfe\xff'],
+                   b'tag UID SEARCH TEXT {2}\r\n'
+                   b'\xfe\xff\r\n'
+                   )
+
+    def test_embedded_literal(self):
+        self.check(b'search', [b'TEXT', b'\xfe\xff', b'DELETED'],
+                   b'tag UID SEARCH TEXT {2}\r\n'
+                   b'\xfe\xff DELETED\r\n'
+                   )
+
+    def test_multiple_literals(self):
+        self.check(b'search', [b'TEXT', b'\xfe\xff', b'TEXT', b'\xcc'],
+                   b'tag UID SEARCH TEXT {2}\r\n'
+                   b'\xfe\xff TEXT {1}\r\n'
+                   b'\xcc\r\n'
+                   )
+
+    def test_complex(self):
+        self.check(b'search', [b'FLAGGED', b'TEXT', b'\xfe\xff', b'TEXT', b'\xcc', b'TEXT', b'foo'],
+                   b'tag UID SEARCH FLAGGED TEXT {2}\r\n'
+                   b'\xfe\xff TEXT {1}\r\n'
+                   b'\xcc TEXT foo\r\n'
+                   )
+
+    def test_invalid_input_type(self):
+        self.assertRaises(ValueError, self.client._raw_command, 'foo', [])
+        self.assertRaises(ValueError, self.client._raw_command, u'foo', ['foo'])
+
+    def test_failed_continuation_wait(self):
+        self.client._imap._get_response.return_value = b'blah'
+        self.client._imap.tagged_commands['tag'] = ('NO', ['go away'])
+
+        expected_error = "unexpected response while waiting for continuation response: \(u?'NO', \[u?'go away'\]\)"
+        with self.assertRaisesRegex(IMAPClient.AbortError, expected_error):
+            self.client._raw_command(b'FOO', [b'\xff'])
+
+
+class TestShutdown(IMAPClientTest):
+
+    def test_shutdown(self):
+        self.client.shutdown()
+        self.client._imap.shutdown.assert_called_once_with()

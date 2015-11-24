@@ -9,10 +9,11 @@ from datetime import tzinfo, timedelta
 
 ZERO = timedelta(0)
 
+
 class FixedOffset(tzinfo):
     """
-    This class describes fixed timezone offsets in hours and minutes 
-    east from UTC 
+    This class describes fixed timezone offsets in hours and minutes
+    east from UTC
     """
 
     def __init__(self, minutes):

@@ -7,22 +7,10 @@
 
 from __future__ import unicode_literals
 
-version_info = (0, 13, 0, 'final')
-
-def _imapclient_version_string(vinfo):
-    major, minor, micro, releaselevel = vinfo
-    v = '%d.%d' % (major, minor)
-    if micro != 0:
-        v += '.%d' % micro
-    if releaselevel != 'final':
-        v += '-' + releaselevel
-    return v
-
-__version__ = _imapclient_version_string(version_info)
-__author__ = 'Menno Smits <menno@freshfoo.com>'
-
 from .imapclient import *
 from .response_parser import *
+from .tls import *
+from .version import author as __author__, version as __version__, version_info
 
 from .imaplib_ssl_fix import apply_patch
 apply_patch()

@@ -9,18 +9,21 @@ from __future__ import print_function, unicode_literals
 import imp
 import os
 import random
+import re
 import string
 import sys
 import time
 from datetime import datetime
 from email.utils import make_msgid
 
-from .fixed_offset import FixedOffset
-from .imapclient import IMAPClient, DELETED, to_unicode, to_bytes, normalise_untagged_responses
-from .response_types import Envelope, Address
-from .six import binary_type, text_type, PY3
-from .test.util import unittest
+from six import binary_type, text_type, PY3, iteritems
+
 from .config import parse_config_file, create_client_from_config
+from .fixed_offset import FixedOffset
+from .imapclient import IMAPClient, DELETED, RECENT, _dict_bytes_normaliser
+from .response_types import Envelope, Address
+from .test.util import unittest
+from .util import to_bytes, to_unicode
 
 # TODO cleaner verbose output: avoid "__main__" and separator between classes
 
@@ -53,6 +56,18 @@ Here is the second part.
 
 --===============1534046211==--
 """.replace('\n', '\r\n')
+
+
+SMILE = '\u263a'
+MICRO = '\u00b5'
+
+SMILE_MESSAGE = b"""\
+Subject: stuff
+Content-Type: text/plain; charset="UTF-8"
+
+\xe2\x98\xba
+""".replace(b'\n', b'\r\n')
+
 
 class _TestBase(unittest.TestCase):
 
@@ -169,10 +184,34 @@ class _TestBase(unittest.TestCase):
         if self.is_gmail():
             self.client.noop()
 
+
 class TestGeneral(_TestBase):
     """
     Tests that don't involve message number/UID functionality.
     """
+
+    def test_alternates(self):
+        # Check alternate connection/login configurations.
+        for name, conf in iteritems(self.conf.alternates):
+            if PY3 and conf.oauth:
+                print("Skipping OAUTH test %r on Python 3 (not compatible)" % name)
+                continue
+            try:
+                client = create_client_from_config(conf)
+                client.logout()
+            except Exception as err:
+                if conf.expect_failure:
+                    if not re.search(conf.expect_failure, str(err)):
+                        self.fail(
+                            "connection test %r failed with %r, expected %r" %
+                            (name, err, conf.expect_failure))
+                else:
+                    self.fail("connection test %r failed unexpectedly with %r" % (name, err))
+            else:
+                if conf.expect_failure:
+                    self.fail(
+                        "connection test %r didn't fail, expected %r" %
+                        (name, conf.expect_failure))
 
     def test_capabilities(self):
         caps = self.client.capabilities()
@@ -187,7 +226,7 @@ class TestGeneral(_TestBase):
 
         def assertNoneOrTuple(val):
             assert val is None or isinstance(val, tuple), \
-                   "unexpected namespace value %r" % val
+                "unexpected namespace value %r" % val
 
         ns = self.client.namespace()
         self.assertEqual(len(ns), 3)
@@ -208,12 +247,12 @@ class TestGeneral(_TestBase):
 
     def test_select_read_only(self):
         self.append_msg(SIMPLE_MESSAGE)
-        untagged = normalise_untagged_responses(self.client._imap.untagged_responses)
+        untagged = _dict_bytes_normaliser(self.client._imap.untagged_responses)
         self.assertNotIn(b'READ-ONLY', untagged)
 
         resp = self.client.select_folder(self.base_folder, readonly=True)
 
-        untagged = normalise_untagged_responses(self.client._imap.untagged_responses)
+        untagged = _dict_bytes_normaliser(self.client._imap.untagged_responses)
         self.assertIn(b'READ-ONLY', untagged)
         self.assertEqual(resp[b'EXISTS'], 1)
         self.assertIsInstance(resp[b'RECENT'], int)
@@ -234,7 +273,7 @@ class TestGeneral(_TestBase):
         for name in some_folders:
             self.assertIn(to_unicode(name), folders)
 
-        #TODO: test LIST with wildcards
+        # TODO: test LIST with wildcards
 
     def test_gmail_xlist(self):
         caps = self.client.capabilities()
@@ -248,7 +287,7 @@ class TestGeneral(_TestBase):
         self.assertGreater(len(result), 0, 'No folders returned by XLIST')
 
         foundInbox = False
-        for flags, _, _  in result:
+        for flags, _, _ in result:
             if br'\INBOX' in [flag.upper() for flag in flags]:
                 foundInbox = True
                 break
@@ -339,7 +378,6 @@ class TestGeneral(_TestBase):
         finally:
             self.client.folder_encode = True
 
-
     def test_rename_folder(self):
         folders = self.add_prefix_to_folders([
             'foobar',
@@ -353,7 +391,7 @@ class TestGeneral(_TestBase):
         for folder in folders:
             self.client.create_folder(folder)
 
-            if isinstance(folder,  binary_type):
+            if isinstance(folder, binary_type):
                 new_folder = folder + b'x'
             else:
                 new_folder = folder + 'x'
@@ -508,7 +546,7 @@ def createUidTestClass(conf, use_uid):
                 answer = func(msg_id, *args)
                 self.assertTrue(msg_id in answer)
                 answer_flags = set(answer[msg_id])
-                answer_flags.discard(br'\Recent')  # Might be present but don't care
+                answer_flags.discard(RECENT)  # Might be present but don't care
                 self.assertSetEqual(answer_flags, set(to_bytes(f) for f in expected_flags))
 
             base_flags = ['abc', 'def']
@@ -529,15 +567,19 @@ def createUidTestClass(conf, use_uid):
                 actual_labels = set(answer[msg_id])
                 self.assertSetEqual(actual_labels, set(expected_labels))
 
-            base_labels = [b'_imapclient_foo', b'_imapclient_bar']
+            FOO = b'_imapclient_foo'
+            BAR = b'_imapclient_bar'
+            BAZ = b'_imapclient_baz'
+            all_labels = [FOO, BAR, BAZ]
+            base_labels = [FOO, BAR]
             try:
                 _labeltest(self.client.set_gmail_labels, [base_labels], base_labels)
                 _labeltest(self.client.get_gmail_labels, [], base_labels)
-                _labeltest(self.client.add_gmail_labels, [b'_imapclient_baz'], base_labels + [b'_imapclient_baz'])
-                _labeltest(self.client.remove_gmail_labels, [b'_imapclient_baz'], base_labels)
+                _labeltest(self.client.add_gmail_labels, [BAZ], all_labels)
+                _labeltest(self.client.remove_gmail_labels, [BAZ], base_labels)
             finally:
-                # Clean up
-                for label in [b'_imapclient_baz'] + base_labels:
+                # Clean up folders created by assigning labels.
+                for label in all_labels:
                     if self.client.folder_exists(label):
                         self.client.delete_folder(label)
 
@@ -563,16 +605,20 @@ def createUidTestClass(conf, use_uid):
                 self.assertEqual(len(messages_all), len(subjects))
             self.assertListEqual(self.client.search(), messages_all)      # Check default
 
-            # Single criteria
             if not self.is_gmail():
+                # Delete behaviour is dependent on a setting with Gmail.
                 self.assertEqual(len(self.client.search('DELETED')), 1)
-                self.assertEqual(len(self.client.search('NOT DELETED')), len(subjects) - 1)
-            self.assertListEqual(self.client.search('NOT DELETED'), self.client.search(['NOT DELETED']))
 
-            # Multiple criteria
-            self.assertEqual(len(self.client.search(['NOT DELETED', 'SMALLER 500'])), len(subjects) - 1)
-            self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "a"'])), 1)
-            self.assertEqual(len(self.client.search(['NOT DELETED', 'SUBJECT "c"'])), 0)
+            self.assertEqual(len(self.client.search(['NOT', 'DELETED'])), len(subjects) - 1)
+            self.assertEqual(len(self.client.search(
+                ['NOT', 'DELETED', 'SMALLER', 500])), len(subjects) - 1)
+            self.assertEqual(len(self.client.search(['NOT', 'DELETED', 'SMALLER', 5])), 0)
+            self.assertEqual(len(self.client.search(['NOT', 'DELETED', 'SUBJECT', 'a'])), 1)
+            self.assertEqual(len(self.client.search(['NOT', 'DELETED', 'SUBJECT', 'c'])), 0)
+
+            # Exercise "raw" strings where all criteria are provided as a single string.
+            self.assertEqual(len(self.client.search('SUBJECT "a" NOT DELETED')), 1)
+            self.assertEqual(len(self.client.search('NOT DELETED SUBJECT SMALLER 5')), 0)
 
         def test_search_with_modseq(self):
             # CONDSTORE (RFC 4551) means that the server supports the
@@ -581,7 +627,8 @@ def createUidTestClass(conf, use_uid):
                 return self.skipTest("Server doesn't support CONDSTORE")
 
             if self.is_gmail():
-                return self.skipTest("Gmail doesn't seem to return MODSEQ parts in SEARCH responses")
+                return self.skipTest(
+                    "Gmail doesn't seem to return MODSEQ parts in SEARCH responses")
 
             # A little dance to ensure MODSEQ tracking is turned on.
             # TODO: use ENABLE for this instead
@@ -599,17 +646,28 @@ def createUidTestClass(conf, use_uid):
             self.append_msg(SIMPLE_MESSAGE)
 
             # Ensure the message is seen and the new MODSEQ value is returned
-            ids = self.client.search(['MODSEQ %d' % initial_modseq])
+            ids = self.client.search(['MODSEQ', str(initial_modseq)])
             self.assertEqual(len(ids), 1)
             self.assertGreater(ids.modseq, initial_modseq)
+
+        def test_search_with_unicode(self):
+            self.client.append(self.base_folder, SMILE_MESSAGE)
+
+            self.assertEqual(len(self.client.search(['BODY', SMILE], charset='UTF-8')), 1)
+            self.assertEqual(len(self.client.search(['BODY', MICRO], charset='UTF-8')), 0)
+
+            # Try multiple criteria too
+            self.assertEqual(len(self.client.search(
+                ['TEXT', SMILE, 'NOT', 'DELETED'], charset='UTF-8')), 1)
 
         def test_gmail_search(self):
             self.skip_unless_capable('X-GM-EXT-1', 'Gmail search')
 
-            random_string = ''.join(random.sample(string.ascii_letters*20, 64))
+            random_string = ''.join(random.sample(string.ascii_letters * 20, 64))
             msg = 'Subject: something\r\n\r\nFoo\r\n%s\r\n' % random_string
-            self.client.append(self.base_folder, msg)
-            self.client.noop()    # For Gmail
+            self.append_msg(msg)
+
+            self.append_msg(SMILE_MESSAGE)
 
             ids = self.client.gmail_search(random_string)
             self.assertEqual(len(ids), 1)
@@ -617,9 +675,14 @@ def createUidTestClass(conf, use_uid):
             ids = self.client.gmail_search('s0mewh4t unl1kely')
             self.assertEqual(len(ids), 0)
 
+            # Test encoded queries
+            ids = self.client.gmail_search(MICRO)
+            self.assertEqual(len(ids), 0)
+            ids = self.client.gmail_search(SMILE)
+            self.assertGreater(len(ids), 0)
+
         def test_sort(self):
-            if not self.client.has_capability('SORT'):
-                return self.skipTest("Server doesn't support SORT")
+            self.skip_unless_capable('SORT')
 
             # Add some test messages
             msg_tmpl = 'Subject: Test\r\n\r\nBody'
@@ -635,28 +698,55 @@ def createUidTestClass(conf, use_uid):
             expected = [first_id, first_id - 1, first_id - 2]
             self.assertListEqual(messages, expected)
 
+            messages = self.client.sort('REVERSE SIZE', ['NOT', 'DELETED'])
+            self.assertListEqual(messages, expected)
+
+            messages = self.client.sort('REVERSE SIZE', 'NOT DELETED')
+            self.assertListEqual(messages, expected)
+
+        def test_sort_with_unicode(self):
+            self.skip_unless_capable('SORT')
+            self.append_msg(SMILE_MESSAGE)
+
+            messages = self.client.sort('ARRIVAL', ['TEXT', SMILE])
+            self.assertEqual(len(messages), 1)
+
+            messages = self.client.sort('ARRIVAL', ['TEXT', MICRO])
+            self.assertEqual(len(messages), 0)
+
         def test_thread(self):
-            thread_algo = None
-            for cap in self.client.capabilities():
-                if cap.startswith(b'THREAD='):
-                    thread_algo = cap.split(b'=')[-1]
-                    break
-            if not thread_algo:
-                return self.skipTest("Server doesn't support THREAD")
+            self.skip_unless_capable('THREAD=REFERENCES')
 
             msg_tmpl = 'Subject: %s\r\n\r\nBody'
             subjects = ('a', 'b', 'c')
             for subject in subjects:
-                msg = msg_tmpl % subject
-                self.client.append(self.base_folder, msg)
+                self.append_msg(msg_tmpl % subject)
 
-            messages = self.client.thread()
+            threads = self.client.thread()
 
-            self.assertEqual(len(messages), 3)
-            self.assertIsInstance(messages[0], tuple)
-            first_id = messages[0][0]
+            self.assertEqual(len(threads), 3)
+            self.assertIsInstance(threads[0], tuple)
+            first_id = threads[0][0]
             expected = ((first_id,), (first_id + 1,), (first_id + 2,))
-            self.assertTupleEqual(messages, expected)
+            self.assertTupleEqual(threads, expected)
+
+            threads = self.client.thread(criteria=['NOT', 'DELETED'])
+            self.assertTupleEqual(threads, expected)
+
+            threads = self.client.thread(criteria='NOT DELETED')
+            self.assertTupleEqual(threads, expected)
+
+        def test_thread_with_unicode(self):
+            self.skip_unless_capable('THREAD=REFERENCES')
+
+            self.append_msg(SMILE_MESSAGE)
+
+            threads = self.client.thread(criteria=['TEXT', SMILE])
+            self.assertEqual(len(threads), 1)
+            self.assertEqual(len(threads[0]), 1)
+
+            threads = self.client.thread(criteria=['TEXT', MICRO])
+            self.assertEqual(len(threads), 0)
 
         def test_copy(self):
             self.append_msg(SIMPLE_MESSAGE)
@@ -700,15 +790,15 @@ def createUidTestClass(conf, use_uid):
             self.assertIsInstance(msginfo[b'INTERNALDATE'], datetime)
             self.assertIsInstance(msginfo[b'FLAGS'], tuple)
             self.assertSequenceEqual(msginfo[b'ENVELOPE'],
-                Envelope(
-                    datetime(2010, 3, 16, 16, 45, 32, tzinfo=FixedOffset(0)),
-                    b'A multipart message',
-                    (Address(b'Bob Smith', None, b'bob', b'smith.com'),),
-                    (Address(b'Bob Smith', None, b'bob', b'smith.com'),),
-                    (Address(b'Bob Smith', None, b'bob', b'smith.com'),),
-                    (Address(b'Some One',  None, b'some', b'one.com'),
-                     Address(None, None, b'foo', b'foo.com')),
-                    None, None, None, to_bytes(msg_id_header)))
+                                     Envelope(
+                datetime(2010, 3, 16, 16, 45, 32, tzinfo=FixedOffset(0)),
+                b'A multipart message',
+                (Address(b'Bob Smith', None, b'bob', b'smith.com'),),
+                (Address(b'Bob Smith', None, b'bob', b'smith.com'),),
+                (Address(b'Bob Smith', None, b'bob', b'smith.com'),),
+                (Address(b'Some One', None, b'some', b'one.com'),
+                 Address(None, None, b'foo', b'foo.com')),
+                None, None, None, to_bytes(msg_id_header)))
 
         def test_partial_fetch(self):
             self.client.append(self.base_folder, MULTIPART_MESSAGE)
@@ -837,6 +927,7 @@ def createUidTestClass(conf, use_uid):
 
     return LiveTest
 
+
 def quiet_logout(client):
     """Log out a connection, ignoring errors (say because the connection is down)
     """
@@ -845,10 +936,12 @@ def quiet_logout(client):
     except IMAPClient.Error:
         pass
 
+
 def maybe_lower(val):
     if isinstance(val, (text_type, binary_type)):
         return val.lower()
     return val
+
 
 def have_matching_types(a, b, type_or_types):
     """True if a and b are instances of the same type and that type is
@@ -858,11 +951,13 @@ def have_matching_types(a, b, type_or_types):
         return False
     return isinstance(b, type(a))
 
+
 def argv_error(msg):
     print(msg, file=sys.stderr)
     print(file=sys.stderr)
     print("usage: %s <livetest.ini> [ optional unittest arguments ]" % sys.argv[0], file=sys.stderr)
     sys.exit(1)
+
 
 def parse_argv():
     args = sys.argv[1:]
@@ -874,6 +969,7 @@ def parse_argv():
     host_config = parse_config_file(ini_path)
     return host_config
 
+
 def probe_host(config):
     client = create_client_from_config(config)
     ns = client.namespace()
@@ -881,6 +977,7 @@ def probe_host(config):
     if not ns.personal:
         raise RuntimeError('Can\'t run tests: IMAP account has no personal namespace')
     return ns.personal[0]   # Use first personal namespace
+
 
 def main():
     host_config = parse_argv()

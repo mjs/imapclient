@@ -10,10 +10,10 @@
 # distribute, sublicense, and/or sell copies of the Software, and to
 # permit persons to whom the Software is furnished to do so, subject to
 # the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -24,12 +24,13 @@
 
 from __future__ import unicode_literals
 
-from .six import binary_type, text_type, byte2int, iterbytes, unichr
+from six import binary_type, text_type, byte2int, iterbytes, unichr
 
 
 PRINTABLE = set(range(0x20, 0x26)) | set(range(0x27, 0x7f))
 
 # TODO: module needs refactoring (e.g. variable names suck)
+
 
 def encode(s):
     """Encode a folder name using IMAP modified UTF-7 encoding.
@@ -65,6 +66,7 @@ def encode(s):
 
 AMPERSAND_ORD = byte2int(b'&')
 DASH_ORD = byte2int(b'-')
+
 
 def decode(s):
     """Decode a folder name from IMAP modified UTF-7 encoding to unicode.

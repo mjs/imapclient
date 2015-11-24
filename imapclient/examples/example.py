@@ -17,7 +17,7 @@ server.login(USERNAME, PASSWORD)
 select_info = server.select_folder('INBOX')
 print('%d messages in INBOX' % select_info['EXISTS'])
 
-messages = server.search(['NOT DELETED'])
+messages = server.search(['NOT', 'DELETED'])
 print("%d messages that aren't deleted" % len(messages))
 
 print()

@@ -1,24 +1,31 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2014, Menno Smits
+# Copyright (c) 2015, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+import sys
+from os import path
 
 # bootstrap setuptools if necessary
 from ez_setup import use_setuptools
-use_setuptools()
+use_setuptools(version="17.1")
 
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
-import sys
-import imapclient
-version = imapclient.__version__
-
 MAJ_MIN = sys.version_info[:2]
+IS_PY3 = MAJ_MIN >= (3, 0)
 IS_PY_26_OR_OLDER = MAJ_MIN <= (2, 6)
 IS_PY_34_OR_NEWER = MAJ_MIN >= (3, 4)
+
+# Read version info
+version_file = path.join('imapclient', 'version.py')
+info = {}
+if IS_PY3:
+    exec(open(version_file).read(), {}, info)
+else:
+    execfile(version_file, {}, info)
 
 desc = """\
 IMAPClient is an easy-to-use, Pythonic and complete IMAP client library.
@@ -32,10 +39,12 @@ Features:
     * Convenience methods are provided for commonly used functionality.
     * Exceptions are raised when errors occur.
 
-Python versions 2.6, 2.7, 3.2, 3.3 and 3.4 are officially supported.
+Python versions 2.6, 2.7, 3.3 and 3.4 are officially supported.
 
-IMAPClient includes fairly comprehensive units tests and automated functional tests that can be run against a live IMAP server.
+IMAPClient includes comprehensive units tests and automated
+functional tests that can be run against a live IMAP server.
 """
+
 
 class TestDiscoverCommand(TestCommand):
     """
@@ -54,19 +63,30 @@ class TestDiscoverCommand(TestCommand):
             module = None
         unittest.main(argv=['', 'discover'], module=module)
 
-test_deps = ['mock==0.8.0']
+main_deps = [
+    'backports.ssl>=0.0.7',
+    'pyopenssl>=0.15.1',
+    'six',
+    'mock==1.3.0'
+]
+
+setup_deps = main_deps + ['sphinx']
+
+test_deps = []
 if IS_PY_26_OR_OLDER:
     test_deps.append('unittest2')
 
 setup(name='IMAPClient',
-      version=version,
-      author="Menno Smits",
-      author_email="menno@freshfoo.com",
+      version=info['version'],
+      author=info['author'],
+      author_email=info['author_email'],
       license="http://en.wikipedia.org/wiki/BSD_licenses",
       url="http://imapclient.freshfoo.com/",
-      download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.zip' % version,
+      download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.zip' % info['version'],
       packages=find_packages(),
       package_data=dict(imapclient=['examples/*.py']),
+      setup_requires=setup_deps,
+      install_requires=main_deps,
       tests_require=test_deps,
       description="Easy-to-use, Pythonic and complete IMAP client library",
       long_description=desc,
@@ -82,5 +102,4 @@ setup(name='IMAPClient',
           'Topic :: Internet',
           'Topic :: Software Development :: Libraries :: Python Modules',
           'Topic :: System :: Networking'],
-      cmdclass={'test': TestDiscoverCommand},
-)
+      cmdclass={'test': TestDiscoverCommand})

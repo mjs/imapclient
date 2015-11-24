@@ -17,10 +17,10 @@ Features:
 - Convenience methods are provided for commonly used functionality.
 - Exceptions are raised when errors occur.
 
-Python versions 2.6, 2.7, 3.2, 3.3 and 3.4 are officially supported.
+Python versions 2.6, 2.7, 3.3 and 3.4 are officially supported.
 
-The current stable version of IMAPClient is 0.13. It is licensed under
-the New BSD License.
+The current stable version of IMAPClient is 1.0.0. It is licensed
+under the New BSD License.
 
 Why IMAPClient?
 ---------------
@@ -96,6 +96,12 @@ tracker on Bitbucket. The maintainer also blogs about IMAPClient
 news. Those articles can be found `here
 <http://freshfoo.com/blog/tags/imapclient>`_.
 
+Versions
+--------
+In order to clearly communicate version compatibility, IMAPClient
+will strictly adhere to the `Semantic Versioning <http://semver.org>`_
+scheme from version 1.0 onwards.
+
 Mailing List
 ------------
 The IMAPClient mailing list can be used to ask IMAPClient related
@@ -113,9 +119,9 @@ improving IMAPClient and contributing back to the project.
 IMAP Servers
 ------------
 IMAPClient is heavily tested against Dovecot, Gmail, Fastmail.fm
-(who use a modified Cyrus implementation) and occasionally Microsoft
-Exchange. Access to accounts on other IMAP servers/services for
-testing would be greatly appreciated.
+(who use a modified Cyrus implementation), Office365 and Yahoo. Access
+to accounts on other IMAP servers/services for testing would be
+greatly appreciated.
 
 Interactive Console
 -------------------

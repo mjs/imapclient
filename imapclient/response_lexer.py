@@ -11,7 +11,7 @@ external callers.
 
 from __future__ import unicode_literals
 
-from . import six
+import six
 
 __all__ = ["TokenSource"]
 
@@ -131,6 +131,7 @@ class Lexer(object):
 # string literal is processed, we peek into this object to grab the
 # literal.
 class LiteralHandlingIter:
+
     def __init__(self, lexer, resp_record):
         self.lexer = lexer
         if isinstance(resp_record, tuple):
@@ -143,7 +144,6 @@ class LiteralHandlingIter:
             # just a line with no literals.
             self.src_text = resp_record
             self.literal = None
-
 
     def __iter__(self):
         return PushableIterator(six.iterbytes(self.src_text))

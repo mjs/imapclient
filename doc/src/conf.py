@@ -5,8 +5,14 @@
 
 import sys
 from os import path
+from mock import MagicMock
 
 sys.path.insert(0, path.abspath(path.join(path.dirname(__file__), '..', '..')))
+
+# Fake out backports(.ssl) so that it's not needed in order to build
+# the docs (ReadTheDocs doesn't have backports.ssl installed).
+MOCK_MODULES = ['backports']
+sys.modules.update((mod_name, MagicMock()) for mod_name in MOCK_MODULES)
 
 import imapclient
 
@@ -17,8 +23,11 @@ import imapclient
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode',
-    'sphinx.ext.intersphinx']
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.intersphinx',
+]
 
 intersphinx_mapping = {'python':('http://docs.python.org/3', None)}
 
@@ -87,6 +96,9 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = 'sphinxdoc'
+
+html_use_modindex = False
+html_use_index = False
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
