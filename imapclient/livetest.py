@@ -20,7 +20,7 @@ from six import binary_type, text_type, PY3, iteritems
 
 from .config import parse_config_file, create_client_from_config
 from .fixed_offset import FixedOffset
-from .imapclient import IMAPClient, DELETED, RECENT
+from .imapclient import IMAPClient, DELETED, RECENT, _dict_bytes_normaliser
 from .response_types import Envelope, Address
 from .test.util import unittest
 from .util import to_bytes, to_unicode
