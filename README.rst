@@ -19,8 +19,8 @@ Features:
 
 Python versions 2.6, 2.7, 3.3 and 3.4 are officially supported.
 
-The current stable version of IMAPClient is 0.13. It is licensed under
-the New BSD License.
+The current stable version of IMAPClient is 1.0.0. It is licensed
+under the New BSD License.
 
 Why IMAPClient?
 ---------------
