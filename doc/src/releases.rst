@@ -7,7 +7,7 @@
 Enhanced TLS support [API]
 --------------------------
 The way that IMAPClient establishes TLS/SSL connections has been
-completed reworked. By default IMAPClient will attempt certificate
+completely reworked. By default IMAPClient will attempt certificate
 verification, certificate hostname checking, and will not use
 known-insecure TLS settings and protocols. In addition, TLS parameters
 are now highly configurable.
@@ -49,9 +49,9 @@ into these TLS improvements.
 STARTTLS support [NEW]
 ----------------------
 When the server supports it, IMAPClient can now establish an encrypted
-connection after initially connection unencrypted via STARTTLS. The
-starttls method takes an SSL context object for controlling the
-parameters of the TLS negotiation.
+connection after initially starting with an unencrypted connection
+using the STARTTLS command. The starttls method takes an SSL context
+object for controlling the parameters of the TLS negotiation.
 
 Many thanks to Chris Arndt for his extensive initial work on this.
 
@@ -146,7 +146,7 @@ IMAPClient now accepts a timeout at creation time. The timeout applies
 while establishing the connection and for all operations on the socket
 connected to the IMAP server.
 
-Semantic Versioning
+Semantic versioning
 -------------------
 In order to better indicate version compatibility to users, IMAPClient
 will now strictly adhere to the `Semantic Versioning
