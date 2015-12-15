@@ -495,6 +495,23 @@ class TestCapabilities(IMAPClientTest):
         self.assertEqual(self.client.capabilities(), (b'FOO', b'BAR'))
         self.assertEqual(self.client._cached_capabilities, (b'FOO', b'BAR'))
 
+    def test_with_starttls(self):
+        # Initial connection
+        self.client._imap.capabilities = ('FOO',)
+        self.client._imap.untagged_responses = {}
+        self.client._imap.state = 'NONAUTH'
+        self.assertEqual(self.client.capabilities(), (b'FOO',))
+
+        # Now do STARTTLS; capabilities change and should be reported.
+        self.client._starttls_done = True
+        self.client._imap.capability.return_value = ('OK', [b'FOO BAR'])
+        self.assertEqual(self.client.capabilities(), (b'FOO', b'BAR'))
+
+        # Login done; capabilities change again.
+        self.client._imap.state = 'AUTH'
+        self.client._imap.capability.return_value = ('OK', [b'FOO BAR QUX'])
+        self.assertEqual(self.client.capabilities(), (b'FOO', b'BAR', b'QUX'))
+
     def test_has_capability(self):
         self.client._cached_capabilities = (b'FOO', b'MORE')
 

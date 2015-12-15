@@ -25,6 +25,7 @@ class MockIMAP4(Mock):
         self.sent = b''  # Accumulates what was given to send()
         self.tagged_commands = {}
         self.debug = 0
+        self._starttls_done = False
 
     def send(self, data):
         self.sent += data
