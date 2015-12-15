@@ -64,7 +64,7 @@ class TestDiscoverCommand(TestCommand):
         unittest.main(argv=['', 'discover'], module=module)
 
 main_deps = [
-    'backports.ssl>=0.0.7',
+    'backports.ssl>=0.0.9',
     'pyopenssl>=0.15.1',
     'six',
     'mock==1.3.0'
