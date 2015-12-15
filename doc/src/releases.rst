@@ -14,7 +14,8 @@ Fixed
 -----
 - Unit test for version strings were updated to now always include the
   patch version.
-
+- Fresh capabilities now retrieved between STARTTLS and authentication
+  (#195).
 
 ===============
  Version 1.0.0
