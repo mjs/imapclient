@@ -74,6 +74,7 @@ Benjamin Morrise
 Brandon Rhodes
 Thomi Richards
 Ivan Zderadicka
+Raffael Vogler
 
 External Projects
 -----------------
@@ -86,8 +87,8 @@ cross-version Python compatibility.
 
 Other Contributions
 -------------------
-Nilas supports development of IMAPClient.
-http://nilas.com/
+Nylas supports development of IMAPClient.
+http://nylas.com/
 
 The project was started while the author was working at NetBox Blue.
 http://netboxblue.com/
