@@ -9,7 +9,7 @@ from os import path
 
 # bootstrap setuptools if necessary
 from ez_setup import use_setuptools
-use_setuptools(version="17.1")
+use_setuptools(version="18.8.1")
 
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
@@ -64,7 +64,7 @@ class TestDiscoverCommand(TestCommand):
         unittest.main(argv=['', 'discover'], module=module)
 
 main_deps = [
-    'backports.ssl>=0.0.7',
+    'backports.ssl>=0.0.9',
     'pyopenssl>=0.15.1',
     'six',
     'mock==1.3.0'

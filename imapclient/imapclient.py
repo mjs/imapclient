@@ -200,10 +200,6 @@ class IMAPClient(object):
 
         self._starttls_done = True
 
-        # Clear cached capabilities as per
-        # https://tools.ietf.org/html/rfc2595#section-3.1
-        self._cached_capabilities = None
-
         self._imap.sock = tls.wrap_socket(self._imap.sock, ssl_context, self.host)
         self._imap.file = self._imap.sock.makefile()
         return data[0]
@@ -286,14 +282,21 @@ class IMAPClient(object):
     def capabilities(self):
         """Returns the server capability list.
 
-        If the session is authenticated and the server has returned a
-        CAPABILITY response at authentication time, this response
-        will be returned. Otherwise, the CAPABILITY command will be
-        issued to the server, with the results cached for future calls.
+        If the session is authenticated and the server has returned an
+        untagged CAPABILITY response at authentication time, this
+        response will be returned. Otherwise, the CAPABILITY command
+        will be issued to the server, with the results cached for
+        future calls.
 
-        If the session is not yet authenticated, the cached
-        capabilities determined at connection time will be returned.
+        If the session is not yet authenticated, the capabilities
+        requested at connection time will be returned.
         """
+        # Ensure cached capabilities aren't used post-STARTTLS. As per
+        # https://tools.ietf.org/html/rfc2595#section-3.1
+        if self._starttls_done and self._imap.state == 'NONAUTH':
+            self._cached_capabilities = None
+            return self._do_capabilites()
+
         # If a capability response has been cached, use that.
         if self._cached_capabilities:
             return self._cached_capabilities
@@ -303,21 +306,25 @@ class IMAPClient(object):
         untagged = _dict_bytes_normaliser(self._imap.untagged_responses)
         response = untagged.pop(b'CAPABILITY', None)
         if response:
-            return self._save_capabilities(response[0])
+            self._cached_capabilities = self._normalise_capabilites(response[0])
+            return self._cached_capabilities
 
         # If authenticated, but don't have a capability reponse, ask for one
         if self._imap.state in ('SELECTED', 'AUTH'):
-            response = self._command_and_check('capability', unpack=True)
-            return self._save_capabilities(response)
+            self._cached_capabilities = self._do_capabilites()
+            return self._cached_capabilities
 
-        # Just return capabilities that imaplib grabbed at connection
+        # Return capabilities that imaplib requested at connection
         # time (pre-auth)
         return tuple(to_bytes(c) for c in self._imap.capabilities)
 
-    def _save_capabilities(self, raw_response):
+    def _do_capabilites(self):
+        raw_response = self._command_and_check('capability', unpack=True)
+        return self._normalise_capabilites(raw_response)
+
+    def _normalise_capabilites(self, raw_response):
         raw_response = to_bytes(raw_response)
-        self._cached_capabilities = tuple(raw_response.upper().split())
-        return self._cached_capabilities
+        return tuple(raw_response.upper().split())
 
     def has_capability(self, capability):
         """Return ``True`` if the IMAP server has the given *capability*.

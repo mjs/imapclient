@@ -1,6 +1,23 @@
 :tocdepth: 1
 
 ===============
+ Version 1.0.1
+===============
+
+Changed
+-------
+- Minimum backports.ssl dependency is now 0.0.9 (an important
+  performance issue was addressed)
+- setuptools 18.8.1 now used due to strange zip file error for 17.1
+
+Fixed
+-----
+- Unit test for version strings were updated to now always include the
+  patch version.
+- Fresh capabilities now retrieved between STARTTLS and authentication
+  (#195).
+
+===============
  Version 1.0.0
 ===============
 
