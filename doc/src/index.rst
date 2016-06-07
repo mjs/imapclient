@@ -9,7 +9,7 @@
 :Download: http://pypi.python.org/pypi/IMAPClient/
 :Documentation: http://imapclient.readthedocs.org/
 :License: `New BSD License <http://en.wikipedia.org/wiki/BSD_licenses>`_
-:Support: `Mailing List <http://librelist.com/browser/imapclient/>`_
+:Support: `Mailing List <https://groups.io/g/imapclient>`_
 
 Introduction
 ------------
