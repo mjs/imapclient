@@ -20,7 +20,7 @@ class Envelope(namedtuple("Envelope", "date subject from_ sender reply_to to " +
 
     :ivar date: A datetime instance that represents the "Date" header.
     :ivar subject: A string that contains the "Subject" header.
-    :ivar from\_: A tuple of Address objects that represent on or more
+    :ivar from\_: A tuple of Address objects that represent one or more
       addresses from the "From" header, or None if header does not exist.
     :ivar sender: As for from\_ but represents the "Sender" header.
     :ivar reply_to: As for from\_ but represents the "Reply-To" header.
