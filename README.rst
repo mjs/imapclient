@@ -105,11 +105,23 @@ scheme from version 1.0 onwards.
 Mailing List
 ------------
 The IMAPClient mailing list can be used to ask IMAPClient related
-questions and report bugs.
+questions and report bugs. Details of new releases and project changes
+will also be announced there.
 
-- To send to the list and subscribe send an email to imapclient@librelist.com
-- Archives of the list are available at http://librelist.com/browser/imapclient/
-- See http://librelist.com/help.html for more information about the mailing list
+The mailing list is hosted at `Groups.io
+<http://groups.io>`_. Interaction via both email and the web is
+supported. To join the list, see the list archives or just find out
+more, visit https://groups.io/g/imapclient. The key details of the
+list are:
+
+* Post: imapclient@groups.io
+* Subscribe: imapclient+subscribe@groups.io
+* Unsubscribe: imapclient+unsubscribe@groups.io
+* Web: https://groups.io/g/imapclient
+* Web archives: https://groups.io/g/imapclient/messages
+
+If you're having trouble using the mailing list, please email
+menno@freshfoo.com.
 
 Working on IMAPClient
 ---------------------
