@@ -1,6 +1,14 @@
 :tocdepth: 1
 
 ===============
+ Version 1.1.0
+===============
+
+Added
+-----
+- PLAIN authentication support (via `plain_login` method)
+
+===============
  Version 1.0.1
 ===============
 
