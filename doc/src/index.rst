@@ -7,7 +7,7 @@
 :Date: |today|
 :Homepage: http://imapclient.freshfoo.com
 :Download: http://pypi.python.org/pypi/IMAPClient/
-:Documentation: http://imapclient.readthedocs.org/
+:Documentation: http://imapclient.readthedocs.io/
 :License: `New BSD License <http://en.wikipedia.org/wiki/BSD_licenses>`_
 :Support: `Mailing List <https://groups.io/g/imapclient>`_
 

@@ -61,7 +61,7 @@ on all of the above.
 Many thanks to Chris Arndt and Marc-Antoine Parent for their input
 into these TLS improvements.
 
-.. _Exceptions: http://imapclient.readthedocs.org/en/latest/#exceptions
+.. _Exceptions: http://imapclient.readthedocs.io/en/latest/#exceptions
 
 STARTTLS support [NEW]
 ----------------------
@@ -525,7 +525,7 @@ responses in the same format as idle_check() and idle_done().
 Sphinx Based Docs (#5) [NEW]
 ----------------------------
 Full documentation is now available under doc/html in the source
-distribution and at http://imapclient.readthedocs.org/ online.
+distribution and at http://imapclient.readthedocs.io/ online.
 
 Added rename_folder (#77) [NEW] 
 --------------------------------

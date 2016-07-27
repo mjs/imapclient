@@ -63,7 +63,7 @@ available. See http://packages.python.org/distribute/ for more info.
 
 Documentation
 -------------
-IMAPClient's manual is available at http://imapclient.readthedocs.org/
+IMAPClient's manual is available at http://imapclient.readthedocs.io/
 
 The `NEWS <https://bitbucket.org/mjs0/imapclient/src/tip/NEWS.rst>`_
 file also has useful information.
