@@ -17,3 +17,5 @@ def _imapclient_version_string(vinfo):
 version = _imapclient_version_string(version_info)
 author = 'Menno Smits'
 author_email = 'menno@freshfoo.com'
+
+min_pyopenssl_version = '0.15.1'

@@ -66,7 +66,7 @@ class TestDiscoverCommand(TestCommand):
 
 main_deps = [
     'backports.ssl>=0.0.9',
-    'pyopenssl>=0.15.1',
+    'pyopenssl>=' + info["min_pyopenssl_version"],
     'six',
     'mock==1.3.0'
 ]
