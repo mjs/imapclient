@@ -95,7 +95,7 @@ currently redirects to the IMAPClient Bitbucket site). Details about
 upcoming versions and planned features/fixes can be found in the issue
 tracker on Bitbucket. The maintainer also blogs about IMAPClient
 news. Those articles can be found `here
-<http://freshfoo.com/blog/tags/imapclient>`_.
+<http://freshfoo.com/tags/imapclient>`_.
 
 Versions
 --------
