@@ -1,6 +1,20 @@
 :tocdepth: 1
 
 ===============
+ Version 1.0.2
+===============
+
+Changed
+-------
+- Explicitly check that the required pyOpenSSL version is installed
+- Start testing against Python 3.5
+- Update doc links from readthedocs.org to readthedocs.io
+
+Fixed
+-----
+- Allow installation from alternate directories
+
+===============
  Version 1.0.1
 ===============
 

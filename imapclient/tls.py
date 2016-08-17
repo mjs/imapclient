@@ -25,8 +25,10 @@ def check_pyopenssl_version():
     from .version import min_pyopenssl_version
 
     if V(installed_pyopenssl_version) < V(min_pyopenssl_version):
-       raise ImportError("pyOpenSSL version (%s) is too old. Need at least %s."
-                         % (installed_pyopenssl_version, min_pyopenssl_version))
+       raise ImportError(
+           "pyOpenSSL version (%s) is too old. Need at least %s.\n"
+           "See http://imapclient.rtfd.io/#old-pyopenssl-versions"
+           % (installed_pyopenssl_version, min_pyopenssl_version))
 
 check_pyopenssl_version()
 
