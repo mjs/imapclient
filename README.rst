@@ -17,7 +17,7 @@ Features:
 - Convenience methods are provided for commonly used functionality.
 - Exceptions are raised when errors occur.
 
-Python versions 2.6, 2.7, 3.3 and 3.4 are officially supported.
+Python versions 2.6, 2.7, 3.3, 3.4 and 3.5 are officially supported.
 
 The current stable version of IMAPClient is 1.0.1. It is licensed
 under the New BSD License.
@@ -159,12 +159,13 @@ compatibility with a given IMAP server implementation.
 
 The livetest functionality can also be accessed like this::
 
-    python -m imapclient.livetest ...
+    python -m imapclient.livetest <livetest.ini> [ optional unittest arguments ]
 
 Alternatively you can run the ``livetest.py`` script included with the
-source distribution.
+source distribution. Use ``livetest.py --help`` to see usage.
 
-Use the --help option to see usage.
+The configuration file format is
+`described in the main documentation <http://imapclient.rtfd.io/#configuration-file-format>`_.
 
 **WARNING**: The operations used by livetest are destructive and could
 cause unintended loss of data. That said, as of version 0.9, livetest

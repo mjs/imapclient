@@ -4,6 +4,10 @@
  Version 1.0.2
 ===============
 
+New
+---
+- Documented the livetest/interact INI file format.
+
 Changed
 -------
 - Explicitly check that the required pyOpenSSL version is installed
