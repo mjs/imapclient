@@ -1,10 +1,20 @@
-Introduction
-------------
+Essentials
+----------
 IMAPClient is an easy-to-use, Pythonic and complete IMAP client
 library.
 
-Features:
+=========================  ========================================
+Current version            1.0.1
+Supported Python versions  2.6, 2.7, 3.3, 3.4 and 3.5
+License                    New BSD
+Project home               http://imapclient.freshfoo.com/
+PyPI                       https://pypi.python.org/pypi/IMAPClient
+Documentation              http://imapclient.readthedocs.io/
+Mailing list               https://groups.io/g/imapclient
+=========================  ========================================
 
+Features
+--------
 - Arguments and return values are natural Python types.
 - IMAP server responses are fully parsed and readily usable.
 - IMAP unique message IDs (UIDs) are handled transparently. There is
@@ -16,11 +26,6 @@ Features:
   client are in different zones.
 - Convenience methods are provided for commonly used functionality.
 - Exceptions are raised when errors occur.
-
-Python versions 2.6, 2.7, 3.3, 3.4 and 3.5 are officially supported.
-
-The current stable version of IMAPClient is 1.0.1. It is licensed
-under the New BSD License.
 
 Why IMAPClient?
 ---------------
@@ -63,21 +68,17 @@ available. See http://packages.python.org/distribute/ for more info.
 
 Documentation
 -------------
-IMAPClient's manual is available at http://imapclient.readthedocs.io/
+IMAPClient's manual is available at http://imapclient.readthedocs.io/. Release notes can be found at http://imapclient.readthedocs.io/#release-history.
 
-The `NEWS <https://bitbucket.org/mjs0/imapclient/src/tip/NEWS.rst>`_
-file also has useful information.
-
-The HTML manual can also be found at doc/html in the source
-distribution. The Sphinx source is at doc/src. If Sphinx is installed,
-the documentation can be rebuilt using::
+The Sphinx source for the documentation can be found under doc/src. If
+Sphinx is installed, the documentation can be rebuilt using::
 
     python setup.py build_sphinx
 
-See imapclient/examples/example.py for a sample of how to use
+See the imapclient/examples directory for examples of how to use
 IMAPClient. If the IMAPClient was installed from PyPI, the examples
-subdirectory can be found under the imapclient package installation
-directory.
+subdirectory can be found under the imapclient package in the
+installation directory.
 
 Current Status
 --------------
