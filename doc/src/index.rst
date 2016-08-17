@@ -7,7 +7,7 @@
 :Date: |today|
 :Homepage: http://imapclient.freshfoo.com
 :Download: http://pypi.python.org/pypi/IMAPClient/
-:Documentation: http://imapclient.readthedocs.org/
+:Documentation: http://imapclient.readthedocs.io/
 :License: `New BSD License <http://en.wikipedia.org/wiki/BSD_licenses>`_
 :Support: `Mailing List <https://groups.io/g/imapclient>`_
 
@@ -175,6 +175,18 @@ The above examples show some of the most common TLS parameter
 customisations but there are many other tweaks are possible. Consult
 the Python 3 :py:mod:`ssl` package documentation for further options.
 
+Old pyOpenSSL Versions
++++++++++++++++++++++++
+
+IMAPClient's TLS functionality will not behaviour correctly if an
+out-of-date version of pyOpenSSL is used. On some systems
+(particularly OS X) the system installed version of pyOpenSSL will
+take precedence over any user installed version. Use of virtualenvs is
+strongly encouraged to work around this.
+
+IMAPClient checks the installed pyOpenSSL version at import time and
+will fail early if an old pyOpenSSL version is found.
+
 Using gevent with IMAPClient
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Some extra monkey patching is required so that the gevent_ package can
@@ -261,12 +273,18 @@ Various options are available to specify the IMAP server details. See
 the help (--help) for more details. You'll be prompted for a username
 and password if one isn't provided on the command line.
 
-The connected IMAPClient instance is available as the variable "c".
+It is also possible to pass connection details as a configuration file
+like this::
+
+   python -m imapclient.interact -f <config file>
+
+See below for details of the :ref:`configuration file format<conf-files>`.
 
 If installed, IPython will be used as the embedded shell. Otherwise
 the basic built-in Python shell will be used.
 
-Here's an example session::
+The connected IMAPClient instance is available as the variable
+"c". Here's an example session::
 
     $ python -m imapclient.interact -H <host> -u <user> ...
     Connecting...
@@ -296,6 +314,48 @@ Here's an example session::
 
     In [3]: c.logout()
     Out[3]: b'Logging out'
+
+.. _conf-files:
+
+Configuration File Format
+-------------------------
+Both the IMAPClient interactive shell and the live tests take
+configuration files which specify how to to connect to an IMAP
+server. The configuration file format is the same for both.
+
+Configuration files use the INI format and must always have a section
+called ``DEFAULT``. Here's a simple example::
+
+    [DEFAULT]
+    host = imap.mailserver.com
+    username = bob
+    password = sekret
+    ssl = True
+
+The supported options are:
+
+==================== ======= =========================================================================================
+Name                 Type    Description
+==================== ======= =========================================================================================
+host                 string  IMAP hostname to connect to.
+username             string  The username to authenticate as.
+password             string  The password to use with ``username``.
+port                 int     Server port to connect to. Defaults to 143 unless ``ssl`` is True.
+ssl                  bool    Use SSL/TLS to connect.
+starttls             bool    Use STARTTLS to connect.
+ssl_check_hostname   bool    If true and SSL is in use, check that certificate matches the hostname (defaults to true)
+ssl_verify_cert      bool    If true and SSL is in use, check that the certifcate is valid (defaults to true).
+ssl_ca_file          string  If SSL is true, use this to specify certificate authority certs to validate with.
+timeout              int     Time out I/O operations after this many seconds.
+oauth2               bool    If true, use OAUTH2 to authenticate (``username`` and ``password`` are ignored).
+oauth2_client_id     string  OAUTH2 client id.
+oauth2_client_secret string  OAUTH2 client secret.
+oauth2_refresh_token string  OAUTH2 token for refreshing the secret.
+==================== ======= =========================================================================================
+
+Acceptable boolean values are "1", "yes", "true", and "on", for true;
+and "0", "no", "false", and "off", for false.
+
 
 External Documentation
 ----------------------

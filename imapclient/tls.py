@@ -11,18 +11,36 @@ across Python versions.
 """
 
 import imaplib
+import os
 import socket
 import sys
+
+__all__ = ('create_default_context',)
+
+# Explicitly check that the required pyOpenSSL is installed. On some
+# systems (particularly OS X) the system installed version will be
+# seen before any user installed version. Using a virtualenv is
+# recommended to work around this.
+def check_pyopenssl_version():
+    from distutils.version import LooseVersion as V
+    from OpenSSL import __version__ as installed_pyopenssl_version
+    from .version import min_pyopenssl_version
+
+    if V(installed_pyopenssl_version) < V(min_pyopenssl_version):
+       raise ImportError(
+           "pyOpenSSL version (%s) is too old. Need at least %s.\n"
+           "See http://imapclient.rtfd.io/#old-pyopenssl-versions"
+           % (installed_pyopenssl_version, min_pyopenssl_version))
+
+if os.environ.get("READTHEDOCS") != "True":
+    check_pyopenssl_version()
 
 try:
     from backports import ssl
 except ImportError:
     raise ImportError("backports.ssl is not installed")
 
-__all__ = ('create_default_context',)
-
 _ossl = ssl.ossl
-
 
 if sys.platform == "win32":
     try:

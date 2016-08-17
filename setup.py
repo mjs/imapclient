@@ -20,7 +20,8 @@ IS_PY_26_OR_OLDER = MAJ_MIN <= (2, 6)
 IS_PY_34_OR_NEWER = MAJ_MIN >= (3, 4)
 
 # Read version info
-version_file = path.join('imapclient', 'version.py')
+here = path.dirname(__file__)
+version_file = path.join(here, 'imapclient', 'version.py')
 info = {}
 if IS_PY3:
     exec(open(version_file).read(), {}, info)
@@ -65,7 +66,7 @@ class TestDiscoverCommand(TestCommand):
 
 main_deps = [
     'backports.ssl>=0.0.9',
-    'pyopenssl>=0.15.1',
+    'pyopenssl>=' + info["min_pyopenssl_version"],
     'six',
     'mock==1.3.0'
 ]
