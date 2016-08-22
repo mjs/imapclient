@@ -241,6 +241,14 @@ class IMAPClient(object):
         auth_string += '\1'
         return self._command_and_check('authenticate', mech, lambda x: auth_string)
 
+    def plain_login(self, identity, password, authorization_identity=None):
+        """Authenticate using the PLAIN method (requires server support).
+        """
+        if not authorization_identity:
+            authorization_identity = ""
+        auth_string = '%s\0%s\0%s' % (authorization_identity, identity, password)
+        return self._command_and_check('authenticate', 'PLAIN', lambda _: auth_string, unpack=True)
+
     def logout(self):
         """Logout, returning the server response.
         """
