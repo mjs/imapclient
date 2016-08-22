@@ -14,8 +14,7 @@ from .util import to_unicode
 
 class Envelope(namedtuple("Envelope", "date subject from_ sender reply_to to " +
                           "cc bcc in_reply_to message_id")):
-    """
-    Represents envelope structures of messages. Returned when parsing
+    """Represents envelope structures of messages. Returned when parsing
     ENVELOPE responses.
 
     :ivar date: A datetime instance that represents the "Date" header.
@@ -29,12 +28,36 @@ class Envelope(namedtuple("Envelope", "date subject from_ sender reply_to to " +
     :ivar bcc: As for from\_ but represents the "Bcc" recipients.
     :ivar in_reply_to: A string that contains the "In-Reply-To" header.
     :ivar message_id: A string that contains the "Message-Id" header.
+
+    A particular issue to watch out for is IMAP's handling of "group
+    syntax" in address fields. This is often encountered as a
+    recipient header of the form::
+
+        undisclosed-recipients:;
+
+    but can also be expressed per this more general example::
+
+        A group: a@example.com, B <b@example.org>;
+
+    This example would yield the following Address tuples::
+
+      Address(name=None, route=None, mailbox=u'A group', host=None)
+      Address(name=None, route=None, mailbox=u'a', host=u'example.com')
+      Address(name=u'B', route=None, mailbox=u'b', host=u'example.org')
+      Address(name=None, route=None, mailbox=None, host=None)
+
+    The first Address, where ``host`` is ``None``, indicates the start
+    of the group. The ``mailbox`` field contains the group name. The
+    final Address, where both ``mailbox`` and ``host`` are ``None``,
+    indicates the end of the group.
+
+    See :rfc:`3501#section-7.4.2` and :rfc:`2822` for further details.
+
     """
 
 
 class Address(namedtuple("Address", "name route mailbox host")):
-    """
-    Represents electronic mail addresses. Used to store addresses in
+    """Represents electronic mail addresses. Used to store addresses in
     :py:class:`Envelope`.
 
     :ivar name: The address "personal name".
@@ -50,7 +73,10 @@ class Address(namedtuple("Address", "name route mailbox host")):
 
         Address(name=u'Mary Smith', route=None, mailbox=u'mary', host=u'foo.com')
 
-    See :rfc:`2822` for more.
+    See :rfc:`2822` for more detail.
+
+    See also :py:class:`Envelope` for information about handling of
+    "group syntax".
     """
 
     def __str__(self):

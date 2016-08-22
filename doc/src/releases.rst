@@ -15,12 +15,14 @@ Added
 New
 ---
 - Documented the livetest/interact INI file format.
+- Documented handling of RFC2822 group syntax.
 
 Changed
 -------
 - Explicitly check that the required pyOpenSSL version is installed
 - Start testing against Python 3.5
 - Update doc links from readthedocs.org to readthedocs.io
+- Rearranged README so that project essentials are right at the top.
 
 Fixed
 -----
