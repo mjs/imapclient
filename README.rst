@@ -91,9 +91,9 @@ You should feel confident using IMAPClient for production
 purposes. Any problems found will be fixed quickly once reported.
 
 The project's home page is http://imapclient.freshfoo.com/ (this
-currently redirects to the IMAPClient Bitbucket site). Details about
+currently redirects to the IMAPClient Github site). Details about
 upcoming versions and planned features/fixes can be found in the issue
-tracker on Bitbucket. The maintainer also blogs about IMAPClient
+tracker on Github. The maintainer also blogs about IMAPClient
 news. Those articles can be found `here
 <http://freshfoo.com/tags/imapclient>`_.
 

@@ -2,8 +2,8 @@
  Contributing To The Project
 =============================
 The best way to contribute changes to IMAPClient is to fork the
-official repository on bitbucket, make changes to your personal fork
-and then submit a pull request.
+official repository on Github, make changes in a branch in your
+personal fork and then submit a pull request.
 
 Discussion on the mailing list before undertaking development is
 highly encouraged for potentially major changes.
@@ -19,10 +19,10 @@ Please read on if you plan on submitting changes to IMAPClient.
  Source Code
 =============
 The official source code repository for IMAPClient can be found on
-bitbucket at: https://bitbucket.org/mjs0/imapclient/
+Github at: https://github.com/mjs/imapclient/
 
-Any major feature work will also be found as separate forks on
-bitbucket.
+Any major feature work will also be found as branches of this
+repository.
 
 Branches
 ========
@@ -40,14 +40,10 @@ Releases will always be created from the stable branch. Before a major
 release changes will be merged from the default branch to the stable
 branch.
 
-This branching approach is used by various projects including the
-Mercurial project. See this blog article for more information:
-http://stevelosh.com/blog/2010/05/mercurial-workflows-stable-default/
-
 Release Tags
 ============
 Each released version is available in the IMAPClient repository
-as a Mercurial tag (e.g. "0.9.1"). Release tags will always be created
+as a Git tag (e.g. "0.9.1"). Release tags will always be created
 on the stable branch (as described above).
 
 ============
