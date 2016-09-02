@@ -636,7 +636,11 @@ class IMAPClient(object):
         what_ = '(%s)' % (' '.join(what))
 
         data = self._command_and_check('status', self._normalise_folder(folder), what_)
-        _, status_items = parse_response(data)
+        response = parse_response(data)
+        try:
+            _, status_items = response
+        except ValueError:
+            raise Exception('folder_status ValueError: Input ' + str(response))
         return dict(as_pairs(status_items))
 
     def close_folder(self):
