@@ -831,37 +831,37 @@ class IMAPClient(object):
         response = self.fetch(messages, ['FLAGS'])
         return self._filter_fetch_dict(response, b'FLAGS')
 
-    def add_flags(self, messages, flags):
+    def add_flags(self, messages, flags, silent=False):
         """Add *flags* to *messages* in the currently selected folder.
 
         *flags* should be a sequence of strings.
 
         Returns the flags set for each modified message (see
-        *get_flags*).
+        *get_flags*), or None if *silent* is true.
         """
-        return self._store(b'+FLAGS', messages, flags, b'FLAGS')
+        return self._store(b'+FLAGS', messages, flags, b'FLAGS', silent=silent)
 
-    def remove_flags(self, messages, flags):
+    def remove_flags(self, messages, flags, silent=False):
         """Remove one or more *flags* from *messages* in the currently
         selected folder.
 
         *flags* should be a sequence of strings.
 
         Returns the flags set for each modified message (see
-        *get_flags*).
+        *get_flags*), or None if *silent* is true.
         """
-        return self._store(b'-FLAGS', messages, flags, b'FLAGS')
+        return self._store(b'-FLAGS', messages, flags, b'FLAGS', silent=silent)
 
-    def set_flags(self, messages, flags):
+    def set_flags(self, messages, flags, silent=False):
         """Set the *flags* for *messages* in the currently selected
         folder.
 
         *flags* should be a sequence of strings.
 
         Returns the flags set for each modified message (see
-        *get_flags*).
+        *get_flags*), or None if *silent* is true.
         """
-        return self._store(b'FLAGS', messages, flags, b'FLAGS')
+        return self._store(b'FLAGS', messages, flags, b'FLAGS', silent=silent)
 
     def get_gmail_labels(self, messages):
         """Return the label set for each message in *messages* in the
@@ -876,23 +876,24 @@ class IMAPClient(object):
         response = self.fetch(messages, [b'X-GM-LABELS'])
         return self._filter_fetch_dict(response, b'X-GM-LABELS')
 
-    def add_gmail_labels(self, messages, labels):
+    def add_gmail_labels(self, messages, labels, silent=False):
         """Add *labels* to *messages* in the currently selected folder.
 
         *labels* should be a sequence of strings.
 
         Returns the label set for each modified message (see
-        *get_gmail_labels*).
+        *get_gmail_labels*), or None if *silent* is true.
 
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
         """
         return self._store(b'+X-GM-LABELS', messages,
-                           self._normalise_labels(labels), b'X-GM-LABELS')
+                           self._normalise_labels(labels), b'X-GM-LABELS',
+                           silent=silent)
 
-    def remove_gmail_labels(self, messages, labels):
+    def remove_gmail_labels(self, messages, labels, silent=False):
         """Remove one or more *labels* from *messages* in the
-        currently selected folder.
+        currently selected folder, or None if *silent* is true.
 
         *labels* should be a sequence of strings.
 
@@ -903,31 +904,33 @@ class IMAPClient(object):
         attribute (eg. Gmail).
         """
         return self._store(b'-X-GM-LABELS', messages,
-                           self._normalise_labels(labels), b'X-GM-LABELS')
+                           self._normalise_labels(labels), b'X-GM-LABELS',
+                           silent=silent)
 
-    def set_gmail_labels(self, messages, labels):
+    def set_gmail_labels(self, messages, labels, silent=False):
         """Set the *labels* for *messages* in the currently selected
         folder.
 
         *labels* should be a sequence of strings.
 
         Returns the label set for each modified message (see
-        *get_gmail_labels*).
+        *get_gmail_labels*), or None if *silent* is true.
 
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
         """
         return self._store(b'X-GM-LABELS', messages,
-                           self._normalise_labels(labels), b'X-GM-LABELS')
+                           self._normalise_labels(labels), b'X-GM-LABELS',
+                           silent=silent)
 
-    def delete_messages(self, messages):
+    def delete_messages(self, messages, silent=False):
         """Delete one or more *messages* from the currently selected
         folder.
 
         Returns the flags set for each modified message (see
         *get_flags*).
         """
-        return self.add_flags(messages, DELETED)
+        return self.add_flags(messages, DELETED, silent=silent)
 
     def fetch(self, messages, data, modifiers=None):
         """Retrieve selected *data* associated with one or more
@@ -1198,19 +1201,30 @@ class IMAPClient(object):
     def _checkok(self, command, typ, data):
         self._check_resp('OK', command, typ, data)
 
-    def _store(self, cmd, messages, flags, fetch_key):
+    def _store(self, cmd, messages, flags, fetch_key, silent):
         """Worker function for the various flag manipulation methods.
 
         *cmd* is the STORE command to use (eg. '+FLAGS').
         """
         if not messages:
             return {}
-        data = self._command_and_check('store',
-                                       join_message_ids(messages),
-                                       cmd,
-                                       seq_to_parenstr(flags),
-                                       uid=True)
-        return self._filter_fetch_dict(parse_fetch_response(data), fetch_key)
+
+        if not silent:
+            data = self._command_and_check('store',
+                                           join_message_ids(messages),
+                                           cmd,
+                                           seq_to_parenstr(flags),
+                                           uid=True)
+            return self._filter_fetch_dict(parse_fetch_response(data),
+                                           fetch_key)
+        else:
+            self._command_and_check('store',
+                                    join_message_ids(messages),
+                                    cmd+'.SILENT',
+                                    seq_to_parenstr(flags),
+                                    uid=True)
+            return None
+
 
     def _filter_fetch_dict(self, fetch_dict, key):
         return dict((msgid, data[key])
