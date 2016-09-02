@@ -9,7 +9,7 @@ from os import path
 
 # bootstrap setuptools if necessary
 from ez_setup import use_setuptools
-use_setuptools(version="18.8.1")
+use_setuptools(version="18.2")
 
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
