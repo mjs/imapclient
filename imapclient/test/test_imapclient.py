@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 
 import itertools
+import imaplib
 import socket
 import sys
 from datetime import datetime
@@ -414,19 +415,19 @@ class TestGmailLabels(IMAPClientTest):
         self.client.add_gmail_labels(sentinel.messages, 'f"o"o')
         self.client._store.assert_called_with(
             b'+X-GM-LABELS', sentinel.messages,
-            ['"f\\"o\\"o"'], b'X-GM-LABELS')
+            ['"f\\"o\\"o"'], b'X-GM-LABELS', False)
 
     def test_remove(self):
         self.client.remove_gmail_labels(sentinel.messages, ['q\\ux'])
         self.client._store.assert_called_with(
             b'-X-GM-LABELS', sentinel.messages,
-            ['"q\\\\ux"'], b'X-GM-LABELS')
+            ['"q\\\\ux"'], b'X-GM-LABELS', False)
 
     def test_set(self):
         self.client.set_gmail_labels(sentinel.messages, ['faz', 'baz'])
         self.client._store.assert_called_with(
             b'X-GM-LABELS', sentinel.messages,
-            ['"faz"', '"baz"'], b'X-GM-LABELS')
+            ['"faz"', '"baz"'], b'X-GM-LABELS', False)
 
 
 class TestNamespace(IMAPClientTest):
@@ -618,6 +619,15 @@ class TestRawCommand(IMAPClientTest):
         with self.assertRaisesRegex(IMAPClient.AbortError, expected_error):
             self.client._raw_command(b'FOO', [b'\xff'])
 
+    def test_alert_included_in_abort(self):
+        def stub(arg):
+            raise imaplib.IMAP4.abort("socket error")
+        self.client._imap.create = stub
+        self.client._imap.untagged_responses = {'ALERT': [b'You will be disconnected.']}
+
+        expected_error = "socket error. Alert: \['You will be disconnected.'\]"
+        with self.assertRaisesRegex(IMAPClient.AbortError, expected_error):
+            self.client.create_folder('test')
 
 class TestShutdown(IMAPClientTest):
 

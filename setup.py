@@ -9,7 +9,7 @@ from os import path
 
 # bootstrap setuptools if necessary
 from ez_setup import use_setuptools
-use_setuptools(version="18.8.1")
+use_setuptools(version="18.2")
 
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
@@ -58,20 +58,23 @@ class TestDiscoverCommand(TestCommand):
         self.test_suite = True
 
     def run_tests(self):
-        from imapclient.test.util import unittest   # this will import unittest2
+        from imapclient.test.util import unittest  # this will import unittest2
         module = "__main__"
         if IS_PY_26_OR_OLDER or IS_PY_34_OR_NEWER:
             module = None
         unittest.main(argv=['', 'discover'], module=module)
 
-main_deps = [
-    'backports.ssl>=0.0.9',
-    'pyopenssl>=' + info["min_pyopenssl_version"],
+common_deps = [
     'six',
-    'mock==1.3.0'
+    'mock==1.3.0',
 ]
 
-setup_deps = main_deps + ['sphinx']
+main_deps = common_deps + [
+    'backports.ssl>=0.0.9',
+    'pyopenssl>=' + info["min_pyopenssl_version"],
+]
+
+setup_deps = common_deps + ['sphinx']
 
 test_deps = []
 if IS_PY_26_OR_OLDER:
