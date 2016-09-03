@@ -1183,13 +1183,18 @@ class IMAPClient(object):
         uid = pop_with_default(kwargs, 'uid', False)
         assert not kwargs, "unexpected keyword args: " + ', '.join(kwargs)
 
-        if uid and self.use_uid:
-            if PY3:
-                command = to_unicode(command)  # imaplib must die
-            typ, data = self._imap.uid(command, *args)
-        else:
-            meth = getattr(self._imap, to_unicode(command))
-            typ, data = meth(*args)
+        try:
+            if uid and self.use_uid:
+                if PY3:
+                    command = to_unicode(command)  # imaplib must die
+                typ, data = self._imap.uid(command, *args)
+            else:
+                meth = getattr(self._imap, to_unicode(command))
+                typ, data = meth(*args)
+        except imaplib.IMAP4.abort as err:
+            alert = self._imap.untagged_responses.pop('ALERT', None)
+            raise imaplib.IMAP4.abort(err.message + (". Alert: %r" % alert))
+
         self._checkok(command, typ, data)
         if unpack:
             return data[0]
