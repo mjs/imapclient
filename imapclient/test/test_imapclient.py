@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 
 import itertools
+import imaplib
 import socket
 import sys
 from datetime import datetime
@@ -618,6 +619,15 @@ class TestRawCommand(IMAPClientTest):
         with self.assertRaisesRegex(IMAPClient.AbortError, expected_error):
             self.client._raw_command(b'FOO', [b'\xff'])
 
+    def test_alert_included_in_abort(self):
+        def stub(arg):
+            raise imaplib.IMAP4.abort("socket error")
+        self.client._imap.create = stub
+        self.client._imap.untagged_responses = {'ALERT': [b'You will be disconnected.']}
+
+        expected_error = "socket error. Alert: \['You will be disconnected.'\]"
+        with self.assertRaisesRegex(IMAPClient.AbortError, expected_error):
+            self.client.create_folder('test')
 
 class TestShutdown(IMAPClientTest):
 
