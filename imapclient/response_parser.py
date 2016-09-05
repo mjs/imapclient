@@ -163,6 +163,10 @@ def _int_or_error(value, error_text):
 
 
 def _convert_INTERNALDATE(date_string, normalise_times=True):
+    # Observed in https://sentry.nylas.com/sentry/sync-prod/group/5907/
+    if date_string.upper() == b'NIL':
+        return None
+
     try:
         return parse_to_datetime(date_string, normalise=normalise_times)
     except ValueError:
