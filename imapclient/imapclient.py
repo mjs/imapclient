@@ -887,9 +887,8 @@ class IMAPClient(object):
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
         """
-        return self._store(b'+X-GM-LABELS', messages,
-                           self._normalise_labels(labels), b'X-GM-LABELS',
-                           silent=silent)
+        return self._gm_label_store(b'+X-GM-LABELS', messages, labels,
+                                    silent=silent)
 
     def remove_gmail_labels(self, messages, labels, silent=False):
         """Remove one or more *labels* from *messages* in the
@@ -903,9 +902,8 @@ class IMAPClient(object):
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
         """
-        return self._store(b'-X-GM-LABELS', messages,
-                           self._normalise_labels(labels), b'X-GM-LABELS',
-                           silent=silent)
+        return self._gm_label_store(b'-X-GM-LABELS', messages, labels,
+                                    silent=silent)
 
     def set_gmail_labels(self, messages, labels, silent=False):
         """Set the *labels* for *messages* in the currently selected
@@ -919,9 +917,8 @@ class IMAPClient(object):
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
         """
-        return self._store(b'X-GM-LABELS', messages,
-                           self._normalise_labels(labels), b'X-GM-LABELS',
-                           silent=silent)
+        return self._gm_label_store(b'X-GM-LABELS', messages, labels,
+                                    silent=silent)
 
     def delete_messages(self, messages, silent=False):
         """Delete one or more *messages* from the currently selected
@@ -1200,6 +1197,10 @@ class IMAPClient(object):
 
     def _checkok(self, command, typ, data):
         self._check_resp('OK', command, typ, data)
+
+    def _gm_label_store(self, cmd, messages, labels, silent):
+        return self._store(cmd, messages, self._normalise_labels(labels),
+                           b'X-GM-LABELS', silent=silent)
 
     def _store(self, cmd, messages, flags, fetch_key, silent):
         """Worker function for the various flag manipulation methods.
