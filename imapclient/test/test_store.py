@@ -43,7 +43,14 @@ class TestFlags(IMAPClientTest):
     def test_remove(self):
         self.check(self.client.remove_flags, b'-FLAGS')
 
-    def check(self, meth, expected_store_command):
+    def check(self, meth, expected_command):
+        self._check(meth, expected_command)
+        self._check(meth, expected_command, silent=True)
+
+    def _check(self, meth, expected_command, silent=False):
+        if silent:
+            expected_command += ".SILENT"
+
         cc = self.client._command_and_check
         cc.return_value = [
             '11 (FLAGS (blah foo) UID 1)',
@@ -51,17 +58,21 @@ class TestFlags(IMAPClientTest):
             '22 (FLAGS (foo) UID 2)',
             '22 (UID 2 OTHER (care))',
         ]
-        resp = meth([1, 2], 'foo')
+        resp = meth([1, 2], 'foo', silent=silent)
         cc.assert_called_once_with(
             'store', b"1,2",
-            expected_store_command,
+            expected_command,
             '(foo)',
             uid=True)
-        self.assertEqual(resp, {
-            1: (b'blah', b'foo'),
-            2: (b'foo',),
-        })
+        if silent:
+            self.assertIsNone(resp)
+        else:
+            self.assertEqual(resp, {
+                1: (b'blah', b'foo'),
+                2: (b'foo',),
+            })
 
+        cc.reset_mock()
 
 class TestGmailLabels(IMAPClientTest):
 
@@ -87,7 +98,14 @@ class TestGmailLabels(IMAPClientTest):
     def test_remove(self):
         self.check(self.client.remove_gmail_labels, b'-X-GM-LABELS')
 
-    def check(self, meth, expected_store_command):
+    def check(self, meth, expected_command):
+        self._check(meth, expected_command)
+        self._check(meth, expected_command, silent=True)
+
+    def _check(self, meth, expected_command, silent=False):
+        if silent:
+            expected_command += ".SILENT"
+
         cc = self.client._command_and_check
         cc.return_value = [
             '11 (X-GM-LABELS (blah "f\\"o\\"o") UID 1)',
@@ -95,13 +113,18 @@ class TestGmailLabels(IMAPClientTest):
             '11 (UID 1 FLAGS (dont))',
             '22 (UID 2 FLAGS (care))',
         ]
-        resp = meth([1, 2], 'f"o"o')
+        resp = meth([1, 2], 'f"o"o', silent=silent)
         cc.assert_called_once_with(
             'store', b"1,2",
-            expected_store_command,
+            expected_command,
             '("f\\"o\\"o")',
             uid=True)
-        self.assertEqual(resp, {
-            1: (b'blah', b'f"o"o'),
-            2: (b'f"o"o',),
-        })
+        if silent:
+            self.assertIsNone(resp)
+        else:
+            self.assertEqual(resp, {
+                1: (b'blah', b'f"o"o'),
+                2: (b'f"o"o',),
+            })
+
+        cc.reset_mock()
