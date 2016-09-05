@@ -1209,23 +1209,18 @@ class IMAPClient(object):
         """
         if not messages:
             return {}
+        if silent:
+            cmd += b".SILENT"
 
-        if not silent:
-            data = self._command_and_check('store',
-                                           join_message_ids(messages),
-                                           cmd,
-                                           seq_to_parenstr(flags),
-                                           uid=True)
-            return self._filter_fetch_dict(parse_fetch_response(data),
-                                           fetch_key)
-        else:
-            self._command_and_check('store',
-                                    join_message_ids(messages),
-                                    cmd+'.SILENT',
-                                    seq_to_parenstr(flags),
-                                    uid=True)
+        data = self._command_and_check('store',
+                                       join_message_ids(messages),
+                                       cmd,
+                                       seq_to_parenstr(flags),
+                                       uid=True)
+        if silent:
             return None
-
+        return self._filter_fetch_dict(parse_fetch_response(data),
+                                       fetch_key)
 
     def _filter_fetch_dict(self, fetch_dict, key):
         return dict((msgid, data[key])
