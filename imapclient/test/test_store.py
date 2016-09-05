@@ -19,6 +19,50 @@ class TestFlagsConsts(IMAPClientTest):
                 self.fail("%r flag is not bytes" % flag)
 
 
+class TestFlags(IMAPClientTest):
+
+    def setUp(self):
+        super(TestFlags, self).setUp()
+        self.client._command_and_check = Mock()
+
+    def test_get(self):
+        with patch.object(self.client, 'fetch', autospec=True,
+                          return_value={123: {b'FLAGS': [b'foo', b'bar']},
+                                        444: {b'FLAGS': [b'foo']}}):
+            out = self.client.get_flags(sentinel.messages)
+            self.client.fetch.assert_called_with(sentinel.messages, [b'FLAGS'])
+            self.assertEqual(out, {123: [b'foo', b'bar'],
+                                   444: [b'foo']})
+
+    def test_set(self):
+        self.check(self.client.set_flags, b'FLAGS')
+
+    def test_add(self):
+        self.check(self.client.add_flags, b'+FLAGS')
+
+    def test_remove(self):
+        self.check(self.client.remove_flags, b'-FLAGS')
+
+    def check(self, meth, expected_store_command):
+        cc = self.client._command_and_check
+        cc.return_value = [
+            '11 (FLAGS (blah foo) UID 1)',
+            '11 (UID 1 OTHER (dont))',
+            '22 (FLAGS (foo) UID 2)',
+            '22 (UID 2 OTHER (care))',
+        ]
+        resp = meth([1, 2], 'foo')
+        cc.assert_called_once_with(
+            'store', b"1,2",
+            expected_store_command,
+            '(foo)',
+            uid=True)
+        self.assertEqual(resp, {
+            1: (b'blah', b'foo'),
+            2: (b'foo',),
+        })
+
+
 class TestGmailLabels(IMAPClientTest):
 
     def setUp(self):
