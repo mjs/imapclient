@@ -54,7 +54,7 @@ class TestFolderStatus(IMAPClientTest):
 
         # We've also seen the response contain mailboxes we didn't
         # ask for. In all known cases, the desired mailbox is last.
-        server_response = ["sent (UIDNEXT 24369)\nINBOX (UIDNEXT 24369)"]
+        server_response = ["sent (UIDNEXT 123)\nINBOX (UIDNEXT 24369)"]
         mock = Mock(return_value=server_response)
         self.client._command_and_check = mock
 
