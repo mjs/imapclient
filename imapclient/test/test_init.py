@@ -2,7 +2,10 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from mock import patch, sentinel, Mock
+try:
+    from unittest.mock import patch, sentinel, Mock
+except ImportError:
+    from mock import patch, sentinel, Mock
 
 from imapclient.imapclient import IMAPClient
 from imapclient.test.util import unittest

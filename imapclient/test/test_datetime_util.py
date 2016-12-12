@@ -6,7 +6,10 @@ from __future__ import unicode_literals
 
 from datetime import datetime, date
 
-from mock import patch
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
 
 from ..datetime_util import (
     datetime_to_INTERNALDATE,
