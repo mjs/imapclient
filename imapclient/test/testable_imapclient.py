@@ -4,7 +4,11 @@
 
 from __future__ import unicode_literals
 
-from mock import Mock
+try:
+    from unittest.mock import Mock
+except ImportError:
+    from mock import Mock
+
 from imapclient.imapclient import IMAPClient
 
 

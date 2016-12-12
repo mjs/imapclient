@@ -4,7 +4,10 @@
 
 from __future__ import unicode_literals
 
-from mock import Mock, patch, sentinel
+try:
+    from unittest.mock import Mock, patch, sentinel
+except ImportError:
+    from mock import Mock, patch, sentinel
 
 from ..imapclient import IMAPClient
 from .imapclient_test import IMAPClientTest

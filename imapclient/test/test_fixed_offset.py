@@ -5,7 +5,10 @@
 from __future__ import unicode_literals
 
 from datetime import timedelta
-from mock import Mock, patch, DEFAULT
+try:
+    from unittest.mock import Mock, patch, DEFAULT
+except ImportError:
+    from mock import Mock, patch, DEFAULT
 from imapclient.test.util import unittest
 from imapclient.fixed_offset import FixedOffset
 
