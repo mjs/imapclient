@@ -14,10 +14,12 @@ use_setuptools(version="18.2")
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
-MAJ_MIN = sys.version_info[:2]
-IS_PY3 = MAJ_MIN >= (3, 0)
-IS_PY_26_OR_OLDER = MAJ_MIN <= (2, 6)
-IS_PY_34_OR_NEWER = MAJ_MIN >= (3, 4)
+MAJ_MIN_MIC = sys.version_info[:3]
+IS_PY3 = MAJ_MIN_MIC >= (3, 0, 0)
+IS_PY_26_OR_OLDER = MAJ_MIN_MIC <= (2, 6, 0)
+IS_PY_278_OR_OLDER = MAJ_MIN_MIC <= (2, 7, 8)
+IS_PY_33_OR_OLDER = MAJ_MIN_MIC <= (3, 3, 0)
+IS_PY_34_OR_NEWER = MAJ_MIN_MIC >= (3, 4, 0)
 
 # Read version info
 here = path.dirname(__file__)
@@ -64,15 +66,18 @@ class TestDiscoverCommand(TestCommand):
             module = None
         unittest.main(argv=['', 'discover'], module=module)
 
-common_deps = [
-    'six',
-    'mock==1.3.0',
-]
+common_deps = ['six']
 
-main_deps = common_deps + [
-    'backports.ssl>=0.0.9',
-    'pyopenssl>=' + info["min_pyopenssl_version"],
-]
+# mock is available as unittest.mock for Python >= 3.4
+if IS_PY_33_OR_OLDER:
+    common_deps.append('mock>=1.3.0')
+
+main_deps = common_deps[:]
+
+# use shipped ssl module with Python >= (3.4, 2.7.9)
+if IS_PY_33_OR_OLDER or IS_PY_278_OR_OLDER:
+    main_deps.append('backports.ssl>=0.0.9')
+    main_deps.append('pyopenssl>=' + info["min_pyopenssl_version"])
 
 setup_deps = common_deps + ['sphinx']
 
