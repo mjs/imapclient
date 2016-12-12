@@ -23,7 +23,15 @@ except ImportError:
 
 from . import imap4
 from . import response_lexer
-from . import tls
+# if backports.ssl is importable use it with our own ssl wrapper
+# otherwise use the ssl module, that was shipped with python{2,3}
+try:
+    import backports.ssl
+except ImportError:
+    import ssl as tls
+else:
+    del backports.ssl
+    from . import tls
 from .datetime_util import datetime_to_INTERNALDATE, format_criteria_date
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .response_parser import parse_response, parse_message_list, parse_fetch_response

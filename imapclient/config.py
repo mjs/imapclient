@@ -11,7 +11,10 @@ except ImportError:
     from configparser import SafeConfigParser, NoOptionError
 
 from os import path
-from backports import ssl
+try:
+    from backports import ssl
+except ImportError:
+    import ssl
 
 from six import iteritems
 from six.moves.urllib.request import urlopen
