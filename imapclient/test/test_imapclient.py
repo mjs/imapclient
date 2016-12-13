@@ -10,7 +10,10 @@ import sys
 from datetime import datetime
 
 import six
-from mock import patch, sentinel, Mock
+try:
+    from unittest.mock import patch, sentinel, Mock
+except ImportError:
+    from mock import patch, sentinel, Mock
 
 from imapclient.fixed_offset import FixedOffset
 from .testable_imapclient import TestableIMAPClient as IMAPClient
