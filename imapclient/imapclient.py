@@ -1271,6 +1271,13 @@ class IMAPClient(object):
             labels = (labels,)
         return [_quote(l) for l in labels]
 
+    @property
+    def welcome(self):
+        try:
+            return self._imap.welcome
+        except AttributeError:
+            pass
+
 
 def _quote(arg):
     if isinstance(arg, text_type):
