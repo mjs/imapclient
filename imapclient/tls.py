@@ -213,15 +213,7 @@ class IMAP4_TLS(imaplib.IMAP4):
         return self.file.readline()
 
     def send(self, data):
-        remaining = len(data)
-        while remaining > 0:
-            sent = self.sock.send(data)
-            if sent == remaining:
-                break
-            data = data[sent:]
-            remaining -= sent
+        self.sock.sendall(data)
 
     def shutdown(self):
-        self.file.close()
-        self.sock._conn.shutdown()
-        self.sock.close()
+        imaplib.IMAP4.shutdown(self)
