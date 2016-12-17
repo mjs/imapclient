@@ -53,6 +53,11 @@ else:
     except ImportError:
         raise ImportError("backports.ssl is not installed")
 
+    import warnings
+    warnings.warn("you are using an outdated ssl infrastructure "
+                  "consider updating to a current Python 2 or 3 version", DeprecationWarning, 2)
+
+
     _ossl = ssl.ossl
 
     if sys.platform == "win32":
