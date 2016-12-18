@@ -312,7 +312,7 @@ class IMAPClient(object):
         # If the server returned an untagged CAPABILITY response
         # (during authentication), cache it and return that.
         untagged = _dict_bytes_normaliser(self._imap.untagged_responses)
-        response = untagged.pop(b'CAPABILITY', None)
+        response = untagged.pop('CAPABILITY', None)
         if response:
             self._cached_capabilities = self._normalise_capabilites(response[0])
             return self._cached_capabilities
@@ -448,7 +448,7 @@ class IMAPClient(object):
         # Filter out empty strings and None's.
         # This also deals with the special case of - no 'untagged'
         # responses (ie, no folders). This comes back as [None].
-        folder_data = [item for item in folder_data if item not in ('', None)]
+        folder_data = [item for item in folder_data if item not in (b'', None)]
 
         ret = []
         parsed = parse_response(folder_data)
@@ -495,7 +495,7 @@ class IMAPClient(object):
 
         # imaplib doesn't parse these correctly (broken regex) so replace
         # with the raw values out of the OK section
-        for line in untagged.get(b'OK', []):
+        for line in untagged.get('OK', []):
             match = re.match(br'\[(?P<key>[A-Z-]+)( \((?P<data>.*)\))?\]', line)
             if match:
                 key = match.group('key')
