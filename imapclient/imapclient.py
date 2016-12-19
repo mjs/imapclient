@@ -1273,6 +1273,7 @@ class IMAPClient(object):
 
     @property
     def welcome(self):
+        """access the server greeting message"""
         try:
             return self._imap.welcome
         except AttributeError:
