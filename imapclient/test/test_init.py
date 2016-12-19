@@ -2,13 +2,8 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-try:
-    from unittest.mock import patch, sentinel, Mock
-except ImportError:
-    from mock import patch, sentinel, Mock
-
-from imapclient.imapclient import IMAPClient
-from imapclient.test.util import unittest
+from ..imapclient import IMAPClient
+from .util import unittest, patch, sentinel, Mock
 
 
 class TestInit(unittest.TestCase):

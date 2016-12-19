@@ -6,12 +6,8 @@ from __future__ import unicode_literals
 
 from datetime import date, datetime
 
-try:
-    from unittest.mock import Mock
-except ImportError:
-    from mock import Mock
-
 from .imapclient_test import IMAPClientTest
+from .util import Mock
 
 
 class TestSearchBase(IMAPClientTest):

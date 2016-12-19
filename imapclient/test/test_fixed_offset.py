@@ -5,12 +5,9 @@
 from __future__ import unicode_literals
 
 from datetime import timedelta
-try:
-    from unittest.mock import Mock, patch, DEFAULT
-except ImportError:
-    from mock import Mock, patch, DEFAULT
-from imapclient.test.util import unittest
-from imapclient.fixed_offset import FixedOffset
+
+from ..fixed_offset import FixedOffset
+from .util import unittest, Mock, patch, DEFAULT
 
 
 class TestFixedOffset(unittest.TestCase):

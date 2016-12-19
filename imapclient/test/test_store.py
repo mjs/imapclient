@@ -5,13 +5,10 @@
 from __future__ import unicode_literals
 
 import six
-try:
-    from unittest.mock import patch, sentinel, Mock
-except ImportError:
-    from mock import patch, sentinel, Mock
 
-from imapclient import DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT
+from ..imapclient import DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT
 from .imapclient_test import IMAPClientTest
+from .util import patch, sentinel, Mock
 
 
 class TestFlagsConsts(IMAPClientTest):

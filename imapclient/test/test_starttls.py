@@ -4,13 +4,9 @@
 
 from __future__ import unicode_literals
 
-try:
-    from unittest.mock import Mock, patch, sentinel
-except ImportError:
-    from mock import Mock, patch, sentinel
-
 from ..imapclient import IMAPClient
 from .imapclient_test import IMAPClientTest
+from .util import Mock, patch, sentinel
 
 
 class TestStarttls(IMAPClientTest):

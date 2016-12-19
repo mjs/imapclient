@@ -6,10 +6,6 @@ from __future__ import unicode_literals
 
 from datetime import datetime, date
 
-try:
-    from unittest.mock import patch
-except ImportError:
-    from mock import patch
 
 from ..datetime_util import (
     datetime_to_INTERNALDATE,
@@ -18,7 +14,7 @@ from ..datetime_util import (
     parse_to_datetime,
 )
 from ..fixed_offset import FixedOffset
-from .util import unittest
+from .util import unittest, patch
 
 
 class TestParsing(unittest.TestCase):

@@ -10,14 +10,11 @@ import sys
 from datetime import datetime
 
 import six
-try:
-    from unittest.mock import patch, sentinel, Mock
-except ImportError:
-    from mock import patch, sentinel, Mock
 
 from imapclient.fixed_offset import FixedOffset
 from .testable_imapclient import TestableIMAPClient as IMAPClient
 from .imapclient_test import IMAPClientTest
+from .util import patch, sentinel, Mock
 
 
 class TestListFolders(IMAPClientTest):
