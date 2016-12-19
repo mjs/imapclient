@@ -19,8 +19,8 @@ import sys
 __all__ = ('create_default_context',)
 
 # if Python versions are sufficient, wire up shipped modules
-if sys.version_info[0] == 3 and sys.version_info[:2] > (3, 3) or \
-   sys.version_info[0] == 2 and sys.version_info[:3] > (2, 7, 9):
+if sys.version_info[0] == 3 and sys.version_info[:2] >= (3, 4) or \
+   sys.version_info[0] == 2 and sys.version_info[:3] >= (2, 7, 9):
 
     import ssl
 
