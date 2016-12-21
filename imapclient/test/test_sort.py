@@ -4,9 +4,8 @@
 
 from __future__ import unicode_literals
 
-from mock import Mock
-
 from .imapclient_test import IMAPClientTest
+from .util import Mock
 
 
 class TestSort(IMAPClientTest):

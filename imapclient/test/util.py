@@ -4,6 +4,11 @@
 
 from __future__ import unicode_literals
 
+try:
+    from unittest.mock import Mock, patch, sentinel, DEFAULT
+except ImportError:
+    from mock import Mock, patch, sentinel, DEFAULT
+
 
 def find_unittest2():
     import unittest

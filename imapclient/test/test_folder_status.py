@@ -4,9 +4,8 @@
 
 from __future__ import unicode_literals
 
-from mock import Mock
-
 from .imapclient_test import IMAPClientTest
+from .util import Mock
 
 
 class TestFolderStatus(IMAPClientTest):
@@ -45,18 +44,18 @@ class TestFolderStatus(IMAPClientTest):
     def test_extra_response(self):
         # In production, we've seen folder names containing spaces come back
         # like this and be broken into two components in the tuple.
-        server_response = ["My files (UIDNEXT 24369)"]
+        server_response = [b"My files (UIDNEXT 24369)"]
         mock = Mock(return_value=server_response)
         self.client._command_and_check = mock
 
         resp = self.client.folder_status('My files', ['UIDNEXT'])
-        self.assertEqual(resp, {'UIDNEXT': 24369})
+        self.assertEqual(resp, {b'UIDNEXT': 24369})
 
         # We've also seen the response contain mailboxes we didn't
         # ask for. In all known cases, the desired mailbox is last.
-        server_response = ["sent (UIDNEXT 123)\nINBOX (UIDNEXT 24369)"]
+        server_response = [b"sent (UIDNEXT 123)\nINBOX (UIDNEXT 24369)"]
         mock = Mock(return_value=server_response)
         self.client._command_and_check = mock
 
         resp = self.client.folder_status('INBOX', ['UIDNEXT'])
-        self.assertEqual(resp, {'UIDNEXT': 24369})
+        self.assertEqual(resp, {b'UIDNEXT': 24369})

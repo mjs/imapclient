@@ -1,0 +1,13 @@
+*.pyc
+*.swp
+*~
+build/
+__pycache__/
+IMAPClient.egg-info
+doc/doctrees/
+doc/html/
+.tox/
+.eggs/
+setuptools-*
+unittest2-*
+six-*

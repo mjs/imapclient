@@ -4,8 +4,8 @@
 
 from __future__ import unicode_literals
 
-from mock import Mock
-from imapclient.imapclient import IMAPClient
+from ..imapclient import IMAPClient
+from .util import Mock
 
 
 class TestableIMAPClient(IMAPClient):
