@@ -1,5 +1,14 @@
 :tocdepth: 1
 
+=============
+ Version 2.0
+=============
+
+Changed
+-------
+- XXX Use built-in TLS when sensible.
+
+
 ===============
  Version 1.1.0
 ===============
