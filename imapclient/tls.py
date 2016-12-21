@@ -24,11 +24,11 @@ if sys.version_info[0] == 3 and sys.version_info[:2] >= (3, 4) or \
 
     import ssl
 
-    def create_default_context(cafile = None, capath = None, cadata = None):
-        ssl.create_default_context(purpose = ssl.Purpose.CLIENT_AUTH,
-                                   cafile = cafile,
-                                   capath = capath,
-                                   cadata = cadata)
+    def create_default_context(cafile=None, capath=None, cadata=None):
+        return ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH,
+                                          cafile=cafile,
+                                          capath=capath,
+                                          cadata=cadata)
 
     wrap_socket = lambda sock, context, host: \
         context.wrap_socket(sock, server_hostname = host)
