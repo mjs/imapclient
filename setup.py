@@ -16,9 +16,9 @@ from setuptools.command.test import test as TestCommand
 
 MAJ_MIN_MIC = sys.version_info[:3]
 IS_PY3 = MAJ_MIN_MIC >= (3, 0, 0)
-IS_PY_26_OR_OLDER = MAJ_MIN_MIC <= (2, 6, 0)
+IS_PY_26_OR_OLDER = MAJ_MIN_MIC < (2, 7, 0)
 IS_PY_278_OR_OLDER = MAJ_MIN_MIC <= (2, 7, 8)
-IS_PY_33_OR_OLDER = MAJ_MIN_MIC <= (3, 3, 0)
+IS_PY_33_OR_OLDER = MAJ_MIN_MIC < (3, 4, 0)
 IS_PY_34_OR_NEWER = MAJ_MIN_MIC >= (3, 4, 0)
 
 # Read version info
