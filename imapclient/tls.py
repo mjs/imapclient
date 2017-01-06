@@ -30,8 +30,10 @@ if sys.version_info[0] == 3 and sys.version_info[:2] >= (3, 4) or \
                                           capath=capath,
                                           cadata=cadata)
 
-    wrap_socket = lambda sock, context, host: \
-        context.wrap_socket(sock, server_hostname = host)
+    def wrap_socket(sock, ssl_context, host):
+        if ssl_context is None:
+            ssl_context = create_default_context()
+        return ssl_context.wrap_socket(sock, server_hostname = host)
 
 else:
     # Explicitly check that the required pyOpenSSL is installed. On some
