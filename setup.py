@@ -68,12 +68,6 @@ class TestDiscoverCommand(TestCommand):
 
 common_deps = ['six']
 
-# use unittest.mock, if available (at least since Python 3.4)
-try:
-    import unittest.mock
-except ImportError:
-    common_deps.append('mock>=1.3.0')
-
 main_deps = common_deps[:]
 
 # use shipped ssl module with Python >= (3.4, 2.7.9)
@@ -84,6 +78,12 @@ if IS_PY3 and IS_PY_33_OR_OLDER or IS_PY_278_OR_OLDER:
 setup_deps = common_deps + ['sphinx']
 
 test_deps = []
+# use unittest.mock, if available (at least since Python 3.4)
+try:
+    import unittest.mock
+except ImportError:
+    test_deps.append('mock>=1.3.0')
+
 if IS_PY_26_OR_OLDER:
     test_deps.append('unittest2')
 
