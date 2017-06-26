@@ -193,9 +193,6 @@ class TestGeneral(_TestBase):
     def test_alternates(self):
         # Check alternate connection/login configurations.
         for name, conf in iteritems(self.conf.alternates):
-            if PY3 and conf.oauth:
-                print("Skipping OAUTH test %r on Python 3 (not compatible)" % name)
-                continue
             try:
                 client = create_client_from_config(conf)
                 client.logout()

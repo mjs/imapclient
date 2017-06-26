@@ -36,10 +36,6 @@ def get_config_defaults():
         timeout=None,
         starttls=False,
         stream=False,
-        oauth=False,
-        oauth_token=None,
-        oauth_token_secret=None,
-        oauth_url=None,
         oauth2=False,
         oauth2_client_id=None,
         oauth2_client_secret=None,
@@ -118,11 +114,6 @@ def _read_config_section(parser, section):
         username=get('username'),
         password=get('password'),
 
-        oauth=getboolean('oauth'),
-        oauth_url=get('oauth_url'),
-        oauth_token=get('oauth_token'),
-        oauth_token_secret=get('oauth_token_secret'),
-
         oauth2=getboolean('oauth2'),
         oauth2_client_id=get('oauth2_client_id'),
         oauth2_client_secret=get('oauth2_client_secret'),
@@ -183,11 +174,7 @@ def create_client_from_config(conf):
         if conf.starttls:
             client.starttls()
 
-        if conf.oauth:
-            client.oauth_login(conf.oauth_url,
-                               conf.oauth_token,
-                               conf.oauth_token_secret)
-        elif conf.oauth2:
+        if conf.oauth2:
             access_token = get_oauth2_token(conf.host,
                                             conf.oauth2_client_id,
                                             conf.oauth2_client_secret,
