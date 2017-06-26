@@ -80,9 +80,12 @@ class Address(namedtuple("Address", "name route mailbox host")):
     """
 
     def __str__(self):
-        return formataddr((
-            to_unicode(self.name),
-            to_unicode(self.mailbox) + '@' + to_unicode(self.host)))
+        if self.mailbox and self.host:
+            address = to_unicode(self.mailbox) + '@' + to_unicode(self.host)
+        else:
+            address = to_unicode(self.mailbox or self.host)
+
+        return formataddr((to_unicode(self.name), address))
 
 
 class SearchIds(list):
