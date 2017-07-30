@@ -15,12 +15,6 @@ from operator import itemgetter
 
 from six import moves, iteritems, text_type, integer_types, PY3, binary_type, iterbytes
 
-# Confusingly, this module is for OAUTH v1, not v2
-try:
-    import oauth2 as oauth_module
-except ImportError:
-    oauth_module = None
-
 from . import imap4
 from . import response_lexer
 from . import tls
@@ -214,20 +208,6 @@ class IMAPClient(object):
             to_unicode(password),
             unpack=True,
         )
-
-    def oauth_login(self, url, oauth_token, oauth_token_secret,
-                    consumer_key='anonymous', consumer_secret='anonymous'):
-        """Authenticate using the OAUTH method.
-
-        This only works with IMAP servers that support OAUTH (e.g. Gmail).
-        """
-        if oauth_module:
-            token = oauth_module.Token(oauth_token, oauth_token_secret)
-            consumer = oauth_module.Consumer(consumer_key, consumer_secret)
-            xoauth_callable = lambda x: oauth_module.build_xoauth_string(url, consumer, token)
-            return self._command_and_check('authenticate', 'XOAUTH', xoauth_callable, unpack=True)
-        else:
-            raise self.Error('The optional oauth2 package is needed for OAUTH authentication')
 
     def oauth2_login(self, user, access_token, mech='XOAUTH2', vendor=None):
         """Authenticate using the OAUTH2 method.

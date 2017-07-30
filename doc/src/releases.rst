@@ -8,6 +8,9 @@ Changed
 -------
 - XXX Use built-in TLS when sensible.
 
+Other
+-----
+  * Drop support of OAUTH(1)
 
 ===============
  Version 1.1.0
@@ -569,7 +572,7 @@ Sphinx Based Docs (#5) [NEW]
 Full documentation is now available under doc/html in the source
 distribution and at http://imapclient.readthedocs.io/ online.
 
-Added rename_folder (#77) [NEW] 
+Added rename_folder (#77) [NEW]
 --------------------------------
 Renaming of folders was an obvious omission!
 
@@ -612,20 +615,20 @@ A BODYSTRUCTURE response for a multipart email with 2 parts would have
 previously looked something like this::
 
   (('text', 'html', ('charset', 'us-ascii'), None, None, 'quoted-printable', 55, 3),
-   ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 26, 1), 
+   ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 26, 1),
    'mixed', ('boundary', '===============1534046211=='))
 
 The response is now returned like this::
 
   ([
      ('text', 'html', ('charset', 'us-ascii'), None, None, 'quoted-printable', 55, 3),
-     ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 26, 1) 
-   ], 
+     ('text', 'plain', ('charset', 'us-ascii'), None, None, '7bit', 26, 1)
+   ],
    'mixed', ('boundary', '===============1534046211=='))
 
 The behaviour for single part messages is unchanged. In this case the
 first element of the tuple is a string specifying the major content
-type of the message (eg "text"). 
+type of the message (eg "text").
 
 An is_multipart boolean property now exists on BODY and BODYSTRUCTURE
 responses to allow the caller to easily determine whether the response
@@ -665,7 +668,7 @@ argument. These are required for extensions such as RFC 4551
 
 Square brackets in responses now parsed correctly (#55)
 -------------------------------------------------------
-This fixes response handling for FETCH items such as 
+This fixes response handling for FETCH items such as
 ``BODY[HEADER.FIELDS (from subject)]``.
 
 Example moved (#56)
@@ -701,7 +704,7 @@ New response parser (#1, #45)
 Command response lexing and parsing code rewritten from stratch to
 deal with various bugs that surfaced when dealing with more complex
 responses (eg. BODYSTRUCTURE and ENVELOPE). This change also fixes
-various problems when interacting with Gmail and MS Exchange. 
+various problems when interacting with Gmail and MS Exchange.
 
 XLIST extension support (#25) [NEW]
 -----------------------------------
@@ -712,7 +715,7 @@ IMAP server supports this.
 Added COPY command support (#36) [NEW]
 --------------------------------------
 New copy() method.
- 
+
 Added interact.py [NEW]
 -----------------------
 A script for interactive IMAPClient sessions. Useful for debugging and
