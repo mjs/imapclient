@@ -195,7 +195,7 @@ class IMAPClient(object):
         self._starttls_done = True
 
         self._imap.sock = tls.wrap_socket(self._imap.sock, ssl_context, self.host)
-        self._imap.file = self._imap.sock.makefile()
+        self._imap.file = self._imap.sock.makefile('rb')
         return data[0]
 
     def login(self, username, password):
@@ -596,6 +596,10 @@ class IMAPClient(object):
         any). These are returned in parsed form as per
         ``idle_check()``.
         """
+        if self.debug >= 4:
+            self._log_ts()
+            self._log_write('< DONE', end=True)
+
         self._imap.send(b'DONE\r\n')
         return self._consume_until_tagged_response(self._idle_tag, 'IDLE')
 
