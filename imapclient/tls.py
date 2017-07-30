@@ -180,7 +180,7 @@ else:
 
         return _SSLSocketWithShutdown(newsock)
 
-    wrap_socket = lambda context, sock, host: _wrap_socket(sock, context, host)
+    wrap_socket = lambda sock, context, host: _wrap_socket(sock, context, host)
 
 
     # TODO: get shutdown added in backports.ssl.SSLSocket
