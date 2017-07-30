@@ -66,7 +66,6 @@ class TestDiscoverCommand(TestCommand):
 
 common_deps = [
     'six',
-    'mock==1.3.0',
 ]
 
 main_deps = common_deps + [
@@ -79,6 +78,12 @@ setup_deps = common_deps + ['sphinx']
 test_deps = []
 if IS_PY_26_OR_OLDER:
     test_deps.append('unittest2')
+
+# use unittest.mock, if available (at least since Python 3.4)
+try:
+    import unittest.mock
+except ImportError:
+    test_deps.append('mock==1.3.0')
 
 setup(name='IMAPClient',
       version=info['version'],
