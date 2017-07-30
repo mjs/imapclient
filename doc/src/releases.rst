@@ -8,6 +8,11 @@ Added
 -----
 - PLAIN authentication support (via `plain_login` method)
 
+Changed
+-------
+- the `mock` package is no longer installed by default (just as a test
+  dependency)
+
 ===============
  Version 1.0.2
 ===============
