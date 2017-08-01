@@ -491,6 +491,12 @@ class TestParseFetchResponse(unittest.TestCase):
         self.assertEqual(str(Address("Mary Jane", None, "mary", "jane.org")),
                          "Mary Jane <mary@jane.org>")
 
+        self.assertEqual(str(Address("Anonymous", None, "undisclosed-recipients", None)),
+                         "Anonymous <undisclosed-recipients>")
+
+        self.assertEqual(str(Address(None, None, None, "undisclosed-recipients")),
+                         "undisclosed-recipients")
+
 
 
 def add_crlf(text):
