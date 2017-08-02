@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 import six
 from mock import patch, sentinel, Mock
 
-from imapclient import DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT
+from ..imapclient import DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT
 from .imapclient_test import IMAPClientTest
 
 
@@ -30,7 +30,7 @@ class TestFlags(IMAPClientTest):
                           return_value={123: {b'FLAGS': [b'foo', b'bar']},
                                         444: {b'FLAGS': [b'foo']}}):
             out = self.client.get_flags(sentinel.messages)
-            self.client.fetch.assert_called_with(sentinel.messages, [b'FLAGS'])
+            self.client.fetch.assert_called_with(sentinel.messages, ['FLAGS'])
             self.assertEqual(out, {123: [b'foo', b'bar'],
                                    444: [b'foo']})
 
@@ -49,14 +49,14 @@ class TestFlags(IMAPClientTest):
 
     def _check(self, meth, expected_command, silent=False):
         if silent:
-            expected_command += ".SILENT"
+            expected_command += b".SILENT"
 
         cc = self.client._command_and_check
         cc.return_value = [
-            '11 (FLAGS (blah foo) UID 1)',
-            '11 (UID 1 OTHER (dont))',
-            '22 (FLAGS (foo) UID 2)',
-            '22 (UID 2 OTHER (care))',
+            b'11 (FLAGS (blah foo) UID 1)',
+            b'11 (UID 1 OTHER (dont))',
+            b'22 (FLAGS (foo) UID 2)',
+            b'22 (UID 2 OTHER (care))',
         ]
         resp = meth([1, 2], 'foo', silent=silent)
         cc.assert_called_once_with(
@@ -104,14 +104,14 @@ class TestGmailLabels(IMAPClientTest):
 
     def _check(self, meth, expected_command, silent=False):
         if silent:
-            expected_command += ".SILENT"
+            expected_command += b".SILENT"
 
         cc = self.client._command_and_check
         cc.return_value = [
-            '11 (X-GM-LABELS (blah "f\\"o\\"o") UID 1)',
-            '22 (X-GM-LABELS ("f\\"o\\"o") UID 2)',
-            '11 (UID 1 FLAGS (dont))',
-            '22 (UID 2 FLAGS (care))',
+            b'11 (X-GM-LABELS (blah "f\\"o\\"o") UID 1)',
+            b'22 (X-GM-LABELS ("f\\"o\\"o") UID 2)',
+            b'11 (UID 1 FLAGS (dont))',
+            b'22 (UID 2 FLAGS (care))',
         ]
         resp = meth([1, 2], 'f"o"o', silent=silent)
         cc.assert_called_once_with(
