@@ -26,25 +26,17 @@ repository.
 
 Branches
 ========
-[Note that the branching scheme discussed here started to be used as
-of the 0.9.2 release of IMAPClient]
+Development for the next major release happens on the `master` branch.
 
-The project uses two named branches: default and stable. New feature
-development will always happen on the default branch.
-
-The stable branch will always reflect the last released version. Small
-bug fixes to the stable release will occur on this branch and should be
-merged back in the the default branch.
-
-Releases will always be created from the stable branch. Before a major
-release changes will be merged from the default branch to the stable
-branch.
+There is also a branch for each major release series (for example:
+`1.x`). When appropriate and when there will be future releases for a
+series, changes may be selectively merged between `master` and a
+stable release branch.
 
 Release Tags
 ============
 Each released version is available in the IMAPClient repository
-as a Git tag (e.g. "0.9.1"). Release tags will always be created
-on the stable branch (as described above).
+as a Git tag (e.g. "0.9.1").
 
 ============
  Unit Tests
