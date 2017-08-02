@@ -42,7 +42,7 @@ Features:
     * Convenience methods are provided for commonly used functionality.
     * Exceptions are raised when errors occur.
 
-Python versions 2.6, 2.7, 3.3, 3.4 and 3.5 are officially supported.
+Python versions 2.6, 2.7, 3.3, 3.4, 3.5 and 3.6 are officially supported.
 
 IMAPClient includes comprehensive units tests and automated
 functional tests that can be run against a live IMAP server.
