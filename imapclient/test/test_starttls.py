@@ -37,7 +37,7 @@ class TestStarttls(IMAPClientTest):
             sentinel.ssl_context,
             sentinel.host,
         )
-        self.new_sock.makefile.assert_called_once_with()
+        self.new_sock.makefile.assert_called_once_with('rb')
         self.assertEqual(self.client._imap.file, sentinel.file)
         self.assertEqual(resp, b'start TLS negotiation')
 
