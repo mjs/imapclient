@@ -18,6 +18,8 @@ Other
 
 Added
 -----
+- Search now supports nested criteria so that more complex criteria
+  can be expressed. IMAPClient will add parentheses in the right place.
 - PLAIN authentication support (via `plain_login` method)
 
 Changed
