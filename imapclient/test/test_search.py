@@ -79,6 +79,25 @@ class TestSearch(TestSearchBase):
         self.assertEqual(result, [1, 2])
         self.assertEqual(result.modseq, 51101)
 
+    def test_nested_empty(self):
+        self.assertRaises(ValueError, self.client.search, [[]])
+
+    def test_single(self):
+        self.client.search([['FOO']])
+        self.check_call([b'(FOO)'])
+
+    def test_nested(self):
+        self.client.search(['NOT', ['SUBJECT', 'topic',  'TO', 'some@email.com']])
+        self.check_call([b'NOT', b'(SUBJECT', b'topic', b'TO', b'some@email.com)'])
+
+    def test_nested_multiple(self):
+        self.client.search(['NOT', ['OR', ['A', 'x', 'B', 'y'], ['C', 'z']]])
+        self.check_call([b'NOT', b'(OR', b'(A', b'x', b'B', b'y)', b'(C', b'z))'])
+
+    def test_nested_tuple(self):
+        self.client.search(['NOT', ('SUBJECT', 'topic',  'TO', 'some@email.com')])
+        self.check_call([b'NOT', b'(SUBJECT', b'topic', b'TO', b'some@email.com)'])
+
 
 class TestGmailSearch(TestSearchBase):
 

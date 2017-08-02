@@ -711,6 +711,13 @@ class IMAPClient(object):
             u'TEXT "foo bar" FLAGGED SUBJECT "baz"'
             b'SINCE 03-Apr-2005'
 
+        To support complex search expressions, criteria lists can be
+        nested. IMAPClient will insert parentheses in the right
+        places. The following will match messages that are both not
+        flagged and do not have "foo" in the subject:
+
+            ['NOT', ['SUBJECT', 'foo', 'FLAGGED']]
+
         *charset* specifies the character set of the criteria. It
         defaults to US-ASCII as this is the only charset that a server
         is required to support by the RFC. UTF-8 is commonly supported
@@ -734,6 +741,7 @@ class IMAPClient(object):
         attribute. This is set if the server included a MODSEQ value
         to the search response (i.e. if a MODSEQ criteria was included
         in the search).
+
         """
         return self._search(criteria, charset)
 
@@ -1288,17 +1296,25 @@ def _normalise_search_criteria(criteria, charset=None):
         raise ValueError('no criteria specified')
     if not charset:
         charset = 'us-ascii'
+
     if isinstance(criteria, (text_type, binary_type)):
         return [to_bytes(criteria, charset)]
-    return [_handle_one_search_criteria(item, charset) for item in criteria]
 
-
-def _handle_one_search_criteria(item, charset):
-    if isinstance(item, int):
-        return str(item).encode('ascii')
-    elif isinstance(item, (datetime, date)):
-        return format_criteria_date(item)
-    return _maybe_quote(to_bytes(item, charset))
+    out = []
+    for item in criteria:
+        if isinstance(item, int):
+            out.append(str(item).encode('ascii'))
+        elif isinstance(item, (datetime, date)):
+            out.append(format_criteria_date(item))
+        elif isinstance(item, (list, tuple)):
+            # Process nested criteria list and wrap in parens.
+            inner = _normalise_search_criteria(item)
+            inner[0] = b'(' + inner[0]
+            inner[-1] = inner[-1] + b')'
+            out.extend(inner) # flatten
+        else:
+            out.append(_maybe_quote(to_bytes(item, charset)))
+    return out
 
 
 def _normalise_sort_criteria(criteria, charset=None):
