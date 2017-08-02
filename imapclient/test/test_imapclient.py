@@ -8,6 +8,7 @@ import itertools
 import socket
 import sys
 from datetime import datetime
+import logging
 
 import six
 
@@ -349,19 +350,11 @@ class TestIdleAndNoop(IMAPClientTest):
 
 class TestDebugLogging(IMAPClientTest):
 
-    def test_default_is_stderr(self):
-        self.assertIs(self.client.log_file, sys.stderr)
-
     def test_IMAP_is_patched(self):
-        log = six.StringIO()
-        self.client.log_file = log
-
-        self.client._log('one')
+        log_stream = six.StringIO()
+        logging.basicConfig(stream=log_stream, level=logging.DEBUG)
         self.client._imap._mesg('two')
-
-        output = log.getvalue()
-        self.assertIn('one', output)
-        self.assertIn('two', output)
+        self.assertIn('DEBUG:imaplib:two', log_stream.getvalue())
 
 
 class TestTimeNormalisation(IMAPClientTest):
