@@ -26,11 +26,11 @@ repository.
 
 Branches
 ========
-Development for the next major release happens on the `master` branch.
+Development for the next major release happens on the ``master`` branch.
 
 There is also a branch for each major release series (for example:
-`1.x`). When appropriate and when there will be future releases for a
-series, changes may be selectively merged between `master` and a
+``1.x``). When appropriate and when there will be future releases for
+a series, changes may be selectively merged between ``master`` and a
 stable release branch.
 
 Release Tags
