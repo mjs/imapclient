@@ -29,7 +29,7 @@ explains IMAP in detail. Other RFCs also apply to various extensions
 to the base protocol. These are referred to in the documentation below
 where relevant.
 
-Python versions 2.6, 2.7, 3.3, 3.4 and 3.5 are officially supported.
+Python versions 2.6, 2.7, 3.3, 3.4, 3.5 and 3.6 are officially supported.
 
 A Simple Example
 ----------------
