@@ -12,7 +12,16 @@ Changed
 
 Other
 -----
-  * Drop support of OAUTH(1)
+- Drop support of OAUTH(1)
+
+
+Python compatibility
+--------------------
+This version supports Python 2.7 serie and Python 3.4, 3.5 and 3.6.
+
+Support for Python 2.6 and 3.3 is removed. We officially support the
+latest release of each series.
+
 
 ===============
  Version 1.1.0

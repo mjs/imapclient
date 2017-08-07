@@ -29,7 +29,7 @@ explains IMAP in detail. Other RFCs also apply to various extensions
 to the base protocol. These are referred to in the documentation below
 where relevant.
 
-Python versions 2.6, 2.7, 3.3, 3.4, 3.5 and 3.6 are officially supported.
+Python versions 2.7, 3.4, 3.5 and 3.6 are officially supported.
 
 A Simple Example
 ----------------
@@ -309,7 +309,7 @@ The connected IMAPClient instance is available as the variable
 
     IMAPClient instance is "c"
     In [1]: c.select_folder('inbox')
-    Out[1]: 
+    Out[1]:
     {b'EXISTS': 2,
      b'FLAGS': (b'\\Answered',
          b'\\Flagged',
