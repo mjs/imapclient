@@ -102,7 +102,7 @@ class TestListFolders(IMAPClientTest):
         folders = self.client._proc_folder_list([b'(\\HasNoChildren) "/" 123'])
         self.assertEqual(folders, [((b'\\HasNoChildren',), b'/', '123')])
 
-    def test_unqouted_numeric_folder_name_parsed_as_long(self):
+    def test_unquoted_numeric_folder_name_parsed_as_long(self):
         # big enough numeric values might get parsed as longs
         folder_name = str(sys.maxsize + 1)
         folders = self.client._proc_folder_list(
