@@ -73,7 +73,7 @@ main_deps = common_deps + [
     'pyopenssl>=' + info["min_pyopenssl_version"],
 ]
 
-setup_deps = common_deps + ['sphinx']
+setup_deps = common_deps + ['sphinx<1.5']
 
 test_deps = ['mock>=1.3.0']
 if IS_PY_26_OR_OLDER:
