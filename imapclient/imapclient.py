@@ -1157,7 +1157,7 @@ class IMAPClient(object):
                     "unexpected response while waiting for continuation response: " +
                     repr(tagged_resp))
 
-        logger.debug("   (literal) > %s", item)
+        logger.debug("   (literal) > %s", debug_trunc(item, 256))
         self._imap.send(item)
 
     def _command_and_check(self, command, *args, **kwargs):
@@ -1407,3 +1407,10 @@ class _dict_bytes_normaliser(object):
             yield to_unicode(k)
         else:
             yield to_bytes(k)
+
+
+def debug_trunc(v, maxlen):
+    if len(v) < maxlen:
+        return v
+    hl = maxlen // 2
+    return repr(v[:hl])  + "..." + repr(v[-hl:])
