@@ -13,11 +13,22 @@ Documentation              http://imapclient.readthedocs.io/
 Mailing list               https://groups.io/g/imapclient
 =========================  ========================================
 
-.. image:: https://travis-ci.org/mjs/imapclient.svg?branch=master
-   :target: https://travis-ci.org/mjs/imapclient
+Test Status
+~~~~~~~~~~~
 
-.. image:: https://travis-ci.org/mjs/imapclient.svg?branch=1.x
-    :target: https://travis-ci.org/mjs/imapclient
+===================== ==============
+``1.x`` unit tests    |build 1.x|
+``master`` unit tests |build master|
+===================== ==============
+
+.. |build 1.x| image:: https://travis-ci.org/mjs/imapclient.svg?branch=1.x
+    :target: https://travis-ci.org/mjs/imapclient/builds
+    :alt: 1.x branch
+
+.. |build master| image:: https://travis-ci.org/mjs/imapclient.svg?branch=master
+   :target: https://travis-ci.org/mjs/imapclient/builds
+   :alt: master branch
+
 
 Features
 --------
