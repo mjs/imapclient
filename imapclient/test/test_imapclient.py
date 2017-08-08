@@ -354,7 +354,7 @@ class TestDebugLogging(IMAPClientTest):
         log_stream = six.StringIO()
         logging.basicConfig(stream=log_stream, level=logging.DEBUG)
         self.client._imap._mesg('two')
-        self.assertIn('DEBUG:imaplib:two', log_stream.getvalue())
+        self.assertIn('DEBUG:imapclient.imaplib:two', log_stream.getvalue())
 
 
 class TestTimeNormalisation(IMAPClientTest):
