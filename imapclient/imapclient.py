@@ -12,6 +12,7 @@ import sys
 import re
 from datetime import datetime, date
 from operator import itemgetter
+from logging import getLogger
 
 from six import moves, iteritems, text_type, integer_types, PY3, binary_type, iterbytes
 
@@ -27,6 +28,9 @@ xrange = moves.xrange
 if PY3:
     long = int  # long is just int in python3
 
+
+logger = getLogger(__name__)
+imaplib_logger = getLogger('imapclient.imaplib')
 
 __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT', 'RECENT']
 
@@ -104,16 +108,6 @@ class IMAPClient(object):
     system time). This attribute can be changed between ``fetch()``
     calls if required.
 
-    The *debug* property can be used to enable debug logging. It can
-    be set to an integer from 0 to 5 where 0 disables debug output and
-    5 enables full output with wire logging and parsing logs. ``True``
-    and ``False`` can also be assigned where ``True`` sets debug level
-    4.
-
-    By default, debug output goes to stderr. The *log_file* attribute
-    can be assigned to an alternate file handle for writing debug
-    output to.
-
     """
 
     Error = imaplib.IMAP4.error
@@ -137,14 +131,19 @@ class IMAPClient(object):
         self.stream = stream
         self.use_uid = use_uid
         self.folder_encode = True
-        self.log_file = sys.stderr
         self.normalise_times = True
 
         self._timeout = timeout
         self._starttls_done = False
         self._cached_capabilities = None
+
         self._imap = self._create_IMAP4()
-        self._imap._mesg = self._log    # patch in custom debug log method
+        logger.debug("Connected to host %s", self.host)
+
+        # Small hack to make imaplib log everything to its own logger
+        self._imap.debug = 5
+        self._imap._mesg = imaplib_logger.debug
+
         self._idle_tag = None
 
         self._set_timeout()
@@ -202,12 +201,14 @@ class IMAPClient(object):
         """Login using *username* and *password*, returning the
         server response.
         """
-        return self._command_and_check(
+        rv = self._command_and_check(
             'login',
             to_unicode(username),
             to_unicode(password),
             unpack=True,
         )
+        logger.info('Logged in as %s', username)
+        return rv
 
     def oauth2_login(self, user, access_token, mech='XOAUTH2', vendor=None):
         """Authenticate using the OAUTH2 method.
@@ -234,6 +235,7 @@ class IMAPClient(object):
         """
         typ, data = self._imap.logout()
         self._check_resp('BYE', 'logout', typ, data)
+        logger.info('Logged out, connection closed')
         return data[0]
 
     def shutdown(self):
@@ -243,6 +245,7 @@ class IMAPClient(object):
         this. The logout method also shutdown down the connection.
         """
         self._imap.shutdown()
+        logger.info('Connection closed')
 
     def id_(self, parameters=None):
         """Issue the ID command, returning a dict of server implementation
@@ -596,10 +599,7 @@ class IMAPClient(object):
         any). These are returned in parsed form as per
         ``idle_check()``.
         """
-        if self.debug >= 4:
-            self._log_ts()
-            self._log_write('< DONE', end=True)
-
+        logger.debug('< DONE')
         self._imap.send(b'DONE\r\n')
         return self._consume_until_tagged_response(self._idle_tag, 'IDLE')
 
@@ -1103,10 +1103,6 @@ class IMAPClient(object):
         *command* should be specified as bytes.
         *args* should be specified as a list of bytes.
         """
-        if self.debug >= 4:
-            self._log_ts()
-            self._log_write('> ')
-
         command = command.upper()
 
         if isinstance(args, tuple):
@@ -1128,8 +1124,7 @@ class IMAPClient(object):
             if _is8bit(item):
                 if line:
                     out = b' '.join(line)
-                    if self.debug >= 4:
-                        self._log_write(out)
+                    logger.debug('> %s', out)
                     self._imap.send(out)
                     line = []
                 self._send_literal(tag, item)
@@ -1140,13 +1135,10 @@ class IMAPClient(object):
 
         if line:
             out = b' '.join(line)
-            if self.debug >= 4:
-                self._log_write(out)
+            logger.debug('> %s', out)
             self._imap.send(out)
 
         self._imap.send(b'\r\n')
-        if self.debug >= 4:
-            self._log_write("", end=True)
 
         return self._imap._command_complete(to_unicode(command), tag)
 
@@ -1154,8 +1146,7 @@ class IMAPClient(object):
         """Send a single literal for the command with *tag*.
         """
         out = b' {' + str(len(item)).encode('ascii') + b'}\r\n'
-        if self.debug >= 4:
-            self._log_write(out, end=True)
+        logger.debug(out)
         self._imap.send(out)
 
         # Wait for continuation response
@@ -1166,9 +1157,7 @@ class IMAPClient(object):
                     "unexpected response while waiting for continuation response: " +
                     repr(tagged_resp))
 
-        if self.debug >= 4:
-            self._log_write("   (literal) > ")
-            self._log_write(item)
+        logger.debug("   (literal) > %s", item)
         self._imap.send(item)
 
     def _command_and_check(self, command, *args, **kwargs):
@@ -1218,38 +1207,6 @@ class IMAPClient(object):
     def _filter_fetch_dict(self, fetch_dict, key):
         return dict((msgid, data[key])
                     for msgid, data in iteritems(fetch_dict))
-
-    def __debug_get(self):
-        return self._imap.debug
-
-    def __debug_set(self, level):
-        if level is True:
-            level = 4
-        elif level is False:
-            level = 0
-        self._imap.debug = level
-
-    debug = property(__debug_get, __debug_set)
-
-    def _log_ts(self):
-        self.log_file.write(datetime.now().strftime('%M:%S.%f') + ' ')
-
-    def _log_write(self, text, end=False):
-        if isinstance(text, binary_type):
-            text = repr(text)
-            for i, c in enumerate(text):
-                if c in "\"'":
-                    break
-            text = text[i + 1:-1]
-        self.log_file.write(text)
-
-        if end:
-            self.log_file.write('\n')
-            self.log_file.flush()
-
-    def _log(self, text):
-        self._log_ts()
-        self._log_write(text, end=True)
 
     def _normalise_folder(self, folder_name):
         if isinstance(folder_name, binary_type):

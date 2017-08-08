@@ -258,6 +258,23 @@ TLS Support
 .. automodule:: imapclient.tls
    :members:
 
+Logging
+~~~~~~~
+IMAPClient logs debug lines using the standard Python `logging module
+<https://docs.python.org/3/library/logging.html>`_. Its logger is
+``imapclient.*``.
+
+A simple way to display log messages is to setup logging::
+
+  import logging
+
+  logging.basicConfig(
+      format='%(asctime)s - %(levelname)s: %(message)s',
+      level=logging.DEBUG
+  )
+
+For advanced usage please refer to the Python documentation.
+
 Interactive Sessions
 --------------------
 When developing program using IMAPClient is it sometimes useful to
