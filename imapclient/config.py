@@ -4,16 +4,11 @@
 
 from __future__ import unicode_literals
 
-# TODO: can't six do this for us?
-try:
-    from ConfigParser import SafeConfigParser, NoOptionError
-except ImportError:
-    from configparser import SafeConfigParser, NoOptionError
-
 from os import path
 from backports import ssl
 
 from six import iteritems
+from six.moves.configparser import SafeConfigParser, NoOptionError
 from six.moves.urllib.request import urlopen
 from six.moves.urllib.parse import urlencode
 
