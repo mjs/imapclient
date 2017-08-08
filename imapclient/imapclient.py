@@ -1411,6 +1411,6 @@ class _dict_bytes_normaliser(object):
 
 def debug_trunc(v, maxlen):
     if len(v) < maxlen:
-        return v
+        return repr(v)
     hl = maxlen // 2
     return repr(v[:hl])  + "..." + repr(v[-hl:])
