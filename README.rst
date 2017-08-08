@@ -13,6 +13,12 @@ Documentation              http://imapclient.readthedocs.io/
 Mailing list               https://groups.io/g/imapclient
 =========================  ========================================
 
+.. image:: https://travis-ci.org/mjs/imapclient.svg?branch=master
+   :target: https://travis-ci.org/mjs/imapclient
+
+.. image:: https://travis-ci.org/mjs/imapclient.svg?branch=1.x
+    :target: https://travis-ci.org/mjs/imapclient
+
 Features
 --------
 - Arguments and return values are natural Python types.
