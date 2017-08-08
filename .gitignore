@@ -2,6 +2,7 @@
 *.swp
 *~
 build/
+dist/
 __pycache__/
 IMAPClient.egg-info
 doc/doctrees/
