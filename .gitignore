@@ -1,0 +1,8 @@
+*.pyc
+.eggs/
+.tox/
+IMAPClient.egg-info/
+build/
+dist/
+doc/doctrees/
+doc/html/
