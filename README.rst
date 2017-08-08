@@ -22,11 +22,11 @@ Test Status
 ===================== ==============
 
 .. |build 1.x| image:: https://travis-ci.org/mjs/imapclient.svg?branch=1.x
-    :target: https://travis-ci.org/mjs/imapclient/builds
+    :target: https://travis-ci.org/mjs/imapclient/branches
     :alt: 1.x branch
 
 .. |build master| image:: https://travis-ci.org/mjs/imapclient.svg?branch=master
-   :target: https://travis-ci.org/mjs/imapclient/builds
+   :target: https://travis-ci.org/mjs/imapclient/branches
    :alt: master branch
 
 
