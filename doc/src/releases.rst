@@ -29,6 +29,10 @@ Changed
 - the `mock` package is no longer installed by default (just as a test
   dependency)
 
+Fixed
+-----
+- don't quote search criteria when sent as IMAP literals. Fixes #249.
+
 ===============
  Version 1.0.2
 ===============
