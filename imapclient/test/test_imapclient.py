@@ -184,6 +184,15 @@ class TestSelectFolder(IMAPClientTest):
             b'OTHER': [b'blah']
         })
 
+    def test_unselect(self):
+        self.client._imap._simple_command.return_value = ('OK', ['Unselect completed.'])
+        #self.client._imap._untagged_response.return_value = (
+        #    b'OK', [b'("name" "GImap" "vendor" "Google, Inc.")'])
+
+        result = self.client.unselect_folder()
+        self.assertEqual(result, 'Unselect completed.')
+        self.client._imap._simple_command.assert_called_with('UNSELECT')
+
 
 class TestAppend(IMAPClientTest):
 

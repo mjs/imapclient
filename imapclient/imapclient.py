@@ -55,6 +55,10 @@ if 'STARTTLS' not in imaplib.Commands:
 if 'ID' not in imaplib.Commands:
     imaplib.Commands['ID'] = ('NONAUTH', 'AUTH', 'SELECTED')
 
+# ... and UNSELECT. RFC3691 does not specify the state but there is no
+# reason to use the command without AUTH state and a mailbox selected.
+if 'UNSELECT' not in imaplib.Commands:
+    imaplib.Commands['UNSELECT'] = ('AUTH', 'SELECTED')
 
 # System flags
 DELETED = br'\Deleted'
@@ -488,6 +492,19 @@ class IMAPClient(object):
         """
         self._command_and_check('select', self._normalise_folder(folder), readonly)
         return self._process_select_response(self._imap.untagged_responses)
+
+    def unselect_folder(self):
+        """Unselect the current folder and release associated resources.
+
+        Unlike ``close_folder``, the ``UNSELECT`` command does not expunge
+        the mailbox, keeping messages with \Deleted flag set for example.
+
+        Returns the UNSELECT response string returned by the server.
+        """
+        logger.debug('< UNSELECT')
+        # IMAP4 class has no `unselect` method so we can't use `_command_and_check` there
+        _typ, data = self._imap._simple_command("UNSELECT")
+        return data[0]
 
     def _process_select_response(self, resp):
         untagged = _dict_bytes_normaliser(resp)
