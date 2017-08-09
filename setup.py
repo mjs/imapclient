@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2015, Menno Smits
+# Copyright (c) 2017, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -80,7 +80,11 @@ if IS_PY_26_OR_OLDER:
     test_deps.append('unittest2')
 
 setup(name='IMAPClient',
+      description="Easy-to-use, Pythonic and complete IMAP client library",
+      keywords="imap client email mail",
       version=info['version'],
+      maintainer=info['maintainer'],
+      maintainer_email=info['maintainer_email'],
       author=info['author'],
       author_email=info['author_email'],
       license="http://en.wikipedia.org/wiki/BSD_licenses",
@@ -91,7 +95,6 @@ setup(name='IMAPClient',
       setup_requires=setup_deps,
       install_requires=main_deps,
       tests_require=test_deps,
-      description="Easy-to-use, Pythonic and complete IMAP client library",
       long_description=desc,
       classifiers=[
           'Development Status :: 5 - Production/Stable',
