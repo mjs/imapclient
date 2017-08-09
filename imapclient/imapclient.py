@@ -1142,12 +1142,17 @@ class IMAPClient(object):
                 raise ValueError("command args must be passed as bytes")
 
             if _is8bit(item):
+                # If a line was already started send it
                 if line:
                     out = b' '.join(line)
                     if self.debug >= 4:
                         self._log_write(out)
                     self._imap.send(out)
                     line = []
+
+                # Now send the (unquoted) literal
+                if isinstance(item, _quoted):
+                    item = item.original
                 self._send_literal(tag, item)
                 if not is_last:
                     self._imap.send(b' ')
@@ -1313,7 +1318,7 @@ def _normalise_search_criteria(criteria, charset=None):
             inner[-1] = inner[-1] + b')'
             out.extend(inner) # flatten
         else:
-            out.append(_maybe_quote(to_bytes(item, charset)))
+            out.append(_quoted.maybe(to_bytes(item, charset)))
     return out
 
 
@@ -1323,15 +1328,31 @@ def _normalise_sort_criteria(criteria, charset=None):
     return b'(' + b' '.join(to_bytes(item).upper() for item in criteria) + b')'
 
 
-def _maybe_quote(arg):
-    """Apply quoting, but only if it's required - otherwise return the
-    input unchanged.
+class _quoted(binary_type):
     """
-    out = arg.replace(b'\\', b'\\\\')
-    out = out.replace(b'"', b'\\"')
-    if out != arg or b' ' in out:
-        return b'"' + out + b'"'
-    return arg
+    This class holds a quoted bytes value which provides access to the
+    unquoted value via the *original* attribute.
+
+    They should be created via the *maybe* classmethod.
+    """
+
+    @classmethod
+    def maybe(cls, original):
+        """Maybe quote a bytes value.
+
+        If the input requires no quoting it is returned unchanged.
+
+        If quoting is required a *_quoted* instance is returned. This
+        holds the quoted version of the input while also providing
+        access to the original unquoted source.
+        """
+        quoted = original.replace(b'\\', b'\\\\')
+        quoted = quoted.replace(b'"', b'\\"')
+        if quoted != original or b' ' in quoted:
+            out = cls(b'"' + quoted + b'"')
+            out.original = original
+            return out
+        return original
 
 
 # normalise_text_list, seq_to_parentstr etc have to return unicode

@@ -10,6 +10,7 @@ from imapclient.imapclient import (
     normalise_text_list,
     seq_to_parenstr,
     seq_to_parenstr_upper,
+    _quoted
 )
 from imapclient.test.util import unittest
 
@@ -119,7 +120,14 @@ class Test_join_message_ids(unittest.TestCase):
 class Test_normalise_search_criteria(unittest.TestCase):
 
     def check(self, criteria, charset, expected):
-        self.assertEqual(_normalise_search_criteria(criteria, charset), expected)
+        actual = _normalise_search_criteria(criteria, charset)
+        self.assertEqual(actual, expected)
+        # Go further and check exact types
+        for a, e in zip(actual, expected):
+            self.assertEqual(
+                type(a), type(e),
+                "type mismatch: %s (%r) != %s (%r) in %r" % (type(a), a, type(e), e, actual),
+            )
 
     def test_list(self):
         self.check(['FOO', '\u263a'], 'utf-8', [b'FOO', b'\xe2\x98\xba'])
@@ -131,7 +139,7 @@ class Test_normalise_search_criteria(unittest.TestCase):
         self.check(['FOO', b'BAR'], None, [b'FOO', b'BAR'])
 
     def test_quoting(self):
-        self.check(['foo bar'], None, [b'"foo bar"'])
+        self.check(['foo bar'], None, [_quoted(b'"foo bar"')])
 
     def test_ints(self):
         self.check(['modseq', 500], None, [b'modseq', b'500'])

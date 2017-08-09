@@ -8,6 +8,7 @@ from datetime import date, datetime
 
 from mock import Mock
 
+from ..imapclient import _quoted
 from .imapclient_test import IMAPClientTest
 
 
@@ -47,9 +48,7 @@ class TestSearch(TestSearchBase):
 
     def test_unicode_criteria_with_charset(self):
         self.client.search(['FOO', '\u2639'], 'utf-8')
-
-        # Default conversion using us-ascii.
-        self.check_call([b'CHARSET', b'utf-8', b'FOO', b'\xe2\x98\xb9'])
+        self.check_call([b'CHARSET', b'utf-8', b'FOO', _quoted(b'\xe2\x98\xb9')])
 
     def test_with_date(self):
         self.client.search(['SINCE', date(2005, 4, 3)])
@@ -61,7 +60,7 @@ class TestSearch(TestSearchBase):
 
     def test_quoting(self):
         self.client.search(['TEXT', 'foo bar'])
-        self.check_call([b'TEXT', b'"foo bar"'])
+        self.check_call([b'TEXT', _quoted(b'"foo bar"')])
 
     def test_no_results(self):
         self.client._raw_command_untagged.return_value = [None]
@@ -116,4 +115,4 @@ class TestGmailSearch(TestSearchBase):
     def test_unicode_criteria_with_charset(self):
         self.client.gmail_search('foo \u2639', 'utf-8')
 
-        self.check_call([b'CHARSET', b'utf-8', b'X-GM-RAW', b'"foo \xe2\x98\xb9"'])
+        self.check_call([b'CHARSET', b'utf-8', b'X-GM-RAW', _quoted(b'"foo \xe2\x98\xb9"')])
