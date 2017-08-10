@@ -12,8 +12,10 @@ import logging
 
 import six
 
+from imapclient.exceptions import CapabilityError, IMAPClientException
 from imapclient.imapclient import IMAPlibLoggerAdapter
 from imapclient.fixed_offset import FixedOffset
+
 from .testable_imapclient import TestableIMAPClient as IMAPClient
 from .imapclient_test import IMAPClientTest
 from .util import patch, sentinel, Mock
@@ -47,11 +49,11 @@ class TestListFolders(IMAPClientTest):
 
     def test_list_folders_NO(self):
         self.client._imap._simple_command.return_value = ('NO', [b'badness'])
-        self.assertRaises(IMAPClient.Error, self.client.list_folders)
+        self.assertRaises(IMAPClientException, self.client.list_folders)
 
     def test_list_sub_folders_NO(self):
         self.client._imap._simple_command.return_value = ('NO', [b'badness'])
-        self.assertRaises(IMAPClient.Error, self.client.list_folders)
+        self.assertRaises(IMAPClientException, self.client.list_folders)
 
     def test_utf7_decoding(self):
         self.client._imap._simple_command.return_value = ('OK', [b'something'])
@@ -525,7 +527,7 @@ class TestId(IMAPClientTest):
 
     def test_no_support(self):
         self.client._cached_capabilities = (b'IMAP4rev1',)
-        self.assertRaises(ValueError, self.client.id_)
+        self.assertRaises(CapabilityError, self.client.id_)
 
     def test_invalid_parameters(self):
         self.assertRaises(TypeError, self.client.id_, 'bananarama')

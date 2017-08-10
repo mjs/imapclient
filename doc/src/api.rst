@@ -18,18 +18,27 @@ are encountered during parsing.
 
 Exceptions
 ~~~~~~~~~~
-The following exceptions may be raised by IMAPClient directly. They
-are attached to the IMAPClient class.
+IMAPClient wraps exceptions raised by imaplib to ease the error handling. 
+All the exceptions related to IMAP errors are defined in the module 
+`imapclient.exceptions`. The following general exceptions may be raised:
 
-* IMAPClient.Error: the base class for IMAPClient's exceptions and the
+* IMAPClientException: the base class for IMAPClient's exceptions and the
   most commonly used error.
-* IMAPClient.AbortError: raised if a serious error has occurred that
+* IMAPClientAbortError: raised if a serious error has occurred that
   means the IMAP connection is no longer usable. The connection should
   be dropped without logout if this occurs.
-* IMAPClient.ReadOnlyError: raised if a modifying operation was
+* IMAPClientReadOnlyError: raised if a modifying operation was
   attempted on a read-only folder.
 
-Exceptions from lower network layers are also possible, in particular:
+
+More specific exceptions existed for common known errors:
+
+.. automodule:: imapclient.exceptions
+    :members:
+
+
+Exceptions from lower layers are possible, such as networks error or unicode
+malformed exception. In particular:
 
 * socket.error
 * socket.timeout: raised if a timeout was specified when creating the

@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 
+from imapclient.exceptions import InvalidCriteriaException
 from imapclient.imapclient import (
     join_message_ids,
     _normalise_search_criteria,
@@ -161,7 +162,7 @@ class Test_normalise_search_criteria(unittest.TestCase):
         self.check('foo bar', None, [b'foo bar'])
 
     def test_None(self):
-        self.assertRaises(ValueError, _normalise_search_criteria, None, None)
+        self.assertRaises(InvalidCriteriaException, _normalise_search_criteria, None, None)
 
     def test_empty(self):
-        self.assertRaises(ValueError, _normalise_search_criteria, '', None)
+        self.assertRaises(InvalidCriteriaException, _normalise_search_criteria, '', None)
