@@ -501,7 +501,8 @@ class IMAPClient(object):
 
         Returns the UNSELECT response string returned by the server.
         """
-        logger.debug('< UNSELECT')
+        if self.debug >= 4:
+            self._log('< UNSELECT')
         # IMAP4 class has no `unselect` method so we can't use `_command_and_check` there
         _typ, data = self._imap._simple_command("UNSELECT")
         return data[0]
