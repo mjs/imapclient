@@ -234,6 +234,22 @@ class TestGeneral(_TestBase):
         self.assertEqual(ns.other, ns[1])
         self.assertEqual(ns.shared, ns[2])
 
+    def test_unselect_folder(self):
+        if not self.client.has_capability('UNSELECT'):
+            return self.skipTest("Server doesn't support UNSELECT")
+
+        resp = self.client.select_folder(self.base_folder)
+        self.assertEqual(resp[b'EXISTS'], 0)
+        self.client.search(['ALL'])
+        self.client.unselect_folder()
+
+        # To ensure the folder has been selected, check we can't run .search()
+        with self.assertRaises(IMAPClient.Error):
+            self.client.search(['ALL'])
+        # It should not be possible to unselect a folder if none have been selected yet
+        with self.assertRaises(IMAPClient.Error):
+            self.client.unselect_folder()
+
     def test_select_and_close(self):
         resp = self.client.select_folder(self.base_folder)
         self.assertEqual(resp[b'EXISTS'], 0)
