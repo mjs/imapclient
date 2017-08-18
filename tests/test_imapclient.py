@@ -12,6 +12,7 @@ import logging
 
 import six
 
+from imapclient.imapclient import IMAPlibLoggerAdapter
 from imapclient.fixed_offset import FixedOffset
 from .testable_imapclient import TestableIMAPClient as IMAPClient
 from .imapclient_test import IMAPClientTest
@@ -364,6 +365,27 @@ class TestDebugLogging(IMAPClientTest):
         logging.basicConfig(stream=log_stream, level=logging.DEBUG)
         self.client._imap._mesg('two')
         self.assertIn('DEBUG:imapclient.imaplib:two', log_stream.getvalue())
+
+    def test_redacted_password(self):
+        logger_mock = Mock()
+        logger_mock.manager.disable = logging.DEBUG
+        logger_mock.getEffectiveLevel.return_value = logging.DEBUG
+
+        adapter = IMAPlibLoggerAdapter(logger_mock, dict())
+        if six.PY3:
+            adapter.info("""> b'ICHH1 LOGIN foo@bar.org "secret"'""")
+            logger_mock._log.assert_called_once_with(
+                logging.INFO,
+                "> b'ICHH1 LOGIN **REDACTED**",
+                (),
+                extra={}
+            )
+        else:
+            adapter.info('> ICHH1 LOGIN foo@bar.org "secret"')
+            logger_mock.info.assert_called_once_with(
+                "> ICHH1 LOGIN **REDACTED**",
+                extra={}
+            )
 
 
 class TestTimeNormalisation(IMAPClientTest):
