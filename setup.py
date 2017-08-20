@@ -16,7 +16,6 @@ from setuptools.command.test import test as TestCommand
 
 MAJ_MIN_MIC = sys.version_info[:3]
 IS_PY3 = MAJ_MIN_MIC >= (3, 0, 0)
-IS_PY_26_OR_OLDER = MAJ_MIN_MIC < (2, 7, 0)
 IS_PY_278_OR_OLDER = MAJ_MIN_MIC <= (2, 7, 8)
 IS_PY_33_OR_OLDER = MAJ_MIN_MIC < (3, 4, 0)
 IS_PY_34_OR_NEWER = MAJ_MIN_MIC >= (3, 4, 0)
@@ -42,7 +41,7 @@ Features:
     * Convenience methods are provided for commonly used functionality.
     * Exceptions are raised when errors occur.
 
-Python versions 2.6, 2.7, 3.3, 3.4, 3.5 and 3.6 are officially supported.
+Python versions 2.7, 3.4, 3.5 and 3.6 are officially supported.
 
 IMAPClient includes comprehensive units tests and automated
 functional tests that can be run against a live IMAP server.
@@ -62,7 +61,7 @@ class TestDiscoverCommand(TestCommand):
     def run_tests(self):
         from imapclient.test.util import unittest  # this will import unittest2
         module = "__main__"
-        if IS_PY_26_OR_OLDER or IS_PY_34_OR_NEWER:
+        if IS_PY_34_OR_NEWER:
             module = None
         unittest.main(argv=['', 'discover'], module=module)
 
@@ -78,8 +77,6 @@ if IS_PY3 and IS_PY_33_OR_OLDER or IS_PY_278_OR_OLDER:
 setup_deps = common_deps + ['sphinx']
 
 test_deps = ['mock>=1.3.0']
-if IS_PY_26_OR_OLDER:
-    test_deps.append('unittest2')
 
 setup(name='IMAPClient',
       description="Easy-to-use, Pythonic and complete IMAP client library",
