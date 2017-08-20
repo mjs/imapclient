@@ -768,7 +768,27 @@ class IMAPClient(object):
             args.extend([b'CHARSET', to_bytes(charset)])
         args.extend(_normalise_search_criteria(criteria, charset))
 
-        data = self._raw_command_untagged(b'SEARCH', args)
+        try:
+            data = self._raw_command_untagged(b'SEARCH', args)
+        except imaplib.IMAP4.error as e:
+            # Make BAD IMAP responses easier to understand to the user, with a link to the docs
+            m = re.match(r'SEARCH command error: BAD \[(.+)\]', str(e))
+            if m:
+                raise self.Error(
+                    '{original_msg}\n\n'
+                    'This error may have been caused by a syntax error in the criteria: '
+                    '{criteria}\nPlease refer to the documentation for more information '
+                    'about search criteria syntax..\n'
+                    'https://imapclient.readthedocs.io/en/stable/#imapclient.IMAPClient.search'
+                    .format(
+                        original_msg=m.group(1),
+                        criteria='"%s"' % criteria if not isinstance(criteria, list) else criteria
+                    )
+                )
+
+            # If the exception is not from a BAD IMAP response, re-raise as-is
+            raise
+
         return parse_message_list(data)
 
     def sort(self, sort_criteria, criteria='ALL', charset='UTF-8'):
