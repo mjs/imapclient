@@ -2,7 +2,7 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from ..imapclient import IMAPClient
+from imapclient.imapclient import IMAPClient
 from .util import unittest, patch, sentinel, Mock
 
 

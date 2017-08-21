@@ -19,7 +19,7 @@ from imapclient.response_parser import (
     ParseError,
 )
 from imapclient.response_types import Envelope, Address
-from imapclient.test.util import unittest
+from tests.util import unittest
 
 # TODO: test invalid dates and times
 

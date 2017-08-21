@@ -12,7 +12,7 @@ from imapclient.imapclient import (
     seq_to_parenstr_upper,
     _quoted
 )
-from imapclient.test.util import unittest
+from tests.util import unittest
 
 
 class Test_normalise_text_list(unittest.TestCase):

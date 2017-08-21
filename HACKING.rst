@@ -84,5 +84,5 @@ Protocol level unit tests should not act against a real IMAP server
 but should use canned data instead. The IMAPClientTest base class
 should typically be used as the base class for any tests - it provides
 a mock IMAPClient instance at `self.client`. See the tests in
-imapclient/tests/test_imapclient.py for examples of how to write unit
-tests using this approach.
+`tests/test_imapclient.py` for examples of how to write unit tests using
+this approach.

@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 
 from datetime import timedelta
 
-from ..fixed_offset import FixedOffset
+from imapclient.fixed_offset import FixedOffset
 from .util import unittest, Mock, patch, DEFAULT
 
 

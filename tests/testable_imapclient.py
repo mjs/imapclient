@@ -4,7 +4,7 @@
 
 from __future__ import unicode_literals
 
-from ..imapclient import IMAPClient
+from imapclient.imapclient import IMAPClient
 from .util import Mock
 
 

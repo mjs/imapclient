@@ -8,7 +8,7 @@ from datetime import date, datetime
 
 import imaplib
 
-from ..imapclient import _quoted
+from imapclient.imapclient import _quoted
 from .imapclient_test import IMAPClientTest
 from .util import Mock
 
