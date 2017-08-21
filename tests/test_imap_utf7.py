@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 from six import text_type, binary_type, int2byte, unichr
 
 from imapclient.imap_utf7 import decode, encode
-from imapclient.test.util import unittest
+from tests.util import unittest
 
 
 class IMAP4UTF7TestCase(unittest.TestCase):

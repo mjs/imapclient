@@ -7,13 +7,13 @@ from __future__ import unicode_literals
 from datetime import datetime, date
 
 
-from ..datetime_util import (
+from imapclient.datetime_util import (
     datetime_to_INTERNALDATE,
     datetime_to_native,
     format_criteria_date,
     parse_to_datetime,
 )
-from ..fixed_offset import FixedOffset
+from imapclient.fixed_offset import FixedOffset
 from .util import unittest, patch
 
 

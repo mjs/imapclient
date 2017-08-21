@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 from six import next
 
 from imapclient.response_lexer import TokenSource
-from imapclient.test.util import unittest
+from tests.util import unittest
 
 
 class TestTokenSource(unittest.TestCase):

@@ -9,9 +9,10 @@ from os import path
 
 # bootstrap setuptools if necessary
 from ez_setup import use_setuptools
+
 use_setuptools(version="18.2")
 
-from setuptools import setup, find_packages
+from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
 MAJ_MIN_MIC = sys.version_info[:3]
@@ -59,7 +60,7 @@ class TestDiscoverCommand(TestCommand):
         self.test_suite = True
 
     def run_tests(self):
-        from imapclient.test.util import unittest  # this will import unittest2
+        from tests.util import unittest  # this will import unittest2
         module = "__main__"
         if IS_PY_34_OR_NEWER:
             module = None
@@ -89,7 +90,7 @@ setup(name='IMAPClient',
       license="http://en.wikipedia.org/wiki/BSD_licenses",
       url="http://imapclient.freshfoo.com/",
       download_url='http://freshfoo.com/projects/IMAPClient/IMAPClient-%s.zip' % info['version'],
-      packages=find_packages(),
+      packages=['imapclient'],
       package_data=dict(imapclient=['examples/*.py']),
       setup_requires=setup_deps,
       install_requires=main_deps,

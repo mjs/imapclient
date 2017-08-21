@@ -4,7 +4,7 @@
 
 from __future__ import unicode_literals
 
-from ..version import _imapclient_version_string
+from imapclient.version import _imapclient_version_string
 from .util import unittest
 
 

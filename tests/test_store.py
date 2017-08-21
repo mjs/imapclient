@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 
 import six
 
-from ..imapclient import DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT
+from imapclient.imapclient import DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT
 from .imapclient_test import IMAPClientTest
 from .util import patch, sentinel, Mock
 
