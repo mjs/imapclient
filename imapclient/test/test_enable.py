@@ -28,8 +28,20 @@ class TestEnable(IMAPClientTest):
             uid=False, response_name='ENABLED', unpack=True)
         self.assertEqual(resp, [b'CONDSTORE'])
 
-    def test_failed(self):
+    def test_failed1(self):
+        # When server returns an empty ENABLED response
         self.command.return_value = b''
+
+        resp = self.client.enable('FOO')
+
+        self.command.assert_called_once_with(
+            b'ENABLE', [b'FOO'],
+            uid=False, response_name='ENABLED', unpack=True)
+        self.assertEqual(resp, [])
+
+    def test_failed2(self):
+        # When server returns no ENABLED response
+        self.command.return_value = None
 
         resp = self.client.enable('FOO')
 

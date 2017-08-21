@@ -281,6 +281,8 @@ class IMAPClient(object):
             uid=False,
             response_name='ENABLED',
             unpack=True)
+        if not resp:
+            return []
         return resp.split()
 
     def id_(self, parameters=None):
