@@ -39,11 +39,11 @@ __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT', 'REC
 
 # We also offer the gmail-specific XLIST command...
 if 'XLIST' not in imaplib.Commands:
-    imaplib.Commands['XLIST'] = imaplib.Commands['LIST']
+    imaplib.Commands['XLIST'] = ('NONAUTH', 'AUTH', 'SELECTED')
 
 # ...and IDLE
 if 'IDLE' not in imaplib.Commands:
-    imaplib.Commands['IDLE'] = imaplib.Commands['APPEND']
+    imaplib.Commands['IDLE'] = ('NONAUTH', 'AUTH', 'SELECTED')
 
 # ..and STARTTLS
 if 'STARTTLS' not in imaplib.Commands:
@@ -59,6 +59,11 @@ if 'ID' not in imaplib.Commands:
 # reason to use the command without AUTH state and a mailbox selected.
 if 'UNSELECT' not in imaplib.Commands:
     imaplib.Commands['UNSELECT'] = ('AUTH', 'SELECTED')
+
+# .. and ENABLE.
+if 'ENABLE' not in imaplib.Commands:
+    imaplib.Commands['ENABLE'] = ('AUTH',)
+
 
 # System flags
 DELETED = br'\Deleted'
@@ -267,6 +272,35 @@ class IMAPClient(object):
         this. The logout method also shutdown down the connection.
         """
         self._imap.shutdown()
+
+    def enable(self, *capabilities):
+        """Activate one or more server side capability extensions.
+
+        Most capabilities do not need to be enabled. This is only
+        required for extensions which introduce backwards incompatible
+        behaviour. Two capabilities which may require enable are
+        ``CONDSTORE`` and ``UTF8=ACCEPT``.
+
+        A list of the requested extensions that were successfully
+        enabled on the server is returned.
+
+        Once enabled each extension remains active until the IMAP
+        connection is closed.
+
+        See :rfc:`5161` for more details.
+        """
+        if self._imap.state != 'AUTH':
+            raise self.Error("ENABLE command illegal in state %s" % self._imap.state)
+
+        resp = self._raw_command_untagged(
+            b'ENABLE',
+            [to_bytes(c) for c in capabilities],
+            uid=False,
+            response_name='ENABLED',
+            unpack=True)
+        if not resp:
+            return []
+        return resp.split()
 
     def id_(self, parameters=None):
         """Issue the ID command, returning a dict of server implementation
@@ -1117,16 +1151,18 @@ class IMAPClient(object):
         self._checkok(command, typ, data)
         return data[0], resps
 
-    def _raw_command_untagged(self, command, args, unpack=False):
+    def _raw_command_untagged(self, command, args, response_name=None, unpack=False, uid=True):
         # TODO: eventually this should replace _command_and_check (call it _command)
-        typ, data = self._raw_command(command, args)
-        typ, data = self._imap._untagged_response(typ, data, to_unicode(command))
+        typ, data = self._raw_command(command, args, uid=uid)
+        if response_name is None:
+            response_name = command
+        typ, data = self._imap._untagged_response(typ, data, to_unicode(response_name))
         self._checkok(to_unicode(command), typ, data)
         if unpack:
             return data[0]
         return data
 
-    def _raw_command(self, command, args):
+    def _raw_command(self, command, args, uid=True):
         """Run the specific command with the arguments given. 8-bit arguments
         are sent as literals. The return value is (typ, data).
 
@@ -1150,7 +1186,7 @@ class IMAPClient(object):
 
         tag = self._imap._new_tag()
         prefix = [to_bytes(tag)]
-        if self.use_uid:
+        if uid and self.use_uid:
             prefix.append(b'UID')
         prefix.append(command)
 

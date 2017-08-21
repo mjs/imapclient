@@ -76,8 +76,11 @@ class _TestBase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.client = create_client_from_config(cls.conf)
-        cls.client.use_uid = cls.use_uid
+        client = create_client_from_config(cls.conf)
+        cls.client = client
+        client.use_uid = cls.use_uid
+        if client.has_capability('ENABLE') and client.has_capability('CONDSTORE'):
+            client.enable('CONDSTORE')
         cls.base_folder = cls.conf.namespace[0] + '__imapclient'
         cls.folder_delimiter = cls.conf.namespace[1]
 
@@ -642,19 +645,6 @@ def createUidTestClass(conf, use_uid):
             if not self.client.has_capability('CONDSTORE'):
                 return self.skipTest("Server doesn't support CONDSTORE")
 
-            if self.is_gmail():
-                return self.skipTest(
-                    "Gmail doesn't seem to return MODSEQ parts in SEARCH responses")
-
-            # A little dance to ensure MODSEQ tracking is turned on.
-            # TODO: use ENABLE for this instead
-            self.client.select_folder(self.base_folder)
-            self.append_msg(SIMPLE_MESSAGE)
-            msg_id = self.client.search()[0]
-            self.client.fetch(msg_id, ["MODSEQ"])
-            self.client.close_folder()
-            self.clear_folder(self.base_folder)
-
             # Remember the initial MODSEQ
             initial_modseq = self.client.select_folder(self.base_folder)[b'HIGHESTMODSEQ']
 
@@ -833,21 +823,9 @@ def createUidTestClass(conf, use_uid):
 
         def test_fetch_modifiers(self):
             # CONDSTORE (RFC 4551) provides a good way to use FETCH
-            # modifiers but it isn't commonly available.
+            # modifiers but it isn't always available.
             if not self.client.has_capability('CONDSTORE'):
                 return self.skipTest("Server doesn't support CONDSTORE")
-
-            # A little dance to ensure MODSEQ tracking is turned on.
-            self.client.select_folder(self.base_folder)
-            self.append_msg(SIMPLE_MESSAGE)
-            msg_id = self.client.search()[0]
-            self.client.fetch(msg_id, ["MODSEQ"])
-            self.client.close_folder()
-            self.clear_folder(self.base_folder)
-
-            #
-            # Actual testing starts here
-            #
 
             # Get the starting MODSEQ
             modseq = self.client.select_folder(self.base_folder)[b'HIGHESTMODSEQ']
