@@ -813,7 +813,7 @@ class IMAPClient(object):
                     'This error may have been caused by a syntax error in the criteria: '
                     '{criteria}\nPlease refer to the documentation for more information '
                     'about search criteria syntax..\n'
-                    'https://imapclient.readthedocs.io/en/stable/#imapclient.IMAPClient.search'
+                    'https://imapclient.readthedocs.io/en/master/#imapclient.IMAPClient.search'
                     .format(
                         original_msg=m.group(1),
                         criteria='"%s"' % criteria if not isinstance(criteria, list) else criteria
