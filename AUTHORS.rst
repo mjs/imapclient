@@ -1,5 +1,8 @@
-IMAPClient was created and is maintained by Menno Finlay-Smits <inbox@menno.io>.
-Thanks go to the following people for their help with this project.
+IMAPClient was created by Menno Finlay-Smits <inbox@menno.io>. The
+project is now Nicolas Le Manchet and Menno Finlay-Smits.
+
+Many thanks go to the following people for their help with this
+project:
 
 - Mathieu Agopian
 - Chris Arndt
@@ -8,9 +11,9 @@ Thanks go to the following people for their help with this project.
 - Dave Eckhardt
 - Eben Freeman
 - Helder Guerreiro
-- Mark Hammond <mhammond _AT_ skipinet.com.au>
+- Mark Hammond
 - Johannes Heckel
-- Thomas Jost <schnouki _AT_ schnouki.net>
+- Thomas Jost
 - Maxime Lorant
 - Lukasz Mierzwa
 - Naveen Nathan
