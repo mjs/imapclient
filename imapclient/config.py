@@ -4,9 +4,9 @@
 
 from __future__ import unicode_literals
 
-from os import path
-from backports import ssl
+from os import environ, path
 
+from backports import ssl
 from six import iteritems
 from six.moves.configparser import SafeConfigParser, NoOptionError
 from six.moves.urllib.request import urlopen
@@ -20,10 +20,14 @@ try:
 except ImportError:
     json = None
 
+
+def getenv(name, default):
+    return environ.get("imapclient_"+name, default)
+
 def get_config_defaults():
     return dict(
-        username=None,
-        password=None,
+        username=getenv("username", None),
+        password=getenv("password", None),
         ssl=False,
         ssl_check_hostname=True,
         ssl_verify_cert=True,
@@ -32,9 +36,9 @@ def get_config_defaults():
         starttls=False,
         stream=False,
         oauth2=False,
-        oauth2_client_id=None,
-        oauth2_client_secret=None,
-        oauth2_refresh_token=None,
+        oauth2_client_id=getenv("oauth2_client_id", None),
+        oauth2_client_secret=getenv("oauth2_client_secret", None),
+        oauth2_refresh_token=getenv("oauth2_refresh_token", None),
         expect_failure=None,
     )
 
@@ -151,6 +155,8 @@ def get_oauth2_token(hostname, client_id, client_secret, refresh_token):
     return token
 
 def create_client_from_config(conf):
+    assert conf.host, "missing host"
+
     ssl_context = None
     if conf.ssl:
         ssl_context = create_default_context()
@@ -170,6 +176,9 @@ def create_client_from_config(conf):
             client.starttls()
 
         if conf.oauth2:
+            assert conf.oauth2_client_id, "missing oauth2 id"
+            assert conf.oauth2_client_secret, "missing oauth2 secret"
+            assert conf.oauth2_refresh_token, "missing oauth2 refresh token"
             access_token = get_oauth2_token(conf.host,
                                             conf.oauth2_client_id,
                                             conf.oauth2_client_secret,
@@ -177,6 +186,8 @@ def create_client_from_config(conf):
             client.oauth2_login(conf.username, access_token)
 
         elif not conf.stream:
+            assert conf.username, "missing username"
+            assert conf.password, "missing password"
             client.login(conf.username, conf.password)
         return client
     except:
