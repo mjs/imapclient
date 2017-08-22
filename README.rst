@@ -72,8 +72,8 @@ via PyPI use the pip or easy_install tools::
     easy_install IMAPClient
 
 The source distributions of all IMAPClient versions are available at
-http://freshfoo.com/projects/IMAPClient/. Alternatively you can also
-use the PyPI page at https://pypi.python.org/pypi/IMAPClient/.
+http://menno.io/projects/IMAPClient/. Alternatively you can also use
+the PyPI page at https://pypi.python.org/pypi/IMAPClient/.
 
 To install from source run::
 
@@ -112,7 +112,7 @@ currently redirects to the IMAPClient Github site). Details about
 upcoming versions and planned features/fixes can be found in the issue
 tracker on Github. The maintainer also blogs about IMAPClient
 news. Those articles can be found `here
-<http://freshfoo.com/tags/imapclient>`_.
+<http://menno.io/tags/imapclient>`_.
 
 Versions
 --------
@@ -139,7 +139,7 @@ list are:
 * Web archives: https://groups.io/g/imapclient/messages
 
 If you're having trouble using the mailing list, please email
-menno@freshfoo.com.
+inbox@menno.io.
 
 Working on IMAPClient
 ---------------------
