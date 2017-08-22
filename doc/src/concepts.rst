@@ -96,13 +96,13 @@ to start with the default context and modify it to suit your needs.
 The following example shows how to to disable certification
 verification and certificate host name checks if required.
 
-.. literalinclude:: ../../imapclient/examples/tls_no_checks.py
+.. literalinclude:: ../../examples/tls_no_checks.py
 
 The next example shows how to create a context that will use custom CA
 certificate. This is required to perform verification of a self-signed
 certificate used by the IMAP server.
 
-.. literalinclude:: ../../imapclient/examples/tls_cacert.py
+.. literalinclude:: ../../examples/tls_cacert.py
 
 The above examples show some of the most common TLS parameter
 customisations but there are many other tweaks are possible. Consult
