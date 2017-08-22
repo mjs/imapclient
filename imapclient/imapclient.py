@@ -12,7 +12,7 @@ import sys
 import re
 from datetime import datetime, date
 from operator import itemgetter
-from logging import getLogger
+from logging import LoggerAdapter, getLogger
 
 from six import moves, iteritems, text_type, integer_types, PY3, binary_type, iterbytes
 
@@ -30,7 +30,6 @@ if PY3:
 
 
 logger = getLogger(__name__)
-imaplib_logger = getLogger('imapclient.imaplib')
 
 __all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT', 'RECENT']
 
@@ -150,6 +149,9 @@ class IMAPClient(object):
         logger.debug("Connected to host %s", self.host)
 
         # Small hack to make imaplib log everything to its own logger
+        imaplib_logger = IMAPlibLoggerAdapter(
+            getLogger('imapclient.imaplib'), dict()
+        )
         self._imap.debug = 5
         self._imap._mesg = imaplib_logger.debug
 
@@ -1508,3 +1510,17 @@ def debug_trunc(v, maxlen):
         return repr(v)
     hl = maxlen // 2
     return repr(v[:hl])  + "..." + repr(v[-hl:])
+
+
+class IMAPlibLoggerAdapter(LoggerAdapter):
+    """Adapter preventing IMAP secrets from going to the logging facility."""
+
+    def process(self, msg, kwargs):
+        for command in ("LOGIN", "AUTHENTICATE"):
+            if msg.startswith(">") and command in msg:
+                msg_start = msg.split(command)[0]
+                msg = "{}{} **REDACTED**".format(msg_start, command)
+                break
+        return super(IMAPlibLoggerAdapter, self).process(
+            msg, kwargs
+        )
