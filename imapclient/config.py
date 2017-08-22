@@ -28,7 +28,7 @@ def get_config_defaults():
     return dict(
         username=getenv("username", None),
         password=getenv("password", None),
-        ssl=False,
+        ssl=True,
         ssl_check_hostname=True,
         ssl_verify_cert=True,
         ssl_ca_file=None,

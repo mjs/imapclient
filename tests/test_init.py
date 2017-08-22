@@ -25,7 +25,7 @@ class TestInit(unittest.TestCase):
         fakeIMAP4 = Mock()
         self.imap4.IMAP4WithTimeout.return_value = fakeIMAP4
 
-        imap = IMAPClient('1.2.3.4', timeout=sentinel.timeout)
+        imap = IMAPClient('1.2.3.4', ssl=False, timeout=sentinel.timeout)
 
         self.assertEqual(imap._imap, fakeIMAP4)
         self.imap4.IMAP4WithTimeout.assert_called_with(
@@ -42,7 +42,7 @@ class TestInit(unittest.TestCase):
         fakeIMAP4_TLS = Mock()
         self.tls.IMAP4_TLS.return_value = fakeIMAP4_TLS
 
-        imap = IMAPClient('1.2.3.4', ssl=True, ssl_context=sentinel.context,
+        imap = IMAPClient('1.2.3.4', ssl_context=sentinel.context,
                           timeout=sentinel.timeout)
 
         self.assertEqual(imap._imap, fakeIMAP4_TLS)
@@ -58,7 +58,7 @@ class TestInit(unittest.TestCase):
     def test_stream(self):
         self.imaplib.IMAP4_stream.return_value = sentinel.IMAP4_stream
 
-        imap = IMAPClient('command', stream=True)
+        imap = IMAPClient('command', stream=True, ssl=False)
 
         self.assertEqual(imap._imap, sentinel.IMAP4_stream)
         self.imaplib.IMAP4_stream.assert_called_with('command')
