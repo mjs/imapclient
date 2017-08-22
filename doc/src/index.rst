@@ -2,7 +2,7 @@
  IMAPClient
 ============
 
-:Author: `Menno Finlay-Smits <inbox@menno.io>
+:Author: `Menno Finlay-Smits <http://menno.io/>`_
 :Version: |release|
 :Date: |today|
 :Homepage: http://imapclient.freshfoo.com
