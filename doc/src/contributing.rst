@@ -1,6 +1,6 @@
-=============================
- Contributing To The Project
-=============================
+Contributing to IMAPClient
+--------------------------
+
 The best way to contribute changes to IMAPClient is to fork the
 official repository on Github, make changes in a branch in your
 personal fork and then submit a pull request.
@@ -15,9 +15,8 @@ the tests work.
 
 Please read on if you plan on submitting changes to IMAPClient.
 
-=============
- Source Code
-=============
+Source Code
+~~~~~~~~~~~
 The official source code repository for IMAPClient can be found on
 Github at: https://github.com/mjs/imapclient/
 
@@ -25,7 +24,7 @@ Any major feature work will also be found as branches of this
 repository.
 
 Branches
-========
+~~~~~~~~
 Development for the next major release happens on the ``master`` branch.
 
 There is also a branch for each major release series (for example:
@@ -34,20 +33,20 @@ a series, changes may be selectively merged between ``master`` and a
 stable release branch.
 
 Release Tags
-============
+~~~~~~~~~~~~
 Each released version is available in the IMAPClient repository
 as a Git tag (e.g. "0.9.1").
 
-============
- Unit Tests
-============
+
+Unit Tests
+----------
 There are comprehensive unit tests for the server response parser and
 a number of other parts of the code. These tests use the unittest2
 package which is also included as the standard unittest package in
 Python 2.7 and 3.2 onwards.
 
 Running Unit Tests
-==================
+~~~~~~~~~~~~~~~~~~
 To run the tests run::
 
      python setup.py test
@@ -69,7 +68,7 @@ script (for Unix-like systems) or the unit2.py script::
      unit2.py discover
 
 Running the Unit Tests Against Multiple Python Versions
-=======================================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 It is possible to run the unit tests against all supported Python
 versions at once using `tox`_. Once installed, the ``tox`` command
 will use the tox.ini file in the root of the source directory and run
@@ -79,7 +78,7 @@ IMAPClient (provided these versions of Python are installed!).
 .. _`tox`: http://testrun.org/tox/
 
 Writing Unit Tests
-==================
+~~~~~~~~~~~~~~~~~~
 Protocol level unit tests should not act against a real IMAP server
 but should use canned data instead. The IMAPClientTest base class
 should typically be used as the base class for any tests - it provides
