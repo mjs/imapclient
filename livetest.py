@@ -79,8 +79,10 @@ class _TestBase(unittest.TestCase):
         client = create_client_from_config(cls.conf)
         cls.client = client
         client.use_uid = cls.use_uid
+        cls.condstore_enabled = False
         if client.has_capability('ENABLE') and client.has_capability('CONDSTORE'):
             client.enable('CONDSTORE')
+            cls.condstore_enabled = True
         cls.base_folder = cls.conf.namespace[0] + '__imapclient'
         cls.folder_delimiter = cls.conf.namespace[1]
 
@@ -171,7 +173,8 @@ class _TestBase(unittest.TestCase):
         return self.client._imap.host == 'imap.gmail.com'
 
     def is_fastmail(self):
-        return self.client._imap.host == 'mail.messagingengine.com'
+        return (self.client._imap.host == 'mail.messagingengine.com' or
+                self.client._imap.host == 'imap.fastmail.com')
 
     def is_exchange(self):
         # Assume that these capabilities mean we're talking to MS
@@ -784,9 +787,12 @@ def createUidTestClass(conf, use_uid):
             self.assertEqual(len(resp), 1)
             msginfo = resp[msg_id]
 
+            extra_fields = [b'SEQ']
+            if self.condstore_enabled:
+                extra_fields.append(b'MODSEQ')
             self.assertSetEqual(
                 set(msginfo.keys()),
-                set([to_bytes(f) for f in fields] + [b'SEQ'])
+                set([to_bytes(f) for f in fields] + extra_fields),
             )
             self.assertEqual(msginfo[b'SEQ'], 1)
             self.assertEqual(msginfo[b'RFC822'], to_bytes(msg))
