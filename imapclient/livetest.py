@@ -345,6 +345,14 @@ class TestGeneral(_TestBase):
                               'this folder is not likely to exist')
 
     def test_folders(self):
+        # XXX temporary
+        self.client.debug = True
+        try:
+            self._test_folders()
+        finally:
+            self.client.debug = False
+
+    def _test_folders(self):
         self.assertTrue(self.client.folder_exists(self.base_folder))
         self.assertFalse(self.client.folder_exists('this is very unlikely to exist'))
 
