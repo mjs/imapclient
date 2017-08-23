@@ -66,6 +66,8 @@ messages in the INBOX folder.
     ID #44: "See that fun article about lobsters in Pacific ocean!" received 2017-06-09 09:49:47
     ID #46: "Planning for our next vacations" received 2017-05-12 10:29:30
 
+    >>> server.logout()
+    b'Logging out'
 
 User Guide
 ----------

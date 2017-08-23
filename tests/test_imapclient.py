@@ -599,3 +599,32 @@ class TestShutdown(IMAPClientTest):
     def test_shutdown(self):
         self.client.shutdown()
         self.client._imap.shutdown.assert_called_once_with()
+
+
+class TestContextManager(IMAPClientTest):
+
+    def test_context_manager(self):
+        with self.client as client:
+            self.assertIsInstance(client, IMAPClient)
+
+        self.client._imap.logout.assert_called_once_with()
+
+    @patch('imapclient.imapclient.logger')
+    def test_context_manager_fail_closing(self, mock_logger):
+        self.client._imap.logout.side_effect = RuntimeError("Error logout")
+        self.client._imap.shutdown.side_effect = RuntimeError("Error shutdown")
+
+        with self.client as client:
+            self.assertIsInstance(client, IMAPClient)
+
+        self.client._imap.logout.assert_called_once_with()
+        self.client._imap.shutdown.assert_called_once_with()
+        mock_logger.info.assert_called_once_with(
+            'Could not close the connection cleanly: %s',
+            self.client._imap.shutdown.side_effect
+        )
+
+    def test_exception_inside_context_manager(self):
+        with self.assertRaises(ValueError):
+            with self.client as _:
+                raise ValueError("Error raised inside the context manager")
