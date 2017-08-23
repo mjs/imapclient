@@ -85,16 +85,17 @@ class IMAPClient(object):
     """A connection to the IMAP server specified by *host* is made when
     this class is instantiated.
 
-    *port* defaults to 143, or 993 if *ssl* is ``True``.
+    *port* defaults to 993, or 143 if *ssl* is ``False``.
 
     If *use_uid* is ``True`` unique message UIDs be used for all calls
     that accept message ids (defaults to ``True``).
 
-    If *ssl* is ``True`` an SSL connection will be made (defaults to
-    ``False``).
+    If *ssl* is ``True`` (the default) a secure connection will be made.
+    Otherwise an insecure connection over plain text will be
+    established.
 
     If *ssl* is ``True`` the optional *ssl_context* argument can be
-    used to provide a ``backports.ssl.SSLContext`` instance used to
+    used to provide an ``ssl.SSLContext`` instance used to
     control SSL/TLS connection parameters. If this is not provided a
     sensible default context will be used.
 
@@ -122,7 +123,7 @@ class IMAPClient(object):
     AbortError = imaplib.IMAP4.abort
     ReadOnlyError = imaplib.IMAP4.readonly
 
-    def __init__(self, host, port=None, use_uid=True, ssl=False, stream=False,
+    def __init__(self, host, port=None, use_uid=True, ssl=True, stream=False,
                  ssl_context=None, timeout=None):
         if stream:
             if port is not None:
@@ -131,6 +132,11 @@ class IMAPClient(object):
                 raise ValueError("can't use 'ssl' when 'stream' is True")
         elif port is None:
             port = ssl and 993 or 143
+
+        if ssl and port == 143:
+            logger.warning("Attempting to establish an encrypted connection "
+                           "to a port (143) often used for unencrypted "
+                           "connections")
 
         self.host = host
         self.port = port
@@ -146,7 +152,8 @@ class IMAPClient(object):
         self._cached_capabilities = None
 
         self._imap = self._create_IMAP4()
-        logger.debug("Connected to host %s", self.host)
+        logger.debug("Connected to host %s over %s", self.host,
+                     "SSL/TLS" if ssl else "plain text")
 
         # Small hack to make imaplib log everything to its own logger
         imaplib_logger = IMAPlibLoggerAdapter(
