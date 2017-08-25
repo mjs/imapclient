@@ -13,7 +13,7 @@ import re
 import string
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from email.utils import make_msgid
 
 from six import binary_type, text_type, PY3, iteritems
@@ -540,9 +540,7 @@ def createUidTestClass(conf, use_uid):
             self.check_append(SIMPLE_MESSAGE.encode('ascii'), SIMPLE_MESSAGE)
 
         def check_append(self, in_message, out_message):
-            # Message time microseconds are set to 0 because the server will return
-            # time with only seconds precision.
-            msg_time = datetime.now().replace(microsecond=0)
+            msg_time = datetime(2016, 5, 4, 3, 2)
 
             # Append message
             resp = self.client.append(self.base_folder, in_message, ('abc', 'def'), msg_time)
@@ -557,9 +555,9 @@ def createUidTestClass(conf, use_uid):
             msginfo = tuple(resp.values())[0]
 
             # Time should match the time we specified
-            returned_msg_time = msginfo[b'INTERNALDATE']
-            self.assertIsNone(returned_msg_time.tzinfo)
-            self.assertEqual(returned_msg_time, msg_time)
+            server_msg_time = msginfo[b'INTERNALDATE']
+            self.assertIsNone(server_msg_time.tzinfo)
+            assert_times_close(server_msg_time, msg_time, timedelta(seconds=10))
 
             # Flags should be the same
             self.assertIn(b'abc', msginfo[b'FLAGS'])
@@ -943,6 +941,10 @@ def quiet_logout(client):
         client.logout()
     except IMAPClient.Error:
         pass
+
+
+def assert_times_close(ta, tb, max_delta):
+    assert tb - ta <= max_delta
 
 
 def maybe_lower(val):
