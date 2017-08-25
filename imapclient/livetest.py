@@ -188,16 +188,18 @@ class _TestBase(unittest.TestCase):
             self.client.noop()
 
     def delete_folder_with_retry(self, name):
-        for _ in range(3):
+        max_tries = 3
+        for _ in range(max_tries):
             try:
                 self.client.delete_folder(name)
                 return
             except IMAPClient.Error as err:
                 # This regularly happens on Fastmail
-                if "Mailbox already exists" in err:
+                if "Mailbox already exists" in str(err):
                     time.sleep(0.2)
                 else:
                     raise
+        raise IMAPClient.Error("failed to delete with %d attempts" % max_tries)
 
 
 class TestGeneral(_TestBase):
