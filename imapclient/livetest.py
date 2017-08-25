@@ -93,6 +93,7 @@ class _TestBase(unittest.TestCase):
         self.client.select_folder(self.base_folder)
 
     def tearDown(self):
+        self.client.folder_encode = True
         self.clear_test_folders()
         self.unsub_all_test_folders()
 
@@ -137,11 +138,7 @@ class _TestBase(unittest.TestCase):
                               key=self.get_folder_depth,
                               reverse=True)
         for folder in folder_names:
-            try:
-                self.client.delete_folder(folder)
-            except IMAPClient.Error:
-                if not self.is_fastmail():
-                    raise
+            self.delete_folder_with_retry(folder)
         self.client.folder_encode = True
 
     def get_folder_depth(self, folder):
@@ -189,6 +186,18 @@ class _TestBase(unittest.TestCase):
         self.client.append(folder, msg)
         if self.is_gmail():
             self.client.noop()
+
+    def delete_folder_with_retry(self, name):
+        for _ in range(3):
+            try:
+                self.client.delete_folder(name)
+                return
+            except IMAPClient.Error as err:
+                # This regularly happens on Fastmail
+                if "Mailbox already exists" in err:
+                    time.sleep(0.2)
+                else:
+                    raise
 
 
 class TestGeneral(_TestBase):
@@ -345,14 +354,6 @@ class TestGeneral(_TestBase):
                               'this folder is not likely to exist')
 
     def test_folders(self):
-        # XXX temporary
-        self.client.debug = True
-        try:
-            self._test_folders()
-        finally:
-            self.client.debug = False
-
-    def _test_folders(self):
         self.assertTrue(self.client.folder_exists(self.base_folder))
         self.assertFalse(self.client.folder_exists('this is very unlikely to exist'))
 
@@ -385,28 +386,25 @@ class TestGeneral(_TestBase):
 
     def run_folder_tests(self, folder_names, folder_encode):
         self.client.folder_encode = folder_encode
-        try:
-            folder_names = self.add_prefix_to_folders(folder_names)
+        folder_names = self.add_prefix_to_folders(folder_names)
 
-            for folder in folder_names:
-                self.assertFalse(self.client.folder_exists(folder))
+        for folder in folder_names:
+            self.assertFalse(self.client.folder_exists(folder))
 
-                self.client.create_folder(folder)
+            self.client.create_folder(folder)
 
-                self.assertTrue(self.client.folder_exists(folder))
+            self.assertTrue(self.client.folder_exists(folder))
 
-                self.assertIn(
-                    to_unicode(folder) if folder_encode else to_bytes(folder),
-                    self.all_test_folder_names()
-                )
+            self.assertIn(
+                to_unicode(folder) if folder_encode else to_bytes(folder),
+                self.all_test_folder_names()
+            )
 
-                self.client.select_folder(folder)
-                self.client.close_folder()
+            self.client.select_folder(folder)
+            self.client.close_folder()
 
-                self.client.delete_folder(folder)
-                self.assertFalse(self.client.folder_exists(folder))
-        finally:
-            self.client.folder_encode = True
+            self.delete_folder_with_retry(folder)
+            self.assertFalse(self.client.folder_exists(folder))
 
     def test_rename_folder(self):
         folders = self.add_prefix_to_folders([
@@ -454,7 +452,7 @@ class TestGeneral(_TestBase):
                 self.assertEqual(status[b'RECENT'], 1)
             self.assertEqual(status[b'UNSEEN'], 1)
         finally:
-            self.client.delete_folder(new_folder)
+            self.delete_folder_with_retry(new_folder)
 
     def test_idle(self):
         if not self.client.has_capability('IDLE'):
@@ -609,7 +607,7 @@ def createUidTestClass(conf, use_uid):
                 # Clean up folders created by assigning labels.
                 for label in all_labels:
                     if self.client.folder_exists(label):
-                        self.client.delete_folder(label)
+                        self.delete_folder_with_retry(label)
 
         def test_search(self):
             # Add some test messages
