@@ -199,7 +199,7 @@ class _TestBase(unittest.TestCase):
                     time.sleep(0.2)
                 else:
                     raise
-        raise IMAPClient.Error("failed to delete with %d attempts" % max_tries)
+        raise IMAPClient.Error("failed to delete folder %r with %d attempts" % (name, max_tries))
 
 
 class TestGeneral(_TestBase):
