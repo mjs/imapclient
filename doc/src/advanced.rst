@@ -3,6 +3,33 @@ Advanced Usage
 This document covers some more advanced features and tips for handling
 specific usages.
 
+Cleaning Up Connections
+~~~~~~~~~~~~~~~~~~~~~~~
+
+To communicate with the server, IMAPClient establishes a TCP connection. It is
+important for long-lived processes to always close connections at some
+point to avoid leaking memory and file descriptors. This is usually done with
+the ``logout`` method::
+
+  import imapclient
+
+  c = imapclient.IMAPClient(host="imap.foo.org")
+  c.login("bar@foo.org", "passwd")
+  c.select_folder("INBOX")
+  c.logout()
+
+However if an error is raised when selecting the folder, the connection may be
+left open.
+
+IMAPClient may be used as a context manager that automatically closes
+connections when they are not needed anymore::
+
+  import imapclient
+
+  with imapclient.IMAPClient(host="imap.foo.org") as c:
+      c.login("bar@foo.org", "passwd")
+      c.select_folder("INBOX")
+
 Watching a mailbox asynchronously using idle
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 TODO

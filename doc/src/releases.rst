@@ -10,6 +10,8 @@ Changed
 - XXX Use built-in TLS when sensible.
 - Logs are now handled by the Python logging module. `debug` and `log_file`
   are not used anymore.
+- A context manager is introduced to automatically close connections to remote
+  servers.
 
 Other
 -----

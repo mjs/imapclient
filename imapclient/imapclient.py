@@ -117,6 +117,10 @@ class IMAPClient(object):
     system time). This attribute can be changed between ``fetch()``
     calls if required.
 
+    Can be used as a context manager to automatically close opened connections:
+    >>> with IMAPClient(host="imap.foo.org") as client:
+    ...     client.login("bar@foo.org", "passwd")
+
     """
 
     Error = imaplib.IMAP4.error
@@ -150,8 +154,11 @@ class IMAPClient(object):
         self._timeout = timeout
         self._starttls_done = False
         self._cached_capabilities = None
+        self._idle_tag = None
 
         self._imap = self._create_IMAP4()
+        self._set_timeout()
+
         logger.debug("Connected to host %s over %s", self.host,
                      "SSL/TLS" if ssl else "plain text")
 
@@ -162,9 +169,22 @@ class IMAPClient(object):
         self._imap.debug = 5
         self._imap._mesg = imaplib_logger.debug
 
-        self._idle_tag = None
+    def __enter__(self):
+        return self
 
-        self._set_timeout()
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Logout and closes the connection when exiting the context manager.
+
+        All exceptions during logout and connection shutdown are caught because
+        an error here usually means the connection was already closed.
+        """
+        try:
+            self.logout()
+        except Exception:
+            try:
+                self.shutdown()
+            except Exception as e:
+                logger.info("Could not close the connection cleanly: %s", e)
 
     def _create_IMAP4(self):
         if self.stream:
