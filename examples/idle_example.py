@@ -1,29 +1,27 @@
-# This example is a lot more interesting if you have an active client
-# connected to the same IMAP account!
-
-from __future__ import unicode_literals
+# Open a connection in IDLE mode and wait for notifications from the server
 
 from imapclient import IMAPClient
 
 HOST = 'imap.host.com'
 USERNAME = 'someuser'
 PASSWORD = 'password'
-ssl = True
 
-server = IMAPClient(HOST, use_uid=True, ssl=ssl)
+server = IMAPClient(HOST)
 server.login(USERNAME, PASSWORD)
 server.select_folder('INBOX')
 
 # Start IDLE mode
 server.idle()
+print("Connection is now in IDLE mode, send yourself an email or quit with ^c")
 
-# Wait for up to 30 seconds for an IDLE response
-responses = server.idle_check(timeout=30)
-print(responses)
+while True:
+    try:
+        # Wait for up to 30 seconds for an IDLE response
+        responses = server.idle_check(timeout=30)
+        print("Server sent:", responses if responses else "nothing")
+    except KeyboardInterrupt:
+        break
 
-# Come out of IDLE mode
-text, responses = server.idle_done()
-print('IDLE done. Server said %r' % text)
-print('Final responses: ', responses)
-
-print(server.logout())
+server.idle_done()
+print("\nIDLE mode done")
+server.logout()
