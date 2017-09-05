@@ -18,7 +18,7 @@ Please read on if you plan on submitting changes to IMAPClient.
 Source Code
 ~~~~~~~~~~~
 The official source code repository for IMAPClient can be found on
-Github at: https://github.com/mjs/imapclient/
+Github at: https://github.com/mjs/imapclient
 
 Any major feature work will also be found as branches of this
 repository.
@@ -67,12 +67,14 @@ script (for Unix-like systems) or the unit2.py script::
      unit2 discover
      unit2.py discover
 
-Running the Unit Tests Against Multiple Python Versions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-It is possible to run the unit tests against all supported Python
-versions at once using `tox`_. Once installed, the ``tox`` command
-will use the tox.ini file in the root of the source directory and run
-the unit tests against the Python versions officially supported by
+Testing Against Multiple Python Versions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+When submitting a Pull Request to IMAPClient, tests are automatically ran
+against all the supported Python versions.
+
+It is possible to locally run these tests using `tox`_. Once installed, the
+``tox`` command will use the tox.ini file in the root of the source directory
+and run the unit tests against the Python versions officially supported by
 IMAPClient (provided these versions of Python are installed!).
 
 .. _`tox`: http://testrun.org/tox/
