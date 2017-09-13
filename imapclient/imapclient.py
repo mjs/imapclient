@@ -1089,7 +1089,7 @@ class IMAPClient(object):
                                        self._normalise_folder(folder),
                                        uid=True, unpack=True)
 
-    def expunge(self):
+    def expunge(self, messages=None):
         """Remove any messages from the currently selected folder that
         have the ``\\Deleted`` flag set.
 
@@ -1108,6 +1108,10 @@ class IMAPClient(object):
         See :rfc:`3501#section-6.4.3` section 6.4.3 and
         :rfc:`3501#section-7.4.1` section 7.4.1 for more details.
         """
+        if messages:
+          if not self.use_uid:
+            raise ValueError('cannot EXPUNGE by ID when not using uids')
+          return self._command_and_check('EXPUNGE', join_message_ids(messages), uid=True)
         tag = self._imap._command('EXPUNGE')
         return self._consume_until_tagged_response(tag, 'EXPUNGE')
 

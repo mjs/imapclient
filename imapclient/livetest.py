@@ -918,6 +918,26 @@ def createUidTestClass(conf, use_uid):
                 # on. EXPUNGE won't return anything in this case
                 self.assertIn((1, b'EXPUNGE'), resps)
 
+        def test_id_expunge(self):
+          if not self.client.use_uid:
+            self.skipTest('test instance not configured for UID operations')
+          folder = self.add_prefix_to_folder('test_id_expunge')
+          self.client.create_folder(folder)
+          self.client.select_folder(folder)
+          for i in range(3):
+            self.client.append(folder, 'Subject: msg %d\r\n\r\nbody %d\r\n\r\n' % (i, i))
+          messages = self.client.search()
+          self.assertEquals(len(messages), 3)
+          m0 = messages[0]
+          m1 = messages[1]
+          # delete 2 messages, but only expunge one of them
+          self.client.delete_messages([messages[0], messages[2]])
+          ret = self.client.expunge(messages[2])
+          messages = self.client.search()
+          self.assertEquals(len(messages), 2)
+          self.assertIn(m0, messages)
+          self.assertIn(m1, messages)
+
         def test_getacl(self):
             self.skip_unless_capable('ACL')
 
