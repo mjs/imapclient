@@ -1120,9 +1120,9 @@ class IMAPClient(object):
         See :rfc:`4315#section-2.1` section 2.1 for more details.
         """
         if messages:
-          if not self.use_uid:
-            raise ValueError('cannot EXPUNGE by ID when not using uids')
-          return self._command_and_check('EXPUNGE', join_message_ids(messages), uid=True)
+            if not self.use_uid:
+                raise ValueError('cannot EXPUNGE by ID when not using uids')
+            return self._command_and_check('EXPUNGE', join_message_ids(messages), uid=True)
         tag = self._imap._command('EXPUNGE')
         return self._consume_until_tagged_response(tag, 'EXPUNGE')
 

@@ -578,6 +578,21 @@ class TestRawCommand(IMAPClientTest):
         with self.assertRaisesRegex(IMAPClient.AbortError, expected_error):
             self.client._raw_command(b'FOO', [b'\xff'])
 
+class TestExpunge(IMAPClientTest):
+
+    def test_expunge(self):
+        mockCommand = Mock(return_value=sentinel.tag)
+        mockConsume = Mock(return_value=sentinel.out)
+        self.client._imap._command = mockCommand
+        self.client._consume_until_tagged_response = mockConsume
+        result = self.client.expunge()
+        mockCommand.assert_called_with('EXPUNGE')
+        mockConsume.assert_called_with(sentinel.tag, 'EXPUNGE')
+        self.assertEqual(sentinel.out, result)
+
+    def test_id_expunge(self):
+        self.client._imap.uid.return_value = ('OK', [None])
+        self.assertEqual([None], self.client.expunge(['4','5', '6']))
 
 class TestShutdown(IMAPClientTest):
 
