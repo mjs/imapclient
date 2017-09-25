@@ -10,6 +10,7 @@ import imp
 import os
 import random
 import re
+import socket
 import string
 import sys
 import time
@@ -21,7 +22,9 @@ from six import binary_type, text_type, PY3, iteritems
 from imapclient.config import parse_config_file, create_client_from_config
 from imapclient.exceptions import IMAPClientException
 from imapclient.fixed_offset import FixedOffset
-from imapclient.imapclient import IMAPClient, DELETED, RECENT, _dict_bytes_normaliser
+from imapclient.imapclient import (
+    IMAPClient, DELETED, RECENT, _dict_bytes_normaliser, SocketTimeout
+)
 from imapclient.response_types import Envelope, Address
 from imapclient.util import to_bytes, to_unicode
 from tests.util import unittest
@@ -509,6 +512,38 @@ class TestGeneral(_TestBase):
         self.assertGreater(len(text), 0)
         self.assertTrue(isinstance(resps, list))
         self.assertIn((1, b'EXISTS'), resps)
+
+
+class TestSocketTimeout(unittest.TestCase):
+    """
+    Tests SocketTimeout instanciation and usage. We're overriding intentionally
+    the timeout from the config file with unrealistic numbers to do that without
+    altering other tests suite.
+    """
+    conf = None
+
+    def setUp(self):
+        self.client = None
+
+    def tearDown(self):
+        if self.client:
+            quiet_logout(self.client)
+
+    def test_small_connection_timeout_fail(self):
+        self.conf.timeout = SocketTimeout(connect=0.001, read=10)
+        with self.assertRaises(socket.timeout):
+            self.client = create_client_from_config(self.conf)
+
+    def test_small_read_timeout_fail(self):
+        """
+        For ease, the login operation use the read/write timeout. To make the
+        test pass, we don't login once connected but simply try a 'noop', that
+        should not be able to complete in under a such a small time.
+        """
+        self.conf.timeout = SocketTimeout(connect=30, read=0.00001)
+        self.client = create_client_from_config(self.conf, login=False)
+        with self.assertRaises(socket.timeout):
+            self.client.noop()
 
 
 def createUidTestClass(conf, use_uid):
@@ -1016,7 +1051,9 @@ def main():
         setattr(live_test_mod, name, klass)
 
     TestGeneral.conf = host_config
+    TestSocketTimeout.conf = host_config
     add_test_class(TestGeneral)
+    add_test_class(TestSocketTimeout)
     add_test_class(createUidTestClass(host_config, use_uid=True), 'TestWithUIDs')
     add_test_class(createUidTestClass(host_config, use_uid=False), 'TestWithoutUIDs')
 

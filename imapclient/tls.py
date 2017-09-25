@@ -213,7 +213,7 @@ class IMAP4_TLS(imaplib.IMAP4):
     def open(self, host, port):
         self.host = host
         self.port = port
-        sock = socket.create_connection((host, port), self._timeout)
+        sock = socket.create_connection((host, port), self._timeout.connect)
         self.sock = wrap_socket(sock, self.ssl_context, host)
         self.file = self.sock.makefile('rb')
 

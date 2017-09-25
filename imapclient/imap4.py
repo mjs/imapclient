@@ -13,4 +13,4 @@ class IMAP4WithTimeout(imaplib.IMAP4):
         imaplib.IMAP4.__init__(self, address, port)
 
     def _create_socket(self):
-        return socket.create_connection((self.host, self.port), self._timeout)
+        return socket.create_connection((self.host, self.port), self._timeout.connect)

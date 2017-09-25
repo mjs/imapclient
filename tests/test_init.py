@@ -2,7 +2,7 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from imapclient.imapclient import IMAPClient
+from imapclient.imapclient import IMAPClient, SocketTimeout
 from .util import unittest, patch, sentinel, Mock
 
 
@@ -30,7 +30,7 @@ class TestInit(unittest.TestCase):
         self.assertEqual(imap._imap, fakeIMAP4)
         self.imap4.IMAP4WithTimeout.assert_called_with(
             '1.2.3.4', 143,
-            sentinel.timeout
+            SocketTimeout(sentinel.timeout, sentinel.timeout)
         )
         self.assertEqual(imap.host, '1.2.3.4')
         self.assertEqual(imap.port, 143)
@@ -48,7 +48,9 @@ class TestInit(unittest.TestCase):
         self.assertEqual(imap._imap, fakeIMAP4_TLS)
         self.tls.IMAP4_TLS.assert_called_with(
             '1.2.3.4', 993,
-            sentinel.context, sentinel.timeout)
+            sentinel.context, 
+            SocketTimeout(sentinel.timeout, sentinel.timeout)
+        )
         self.assertEqual(imap.host, '1.2.3.4')
         self.assertEqual(imap.port, 993)
         self.assertEqual(imap.ssl, True)
@@ -56,11 +58,12 @@ class TestInit(unittest.TestCase):
         self.assertEqual(imap.stream, False)
 
     def test_stream(self):
-        self.imaplib.IMAP4_stream.return_value = sentinel.IMAP4_stream
+        fakeIMAP4_stream = Mock()
+        self.imaplib.IMAP4_stream.return_value = fakeIMAP4_stream
 
         imap = IMAPClient('command', stream=True, ssl=False)
 
-        self.assertEqual(imap._imap, sentinel.IMAP4_stream)
+        self.assertEqual(imap._imap, fakeIMAP4_stream)
         self.imaplib.IMAP4_stream.assert_called_with('command')
 
         self.assertEqual(imap.host, 'command')
