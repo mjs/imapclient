@@ -12,6 +12,8 @@ Changed
   are not used anymore.
 - A context manager is introduced to automatically close connections to remote
   servers.
+- More precise exceptions available in `imapclient.exceptions` are raised when
+  an error happens
 
 Other
 -----
@@ -36,6 +38,7 @@ Added
   can be expressed. IMAPClient will add parentheses in the right place.
 - PLAIN authentication support (via `plain_login` method)
 - `unselect_folder()` method, for servers with the UNSELECT capability (#200)
+- Allow to expurge a subset of messages, selected by their UID (#287)
 
 Changed
 -------
