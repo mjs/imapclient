@@ -8,6 +8,7 @@ from datetime import date, datetime
 
 import imaplib
 
+from imapclient.exceptions import InvalidCriteriaException
 from imapclient.imapclient import _quoted
 from .imapclient_test import IMAPClientTest
 from .util import Mock
@@ -80,7 +81,7 @@ class TestSearch(TestSearchBase):
         self.assertEqual(result.modseq, 51101)
 
     def test_nested_empty(self):
-        self.assertRaises(ValueError, self.client.search, [[]])
+        self.assertRaises(InvalidCriteriaException, self.client.search, [[]])
 
     def test_single(self):
         self.client.search([['FOO']])

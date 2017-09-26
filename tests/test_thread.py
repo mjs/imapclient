@@ -4,6 +4,8 @@
 
 from __future__ import unicode_literals
 
+from imapclient.exceptions import CapabilityError
+
 from .imapclient_test import IMAPClientTest
 from .util import Mock
 
@@ -22,11 +24,11 @@ class TestThread(IMAPClientTest):
 
     def test_no_thread_support(self):
         self.client._cached_capabilities = (b'NOT-THREAD',)
-        self.assertRaises(ValueError, self.client.thread)
+        self.assertRaises(CapabilityError, self.client.thread)
 
     def test_unsupported_algorithm(self):
         self.client._cached_capabilities = (b'THREAD=FOO',)
-        self.assertRaises(ValueError, self.client.thread)
+        self.assertRaises(CapabilityError, self.client.thread)
 
     def test_defaults(self):
         threads = self.client.thread()

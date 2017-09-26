@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 
 from imapclient import IMAPClient
+from imapclient.exceptions import LoginError
 from .imapclient_test import IMAPClientTest
 
 
@@ -25,7 +26,7 @@ class TestPlainLogin(IMAPClientTest):
 
     def test_fail(self):
         self.client._imap.authenticate.return_value = ('NO', [b'Boom'])
-        self.assertRaises(IMAPClient.Error, self.client.plain_login, "user", "secret")
+        self.assertRaises(LoginError, self.client.plain_login, "user", "secret")
 
     def test_with_authorization_identity(self):
         self.client._imap.authenticate.return_value = ('OK', [b'Success'])

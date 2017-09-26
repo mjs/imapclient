@@ -16,6 +16,7 @@ from logging import LoggerAdapter, getLogger
 
 from six import moves, iteritems, text_type, integer_types, PY3, binary_type, iterbytes
 
+from . import exceptions
 from . import imap4
 from . import response_lexer
 from . import tls
@@ -123,9 +124,12 @@ class IMAPClient(object):
 
     """
 
-    Error = imaplib.IMAP4.error
-    AbortError = imaplib.IMAP4.abort
-    ReadOnlyError = imaplib.IMAP4.readonly
+    # Those exceptions are kept for backward-compatibility, since
+    # previous versions included these attributes as references to
+    # imaplib original exceptions
+    Error = exceptions.IMAPClientException
+    AbortError = exceptions.IMAPClientAbortError
+    ReadOnlyError = exceptions.IMAPClientReadOnlyError
 
     def __init__(self, host, port=None, use_uid=True, ssl=True, stream=False,
                  ssl_context=None, timeout=None):
@@ -224,7 +228,7 @@ class IMAPClient(object):
         or an SSL connection is already established.
         """
         if self.ssl or self._starttls_done:
-            raise self.AbortError('TLS session already established')
+            raise exceptions.IMAPClientAbortError('TLS session already established')
 
         typ, data = self._imap._simple_command("STARTTLS")
         self._checkok('starttls', typ, data)
@@ -239,12 +243,16 @@ class IMAPClient(object):
         """Login using *username* and *password*, returning the
         server response.
         """
-        rv = self._command_and_check(
-            'login',
-            to_unicode(username),
-            to_unicode(password),
-            unpack=True,
-        )
+        try:
+            rv = self._command_and_check(
+                'login',
+                to_unicode(username),
+                to_unicode(password),
+                unpack=True,
+            )
+        except exceptions.IMAPClientException as e:
+            raise exceptions.LoginError(str(e))
+
         logger.info('Logged in as %s', username)
         return rv
 
@@ -258,7 +266,10 @@ class IMAPClient(object):
         if vendor:
             auth_string += 'vendor=%s\1' % vendor
         auth_string += '\1'
-        return self._command_and_check('authenticate', mech, lambda x: auth_string)
+        try:
+            return self._command_and_check('authenticate', mech, lambda x: auth_string)
+        except exceptions.IMAPClientException as e:
+            raise exceptions.LoginError(str(e))
 
     def plain_login(self, identity, password, authorization_identity=None):
         """Authenticate using the PLAIN method (requires server support).
@@ -266,7 +277,10 @@ class IMAPClient(object):
         if not authorization_identity:
             authorization_identity = ""
         auth_string = '%s\0%s\0%s' % (authorization_identity, identity, password)
-        return self._command_and_check('authenticate', 'PLAIN', lambda _: auth_string, unpack=True)
+        try:
+            return self._command_and_check('authenticate', 'PLAIN', lambda _: auth_string, unpack=True)
+        except exceptions.IMAPClientException as e:
+            raise exceptions.LoginError(str(e))
 
     def logout(self):
         """Logout, returning the server response.
@@ -302,7 +316,9 @@ class IMAPClient(object):
         See :rfc:`5161` for more details.
         """
         if self._imap.state != 'AUTH':
-            raise self.Error("ENABLE command illegal in state %s" % self._imap.state)
+            raise exceptions.IllegalStateException(
+                'ENABLE command illegal in state %s' % self._imap.state
+            )
 
         resp = self._raw_command_untagged(
             b'ENABLE',
@@ -322,7 +338,8 @@ class IMAPClient(object):
         for example: ``{"name": "IMAPClient", "version": "0.12"}``
         """
         if not self.has_capability('ID'):
-            raise ValueError('server does not support IMAP ID extension')
+            raise exceptions.CapabilityError('server does not support IMAP ID extension')
+
         if parameters is None:
             args = 'NIL'
         else:
@@ -615,7 +632,7 @@ class IMAPClient(object):
         self._idle_tag = self._imap._command('IDLE')
         resp = self._imap._get_response()
         if resp is not None:
-            raise self.Error('Unexpected IDLE response: %s' % resp)
+            raise exceptions.IMAPClientException('Unexpected IDLE response: %s' % resp)
 
     def idle_check(self, timeout=None):
         """Check for any IDLE responses sent by the server.
@@ -837,7 +854,7 @@ class IMAPClient(object):
             # Make BAD IMAP responses easier to understand to the user, with a link to the docs
             m = re.match(r'SEARCH command error: BAD \[(.+)\]', str(e))
             if m:
-                raise self.Error(
+                raise exceptions.InvalidCriteriaException(
                     '{original_msg}\n\n'
                     'This error may have been caused by a syntax error in the criteria: '
                     '{criteria}\nPlease refer to the documentation for more information '
@@ -877,7 +894,7 @@ class IMAPClient(object):
         not be supported by all IMAP servers.
         """
         if not self.has_capability('SORT'):
-            raise ValueError('The server does not support the SORT extension')
+            raise exceptions.CapabilityError('The server does not support the SORT extension')
 
         args = [
             _normalise_sort_criteria(sort_criteria),
@@ -906,8 +923,9 @@ class IMAPClient(object):
         """
         algorithm = to_bytes(algorithm)
         if not self.has_capability(b'THREAD=' + algorithm):
-            raise ValueError('server does not support %s threading algorithm'
-                             % algorithm)
+            raise exceptions.CapabilityError(
+                'The server does not support %s threading algorithm' % algorithm
+            )
 
         args = [algorithm, to_bytes(charset)] + \
             _normalise_search_criteria(criteria, charset)
@@ -1169,7 +1187,7 @@ class IMAPClient(object):
         Raises IMAPClient.Error if the command fails.
         """
         if typ != expected:
-            raise self.Error("%s failed: %s" % (command, to_unicode(data[0])))
+            raise exceptions.IMAPClientException("%s failed: %s" % (command, to_unicode(data[0])))
 
     def _consume_until_tagged_response(self, tag, command):
         tagged_commands = self._imap.tagged_commands
@@ -1260,7 +1278,7 @@ class IMAPClient(object):
         while self._imap._get_response():
             tagged_resp = self._imap.tagged_commands.get(tag)
             if tagged_resp:
-                raise self.AbortError(
+                raise exceptions.IMAPClientAbortError(
                     "unexpected response while waiting for continuation response: " +
                     repr(tagged_resp))
 
@@ -1349,7 +1367,7 @@ def _quote(arg):
 
 def _normalise_search_criteria(criteria, charset=None):
     if not criteria:
-        raise ValueError('no criteria specified')
+        raise exceptions.InvalidCriteriaException('no criteria specified')
     if not charset:
         charset = 'us-ascii'
 

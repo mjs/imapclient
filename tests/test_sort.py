@@ -4,6 +4,8 @@
 
 from __future__ import unicode_literals
 
+from imapclient.exceptions import CapabilityError
+
 from .imapclient_test import IMAPClientTest
 from .util import Mock
 
@@ -22,7 +24,7 @@ class TestSort(IMAPClientTest):
 
     def test_no_support(self):
         self.client._cached_capabilities = (b'BLAH',)
-        self.assertRaises(ValueError, self.client.sort, 'ARRIVAL')
+        self.assertRaises(CapabilityError, self.client.sort, 'ARRIVAL')
 
     def test_single_criteria(self):
         ids = self.client.sort('arrival')
