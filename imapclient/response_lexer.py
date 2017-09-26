@@ -13,6 +13,8 @@ from __future__ import unicode_literals
 
 import six
 
+from .util import assert_imap_protocol
+
 __all__ = ["TokenSource"]
 
 CTRL_CHARS = frozenset(c for c in range(32))
@@ -97,7 +99,7 @@ class Lexer(object):
                     if nextchar in whitespace:
                         yield token
                     elif nextchar == DOUBLE_QUOTE:
-                        assert not token
+                        assert_imap_protocol(not token)
                         token.append(nextchar)
                         token.extend(read_until(stream_i, nextchar))
                         yield token
@@ -138,7 +140,7 @@ class LiteralHandlingIter:
             # A 'record' with a string which includes a literal marker, and
             # the literal itself.
             self.src_text = resp_record[0]
-            assert self.src_text.endswith(b"}"), self.src_text
+            assert_imap_protocol(self.src_text.endswith(b"}"), self.src_text)
             self.literal = resp_record[1]
         else:
             # just a line with no literals.

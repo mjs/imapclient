@@ -16,9 +16,9 @@ from imapclient.response_parser import (
     parse_response,
     parse_message_list,
     parse_fetch_response,
-    ParseError,
 )
 from imapclient.response_types import Envelope, Address
+from imapclient.exceptions import ProtocolError
 from tests.util import unittest
 from .util import patch
 
@@ -160,7 +160,7 @@ class TestParseResponse(unittest.TestCase):
     def _test_parse_error(self, to_parse, expected_msg):
         if not isinstance(to_parse, list):
             to_parse = [to_parse]
-        self.assertRaisesRegex(ParseError, expected_msg,
+        self.assertRaisesRegex(ProtocolError, expected_msg,
                                parse_response, to_parse)
 
 
@@ -200,13 +200,13 @@ class TestParseFetchResponse(unittest.TestCase):
         self.assertEqual(parse_fetch_response([None]), {})
 
     def test_bad_msgid(self):
-        self.assertRaises(ParseError, parse_fetch_response, [b'abc ()'])
+        self.assertRaises(ProtocolError, parse_fetch_response, [b'abc ()'])
 
     def test_bad_data(self):
-        self.assertRaises(ParseError, parse_fetch_response, [b'2 WHAT'])
+        self.assertRaises(ProtocolError, parse_fetch_response, [b'2 WHAT'])
 
     def test_missing_data(self):
-        self.assertRaises(ParseError, parse_fetch_response, [b'2'])
+        self.assertRaises(ProtocolError, parse_fetch_response, [b'2'])
 
     def test_simple_pairs(self):
         self.assertEqual(parse_fetch_response([b'23 (ABC 123 StUfF "hello")']),
@@ -215,8 +215,8 @@ class TestParseFetchResponse(unittest.TestCase):
                                b'SEQ': 23}})
 
     def test_odd_pairs(self):
-        self.assertRaises(ParseError, parse_fetch_response, [b'(ONE)'])
-        self.assertRaises(ParseError, parse_fetch_response, [b'(ONE TWO THREE)'])
+        self.assertRaises(ProtocolError, parse_fetch_response, [b'(ONE)'])
+        self.assertRaises(ProtocolError, parse_fetch_response, [b'(ONE TWO THREE)'])
 
     def test_UID(self):
         self.assertEqual(parse_fetch_response([b'23 (UID 76)']),
@@ -230,7 +230,7 @@ class TestParseFetchResponse(unittest.TestCase):
                                b'SEQ': 23}})
 
     def test_bad_UID(self):
-        self.assertRaises(ParseError, parse_fetch_response, [b'(UID X)'])
+        self.assertRaises(ProtocolError, parse_fetch_response, [b'(UID X)'])
 
     def test_FLAGS(self):
         self.assertEqual(parse_fetch_response([b'23 (FLAGS (\Seen Stuff))']),

@@ -36,3 +36,7 @@ class InvalidCriteriaError(IMAPClientError):
     A command using a search criteria failed, probably due to a syntax 
     error in the criteria string.
     """
+
+
+class ProtocolError(IMAPClientError):
+    """The server replied with a response that violates the IMAP protocol."""

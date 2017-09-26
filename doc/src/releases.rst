@@ -21,6 +21,8 @@ Changed
   are not used anymore.
 - More precise exceptions available in `imapclient.exceptions` are raised when
   an error happens
+- `imapclient.exceptions.ProtocolError` is now raised when the reply from a
+  remote server violates the IMAP protocol.
 - GMail labels are now strings instead of bytes in Python 3.
 
 Fixed

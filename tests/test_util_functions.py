@@ -4,15 +4,17 @@
 
 from __future__ import unicode_literals
 
-from imapclient.exceptions import InvalidCriteriaError
+from imapclient.exceptions import InvalidCriteriaError, ProtocolError
 from imapclient.imapclient import (
     join_message_ids,
     _normalise_search_criteria,
     normalise_text_list,
     seq_to_parenstr,
     seq_to_parenstr_upper,
-    _quoted
+    _quoted,
+    _parse_untagged_response
 )
+from imapclient.util import assert_imap_protocol
 from tests.util import unittest
 
 
@@ -166,3 +168,17 @@ class Test_normalise_search_criteria(unittest.TestCase):
 
     def test_empty(self):
         self.assertRaises(InvalidCriteriaError, _normalise_search_criteria, '', None)
+
+
+class TestAssertIMAPProtocol(unittest.TestCase):
+
+    def test_assert_imap_protocol(self):
+        assert_imap_protocol(True)
+        with self.assertRaises(ProtocolError):
+            assert_imap_protocol(False)
+
+
+    def test_assert_imap_protocol_with_message(self):
+        assert_imap_protocol(True, 'foo')
+        with self.assertRaises(ProtocolError):
+            assert_imap_protocol(False, 'foo')
