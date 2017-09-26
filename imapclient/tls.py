@@ -194,7 +194,7 @@ class IMAP4_TLS(imaplib.IMAP4):
 
     def shutdown(self):
         self.file.close()
-        self.sock._conn.shutdown()
+        self.sock.shutdown(socket.SHUT_RDWR)
         self.sock.close()
 
 
@@ -205,7 +205,7 @@ class _SSLSocketWithShutdown(object):
         self.sslsock = sslsock
 
     def shutdown(self, how):
-        return self.sslsock._conn.sock_shutdown(how)
+        return self.sslsock.shutdown(how)
 
     def __getattr__(self, name):
         return getattr(self.sslsock, name)
