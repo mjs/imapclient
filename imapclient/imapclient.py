@@ -1089,9 +1089,10 @@ class IMAPClient(object):
                                        self._normalise_folder(folder),
                                        uid=True, unpack=True)
 
-    def expunge(self):
-        """Remove any messages from the currently selected folder that
-        have the ``\\Deleted`` flag set.
+    def expunge(self, messages=None):
+        """When, no *messages* are specified, remove all messages
+        from the currently selected folder that have the
+        ``\\Deleted`` flag set.
 
         The return value is the server response message
         followed by a list of expunge responses. For example::
@@ -1107,7 +1108,21 @@ class IMAPClient(object):
 
         See :rfc:`3501#section-6.4.3` section 6.4.3 and
         :rfc:`3501#section-7.4.1` section 7.4.1 for more details.
+
+        When *messages* are specified, remove the specified messages
+        from the selected folder, provided those messages also have
+        the ``\\Deleted`` flag set. The return value is ``None`` in
+        this case.
+
+        Expunging messages by id(s) requires that *use_uid* is
+        ``True`` for the client.
+
+        See :rfc:`4315#section-2.1` section 2.1 for more details.
         """
+        if messages:
+            if not self.use_uid:
+                raise ValueError('cannot EXPUNGE by ID when not using uids')
+            return self._command_and_check('EXPUNGE', join_message_ids(messages), uid=True)
         tag = self._imap._command('EXPUNGE')
         return self._consume_until_tagged_response(tag, 'EXPUNGE')
 
