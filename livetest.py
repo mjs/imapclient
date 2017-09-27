@@ -805,6 +805,25 @@ def createUidTestClass(conf, use_uid):
             msg_id = msgs[0]
             self.assertIn(b'something', self.client.fetch(msg_id, ['RFC822'])[msg_id][b'RFC822'])
 
+        def test_move(self):
+            self.skip_unless_capable('MOVE')
+
+            self.append_msg(SIMPLE_MESSAGE)
+            target_folder = self.add_prefix_to_folder('target')
+            self.client.create_folder(target_folder)
+            found_messages = self.client.search()
+            msg_id = found_messages[0]
+
+            self.client.move(msg_id, target_folder)
+            self.assertEqual(len(self.client.search()),
+                             len(found_messages) - 1)
+
+            self.client.select_folder(target_folder)
+            msgs = self.client.search()
+            self.assertEqual(len(msgs), 1)
+            msg_id = msgs[0]
+            self.assertIn(b'something', self.client.fetch(msg_id, ['RFC822'])[msg_id][b'RFC822'])
+
         def test_fetch(self):
             # Generate a fresh message-id each time because Gmail is
             # clever and will treat appends of messages with

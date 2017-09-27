@@ -10,6 +10,8 @@ Added
   using `imapclient.SocketTimeout` namedtuple as `timeout` parameter.
 - A context manager is introduced to automatically close connections to remote
   servers.
+- Atomically move messages to another folder using the MOVE extension
+  (:rfc:`6851`)
 
 Changed
 -------
