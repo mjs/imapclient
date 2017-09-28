@@ -64,18 +64,17 @@ point in the future.
 
 Installing IMAPClient
 ---------------------
-IMAPClient is listed on the PyPI (Python Package Index). To install
-via PyPI use the pip or easy_install tools::
+IMAPClient is listed on PyPI and can be installed with pip::
 
     pip install imapclient
-
-    easy_install IMAPClient
 
 More installation methods are described in the documentation.
 
 Documentation
 -------------
-IMAPClient's manual is available at http://imapclient.readthedocs.io/. Release notes can be found at http://imapclient.readthedocs.io/#release-history.
+IMAPClient's manual is available at http://imapclient.readthedocs.io/.
+Release notes can be found at
+http://imapclient.readthedocs.io/#release-history.
 
 The Sphinx source for the documentation can be found under doc/src. If
 Sphinx is installed, the documentation can be rebuilt using::
@@ -133,8 +132,10 @@ inbox@menno.io.
 
 Working on IMAPClient
 ---------------------
-The HACKING.rst document contains information for those interested in
-improving IMAPClient and contributing back to the project.
+The `contributing documentation
+<http://imapclient.readthedocs.io/en/master/contributing.html>`_. contains
+information for those interested in improving IMAPClient and contributing back
+to the project.
 
 IMAP Servers
 ------------

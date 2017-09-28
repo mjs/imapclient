@@ -30,9 +30,23 @@ connections when they are not needed anymore::
       c.login("bar@foo.org", "passwd")
       c.select_folder("INBOX")
 
-Watching a mailbox asynchronously using idle
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-TODO
+Watching a mailbox using idle
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The IDLE extension allows an IMAP server to notify a client when something
+changes in a mailbox. It can be used as an alternative to polling to receive
+new messages.
+
+The concept is simple: the client connects to the server, selects a mailbox and
+enters the IDLE mode. At this point the server sends notifications whenever
+something happens in the selected mailbox until the client ends the IDLE mode
+by issuing a `DONE` command. This is explained in :rfc:`2177`.
+
+.. literalinclude:: ../../examples/idle_example.py
+
+Note that IMAPClient does not handle low-level socket errors that can happen
+when maintaining long-lived TCP connections. Users are advised to renew the
+IDLE command every 10 minutes to avoid the connection from being abruptly
+closed.
 
 Handling large mailboxes
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -136,3 +150,8 @@ oauth2_refresh_token string  OAUTH2 token for refreshing the secret.
 
 Acceptable boolean values are "1", "yes", "true", and "on", for true;
 and "0", "no", "false", and "off", for false.
+
+Thread Safety
+~~~~~~~~~~~~~
+Instances of IMAPClient are NOT thread safe. They should not be shared and
+accessed concurrently from multiple threads.

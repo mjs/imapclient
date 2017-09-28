@@ -72,26 +72,29 @@ folder names are returned as str (Python 2) or bytes (Python 3).
 
 TLS/SSL
 ~~~~~~~
-IMAPClient uses sensible TLS parameter defaults for encrypted
-connections and also allows for a high level of control of TLS
-parameters if required. To provide a consistent API and capabilities
-across Python versions the `backports.ssl <https://github.com/alekstorm/backports.ssl>`_
-library is used instead of the standard library ssl
-package. backports.ssl provides an API that aims to mimic the Python
-3.4 ssl package so it should be familiar to developers that have used
-the ssl package in recent versions of Python.
+IMAPClient established secure connections by default. It uses sensible TLS
+parameters for encrypted connections and also allows for a high level of
+control of TLS parameters if required, with the ``ssl`` module.
 
-TLS parameters are controlled by passing a ``backports.ssl.SSLContext``
-when creating an IMAPClient instance. When ``ssl=True`` is used
-without passing a SSLContext, a default context is used. The default
-context avoids the use of known insecure ciphers and SSL protocol
-versions, with certificate verification and hostname verification
-turned on. The default context will use system installed certificate
-authority trust chains, if available.
+.. note::
 
-:py:func:`IMAPClient.tls.create_default_context` returns IMAPClient's
-default context. When constructing a custom context it is usually best
-to start with the default context and modify it to suit your needs.
+    For older versions of Python which do not provide a recent enough ``ssl``
+    module, IMAPClient installs `backports.ssl
+    <https://github.com/alekstorm/backports.ssl>`_ as a compatibility layer.
+    You are highly encouraged to use a recent version of Python if security is
+    of prime importance for you.
+
+TLS parameters are controlled by passing an ``ssl.SSLContext`` (or
+``backports.ssl.SSLContext`` when appropriate) when creating an IMAPClient
+instance. When ``ssl=True`` is used without passing a SSLContext, a default
+context is used. The default context avoids the use of known insecure ciphers
+and SSL protocol versions, with certificate verification and hostname
+verification turned on. The default context will use system installed
+certificate authority trust chains, if available.
+
+:py:func:`ssl.create_default_context()` returns a safe default context. When
+constructing a custom context it is usually best to start with the default
+context and modify it to suit your needs.
 
 The following example shows how to to disable certification
 verification and certificate host name checks if required.

@@ -32,8 +32,15 @@ where relevant.
 
 Python versions 2.7, 3.4, 3.5 and 3.6 are officially supported.
 
-A Simple Example
-----------------
+Getting Started
+---------------
+
+Install IMAPClient::
+
+    $ pip install imapclient
+
+See :ref:`Installation <installation>` for more details.
+
 The core of the IMAPClient API is the IMAPClient class. Instantiating
 this class, creates a connection to an IMAP account. Calling methods
 on the IMAPClient instance interacts with the server.
@@ -77,6 +84,7 @@ help you start.
 .. toctree::
     :maxdepth: 2
 
+    installation
     quickstart
     concepts
     advanced
