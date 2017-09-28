@@ -154,7 +154,7 @@ def get_oauth2_token(hostname, client_id, client_secret, refresh_token):
     _oauth2_cache[cache_key] = token
     return token
 
-def create_client_from_config(conf):
+def create_client_from_config(conf, login=True):
     assert conf.host, "missing host"
 
     ssl_context = None
@@ -171,6 +171,9 @@ def create_client_from_config(conf):
                                    ssl_context=ssl_context,
                                    stream=conf.stream,
                                    timeout=conf.timeout)
+    if not login:
+        return client
+
     try:
         if conf.starttls:
             client.starttls()

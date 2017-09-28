@@ -10,6 +10,7 @@ import select
 import socket
 import sys
 import re
+from collections import namedtuple
 from datetime import datetime, date
 from operator import itemgetter
 from logging import LoggerAdapter, getLogger
@@ -32,7 +33,8 @@ if PY3:
 
 logger = getLogger(__name__)
 
-__all__ = ['IMAPClient', 'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT', 'RECENT']
+__all__ = ['IMAPClient', 'SocketTimeout',
+           'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT', 'RECENT']
 
 
 # We also offer the gmail-specific XLIST command...
@@ -82,6 +84,18 @@ class Namespace(tuple):
     shared = property(itemgetter(2))
 
 
+class SocketTimeout(namedtuple("SocketTimeout", "connect read")):
+    """Represents timeout configuration for an IMAP connection.
+
+    :ivar connect: maximum time to wait for a connection attempt to remote server
+    :ivar read: maximum time to wait for performing a read/write operation
+
+    As an example, ``SocketTimeout(connect=15, read=60)`` will make the socket
+    timeout if the connection takes more than 15 seconds to establish but
+    read/write operations can take up to 60 seconds once the connection is done.
+    """
+
+
 class IMAPClient(object):
     """A connection to the IMAP server specified by *host* is made when
     this class is instantiated.
@@ -106,9 +120,17 @@ class IMAPClient(object):
     setups.
 
     Use *timeout* to specify a timeout for the socket connected to the
-    IMAP server. The timeout applies during the initial connection to
-    the server and for all future socket reads and writes. The default
-    is for no timeout to be used.
+    IMAP server. The timeout can be either a float number, or an instance
+    of :py:class:`imapclient.SocketTimeout`.
+
+    * If a single float number is passed, the same timeout delay applies 
+      during the  initial connection to the server and for all future socket 
+      reads and writes.
+
+    * In case of a ``SocketTimeout``, connection timeout and
+      read/write operations can have distinct timeouts.
+
+    * The default is ``None``, where no timeout is used.
 
     The *normalise_times* attribute specifies whether datetimes
     returned by ``fetch()`` are normalised to the local system time
@@ -119,6 +141,7 @@ class IMAPClient(object):
     calls if required.
 
     Can be used as a context manager to automatically close opened connections:
+
     >>> with IMAPClient(host="imap.foo.org") as client:
     ...     client.login("bar@foo.org", "passwd")
 
@@ -155,17 +178,21 @@ class IMAPClient(object):
         self.folder_encode = True
         self.normalise_times = True
 
+        # If the user gives a single timeout value, assume it is the same for
+        # connection and read/write operations
+        if not isinstance(timeout, SocketTimeout):
+            timeout = SocketTimeout(timeout, timeout)
+
         self._timeout = timeout
         self._starttls_done = False
         self._cached_capabilities = None
         self._idle_tag = None
 
         self._imap = self._create_IMAP4()
-        self._set_timeout()
-
         logger.debug("Connected to host %s over %s", self.host,
                      "SSL/TLS" if ssl else "plain text")
 
+        self._set_read_timeout()
         # Small hack to make imaplib log everything to its own logger
         imaplib_logger = IMAPlibLoggerAdapter(
             getLogger('imapclient.imaplib'), dict()
@@ -200,9 +227,9 @@ class IMAPClient(object):
 
         return imap4.IMAP4WithTimeout(self.host, self.port, self._timeout)
 
-    def _set_timeout(self):
+    def _set_read_timeout(self):
         if self._timeout is not None:
-            self._sock.settimeout(self._timeout)
+            self._sock.settimeout(self._timeout.read)
 
     @property
     def _sock(self):
@@ -680,7 +707,7 @@ class IMAPClient(object):
             return resps
         finally:
             sock.setblocking(1)
-            self._set_timeout()
+            self._set_read_timeout()
 
     def idle_done(self):
         """Take the server out of IDLE mode.

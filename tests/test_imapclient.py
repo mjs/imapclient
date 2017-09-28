@@ -248,6 +248,7 @@ class TestIdleAndNoop(IMAPClientTest):
             ('settimeout', (None,), {}),
             ('setblocking', (0,), {}),
             ('setblocking', (1,), {}),
+            ('settimeout', (None,), {}),
         ])
 
     def test_idle(self):
