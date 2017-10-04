@@ -127,7 +127,7 @@ class IMAPClient(object):
     # Those exceptions are kept for backward-compatibility, since
     # previous versions included these attributes as references to
     # imaplib original exceptions
-    Error = exceptions.IMAPClientException
+    Error = exceptions.IMAPClientError
     AbortError = exceptions.IMAPClientAbortError
     ReadOnlyError = exceptions.IMAPClientReadOnlyError
 
@@ -250,7 +250,7 @@ class IMAPClient(object):
                 to_unicode(password),
                 unpack=True,
             )
-        except exceptions.IMAPClientException as e:
+        except exceptions.IMAPClientError as e:
             raise exceptions.LoginError(str(e))
 
         logger.info('Logged in as %s', username)
@@ -268,7 +268,7 @@ class IMAPClient(object):
         auth_string += '\1'
         try:
             return self._command_and_check('authenticate', mech, lambda x: auth_string)
-        except exceptions.IMAPClientException as e:
+        except exceptions.IMAPClientError as e:
             raise exceptions.LoginError(str(e))
 
     def plain_login(self, identity, password, authorization_identity=None):
@@ -279,7 +279,7 @@ class IMAPClient(object):
         auth_string = '%s\0%s\0%s' % (authorization_identity, identity, password)
         try:
             return self._command_and_check('authenticate', 'PLAIN', lambda _: auth_string, unpack=True)
-        except exceptions.IMAPClientException as e:
+        except exceptions.IMAPClientError as e:
             raise exceptions.LoginError(str(e))
 
     def logout(self):
@@ -316,7 +316,7 @@ class IMAPClient(object):
         See :rfc:`5161` for more details.
         """
         if self._imap.state != 'AUTH':
-            raise exceptions.IllegalStateException(
+            raise exceptions.IllegalStateError(
                 'ENABLE command illegal in state %s' % self._imap.state
             )
 
@@ -632,7 +632,7 @@ class IMAPClient(object):
         self._idle_tag = self._imap._command('IDLE')
         resp = self._imap._get_response()
         if resp is not None:
-            raise exceptions.IMAPClientException('Unexpected IDLE response: %s' % resp)
+            raise exceptions.IMAPClientError('Unexpected IDLE response: %s' % resp)
 
     def idle_check(self, timeout=None):
         """Check for any IDLE responses sent by the server.
@@ -854,7 +854,7 @@ class IMAPClient(object):
             # Make BAD IMAP responses easier to understand to the user, with a link to the docs
             m = re.match(r'SEARCH command error: BAD \[(.+)\]', str(e))
             if m:
-                raise exceptions.InvalidCriteriaException(
+                raise exceptions.InvalidCriteriaError(
                     '{original_msg}\n\n'
                     'This error may have been caused by a syntax error in the criteria: '
                     '{criteria}\nPlease refer to the documentation for more information '
@@ -1202,7 +1202,7 @@ class IMAPClient(object):
         Raises IMAPClient.Error if the command fails.
         """
         if typ != expected:
-            raise exceptions.IMAPClientException("%s failed: %s" % (command, to_unicode(data[0])))
+            raise exceptions.IMAPClientError("%s failed: %s" % (command, to_unicode(data[0])))
 
     def _consume_until_tagged_response(self, tag, command):
         tagged_commands = self._imap.tagged_commands
@@ -1382,7 +1382,7 @@ def _quote(arg):
 
 def _normalise_search_criteria(criteria, charset=None):
     if not criteria:
-        raise exceptions.InvalidCriteriaException('no criteria specified')
+        raise exceptions.InvalidCriteriaError('no criteria specified')
     if not charset:
         charset = 'us-ascii'
 

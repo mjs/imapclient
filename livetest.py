@@ -19,7 +19,7 @@ from email.utils import make_msgid
 from six import binary_type, text_type, PY3, iteritems
 
 from imapclient.config import parse_config_file, create_client_from_config
-from imapclient.exceptions import IMAPClientException
+from imapclient.exceptions import IMAPClientError
 from imapclient.fixed_offset import FixedOffset
 from imapclient.imapclient import IMAPClient, DELETED, RECENT, _dict_bytes_normaliser
 from imapclient.response_types import Envelope, Address
@@ -130,7 +130,7 @@ class _TestBase(unittest.TestCase):
         # delete the currently selected folder.
         try:
             self.client.close_folder()
-        except IMAPClientException:
+        except IMAPClientError:
             pass
 
         self.client.folder_encode = False
@@ -140,7 +140,7 @@ class _TestBase(unittest.TestCase):
         for folder in folder_names:
             try:
                 self.client.delete_folder(folder)
-            except IMAPClientException:
+            except IMAPClientError:
                 if not self.is_fastmail():
                     raise
         self.client.folder_encode = True
@@ -338,7 +338,7 @@ class TestGeneral(_TestBase):
         # Exchange doesn't return an error when subscribing to a
         # non-existent folder
         if not self.is_exchange():
-            self.assertRaises(IMAPClientException,
+            self.assertRaises(IMAPClientError,
                               self.client.subscribe_folder,
                               'this folder is not likely to exist')
 
@@ -951,7 +951,7 @@ def quiet_logout(client):
     """
     try:
         client.logout()
-    except IMAPClientException:
+    except IMAPClientError:
         pass
 
 

@@ -12,7 +12,7 @@ import logging
 
 import six
 
-from imapclient.exceptions import CapabilityError, IMAPClientException
+from imapclient.exceptions import CapabilityError, IMAPClientError
 from imapclient.imapclient import IMAPlibLoggerAdapter
 from imapclient.fixed_offset import FixedOffset
 
@@ -49,11 +49,11 @@ class TestListFolders(IMAPClientTest):
 
     def test_list_folders_NO(self):
         self.client._imap._simple_command.return_value = ('NO', [b'badness'])
-        self.assertRaises(IMAPClientException, self.client.list_folders)
+        self.assertRaises(IMAPClientError, self.client.list_folders)
 
     def test_list_sub_folders_NO(self):
         self.client._imap._simple_command.return_value = ('NO', [b'badness'])
-        self.assertRaises(IMAPClientException, self.client.list_folders)
+        self.assertRaises(IMAPClientError, self.client.list_folders)
 
     def test_utf7_decoding(self):
         self.client._imap._simple_command.return_value = ('OK', [b'something'])

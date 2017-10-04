@@ -5,7 +5,7 @@
 from __future__ import unicode_literals
 
 from imapclient.imapclient import IMAPClient
-from imapclient.exceptions import IMAPClientException
+from imapclient.exceptions import IMAPClientError
 
 from .imapclient_test import IMAPClientTest
 from .util import Mock, patch, sentinel
@@ -46,7 +46,7 @@ class TestStarttls(IMAPClientTest):
     def test_command_fails(self):
         self.client._imap._simple_command.return_value = "NO", [b'sorry']
 
-        with self.assertRaises(IMAPClientException) as raised:
+        with self.assertRaises(IMAPClientError) as raised:
             self.client.starttls(sentinel.ssl_context)
         self.assertEqual(str(raised.exception), "starttls failed: sorry")
 

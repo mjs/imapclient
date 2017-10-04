@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 from mock import Mock
 
 from imapclient import IMAPClient
-from imapclient.exceptions import IllegalStateException
+from imapclient.exceptions import IllegalStateError
 from .imapclient_test import IMAPClientTest
 
 
@@ -65,7 +65,7 @@ class TestEnable(IMAPClientTest):
         self.client._imap.state = 'SELECTED'
 
         self.assertRaises(
-            IllegalStateException,
+            IllegalStateError,
             self.client.enable,
             'FOO',
         )
