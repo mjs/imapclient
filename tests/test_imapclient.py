@@ -15,8 +15,8 @@ import six
 from imapclient.exceptions import CapabilityError, IMAPClientException
 from imapclient.imapclient import IMAPlibLoggerAdapter
 from imapclient.fixed_offset import FixedOffset
+from imapclient.testable_imapclient import TestableIMAPClient as IMAPClient
 
-from .testable_imapclient import TestableIMAPClient as IMAPClient
 from .imapclient_test import IMAPClientTest
 from .util import patch, sentinel, Mock
 

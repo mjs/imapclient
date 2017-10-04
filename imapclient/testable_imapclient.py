@@ -4,11 +4,28 @@
 
 from __future__ import unicode_literals
 
-from imapclient.imapclient import IMAPClient
-from .util import Mock
+from .imapclient import IMAPClient
+
+try:
+    from unittest.mock import Mock
+except ImportError:
+    try:
+        from mock import Mock
+    except ImportError:
+        raise ImportError(
+            'mock library could not be loaded. Please install Python 3.3 or newer '
+            'or install the `mock` third-party package through PyPi.'
+        )
 
 
 class TestableIMAPClient(IMAPClient):
+    """Wrapper of :py:class:`imapclient.IMAPClient` that mocks all
+    interaction with real IMAP server.
+
+    This class should only be used in tests, where you can safely
+    interact with imapclient without running commands on a real
+    IMAP account.
+    """
 
     def __init__(self):
         super(TestableIMAPClient, self).__init__('somehost')
