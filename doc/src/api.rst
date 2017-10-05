@@ -25,7 +25,7 @@ IMAPClient wraps exceptions raised by imaplib to ease the error handling.
 All the exceptions related to IMAP errors are defined in the module 
 `imapclient.exceptions`. The following general exceptions may be raised:
 
-* IMAPClientException: the base class for IMAPClient's exceptions and the
+* IMAPClientError: the base class for IMAPClient's exceptions and the
   most commonly used error.
 * IMAPClientAbortError: raised if a serious error has occurred that
   means the IMAP connection is no longer usable. The connection should
