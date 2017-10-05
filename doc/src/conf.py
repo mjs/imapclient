@@ -9,11 +9,6 @@ from mock import MagicMock
 
 sys.path.insert(0, path.abspath(path.join(path.dirname(__file__), '..', '..')))
 
-# Fake out backports(.ssl) so that it's not needed in order to build
-# the docs (ReadTheDocs doesn't have backports.ssl installed).
-MOCK_MODULES = ['backports']
-sys.modules.update((mod_name, MagicMock()) for mod_name in MOCK_MODULES)
-
 import imapclient
 
 # -- General configuration -----------------------------------------------------

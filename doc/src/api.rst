@@ -46,9 +46,9 @@ malformed exception. In particular:
 * socket.error
 * socket.timeout: raised if a timeout was specified when creating the
   IMAPClient instance and a network operation takes too long.
-* backports.ssl.SSLError: the base class for network or SSL protocol
-  errors when ssl=True or starttls() is used.
-* backports.ssl.CertificateError: raised when TLS certification
+* ssl.SSLError: the base class for network or SSL protocol errors when 
+  ``ssl=True`` or ``starttls()`` is used.
+* ssl.CertificateError: raised when TLS certification
   verification fails. This is *not* a subclass of SSLError.
 
 

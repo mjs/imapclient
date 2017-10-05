@@ -72,29 +72,22 @@ folder names are returned as str (Python 2) or bytes (Python 3).
 
 TLS/SSL
 ~~~~~~~
-IMAPClient established secure connections by default. It uses sensible TLS
-parameters for encrypted connections and also allows for a high level of
-control of TLS parameters if required, with the ``ssl`` module.
+IMAPClient uses sensible TLS parameter defaults for encrypted
+connections and also allows for a high level of control of TLS
+parameters if required. It uses the built-in `ssl` package, 
+provided since Python 2.7.9 and 3.4.
 
-.. note::
+TLS parameters are controlled by passing a ``ssl.SSLContext``
+when creating an IMAPClient instance. When ``ssl=True`` is used
+without passing a SSLContext, a default context is used. The default
+context avoids the use of known insecure ciphers and SSL protocol
+versions, with certificate verification and hostname verification
+turned on. The default context will use system installed certificate
+authority trust chains, if available.
 
-    For older versions of Python which do not provide a recent enough ``ssl``
-    module, IMAPClient installs `backports.ssl
-    <https://github.com/alekstorm/backports.ssl>`_ as a compatibility layer.
-    You are highly encouraged to use a recent version of Python if security is
-    of prime importance for you.
-
-TLS parameters are controlled by passing an ``ssl.SSLContext`` (or
-``backports.ssl.SSLContext`` when appropriate) when creating an IMAPClient
-instance. When ``ssl=True`` is used without passing a SSLContext, a default
-context is used. The default context avoids the use of known insecure ciphers
-and SSL protocol versions, with certificate verification and hostname
-verification turned on. The default context will use system installed
-certificate authority trust chains, if available.
-
-:py:func:`ssl.create_default_context()` returns a safe default context. When
-constructing a custom context it is usually best to start with the default
-context and modify it to suit your needs.
+When constructing a custom context it is usually best to start with
+the default context, created by the ``ssl`` module, and modify it to
+suit your needs.
 
 The following example shows how to to disable certification
 verification and certificate host name checks if required.
