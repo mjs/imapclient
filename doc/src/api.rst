@@ -21,8 +21,8 @@ are encountered during parsing.
 
 Exceptions
 ~~~~~~~~~~
-IMAPClient wraps exceptions raised by imaplib to ease the error handling. 
-All the exceptions related to IMAP errors are defined in the module 
+IMAPClient wraps exceptions raised by imaplib to ease the error handling.
+All the exceptions related to IMAP errors are defined in the module
 `imapclient.exceptions`. The following general exceptions may be raised:
 
 * IMAPClientError: the base class for IMAPClient's exceptions and the
@@ -51,6 +51,10 @@ malformed exception. In particular:
 * backports.ssl.CertificateError: raised when TLS certification
   verification fails. This is *not* a subclass of SSLError.
 
+Utilities
+~~~~~~~~~
+.. automodule:: imapclient.testable_imapclient
+   :members:
 
 TLS Support
 ~~~~~~~~~~~
