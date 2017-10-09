@@ -18,6 +18,9 @@ Changed
 
 Fixed
 -----
+- Modified UTF-7 encoding function had quirks in its original algorithm,
+  leading to incorrect encoded output in some cases. The algorithm, described
+  in RFC 3501, has been reimplemented to fix #187 and is better documented.
 - don't quote search criteria when sent as IMAP literals. Fixes #249.
 
 ===============

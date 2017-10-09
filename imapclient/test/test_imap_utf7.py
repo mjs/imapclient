@@ -22,6 +22,7 @@ class IMAP4UTF7TestCase(unittest.TestCase):
         ['~peter/mail/\u65e5\u672c\u8a9e/\u53f0\u5317',
          b'~peter/mail/&ZeVnLIqe-/&U,BTFw-'],  # example from RFC 2060
         ['\x00foo', b'&AAA-foo'],
+        ['foo\r\n\nbar\n', b'foo&AA0ACgAK-bar&AAo-'] # see imapclient/#187 issue
     ]
 
     def test_encode(self):
