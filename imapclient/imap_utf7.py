@@ -1,35 +1,15 @@
-# The contents of this file has been derived code from the Twisted project
-# (http://twistedmatrix.com/). The original author is Jp Calderone.
-
-# Twisted project license follows:
-
-# Permission is hereby granted, free of charge, to any person obtaining
-# a copy of this software and associated documentation files (the
-# "Software"), to deal in the Software without restriction, including
-# without limitation the rights to use, copy, modify, merge, publish,
-# distribute, sublicense, and/or sell copies of the Software, and to
-# permit persons to whom the Software is furnished to do so, subject to
-# the following conditions:
+# This file contains two main methods used to encode and decode UTF-7
+# string, described in the RFC 3501. There are some variations specific
+# to IMAP4rev1, so the built-in Python UTF-7 codec can't be used instead.
 #
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
+# The main difference is the shift character (used to switch from ASCII to
+# base64 encoding context), which is & in this modified UTF-7 convention,
+# since + is considered as mainly used in mailbox names. 
+# Other variations and examples can be found in the RFC 3501, section 5.1.3.
 from __future__ import unicode_literals
 
+import binascii
 from six import binary_type, text_type, byte2int, iterbytes, unichr
-
-
-PRINTABLE = set(range(0x20, 0x26)) | set(range(0x27, 0x7f))
-
-# TODO: module needs refactoring (e.g. variable names suck)
 
 
 def encode(s):
@@ -41,27 +21,36 @@ def encode(s):
     if not isinstance(s, text_type):
         return s
 
-    r = []
-    _in = []
-
-    def extend_result_if_chars_buffered():
-        if _in:
-            r.extend([b'&', modified_utf7(''.join(_in)), b'-'])
-            del _in[:]
+    res = []
+    b64_buffer = []
+    def consume_b64_buffer(buf):
+        """
+        Consume the buffer by encoding it into a modified base 64 representation
+        and surround it with shift characters & and -
+        """
+        if b64_buffer:
+            res.extend([b'&', base64_utf7_encode(buf), b'-'])
+            del buf[:]
 
     for c in s:
-        if ord(c) in PRINTABLE:
-            extend_result_if_chars_buffered()
-            r.append(c.encode('latin-1'))
-        elif c == '&':
-            extend_result_if_chars_buffered()
-            r.append(b'&-')
+        # printable ascii case should not be modified
+        if 0x20 <= ord(c) <= 0x7e:
+            consume_b64_buffer(b64_buffer)
+            # Special case: & is used as shift character so we need to escape it in ASCII
+            if c == '&':
+                res.append(b'&-')
+            else:
+                res.append(c.encode('ascii'))
+
+        # Bufferize characters that will be encoded in base64 and append them later 
+        # in the result, when iterating over ASCII character or the end of string
         else:
-            _in.append(c)
+            b64_buffer.append(c)
 
-    extend_result_if_chars_buffered()
+    # Consume the remaining buffer if the string finish with non-ASCII characters
+    consume_b64_buffer(b64_buffer)
 
-    return b''.join(r)
+    return b''.join(res)
 
 
 AMPERSAND_ORD = byte2int(b'&')
@@ -75,35 +64,43 @@ def decode(s):
     unicode. If non-bytes/str input is provided, the input is returned
     unchanged.
     """
-
     if not isinstance(s, binary_type):
         return s
 
-    r = []
-    _in = bytearray()
+    res = []
+    # Store base64 substring that will be decoded once stepping on end shift character
+    b64_buffer = bytearray()
     for c in iterbytes(s):
-        if c == AMPERSAND_ORD and not _in:
-            _in.append(c)
-        elif c == DASH_ORD and _in:
-            if len(_in) == 1:
-                r.append('&')
+        # Shift character without anything in buffer -> starts storing base64 substring
+        if c == AMPERSAND_ORD and not b64_buffer:
+            b64_buffer.append(c)
+        # End shift char. -> append the decoded buffer to the result and reset it
+        elif c == DASH_ORD and b64_buffer:
+            # Special case &-, representing "&" escaped
+            if len(b64_buffer) == 1:
+                res.append('&')
             else:
-                r.append(modified_deutf7(_in[1:]))
-            _in = bytearray()
-        elif _in:
-            _in.append(c)
+                res.append(base64_utf7_decode(b64_buffer[1:]))
+            b64_buffer = bytearray()
+        # Still buffering between the shift character and the shift back to ASCII
+        elif b64_buffer:
+            b64_buffer.append(c)
+        # No buffer initialized yet, should be an ASCII printable char
         else:
-            r.append(unichr(c))
-    if _in:
-        r.append(modified_deutf7(_in[1:]))
-    return ''.join(r)
+            res.append(unichr(c))
+
+    # Decode the remaining buffer if any
+    if b64_buffer:
+        res.append(base64_utf7_decode(b64_buffer[1:]))
+
+    return ''.join(res)
 
 
-def modified_utf7(s):
-    s_utf7 = s.encode('utf-7')
-    return s_utf7[1:-1].replace(b'/', b',')
+def base64_utf7_encode(buffer):
+    s = ''.join(buffer).encode('utf-16be')
+    return binascii.b2a_base64(s).rstrip(b'\n=').replace(b'/', b',')
 
 
-def modified_deutf7(s):
+def base64_utf7_decode(s):
     s_utf7 = b'+' + s.replace(b',', b'/') + b'-'
     return s_utf7.decode('utf-7')

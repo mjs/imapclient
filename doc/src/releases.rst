@@ -6,7 +6,7 @@
 
 Added
 -----
-- Connection and read/write operations timeout can now be distinct, 
+- Connection and read/write operations timeout can now be distinct,
   using `imapclient.SocketTimeout` namedtuple as `timeout` parameter.
 - A context manager is introduced to automatically close connections to remote
   servers.
@@ -19,6 +19,12 @@ Changed
   are not used anymore.
 - More precise exceptions available in `imapclient.exceptions` are raised when
   an error happens
+
+Fixed
+-----
+- Modified UTF-7 encoding function had quirks in its original algorithm,
+  leading to incorrect encoded output in some cases. The algorithm, described
+  in RFC 3501, has been reimplemented to fix #187 and is better documented.
 
 Other
 -----
