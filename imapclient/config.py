@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 
+import json
 from os import environ, path
 
 from backports import ssl
@@ -14,11 +15,6 @@ from six.moves.urllib.parse import urlencode
 
 import imapclient
 from .tls import create_default_context
-
-try:
-    import json
-except ImportError:
-    json = None
 
 
 def getenv(name, default):
@@ -127,9 +123,6 @@ OAUTH2_REFRESH_URLS = {
 }
 
 def refresh_oauth2_token(hostname, client_id, client_secret, refresh_token):
-    if not json:
-        raise RuntimeError("OAUTH2 functionality relies on 'json' module")
-
     url = OAUTH2_REFRESH_URLS.get(hostname)
     if not url:
         raise ValueError("don't know where to refresh OAUTH2 token for %r" % hostname)
