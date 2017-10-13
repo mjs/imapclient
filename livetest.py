@@ -6,6 +6,7 @@
 
 from __future__ import print_function, unicode_literals
 
+import copy
 import imp
 import os
 import random
@@ -1051,7 +1052,7 @@ def main():
         setattr(live_test_mod, name, klass)
 
     TestGeneral.conf = host_config
-    TestSocketTimeout.conf = host_config
+    TestSocketTimeout.conf = copy.copy(host_config)
     add_test_class(TestGeneral)
     add_test_class(TestSocketTimeout)
     add_test_class(createUidTestClass(host_config, use_uid=True), 'TestWithUIDs')
