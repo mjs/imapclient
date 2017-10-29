@@ -99,6 +99,10 @@ class TestSearch(TestSearchBase):
         self.client.search(['NOT', ('SUBJECT', 'topic',  'TO', 'some@email.com')])
         self.check_call([b'NOT', b'(SUBJECT', b'topic', b'TO', b'some@email.com)'])
 
+    def test_quote_empty_strings(self):
+        self.client.search(['HEADER', 'List-Id', ''])
+        self.check_call([b'HEADER', b'List-Id', b'""'])
+
     def test_search_custom_exception_with_invalid_list(self):
         def search_bad_command_exp(*args, **kwargs):
             raise imaplib.IMAP4.error('SEARCH command error: BAD ["Unknown argument NOT DELETED"]')

@@ -1459,7 +1459,7 @@ class _quoted(binary_type):
         """
         quoted = original.replace(b'\\', b'\\\\')
         quoted = quoted.replace(b'"', b'\\"')
-        if quoted != original or b' ' in quoted:
+        if quoted != original or b' ' in quoted or not quoted:
             out = cls(b'"' + quoted + b'"')
             out.original = original
             return out
