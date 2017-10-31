@@ -64,6 +64,11 @@ class TestSearch(TestSearchBase):
         self.client.search(['TEXT', 'foo bar'])
         self.check_call([b'TEXT', _quoted(b'"foo bar"')])
 
+    def test_zero_length_quoting(self):
+        # Zero-length strings should be quoted
+        self.client.search(['HEADER', 'List-Id', ''])
+        self.check_call([b'HEADER', b'List-Id', b'""'])
+
     def test_no_results(self):
         self.client._raw_command_untagged.return_value = [None]
 
