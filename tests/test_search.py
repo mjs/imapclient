@@ -64,6 +64,10 @@ class TestSearch(TestSearchBase):
         self.client.search(['TEXT', 'foo bar'])
         self.check_call([b'TEXT', _quoted(b'"foo bar"')])
 
+        # Zero-length strings should be quoted
+        self.client.search(['HEADER', 'List-Id', ''])
+        self.check_call([b'HEADER', b'List-Id', b'""'])
+
     def test_no_results(self):
         self.client._raw_command_untagged.return_value = [None]
 
@@ -98,10 +102,6 @@ class TestSearch(TestSearchBase):
     def test_nested_tuple(self):
         self.client.search(['NOT', ('SUBJECT', 'topic',  'TO', 'some@email.com')])
         self.check_call([b'NOT', b'(SUBJECT', b'topic', b'TO', b'some@email.com)'])
-
-    def test_quote_empty_strings(self):
-        self.client.search(['HEADER', 'List-Id', ''])
-        self.check_call([b'HEADER', b'List-Id', b'""'])
 
     def test_search_custom_exception_with_invalid_list(self):
         def search_bad_command_exp(*args, **kwargs):
