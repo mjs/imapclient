@@ -6,15 +6,14 @@ from __future__ import unicode_literals
 
 import json
 from os import environ, path
+import ssl
 
-from backports import ssl
 from six import iteritems
 from six.moves.configparser import SafeConfigParser, NoOptionError
 from six.moves.urllib.request import urlopen
 from six.moves.urllib.parse import urlencode
 
 import imapclient
-from .tls import create_default_context
 
 
 def getenv(name, default):
@@ -152,7 +151,7 @@ def create_client_from_config(conf, login=True):
 
     ssl_context = None
     if conf.ssl:
-        ssl_context = create_default_context()
+        ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
         ssl_context.check_hostname = conf.ssl_check_hostname
         if not conf.ssl_verify_cert:
             ssl_context.verify_mode = ssl.CERT_NONE

@@ -69,12 +69,6 @@ class TestDiscoverCommand(TestCommand):
 common_deps = ['six']
 
 main_deps = common_deps[:]
-
-# use shipped ssl module with Python >= (3.4, 2.7.9)
-if IS_PY3 and IS_PY_33_OR_OLDER or IS_PY_278_OR_OLDER:
-    main_deps.append('backports.ssl>=0.0.9')
-    main_deps.append('pyopenssl>=' + info["min_pyopenssl_version"])
-
 setup_deps = common_deps + ['sphinx']
 
 test_deps = ['mock>=1.3.0']

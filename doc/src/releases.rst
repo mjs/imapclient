@@ -23,6 +23,9 @@ Changed
 Other
 -----
 - Drop support of OAUTH(1)
+- Drop ``imapclient.tls.create_default_context`` function. In case you were
+  using it, you can use the method with the same name available in the 
+  built-in ``ssl`` module.
 
 Python compatibility
 --------------------
