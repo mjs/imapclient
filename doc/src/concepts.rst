@@ -100,6 +100,14 @@ certificate used by the IMAP server.
 
 .. literalinclude:: ../../examples/tls_cacert.py
 
+If your operating system comes with an outdated list of CA certificates you can
+use the `certifi <https://pypi.python.org/pypi/certifi>`_ package that provides
+a list of common and respectable CAs::
+
+  import certifi
+
+  ssl_context = ssl.create_default_context(cafile=certifi.where())
+
 The above examples show some of the most common TLS parameter
 customisations but there are many other tweaks are possible. Consult
 the Python 3 :py:mod:`ssl` package documentation for further options.
