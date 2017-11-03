@@ -9,6 +9,7 @@ Unit tests for the FetchTokeniser and FetchParser classes
 from __future__ import unicode_literals
 
 from datetime import datetime
+from mock import patch
 
 from imapclient.datetime_util import datetime_to_native
 from imapclient.fixed_offset import FixedOffset
@@ -497,6 +498,14 @@ class TestParseFetchResponse(unittest.TestCase):
         self.assertEqual(str(Address(None, None, None, "undisclosed-recipients")),
                          "undisclosed-recipients")
 
+    @patch('imapclient.util.logger')
+    def test_Address_str_ignores_encoding_error(self, mock_logger):
+        self.assertEqual(
+            str(Address(b'Russian \xc2\xeb\xe0\xe4\xe8\xec\xe8\xf0', None, b"g\xe9rard", "domain.org")),
+            "Russian  <grard@domain.org>"
+        )
+        # Ensure warning has been triggered twice, for name and mailbox bytes
+        self.assertEqual(mock_logger.warning.call_count, 2)
 
 
 def add_crlf(text):
