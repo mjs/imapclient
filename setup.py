@@ -17,6 +17,7 @@ from setuptools.command.test import test as TestCommand
 MAJ_MIN = sys.version_info[:2]
 IS_PY3 = MAJ_MIN >= (3, 0)
 IS_PY_26_OR_OLDER = MAJ_MIN <= (2, 6)
+IS_PY_33 = MAJ_MIN == (3, 3)
 IS_PY_34_OR_NEWER = MAJ_MIN >= (3, 4)
 
 # Read version info
@@ -72,6 +73,10 @@ main_deps = common_deps + [
     'backports.ssl>=0.0.9',
     'pyopenssl>=' + info["min_pyopenssl_version"],
 ]
+
+# Cryptography 2.0 dropped support for Python 3.3
+if IS_PY_33:
+    main_deps.append('cryptography<2.0')
 
 setup_deps = common_deps + ['sphinx<1.5']
 
