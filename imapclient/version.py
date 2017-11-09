@@ -21,5 +21,3 @@ maintainer_email = 'imapclient@groups.io'
 
 author = 'Menno Finlay-Smits'
 author_email = 'inbox@menno.io'
-
-min_pyopenssl_version = '0.15.1'
