@@ -7,19 +7,10 @@
 import sys
 from os import path
 
-# bootstrap setuptools if necessary
-from ez_setup import use_setuptools
-
-use_setuptools(version="18.2")
-
 from setuptools import setup
-from setuptools.command.test import test as TestCommand
 
 MAJ_MIN_MIC = sys.version_info[:3]
 IS_PY3 = MAJ_MIN_MIC >= (3, 0, 0)
-IS_PY_278_OR_OLDER = MAJ_MIN_MIC <= (2, 7, 8)
-IS_PY_33_OR_OLDER = MAJ_MIN_MIC < (3, 4, 0)
-IS_PY_34_OR_NEWER = MAJ_MIN_MIC >= (3, 4, 0)
 
 # Read version info
 here = path.dirname(__file__)
@@ -48,58 +39,42 @@ IMAPClient includes comprehensive units tests and automated
 functional tests that can be run against a live IMAP server.
 """
 
+main_deps = ['six']
+test_deps = ['mock>=1.3.0; python_version < "3.4"']
+doc_deps = ['sphinx']
 
-class TestDiscoverCommand(TestCommand):
-    """
-    Use unittest2 to discover and run tests
-    """
-
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        from tests.util import unittest  # this will import unittest2
-        module = "__main__"
-        if IS_PY_34_OR_NEWER:
-            module = None
-        unittest.main(argv=['', 'discover'], module=module)
-
-common_deps = ['six']
-
-main_deps = common_deps[:]
-setup_deps = common_deps + ['sphinx']
-
-test_deps = ['mock>=1.3.0']
-
-setup(name='IMAPClient',
-      description="Easy-to-use, Pythonic and complete IMAP client library",
-      keywords="imap client email mail",
-      version=info['version'],
-      maintainer=info['maintainer'],
-      maintainer_email=info['maintainer_email'],
-      author=info['author'],
-      author_email=info['author_email'],
-      license="http://en.wikipedia.org/wiki/BSD_licenses",
-      url="http://imapclient.freshfoo.com/",
-      download_url='http://menno.io/projects/IMAPClient/IMAPClient-%s.zip' % info['version'],
-      packages=['imapclient'],
-      package_data=dict(imapclient=['examples/*.py']),
-      setup_requires=setup_deps,
-      install_requires=main_deps,
-      tests_require=test_deps,
-      long_description=desc,
-      classifiers=[
-          'Development Status :: 5 - Production/Stable',
-          'Intended Audience :: Developers',
-          'License :: OSI Approved :: BSD License',
-          'Operating System :: OS Independent',
-          'Natural Language :: English',
-          'Programming Language :: Python',
-          'Programming Language :: Python :: 3',
-          'Topic :: Communications :: Email :: Post-Office :: IMAP',
-          'Topic :: Internet',
-          'Topic :: Software Development :: Libraries :: Python Modules',
-          'Topic :: System :: Networking'],
-      cmdclass={'test': TestDiscoverCommand})
+setup(
+    name='IMAPClient',
+    description="Easy-to-use, Pythonic and complete IMAP client library",
+    keywords="imap client email mail",
+    version=info['version'],
+    maintainer=info['maintainer'],
+    maintainer_email=info['maintainer_email'],
+    author=info['author'],
+    author_email=info['author_email'],
+    license="http://en.wikipedia.org/wiki/BSD_licenses",
+    url="http://imapclient.freshfoo.com/",
+    download_url='http://menno.io/projects/IMAPClient/IMAPClient-%s.zip' % info['version'],
+    packages=['imapclient'],
+    package_data=dict(imapclient=['examples/*.py']),
+    install_requires=main_deps,
+    tests_require=test_deps,
+    extras_require={
+        'test': test_deps,
+        'doc': doc_deps
+    },
+    long_description=desc,
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: BSD License',
+        'Operating System :: OS Independent',
+        'Natural Language :: English',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Topic :: Communications :: Email :: Post-Office :: IMAP',
+        'Topic :: Internet',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: System :: Networking'
+    ],
+)

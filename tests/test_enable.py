@@ -4,11 +4,11 @@
 
 from __future__ import unicode_literals
 
-from mock import Mock
 
 from imapclient import IMAPClient
 from imapclient.exceptions import IllegalStateError
 from .imapclient_test import IMAPClientTest
+from .util import Mock
 
 
 class TestEnable(IMAPClientTest):

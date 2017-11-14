@@ -40,32 +40,12 @@ as a Git tag (e.g. "0.9.1").
 
 Unit Tests
 ----------
-There are comprehensive unit tests for the server response parser and
-a number of other parts of the code. These tests use the unittest2
-package which is also included as the standard unittest package in
-Python 2.7 and 3.2 onwards.
 
 Running Unit Tests
 ~~~~~~~~~~~~~~~~~~
-To run the tests run::
+To run the tests, from the root of the package source run::
 
      python setup.py test
-
-from the root of the package source. This will install the Mock
-package (locally) if it isn't already installed as it is required for
-many of the tests.
-
-Where unittest2 is included in the standard library (eg. Python 2.7
-and 3.2+) you can also run all unit tests like this (from the root
-directory of the IMAPClient source)::
-
-     python -m unittest discover
-
-Alternatively, if unittest2 is installed separately use the unit2
-script (for Unix-like systems) or the unit2.py script::
-
-     unit2 discover
-     unit2.py discover
 
 Testing Against Multiple Python Versions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

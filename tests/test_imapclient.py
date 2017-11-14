@@ -364,8 +364,13 @@ class TestIdleAndNoop(IMAPClientTest):
 class TestDebugLogging(IMAPClientTest):
 
     def test_IMAP_is_patched(self):
+        # Remove all logging handlers so that the order of tests does not
+        # prevent basicConfig from being executed
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
         log_stream = six.StringIO()
         logging.basicConfig(stream=log_stream, level=logging.DEBUG)
+
         self.client._imap._mesg('two')
         self.assertIn('DEBUG:imapclient.imaplib:two', log_stream.getvalue())
 
