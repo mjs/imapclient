@@ -13,6 +13,19 @@ import ssl
 
 
 def wrap_socket(sock, ssl_context, host):
+
+    if not hasattr(ssl, 'create_default_context'):
+        # Python 2.7.0 - 2.7.8 do not have the concept of ssl contexts.
+        # Thus we have to use the less flexible and legacy way of wrapping the
+        # socket
+        if ssl_context is not None:
+            raise RuntimeError(
+                "Cannot precisely configure the SSL connection, upgrade to "
+                "Python >= 2.7.9 to fine tune the settings."
+            )
+
+        return ssl.wrap_socket(sock)
+
     if ssl_context is None:
         ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
 

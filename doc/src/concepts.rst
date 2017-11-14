@@ -89,6 +89,13 @@ When constructing a custom context it is usually best to start with
 the default context, created by the ``ssl`` module, and modify it to
 suit your needs.
 
+.. warning::
+
+  Users of Python 2.7.0 - 2.7.8 can use TLS but cannot configure
+  the settings via an ``ssl.SSLContext``. These Python versions are
+  also not capable of proper certification verification. It is highly
+  encouraged to upgrade to a more recent version of Python.
+
 The following example shows how to to disable certification
 verification and certificate host name checks if required.
 
@@ -111,18 +118,6 @@ a list of common and respectable CAs::
 The above examples show some of the most common TLS parameter
 customisations but there are many other tweaks are possible. Consult
 the Python 3 :py:mod:`ssl` package documentation for further options.
-
-Old pyOpenSSL Versions
-+++++++++++++++++++++++
-
-IMAPClient's TLS functionality will not behaviour correctly if an
-out-of-date version of pyOpenSSL is used. On some systems
-(particularly OS X) the system installed version of pyOpenSSL will
-take precedence over any user installed version. Use of virtualenvs is
-strongly encouraged to work around this.
-
-IMAPClient checks the installed pyOpenSSL version at import time and
-will fail early if an old pyOpenSSL version is found.
 
 Using gevent with IMAPClient
 ++++++++++++++++++++++++++++
