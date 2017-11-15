@@ -1012,7 +1012,9 @@ class IMAPClient(object):
         attribute (eg. Gmail).
         """
         response = self.fetch(messages, [b'X-GM-LABELS'])
-        return self._filter_fetch_dict(response, b'X-GM-LABELS')
+        response = self._filter_fetch_dict(response, b'X-GM-LABELS')
+        return {msg: utf7_decode_sequence(labels)
+                for msg, labels in iteritems(response)}
 
     def add_gmail_labels(self, messages, labels, silent=False):
         """Add *labels* to *messages* in the currently selected folder.
@@ -1348,8 +1350,10 @@ class IMAPClient(object):
         self._check_resp('OK', command, typ, data)
 
     def _gm_label_store(self, cmd, messages, labels, silent):
-        return self._store(cmd, messages, self._normalise_labels(labels),
+        response = self._store(cmd, messages, self._normalise_labels(labels),
                            b'X-GM-LABELS', silent=silent)
+        return {msg: utf7_decode_sequence(labels)
+                for msg, labels in iteritems(response)} if response else None
 
     def _store(self, cmd, messages, flags, fetch_key, silent):
         """Worker function for the various flag manipulation methods.
@@ -1385,7 +1389,7 @@ class IMAPClient(object):
     def _normalise_labels(self, labels):
         if isinstance(labels, (text_type, binary_type)):
             labels = (labels,)
-        return [_quote(l) for l in labels]
+        return [_quote(encode_utf7(l)) for l in labels]
 
     @property
     def welcome(self):
@@ -1597,6 +1601,10 @@ def debug_trunc(v, maxlen):
         return repr(v)
     hl = maxlen // 2
     return repr(v[:hl])  + "..." + repr(v[-hl:])
+
+
+def utf7_decode_sequence(seq):
+    return [decode_utf7(s) for s in seq]
 
 
 class IMAPlibLoggerAdapter(LoggerAdapter):
