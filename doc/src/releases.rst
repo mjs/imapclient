@@ -45,12 +45,19 @@ Added
   can be expressed. IMAPClient will add parentheses in the right place.
 - PLAIN authentication support (via `plain_login` method)
 - `unselect_folder()` method, for servers with the UNSELECT capability (#200)
-- Allow to expurge a subset of messages, selected by their UID (#287)
+- Add ENABLE support (#136)
+- UID EXPUNGE support (#287)
 
 Changed
 -------
 - the `mock` package is no longer installed by default (just as a test
   dependency)
+- handle NIL date values in INTERNALDATE
+- add `silent` option to all flags methods (improves performance by
+  avoiding unnecessary parsing)
+- simplify Gmail label functionality
+- folder_status is more robust
+- various livetest reliability improvements
 
 Fixed
 -----
@@ -58,6 +65,9 @@ Fixed
 - Modified UTF-7 encoding function had quirks in its original algorithm,
   leading to incorrect encoded output in some cases. The algorithm, described
   in RFC 3501, has been reimplemented to fix #187 and is better documented.
+- use fixed month names when formatting INTERNALDATES (don't rely on locale)
+- handle address without mailbox name or host in Address namedtuple. Fixes #242.
+- Use cryptography < 2.0 on Python 3.3. Fixes #305.
 
 
 ===============
