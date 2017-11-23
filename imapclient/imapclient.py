@@ -64,6 +64,9 @@ if 'UNSELECT' not in imaplib.Commands:
 if 'ENABLE' not in imaplib.Commands:
     imaplib.Commands['ENABLE'] = ('AUTH',)
 
+# .. and MOVE for RFC6851.
+if 'MOVE' not in imaplib.Commands:
+    imaplib.Commands['MOVE'] = ('AUTH', 'SELECTED')
 
 # System flags
 DELETED = br'\Deleted'
@@ -1162,6 +1165,19 @@ class IMAPClient(object):
         server.
         """
         return self._command_and_check('copy',
+                                       join_message_ids(messages),
+                                       self._normalise_folder(folder),
+                                       uid=True, unpack=True)
+
+    def move(self, messages, folder):
+        """Atomically move messages to another folder.
+
+        Requires the MOVE capability, see :rfc:`6851`.
+
+        :param messages: List of message UIDs to move.
+        :param folder: The destination folder name.
+        """
+        return self._command_and_check('move',
                                        join_message_ids(messages),
                                        self._normalise_folder(folder),
                                        uid=True, unpack=True)
