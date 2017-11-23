@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Copyright (c) 2014, Menno Smits
 # Released subject to the New BSD License
@@ -623,9 +624,9 @@ def createUidTestClass(conf, use_uid):
                 actual_labels = set(answer[msg_id])
                 self.assertSetEqual(actual_labels, set(expected_labels))
 
-            FOO = b'_imapclient_foo'
-            BAR = b'_imapclient_bar'
-            BAZ = b'_imapclient_baz'
+            FOO = '_imapclient_foo'
+            BAR = '_imapclient_bar'
+            BAZ = u'_imapclient_bÂz'
             all_labels = [FOO, BAR, BAZ]
             base_labels = [FOO, BAR]
             try:
