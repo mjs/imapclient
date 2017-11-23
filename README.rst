@@ -4,7 +4,7 @@ IMAPClient is an easy-to-use, Pythonic and complete IMAP client
 library.
 
 =========================  ========================================
-Current version            1.0.2
+Current version            1.1.0
 Supported Python versions  2.6, 2.7, 3.3, 3.4, 3.5 and 3.6
 License                    New BSD
 Project home               http://imapclient.freshfoo.com/
