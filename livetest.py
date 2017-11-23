@@ -946,10 +946,13 @@ def createUidTestClass(conf, use_uid):
                 # on. EXPUNGE won't return anything in this case
                 self.assertIn((1, b'EXPUNGE'), resps)
 
-        def test_id_expunge(self):
+        def test_uid_expunge(self):
             if not self.client.use_uid:
                 self.skipTest('test instance not configured for UID operations')
-            folder = self.add_prefix_to_folder('test_id_expunge')
+            if self.is_gmail():
+                self.skipTest("Gmail's auto-expunge feature makes this hard to test there")
+
+            folder = self.add_prefix_to_folder('test_uid_expunge')
             self.client.create_folder(folder)
             self.client.select_folder(folder)
             for i in range(3):
@@ -960,7 +963,7 @@ def createUidTestClass(conf, use_uid):
             m1 = messages[1]
             # delete 2 messages, but only expunge one of them
             self.client.delete_messages([messages[0], messages[2]])
-            ret = self.client.expunge(messages[2])
+            self.client.expunge(messages[2])
             messages = self.client.search()
             self.assertEqual(len(messages), 2)
             self.assertIn(m0, messages)
