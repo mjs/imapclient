@@ -10,7 +10,6 @@ Added
   can be expressed. IMAPClient will add parentheses in the right place.
 - PLAIN authentication support (via `plain_login` method)
 - `unselect_folder()` method, for servers with the UNSELECT capability (#200)
-- Add UNSELECT support (#200)
 - Add ENABLE support (#136)
 - UID EXPUNGE support (#287)
 
