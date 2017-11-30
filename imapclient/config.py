@@ -151,7 +151,7 @@ def create_client_from_config(conf, login=True):
 
     ssl_context = None
     if conf.ssl:
-        ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+        ssl_context = ssl.create_default_context()
         ssl_context.check_hostname = conf.ssl_check_hostname
         if not conf.ssl_verify_cert:
             ssl_context.verify_mode = ssl.CERT_NONE

@@ -27,7 +27,7 @@ def wrap_socket(sock, ssl_context, host):
         return ssl.wrap_socket(sock)
 
     if ssl_context is None:
-        ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+        ssl_context = ssl.create_default_context()
 
     return ssl_context.wrap_socket(sock, server_hostname=host)
 
