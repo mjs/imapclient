@@ -467,7 +467,16 @@ class TestGeneral(_TestBase):
             client2.append(self.base_folder, SIMPLE_MESSAGE)
 
             # Check for the idle data
-            responses = self.client.idle_check(timeout=5)
+            # Notification can take a while to arrive. In the meantime we may
+            # receive some keep alive like (b'OK', b'Still here') that
+            # maintain the TCP connection opened.
+            start_time = time.time()
+            responses = []
+            while time.time() - start_time < 60:
+                responses = self.client.idle_check(timeout=10)
+                if (1, b'EXISTS') in responses:
+                    break
+
         finally:
             text, more_responses = self.client.idle_done()
         self.assertIn((1, b'EXISTS'), responses)
@@ -476,19 +485,19 @@ class TestGeneral(_TestBase):
         self.assertTrue(isinstance(more_responses, list))
 
         # Check for IDLE data returned by idle_done()
-
-        # Gmail now delays updates following APPEND making this
-        # part of the test impractical.
-        if self.is_gmail():
-            return
-
         self.client.idle()
         try:
             client2.select_folder(self.base_folder)
             client2.append(self.base_folder, SIMPLE_MESSAGE)
-            time.sleep(2)    # Allow some time for the IDLE response to be sent
+            time.sleep(10)  # Allow some time for the IDLE response to be sent
         finally:
             text, responses = self.client.idle_done()
+
+        if not responses:
+            # The append was not yet picked by the other connection.
+            # This happens with some servers.
+            return
+
         self.assertIn((2, b'EXISTS'), responses)
         self.assertTrue(isinstance(text, binary_type))
         self.assertGreater(len(text), 0)
