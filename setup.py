@@ -42,6 +42,7 @@ functional tests that can be run against a live IMAP server.
 main_deps = ['six']
 test_deps = ['mock>=1.3.0; python_version < "3.4"']
 doc_deps = ['sphinx']
+idle_listener_deps = ['cachetools']
 
 setup(
     name='IMAPClient',
@@ -61,7 +62,8 @@ setup(
     tests_require=test_deps,
     extras_require={
         'test': test_deps,
-        'doc': doc_deps
+        'doc': doc_deps,
+        'idle-listener': idle_listener_deps
     },
     long_description=desc,
     classifiers=[
