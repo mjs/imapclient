@@ -12,7 +12,9 @@ import logging
 
 import six
 
-from imapclient.exceptions import CapabilityError, IMAPClientError
+from imapclient.exceptions import (
+    CapabilityError, IMAPClientError, ProtocolError
+)
 from imapclient.imapclient import IMAPlibLoggerAdapter
 from imapclient.fixed_offset import FixedOffset
 from imapclient.testable_imapclient import TestableIMAPClient as IMAPClient
@@ -651,3 +653,14 @@ class TestContextManager(IMAPClientTest):
         with self.assertRaises(ValueError):
             with self.client as _:
                 raise ValueError("Error raised inside the context manager")
+
+
+class TestProtocolError(IMAPClientTest):
+
+    def test_tagged_response_with_parse_error(self):
+        client = self.client
+        client._imap.tagged_commands = {sentinel.tag: None}
+        client._imap._get_response = lambda: b'NOT-A-STAR 99 EXISTS'
+
+        with self.assertRaises(ProtocolError):
+            client._consume_until_tagged_response(sentinel.tag, b'IDLE')

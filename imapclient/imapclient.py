@@ -24,7 +24,7 @@ from . import tls
 from .datetime_util import datetime_to_INTERNALDATE, format_criteria_date
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .response_parser import parse_response, parse_message_list, parse_fetch_response
-from .util import to_bytes, to_unicode
+from .util import to_bytes, to_unicode, assert_imap_protocol
 xrange = moves.xrange
 
 if PY3:
@@ -1526,7 +1526,7 @@ def _maybe_int_to_bytes(val):
 
 
 def _parse_untagged_response(text):
-    assert text.startswith(b'* ')
+    assert_imap_protocol(text.startswith(b'* '))
     text = text[2:]
     if text.startswith((b'OK ', b'NO ')):
         return tuple(text.split(b' ', 1))

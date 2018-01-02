@@ -7,6 +7,8 @@ from __future__ import unicode_literals
 import logging
 from six import binary_type, text_type
 
+from . import exceptions
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,3 +29,11 @@ def to_bytes(s, charset='ascii'):
     if isinstance(s, text_type):
         return s.encode(charset)
     return s
+
+
+def assert_imap_protocol(condition, message=None):
+    if not condition:
+        msg = "Server replied with a response that violates the IMAP protocol"
+        if message:
+            msg += "{}: {}".format(msg, message)
+        raise exceptions.ProtocolError(msg)
