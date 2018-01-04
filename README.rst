@@ -44,6 +44,33 @@ Features
 - Convenience methods are provided for commonly used functionality.
 - Exceptions are raised when errors occur.
 
+Example
+-------
+
+.. code-block:: python
+
+    from imapclient import IMAPClient
+
+    # context manager ensures the session is cleaned up
+    with imapclient.IMAPClient(host="imap.host.org") as client:
+        client.login('someone', 'secret')
+        client.select_folder('INBOX')
+
+        # search criteria are passed in a straightforward way
+        # (nesting is supported)
+        messages = client.search(['NOT', 'DELETED'])
+
+        # fetch selectors are passed as a simple list of strings.
+        response = client.fetch(messages, ['FLAGS', 'RFC822.SIZE'])
+
+        # `response` is keyed by message id and contains parsed,
+        # converted response items.
+        for message_id, data in response.items():
+            print('{id}: {size} bytes, flags={flags}'.format(
+                id=message_id,
+                size=data[b'RFC822.SIZE'],
+                flags=data[b'FLAGS']))
+
 Why IMAPClient?
 ---------------
 You may ask: "why create another IMAP client library for Python?
@@ -53,7 +80,7 @@ The problem with imaplib is that it's very low-level. It expects
 string values where lists or tuples would be more appropriate and
 returns server responses almost unparsed. As IMAP server responses can
 be quite complex this means everyone using imaplib ends up writing
-their own flimsy parsing routines which break easily.
+their own fragile parsing routines.
 
 Also, imaplib doesn't make good use of exceptions. This means you need
 to check the return value of each call to imaplib to see if what you
@@ -76,38 +103,24 @@ IMAPClient's manual is available at http://imapclient.readthedocs.io/.
 Release notes can be found at
 http://imapclient.readthedocs.io/#release-history.
 
-The Sphinx source for the documentation can be found under doc/src. If
-Sphinx is installed, the documentation can be rebuilt using::
-
-    python setup.py build_sphinx
-
-See the imapclient/examples directory for examples of how to use
-IMAPClient. If the IMAPClient was installed from PyPI, the examples
-subdirectory can be found under the imapclient package in the
-installation directory.
+See the `examples` directory in the root of project source for
+examples of how to use IMAPClient.
 
 Current Status
 --------------
-IMAPClient is currently under development but it is unlikely that
-the existing API will change in backwards-incompatible ways. Changes
-planned for the near future will only add extra functionality to the
-API.
-
 You should feel confident using IMAPClient for production
 purposes. Any problems found will be fixed quickly once reported.
+
+In order to clearly communicate version compatibility, IMAPClient
+will strictly adhere to the `Semantic Versioning <http://semver.org>`_
+scheme from version 1.0 onwards.
 
 The project's home page is http://imapclient.freshfoo.com/ (this
 currently redirects to the IMAPClient Github site). Details about
 upcoming versions and planned features/fixes can be found in the issue
-tracker on Github. The maintainer also blogs about IMAPClient
+tracker on Github. The maintainers also blog about IMAPClient
 news. Those articles can be found `here
 <http://menno.io/tags/imapclient>`_.
-
-Versions
---------
-In order to clearly communicate version compatibility, IMAPClient
-will strictly adhere to the `Semantic Versioning <http://semver.org>`_
-scheme from version 1.0 onwards.
 
 Mailing List
 ------------
@@ -133,9 +146,8 @@ inbox@menno.io.
 Working on IMAPClient
 ---------------------
 The `contributing documentation
-<http://imapclient.readthedocs.io/en/master/contributing.html>`_. contains
-information for those interested in improving IMAPClient and contributing back
-to the project.
+<http://imapclient.rtfd.io/en/master/contributing.html>`_ contains
+information for those interested in improving IMAPClient.
 
 IMAP Servers
 ------------
@@ -162,16 +174,14 @@ interact module like this::
 
 "Live" Tests
 ------------
-IMAPClient includes a series of functional tests which exercise
-it against a live IMAP account. It is useful for ensuring
+IMAPClient includes a series of live, functional tests which exercise
+it against a live IMAP account. These are useful for ensuring
 compatibility with a given IMAP server implementation.
 
-The livetest functionality can also be accessed like this::
+The livetest functionality are run from the root of the project source
+like this::
 
-    python -m imapclient.livetest <livetest.ini> [ optional unittest arguments ]
-
-Alternatively you can run the ``livetest.py`` script included with the
-source distribution. Use ``livetest.py --help`` to see usage.
+    python livetest.py <livetest.ini> [ optional unittest arguments ]
 
 The configuration file format is
 `described in the main documentation <http://imapclient.rtfd.io/#configuration-file-format>`_.
