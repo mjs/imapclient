@@ -5,7 +5,6 @@
 
 import sys
 from os import path
-from mock import MagicMock
 
 sys.path.insert(0, path.abspath(path.join(path.dirname(__file__), '..', '..')))
 
