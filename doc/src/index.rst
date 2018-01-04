@@ -69,7 +69,7 @@ messages in the INBOX folder.
     >>>     print('ID #%d: "%s" received %s' % (msgid, envelope.subject.decode(), envelope.date))
     ID #62: "Our holidays photos" received 2017-07-20 21:47:42
     ID #55: "Re: did you book the hotel?" received 2017-06-26 10:38:09
-    ID #53: "Re: did you book the holel?" received 2017-06-25 22:02:58
+    ID #53: "Re: did you book the hotel?" received 2017-06-25 22:02:58
     ID #44: "See that fun article about lobsters in Pacific ocean!" received 2017-06-09 09:49:47
     ID #46: "Planning for our next vacations" received 2017-05-12 10:29:30
 
@@ -85,7 +85,6 @@ help you start.
     :maxdepth: 2
 
     installation
-    quickstart
     concepts
     advanced
 
