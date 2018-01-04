@@ -1,4 +1,5 @@
-# Open a connection in IDLE mode and wait for notifications from the server
+# Open a connection in IDLE mode and wait for notifications from the
+# server.
 
 from imapclient import IMAPClient
 

@@ -1,9 +1,5 @@
-# Copyright (c) 2015, Menno Smits
-# Released subject to the New BSD License
-# Please see http://en.wikipedia.org/wiki/BSD_licenses
-#
 # Establish a secure connection to a server that does not have a certificate
-# signed by a trusted authority.
+# signed by a trusted certificate authority (CA).
 
 import ssl
 
