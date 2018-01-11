@@ -1,9 +1,11 @@
 IMAPClient was created by Menno Finlay-Smits <inbox@menno.io>. The
-project is now Nicolas Le Manchet and Menno Finlay-Smits.
+project is now maintained by Nicolas Le Manchet and Menno
+Finlay-Smits.
 
 Many thanks go to the following people for their help with this
 project:
 
+- Maxime Lorant
 - Mathieu Agopian
 - Chris Arndt
 - Jp Calderone
@@ -14,7 +16,6 @@ project:
 - Mark Hammond
 - Johannes Heckel
 - Thomas Jost
-- Maxime Lorant
 - Lukasz Mierzwa
 - Naveen Nathan
 - Brian Neal

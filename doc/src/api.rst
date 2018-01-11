@@ -61,3 +61,8 @@ TLS Support
 
 .. automodule:: imapclient.tls
    :members:
+
+Thread Safety
+~~~~~~~~~~~~~
+Instances of IMAPClient are NOT thread safe. They should not be shared and
+accessed concurrently from multiple threads.

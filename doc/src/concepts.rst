@@ -1,4 +1,4 @@
-IMAPClient concepts
+IMAPClient Concepts
 -------------------
 
 Message Identifiers
@@ -77,13 +77,14 @@ connections and also allows for a high level of control of TLS
 parameters if required. It uses the built-in `ssl` package, 
 provided since Python 2.7.9 and 3.4.
 
-TLS parameters are controlled by passing a ``ssl.SSLContext``
-when creating an IMAPClient instance. When ``ssl=True`` is used
-without passing a SSLContext, a default context is used. The default
-context avoids the use of known insecure ciphers and SSL protocol
-versions, with certificate verification and hostname verification
-turned on. The default context will use system installed certificate
-authority trust chains, if available.
+TLS parameters are controlled by passing a ``ssl.SSLContext`` when
+creating an IMAPClient instance (or to the `starttls` method when the
+STARTTLS is used). When ``ssl=True`` is used without passing a
+SSLContext, a default context is used. The default context avoids the
+use of known insecure ciphers and SSL protocol versions, with
+certificate verification and hostname verification turned on. The
+default context will use system installed certificate authority trust
+chains, if available.
 
 When constructing a custom context it is usually best to start with
 the default context, created by the ``ssl`` module, and modify it to
@@ -109,7 +110,7 @@ certificate used by the IMAP server.
 
 If your operating system comes with an outdated list of CA certificates you can
 use the `certifi <https://pypi.python.org/pypi/certifi>`_ package that provides
-a list of common and respectable CAs::
+an up-to-date set of trusted CAs::
 
   import certifi
 
@@ -119,34 +120,13 @@ The above examples show some of the most common TLS parameter
 customisations but there are many other tweaks are possible. Consult
 the Python 3 :py:mod:`ssl` package documentation for further options.
 
-Using gevent with IMAPClient
-++++++++++++++++++++++++++++
-Some extra monkey patching is required so that the gevent_ package can
-work with pyOpenSSL (used by IMAPClient for TLS support). The
-`gevent_openssl`_ package performs this patching. Please use
-gevent_openssl 1.2 or later.
-
-Here's an example of how gevent_openssl can be used with IMAPClient::
-
-  from gevent import monkey; monkey.patch_all()
-  import gevent_openssl; gevent_openssl.monkey_patch()
-
-  import imapclient
-
-  client = imapclient.IMAPClient(...)
-  ...
-
-.. _gevent: http://www.gevent.org/
-.. _`gevent_openssl`: https://pypi.python.org/pypi/gevent_openssl/
-
-
 Logging
 ~~~~~~~
-IMAPClient logs debug lines using the standard Python `logging module
-<https://docs.python.org/3/library/logging.html>`_. Its logger is
-``imapclient.*``.
+IMAPClient logs debug lines using the standard Python :py:mod:`logging`
+module. Its logger prefix is ``imapclient.``.
 
-A simple way to display log messages is to setup logging::
+One way to see debug messages from IMAPClient is to set up logging
+like this::
 
   import logging
 
@@ -155,4 +135,5 @@ A simple way to display log messages is to setup logging::
       level=logging.DEBUG
   )
 
-For advanced usage please refer to the Python documentation.
+For advanced usage, please refer to the documentation ``logging``
+module.

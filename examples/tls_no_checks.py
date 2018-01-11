@@ -1,7 +1,3 @@
-# Copyright (c) 2015, Menno Smits
-# Released subject to the New BSD License
-# Please see http://en.wikipedia.org/wiki/BSD_licenses
-#
 # Establish an encrypted connection to a server without checking its
 # certificate. This setup is insecure, DO NOT USE to connect to servers
 # over the Internet.
