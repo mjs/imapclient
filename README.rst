@@ -52,7 +52,7 @@ Example
     from imapclient import IMAPClient
 
     # context manager ensures the session is cleaned up
-    with imapclient.IMAPClient(host="imap.host.org") as client:
+    with IMAPClient(host="imap.host.org") as client:
         client.login('someone', 'secret')
         client.select_folder('INBOX')
 
