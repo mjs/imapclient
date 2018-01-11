@@ -7,9 +7,9 @@ library.
 Current version            1.1.0
 Supported Python versions  2.7, 3.4, 3.5 and 3.6
 License                    New BSD
-Project home               http://imapclient.freshfoo.com/
+Project home               https://github.com/mjs/imapclient/
 PyPI                       https://pypi.python.org/pypi/IMAPClient
-Documentation              http://imapclient.readthedocs.io/
+Documentation              https://imapclient.readthedocs.io/
 Mailing list               https://groups.io/g/imapclient
 =========================  ========================================
 
@@ -115,7 +115,7 @@ In order to clearly communicate version compatibility, IMAPClient
 will strictly adhere to the `Semantic Versioning <http://semver.org>`_
 scheme from version 1.0 onwards.
 
-The project's home page is http://imapclient.freshfoo.com/ (this
+The project's home page is https://github.com/mjs/imapclient/ (this
 currently redirects to the IMAPClient Github site). Details about
 upcoming versions and planned features/fixes can be found in the issue
 tracker on Github. The maintainers also blog about IMAPClient
