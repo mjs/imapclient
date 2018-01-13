@@ -121,6 +121,27 @@ class SocketTimeout(namedtuple("SocketTimeout", "connect read")):
     """
 
 
+class MailboxQuotaRoots(namedtuple("MailboxQuotaRoots", "mailbox quota_roots")):
+    """Quota roots associated with a mailbox.
+
+    Represents the response of a GETQUOTAROOT command.
+
+    :ivar mailbox: the mailbox
+    :ivar quota_roots: list of quota roots associated with the mailbox
+    """
+
+class Quota(namedtuple("Quota", "quota_root resource usage limit")):
+    """Resource quota.
+
+    Represents the response of a GETQUOTA command.
+
+    :ivar quota_roots: the quota roots for which the limit apply
+    :ivar resource: the resource being limited (STORAGE, MESSAGES...)
+    :ivar usage: the current usage of the resource
+    :ivar limit: the maximum allowed usage of the resource
+    """
+
+
 def require_capability(capability):
     """Decorator raising CapabilityError when a capability is not available."""
 
@@ -1321,6 +1342,84 @@ class IMAPClient(object):
                                        who, what,
                                        unpack=True)
 
+    @require_capability('QUOTA')
+    def get_quota(self, mailbox="INBOX"):
+        """Get the quotas associated with a mailbox.
+
+        Returns a list of Quota objects.
+        """
+        return self.get_quota_root(mailbox)[1]
+
+    @require_capability('QUOTA')
+    def _get_quota(self, quota_root=""):
+        """Get the quotas associated with a quota root.
+
+        This method is not private but put behind an underscore to show that
+        it is a low-level function. Users probably want to use `get_quota`
+        instead.
+
+        Returns a list of Quota objects.
+        """
+        return _parse_quota(
+            self._command_and_check('getquota', _quote(quota_root))
+        )
+
+    @require_capability('QUOTA')
+    def get_quota_root(self, mailbox):
+        """Get the quota roots for a mailbox.
+
+        The IMAP server responds with the quota root and the quotas associated
+        so there is usually no need to call `get_quota` after.
+
+        See :rfc:`2087` for more details.
+
+        Return a tuple of MailboxQuotaRoots and list of Quota associated
+        """
+        quota_root_rep = self._raw_command_untagged(
+            b'GETQUOTAROOT', to_bytes(mailbox), uid=False,
+            response_name='QUOTAROOT'
+        )
+        quota_rep = pop_with_default(self._imap.untagged_responses, 'QUOTA', [])
+        quota_root_rep = parse_response(quota_root_rep)
+        quota_root = MailboxQuotaRoots(
+            to_unicode(quota_root_rep[0]),
+            [to_unicode(q) for q in quota_root_rep[1:]]
+        )
+        return quota_root, _parse_quota(quota_rep)
+
+    @require_capability('QUOTA')
+    def set_quota(self, quotas):
+        """Set one or more quotas on resources.
+
+        :param quotas: list of Quota objects
+        """
+        if not quotas:
+            return
+
+        quota_root = None
+        set_quota_args = list()
+
+        for quota in quotas:
+            if quota_root is None:
+                quota_root = quota.quota_root
+            elif quota_root != quota.quota_root:
+                raise ValueError("set_quota only accepts a single quota root")
+
+            set_quota_args.append(
+                "{} {}".format(quota.resource, quota.limit)
+            )
+
+        set_quota_args = " ".join(set_quota_args)
+        args = [
+            to_bytes(_quote(quota_root)),
+            to_bytes("({})".format(set_quota_args))
+        ]
+
+        response = self._raw_command_untagged(
+            b'SETQUOTA', args, uid=False, response_name='QUOTA'
+        )
+        return _parse_quota(response)
+
     def _check_resp(self, expected, command, typ, data):
         """Check command responses for errors.
 
@@ -1630,6 +1729,11 @@ def as_pairs(items):
         i += 1
 
 
+def as_triplets(items):
+    a = iter(items)
+    return zip(a, a, a)
+
+
 def _is8bit(data):
     return any(b > 127 for b in iterbytes(data))
 
@@ -1701,6 +1805,20 @@ def debug_trunc(v, maxlen):
 
 def utf7_decode_sequence(seq):
     return [decode_utf7(s) for s in seq]
+
+
+def _parse_quota(quota_rep):
+    quota_rep = parse_response(quota_rep)
+    rv = list()
+    for quota_root, quota_resource_infos in as_pairs(quota_rep):
+        for quota_resource_info in as_triplets(quota_resource_infos):
+            rv.append(Quota(
+                quota_root=to_unicode(quota_root),
+                resource=to_unicode(quota_resource_info[0]),
+                usage=quota_resource_info[1],
+                limit=quota_resource_info[2]
+            ))
+    return rv
 
 
 class IMAPlibLoggerAdapter(LoggerAdapter):
