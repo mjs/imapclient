@@ -24,3 +24,4 @@ project:
 - Andrew Scheller
 - Thomas Steinacher
 - Zac Witte
+- Hans-Peter Jansen

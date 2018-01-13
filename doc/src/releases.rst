@@ -4,43 +4,54 @@
  Version 2.0
 =============
 
-Added
------
-- Connection and read/write operations timeout can now be distinct,
-  using `imapclient.SocketTimeout` namedtuple as `timeout` parameter.
-- A context manager is introduced to automatically close connections to remote
-  servers.
-- Atomically move messages to another folder using the MOVE extension
-  (:rfc:`6851`)
-
 Changed
 -------
-- Connections to servers use SSL/TLS by default (`ssl=True`)
-- XXX Use built-in TLS when sensible.
-- Logs are now handled by the Python logging module. `debug` and `log_file`
-  are not used anymore.
+- Only use Python's built-in TLS support (no more backports.ssl & pyOpenSSL)
+- Connections use SSL/TLS by default (`ssl=True`)
+- Drop ``imapclient.tls.create_default_context`` function. In case you were
+  using it, you can use the method with the same name available in the 
+  built-in ``ssl`` module.
+- Logs are now handled by the Python logging module. The `debug` and `log_file`
+  attributes are gone.
 - More precise exceptions available in `imapclient.exceptions` are raised when
   an error happens
 - `imapclient.exceptions.ProtocolError` is now raised when the reply from a
   remote server violates the IMAP protocol.
+- SEARCH exceptions now link to relevant documentation.
 - GMail labels are now strings instead of bytes in Python 3.
+- OAUTH v1 support removed.
+- setup.py has been simplified.
+- All non-library code moved out of the `imapclient` package.
+- Many documentation improvements.
+
+Added
+-----
+- Connection and read/write operations timeout can now be distinct, using
+  `imapclient.SocketTimeout` namedtuple as `timeout` parameter.
+- A context manager is introduced to automatically close connections to remote
+  servers.
+- EXPUNGE by ID support.
+- ENABLE support.
+- UNSELECT support.
+- Atomically move messages to another folder using the MOVE extension
+  (:rfc:`6851`)
+- New `welcome` property to allow access to IMAP server greeting.
 
 Fixed
 -----
 - GMail labels using international characters are now handled properly.
-
-Other
------
-- Drop support of OAUTH(1)
-- Drop ``imapclient.tls.create_default_context`` function. In case you were
-  using it, you can use the method with the same name available in the 
-  built-in ``ssl`` module.
+- Don't use locale dependent formatting in `datetime_to_INTERNAL_DATE()`.
+- Quote empty strings to prevent syntax errors while SEARCHing for zero-length
+  strings.
+- Handle address without mailbox name or host in Address namedtuple.
+- Avoid asserts in response parsing codes to allow graceful recovery.
+- Prevent logging of IMAP passwords.
 
 Python compatibility
 --------------------
-This version supports Python 2.7 serie and Python 3.4, 3.5 and 3.6.
+Support for Python 2.6 and 3.3 is removed in this release.
 
-Support for Python 2.6 and 3.3 is removed. We officially support the
+This version supports Python 2.7, 3.4, 3.5 and 3.6. We officially support the
 latest release of each series.
 
 
