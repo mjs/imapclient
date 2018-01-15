@@ -76,6 +76,27 @@ FLAGGED = br'\Flagged'
 DRAFT = br'\Draft'
 RECENT = br'\Recent'         # This flag is read-only
 
+# Special folders, see RFC6154
+# \Flagged is omitted because it is the same as the flag defined above
+ALL = br'\All'
+ARCHIVE = br'\Archive'
+DRAFTS = br'\Drafts'
+JUNK = br'\Junk'
+SENT = br'\Sent'
+TRASH = br'\Trash'
+
+# Personal namespaces that are common among providers
+# used as a fallback when the server does not support the NAMESPACE capability
+_POPULAR_PERSONAL_NAMESPACES = (("", ""), ("INBOX.", "."))
+
+# Names of special folders that are common among providers
+_POPULAR_SPECIAL_FOLDERS = {
+    SENT: ("Sent", "Sent Items", "Sent items"),
+    DRAFTS: ("Drafts",),
+    ARCHIVE: ("Archive",),
+    TRASH: ("Trash", "Deleted Items", "Deleted Messages"),
+    JUNK: ("Junk", "Spam")
+}
 
 class Namespace(tuple):
 
@@ -564,6 +585,42 @@ class IMAPClient(object):
 
             ret.append((flags, delim, name))
         return ret
+
+    def find_special_folder(self, folder_flag):
+        """Try to locate a special folder, like the Sent or Trash folder.
+
+        >>> server.find_special_folder(imapclient.SENT)
+        'INBOX.Sent'
+
+        This function tries its best to find the correct folder (if any) but
+        uses heuristics when the server is unable to precisely tell where
+        special folders are located.
+
+        Returns the name of the folder if found, or None otherwise.
+        """
+        # Detect folder by looking for known attributes
+        # TODO: avoid listing all folders by using extended LIST (RFC6154)
+        if self.has_capability('SPECIAL-USE'):
+            for folder in self.list_folders():
+                if folder and len(folder[0]) > 1 and folder[0][1] == folder_flag:
+                    return folder[2]
+
+        # Detect folder by looking for common names
+        # We only look for folders in the "personal" namespace of the user
+        if self.has_capability('NAMESPACE'):
+            personal_namespaces = self.namespace().personal
+        else:
+            personal_namespaces = _POPULAR_PERSONAL_NAMESPACES
+
+        for personal_namespace in personal_namespaces:
+            for pattern in _POPULAR_SPECIAL_FOLDERS.get(folder_flag, tuple()):
+                pattern = personal_namespace[0] + pattern
+                sent_folders = self.list_folders(pattern=pattern)
+                if sent_folders:
+                    return sent_folders[0][2]
+
+        return None
+
 
     def select_folder(self, folder, readonly=False):
         """Set the current folder on the server.

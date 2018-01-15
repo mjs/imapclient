@@ -152,6 +152,34 @@ class TestListFolders(IMAPClientTest):
         self.assertEqual(folders, [((br'\HasNoChildren',), b'/', 'last')])
 
 
+class TestFindSpecialFolder(IMAPClientTest):
+
+    def test_find_special_folder_with_special_use(self):
+        self.client._cached_capabilities = (b'SPECIAL-USE',)
+        self.client._imap._simple_command.return_value = ('OK', [b'something'])
+        self.client._imap._untagged_response.return_value = (
+            'LIST', [
+                b'(\\HasNoChildren) "/" "INBOX"',
+                b'(\\HasNoChildren \\Sent) "/" "Sent"',
+            ])
+
+        folder = self.client.find_special_folder(b'\\Sent')
+
+        self.assertEqual(folder, "Sent")
+
+    def test_find_special_folder_without_special_use_nor_namespace(self):
+        self.client._cached_capabilities = (b'FOO',)
+        self.client._imap._simple_command.return_value = ('OK', [b'something'])
+        self.client._imap._untagged_response.return_value = (
+            'LIST', [
+                b'(\\HasNoChildren) "/" "Sent Items"',
+            ])
+
+        folder = self.client.find_special_folder(b'\\Sent')
+
+        self.assertEqual(folder, "Sent Items")
+
+
 class TestSelectFolder(IMAPClientTest):
 
     def test_normal(self):
