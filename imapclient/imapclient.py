@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 
+import functools
 import imaplib
 import itertools
 import select
@@ -118,6 +119,23 @@ class SocketTimeout(namedtuple("SocketTimeout", "connect read")):
     timeout if the connection takes more than 15 seconds to establish but
     read/write operations can take up to 60 seconds once the connection is done.
     """
+
+
+def require_capability(capability):
+    """Decorator raising CapabilityError when a capability is not available."""
+
+    def actual_decorator(func):
+
+        @functools.wraps(func)
+        def wrapper(client, *args, **kwargs):
+            if not client.has_capability(capability):
+                raise exceptions.CapabilityError(
+                    'Server does not support {} capability'.format(capability)
+                )
+            return func(client, *args, **kwargs)
+
+        return wrapper
+    return actual_decorator
 
 
 class IMAPClient(object):
@@ -261,6 +279,7 @@ class IMAPClient(object):
         # In the py3 version it's just sock.
         return getattr(self._imap, 'sslobj', self._imap.sock)
 
+    @require_capability('STARTTLS')
     def starttls(self, ssl_context=None):
         """Switch to an SSL encrypted connection by sending a STARTTLS command.
 
@@ -350,6 +369,7 @@ class IMAPClient(object):
         self._imap.shutdown()
         logger.info('Connection closed')
 
+    @require_capability('ENABLE')
     def enable(self, *capabilities):
         """Activate one or more server side capability extensions.
 
@@ -381,6 +401,7 @@ class IMAPClient(object):
             return []
         return resp.split()
 
+    @require_capability('ID')
     def id_(self, parameters=None):
         """Issue the ID command, returning a dict of server implementation
         fields.
@@ -388,9 +409,6 @@ class IMAPClient(object):
         *parameters* should be specified as a dictionary of field/value pairs,
         for example: ``{"name": "IMAPClient", "version": "0.12"}``
         """
-        if not self.has_capability('ID'):
-            raise exceptions.CapabilityError('server does not support IMAP ID extension')
-
         if parameters is None:
             args = 'NIL'
         else:
@@ -462,6 +480,7 @@ class IMAPClient(object):
         # be detected by this method.
         return to_bytes(capability).upper() in self.capabilities()
 
+    @require_capability('NAMESPACE')
     def namespace(self):
         """Return the namespace for the account as a (personal, other,
         shared) tuple.
@@ -512,6 +531,7 @@ class IMAPClient(object):
         """
         return self._do_list('LIST', directory, pattern)
 
+    @require_capability('XLIST')
     def xlist_folders(self, directory="", pattern="*"):
         """Execute the XLIST command, returning ``(flags, delimiter,
         name)`` tuples.
@@ -536,9 +556,7 @@ class IMAPClient(object):
 
         This is a *deprecated* Gmail-specific IMAP extension (See
         https://developers.google.com/gmail/imap_extensions#xlist_is_deprecated
-        for more information). It is the responsibility of the caller
-        to either check for ``XLIST`` in the server capabilites, or to
-        handle the error if the server doesn't support this extension.
+        for more information).
 
         The *directory* and *pattern* arguments are as per
         list_folders().
@@ -621,7 +639,6 @@ class IMAPClient(object):
 
         return None
 
-
     def select_folder(self, folder, readonly=False):
         """Set the current folder on the server.
 
@@ -643,6 +660,7 @@ class IMAPClient(object):
         self._command_and_check('select', self._normalise_folder(folder), readonly)
         return self._process_select_response(self._imap.untagged_responses)
 
+    @require_capability('UNSELECT')
     def unselect_folder(self):
         """Unselect the current folder and release associated resources.
 
@@ -701,6 +719,7 @@ class IMAPClient(object):
         tag = self._imap._command('NOOP')
         return self._consume_until_tagged_response(tag, 'NOOP')
 
+    @require_capability('IDLE')
     def idle(self):
         """Put the server into IDLE mode.
 
@@ -721,6 +740,7 @@ class IMAPClient(object):
         if resp is not None:
             raise exceptions.IMAPClientError('Unexpected IDLE response: %s' % resp)
 
+    @require_capability('IDLE')
     def idle_check(self, timeout=None):
         """Check for any IDLE responses sent by the server.
 
@@ -769,6 +789,7 @@ class IMAPClient(object):
             sock.setblocking(1)
             self._set_read_timeout()
 
+    @require_capability('IDLE')
     def idle_done(self):
         """Take the server out of IDLE mode.
 
@@ -913,6 +934,7 @@ class IMAPClient(object):
         """
         return self._search(criteria, charset)
 
+    @require_capability('X-GM-EXT-1')
     def gmail_search(self, query, charset='UTF-8'):
         """Search using Gmail's X-GM-RAW attribute.
 
@@ -958,6 +980,7 @@ class IMAPClient(object):
 
         return parse_message_list(data)
 
+    @require_capability('SORT')
     def sort(self, sort_criteria, criteria='ALL', charset='UTF-8'):
         """Return a list of message ids from the currently selected
         folder, sorted by *sort_criteria* and optionally filtered by
@@ -980,9 +1003,6 @@ class IMAPClient(object):
         Note that SORT is an extension to the IMAP4 standard so it may
         not be supported by all IMAP servers.
         """
-        if not self.has_capability('SORT'):
-            raise exceptions.CapabilityError('The server does not support the SORT extension')
-
         args = [
             _normalise_sort_criteria(sort_criteria),
             to_bytes(charset),
@@ -1228,6 +1248,7 @@ class IMAPClient(object):
                                        self._normalise_folder(folder),
                                        uid=True, unpack=True)
 
+    @require_capability('MOVE')
     def move(self, messages, folder):
         """Atomically move messages to another folder.
 
@@ -1278,6 +1299,7 @@ class IMAPClient(object):
         tag = self._imap._command('EXPUNGE')
         return self._consume_until_tagged_response(tag, 'EXPUNGE')
 
+    @require_capability('ACL')
     def getacl(self, folder):
         """Returns a list of ``(who, acl)`` tuples describing the
         access controls for *folder*.
@@ -1287,6 +1309,7 @@ class IMAPClient(object):
         parts = parts[1:]       # First item is folder name
         return [(parts[i], parts[i + 1]) for i in xrange(0, len(parts), 2)]
 
+    @require_capability('ACL')
     def setacl(self, folder, who, what):
         """Set an ACL (*what*) for user (*who*) for a folder.
 

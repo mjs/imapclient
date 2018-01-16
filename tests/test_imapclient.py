@@ -15,7 +15,7 @@ import six
 from imapclient.exceptions import (
     CapabilityError, IMAPClientError, ProtocolError
 )
-from imapclient.imapclient import IMAPlibLoggerAdapter
+from imapclient.imapclient import IMAPlibLoggerAdapter, require_capability
 from imapclient.fixed_offset import FixedOffset
 from imapclient.testable_imapclient import TestableIMAPClient as IMAPClient
 
@@ -219,6 +219,7 @@ class TestSelectFolder(IMAPClientTest):
         })
 
     def test_unselect(self):
+        self.client._cached_capabilities = [b'UNSELECT']
         self.client._imap._simple_command.return_value = ('OK', ['Unselect completed.'])
         #self.client._imap._untagged_response.return_value = (
         #    b'OK', [b'("name" "GImap" "vendor" "Google, Inc.")'])
@@ -255,6 +256,10 @@ class TestAppend(IMAPClientTest):
 
 class TestAclMethods(IMAPClientTest):
 
+    def setUp(self):
+        super(TestAclMethods, self).setUp()
+        self.client._cached_capabilities = [b'ACL']
+
     def test_getacl(self):
         self.client._imap.getacl.return_value = ('OK', [b'INBOX Fred rwipslda Sally rwip'])
         acl = self.client.getacl('INBOX')
@@ -272,6 +277,10 @@ class TestAclMethods(IMAPClientTest):
 
 
 class TestIdleAndNoop(IMAPClientTest):
+
+    def setUp(self):
+        super(TestIdleAndNoop, self).setUp()
+        self.client._cached_capabilities = [b'IDLE']
 
     def assert_sock_calls(self, sock):
         self.assertListEqual(sock.method_calls, [
@@ -452,6 +461,10 @@ class TestTimeNormalisation(IMAPClientTest):
 
 class TestNamespace(IMAPClientTest):
 
+    def setUp(self):
+        super(TestNamespace, self).setUp()
+        self.client._cached_capabilities = [b'NAMESPACE']
+
     def set_return(self, value):
         self.client._imap.namespace.return_value = ('OK', [value])
 
@@ -544,11 +557,35 @@ class TestCapabilities(IMAPClientTest):
         self.assertTrue(self.client.has_capability('foo'))
         self.assertFalse(self.client.has_capability('BAR'))
 
+    def test_decorator(self):
+
+        class Foo(object):
+
+            def has_capability(self, capability):
+                if capability == 'TRUE':
+                    return True
+                return False
+
+            @require_capability('TRUE')
+            def yes(self):
+                return True
+
+            @require_capability('FALSE')
+            def no(self):
+                return False
+
+        foo = Foo()
+        self.assertTrue(foo.yes())
+        self.assertRaises(CapabilityError, foo.no)
+
 
 class TestId(IMAPClientTest):
 
+    def setUp(self):
+        super(TestId, self).setUp()
+        self.client._cached_capabilities = [b'ID']
+
     def test_id(self):
-        self.client._cached_capabilities = (b'ID',)
         self.client._imap._simple_command.return_value = ('OK', [b'Success'])
         self.client._imap._untagged_response.return_value = (
             b'OK', [b'("name" "GImap" "vendor" "Google, Inc.")'])
