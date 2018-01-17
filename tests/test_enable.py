@@ -18,6 +18,7 @@ class TestEnable(IMAPClientTest):
         self.command = Mock()
         self.client._raw_command_untagged = self.command
         self.client._imap.state = 'AUTH'
+        self.client._cached_capabilities = [b'ENABLE']
 
     def test_success(self):
         self.command.return_value = b'CONDSTORE'

@@ -30,6 +30,7 @@ class TestStarttls(IMAPClientTest):
         self.client.ssl = False
         self.client._starttls_done = False
         self.client._imap._simple_command.return_value = "OK", [b'start TLS negotiation']
+        self.client._cached_capabilities = [b'STARTTLS']
 
     def test_works(self):
         resp = self.client.starttls(sentinel.ssl_context)

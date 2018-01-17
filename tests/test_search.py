@@ -135,6 +135,10 @@ class TestSearch(TestSearchBase):
 
 class TestGmailSearch(TestSearchBase):
 
+    def setUp(self):
+        super(TestGmailSearch, self).setUp()
+        self.client._cached_capabilities = [b'X-GM-EXT-1']
+
     def test_bytes_query(self):
         result = self.client.gmail_search(b'foo bar')
 
