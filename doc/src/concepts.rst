@@ -116,6 +116,14 @@ an up-to-date set of trusted CAs::
 
   ssl_context = ssl.create_default_context(cafile=certifi.where())
 
+If the server supports it, you can also authenticate using a client
+certificate::
+
+  import ssl
+
+  ssl_context = ssl.create_default_context()
+  ssl_context.load_cert_chain("/path/to/client_certificate.crt")
+
 The above examples show some of the most common TLS parameter
 customisations but there are many other tweaks are possible. Consult
 the Python 3 :py:mod:`ssl` package documentation for further options.
