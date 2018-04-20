@@ -473,6 +473,15 @@ class TestParseFetchResponse(unittest.TestCase):
             datetime(2007, 2, 9, 17, 8, 8, 0, FixedOffset(-4 * 60 - 30)))
         self.assertEqual(dt, expected_dt)
 
+    def test_INTERNALDATE_NIL(self):
+        out = parse_fetch_response(
+            [b'1 (INTERNALDATE NIL)']
+        )
+        self.assertEqual(
+            out[1][b'INTERNALDATE'],
+            None
+        )
+
     def test_mixed_types(self):
         self.assertEqual(parse_fetch_response([(
             b'1 (INTERNALDATE " 9-Feb-2007 17:08:08 +0100" RFC822 {21}',

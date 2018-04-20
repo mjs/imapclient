@@ -160,8 +160,7 @@ def _int_or_error(value, error_text):
 
 
 def _convert_INTERNALDATE(date_string, normalise_times=True):
-    # Observed in https://sentry.nylas.com/sentry/sync-prod/group/5907/
-    if date_string.upper() == b'NIL':
+    if date_string is None:
         return None
 
     try:
