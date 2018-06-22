@@ -25,9 +25,11 @@ def command_line():
                  help='Password to login with')
     p.add_option('-P', '--port', dest='port', action='store', type=int,
                  default=None,
-                 help='IMAP port to use (default is 993 for TLS, or 143 for plaintext/STARTSSL)')
-    p.add_option('-s', '--ssl', dest='ssl', action='store_true', default=True,
-                 help='Use SSL connection')
+                 help='IMAP port to use (default is 993 for TLS, or 143 otherwise)')
+    p.add_option('-s', '--ssl', dest='ssl', action='store_true', default=None,
+                 help='Use SSL/TLS connection (default)')
+    p.add_option('', '--insecure', dest='insecure', action='store_true', default=False,
+                 help='Use insecure connection (i.e. without SSL/TLS)')
     p.add_option('-f', '--file', dest='file', action='store', default=None,
                  help='Config file (same as livetest)')
 
@@ -36,11 +38,16 @@ def command_line():
         p.error('unexpected arguments %s' % ' '.join(args))
 
     if opts.file:
-        if opts.host or opts.username or opts.password or opts.port or opts.ssl:
+        if opts.host or opts.username or opts.password or opts.port or opts.ssl or opts.insecure:
             p.error('If -f/--file is given no other options can be used')
         # Use the options in the config file
         opts = parse_config_file(opts.file)
     else:
+        if opts.ssl and opts.insecure:
+            p.error("Can't use --ssl and --insecure at the same time")
+        
+        opts.ssl = not opts.insecure
+
         # Scan through options, filling in defaults and prompting when
         # a compulsory option wasn't provided.
         compulsory_opts = ('host', 'username', 'password')
