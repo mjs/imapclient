@@ -25,8 +25,8 @@ def command_line():
                  help='Password to login with')
     p.add_option('-P', '--port', dest='port', action='store', type=int,
                  default=None,
-                 help='IMAP port to use (default is 143, or 993 for SSL)')
-    p.add_option('-s', '--ssl', dest='ssl', action='store_true', default=False,
+                 help='IMAP port to use (default is 993 for TLS, or 143 for plaintext/STARTSSL)')
+    p.add_option('-s', '--ssl', dest='ssl', action='store_true', default=True,
                  help='Use SSL connection')
     p.add_option('-f', '--file', dest='file', action='store', default=None,
                  help='Config file (same as livetest)')
