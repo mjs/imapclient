@@ -15,7 +15,10 @@ import six
 from imapclient.exceptions import (
     CapabilityError, IMAPClientError, ProtocolError
 )
-from imapclient.imapclient import IMAPlibLoggerAdapter, require_capability
+from imapclient.imapclient import (
+    IMAPlibLoggerAdapter, _parse_quota, Quota, MailboxQuotaRoots,
+    require_capability
+)
 from imapclient.fixed_offset import FixedOffset
 from imapclient.testable_imapclient import TestableIMAPClient as IMAPClient
 
@@ -274,6 +277,87 @@ class TestAclMethods(IMAPClientTest):
                                                     sentinel.who,
                                                     sentinel.what)
         self.assertEqual(response, b"SETACL done")
+
+
+class TestQuota(IMAPClientTest):
+
+    def setUp(self):
+        super(TestQuota, self).setUp()
+        self.client._cached_capabilities = [b'QUOTA']
+
+    def test_parse_quota(self):
+        self.assertEqual(_parse_quota([]), [])
+        self.assertEqual(
+            _parse_quota([b'"User quota" (STORAGE 586720 4882812)']),
+            [Quota('User quota', 'STORAGE', 586720, 4882812)]
+        )
+        self.assertEqual(
+            _parse_quota([
+                b'"User quota" (STORAGE 586720 4882812)',
+                b'"Global quota" (MESSAGES 42 1000)'
+            ]),
+            [
+                Quota('User quota', 'STORAGE', 586720, 4882812),
+                Quota('Global quota', 'MESSAGES', 42, 1000)
+            ]
+        )
+        self.assertEqual(
+            _parse_quota([
+                b'"User quota" (STORAGE 586720 4882812 MESSAGES 42 1000)',
+            ]),
+            [
+                Quota('User quota', 'STORAGE', 586720, 4882812),
+                Quota('User quota', 'MESSAGES', 42, 1000)
+            ]
+        )
+
+    def test__get_quota(self):
+        self.client._command_and_check = Mock()
+        self.client._command_and_check.return_value = (
+            [b'"User quota" (MESSAGES 42 1000)']
+        )
+
+        quotas = self.client._get_quota('foo')
+
+        self.client._command_and_check.assert_called_once_with(
+            'getquota', '"foo"'
+        )
+        self.assertEqual(quotas, [Quota('User quota', 'MESSAGES', 42, 1000)])
+
+    def test_set_quota(self):
+        self.client._raw_command_untagged = Mock()
+        self.client._raw_command_untagged.return_value = (
+            [b'"User quota" (STORAGE 42 1000 MESSAGES 42 1000)']
+        )
+        quotas = [
+            Quota('User quota', 'STORAGE', 42, 1000),
+            Quota('User quota', 'MESSAGES', 42, 1000)
+        ]
+        resp = self.client.set_quota(quotas)
+
+        self.client._raw_command_untagged.assert_called_once_with(
+            b'SETQUOTA', [b'"User quota"', b'(STORAGE 1000 MESSAGES 1000)'],
+            uid=False, response_name='QUOTA'
+        )
+        self.assertListEqual(resp, quotas)
+
+    def test_get_quota_root(self):
+        self.client._raw_command_untagged = Mock()
+        self.client._raw_command_untagged.return_value = (
+            [b'"INBOX" "User quota"']
+        )
+        self.client._imap.untagged_responses = dict()
+
+        resp = self.client.get_quota_root("INBOX")
+
+        self.client._raw_command_untagged.assert_called_once_with(
+            b'GETQUOTAROOT', b'INBOX', uid=False, response_name='QUOTAROOT'
+        )
+        expected = (MailboxQuotaRoots("INBOX", ["User quota"]), list())
+        self.assertTupleEqual(resp, expected)
+
+        resp = self.client.get_quota("INBOX")
+        self.assertEqual(resp, [])
 
 
 class TestIdleAndNoop(IMAPClientTest):
