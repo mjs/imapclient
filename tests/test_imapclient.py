@@ -505,13 +505,23 @@ class TestDebugLogging(IMAPClientTest):
         adapter = IMAPlibLoggerAdapter(logger_mock, dict())
         if six.PY3:
             adapter.info("""> b'ICHH1 LOGIN foo@bar.org "secret"'""")
-            logger_mock._log.assert_called_once_with(
-                logging.INFO,
-                "> b'ICHH1 LOGIN **REDACTED**",
-                (),
-                extra={}
-            )
+            if sys.version_info >= (3, 7):
+                # LoggerAdapter in Python 3.7+ calls logger.log()
+                logger_mock.log.assert_called_once_with(
+                    logging.INFO,
+                    "> b'ICHH1 LOGIN **REDACTED**",
+                    extra={}
+                )
+            else:
+                # LoggerAdapter in Python 3.4 to 3.6 calls logger._log()
+                logger_mock._log.assert_called_once_with(
+                    logging.INFO,
+                    "> b'ICHH1 LOGIN **REDACTED**",
+                    (),
+                    extra={}
+                )
         else:
+            # LoggerAdapter in Python 2.7 calls logger.info()
             adapter.info('> ICHH1 LOGIN foo@bar.org "secret"')
             logger_mock.info.assert_called_once_with(
                 "> ICHH1 LOGIN **REDACTED**",
