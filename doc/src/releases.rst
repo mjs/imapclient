@@ -1,5 +1,25 @@
 :tocdepth: 1
 
+===============
+ Version 2.1.0
+===============
+
+Changed
+-------
+- TravisCI now runs tests against PyPy
+- Cleaned up server capability checks
+- Use TLS by default for interactive sessions
+
+Added
+-----
+- Support the ``QUOTA`` extension
+- Support for locating special folders (``find_special_folder()``)
+- Document usage of client TLS certificates
+
+Fixed
+-----
+- Handle ``NIL`` values for ``INTERNALDATE``
+
 =============
  Version 2.0
 =============
