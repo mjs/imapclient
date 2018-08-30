@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 
+import email
 import functools
 import imaplib
 import itertools
@@ -1226,6 +1227,38 @@ class IMAPClient(object):
         self._checkok('fetch', typ, data)
         typ, data = self._imap._untagged_response(typ, data, 'FETCH')
         return parse_fetch_response(data, self.normalise_times, self.use_uid)
+
+    def fetch_email_messages(self, messages, _class=None):
+        """Retrieve messages as Python email Messages.
+
+        *messages* is a list of message IDs to retrieve.
+
+        The optional *_class* is passed to the `email.parser.Parser` that
+        generates the Message.
+
+        A dictionary is returned, indexed by message number. Values are
+        instances of `email.message.Message` or `email.message.EmailMessage`
+        depending on the *_class* used and the version of Python.
+        """
+        rv = dict()
+        for message_id, content in iteritems(self.fetch(messages, 'RFC822')):
+            try:
+                email_message = email.message_from_bytes(
+                    content[b'RFC822'], _class
+                )
+            except AttributeError:
+                # For Python 2.7
+                if _class is None:
+                    from email.message import Message
+                    _class = Message
+
+                email_message = email.message_from_string(
+                    to_unicode(content[b'RFC822']), _class
+                )
+
+            rv[message_id] = email_message
+
+        return rv
 
     def append(self, folder, msg, flags=(), msg_time=None):
         """Append a message to *folder*.

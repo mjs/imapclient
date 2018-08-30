@@ -813,3 +813,17 @@ class TestProtocolError(IMAPClientTest):
 
         with self.assertRaises(ProtocolError):
             client._consume_until_tagged_response(sentinel.tag, b'IDLE')
+
+
+class TestFetch(IMAPClientTest):
+
+    def test_fetch_email_messages(self):
+        email_data = (
+            b'To: foo@bar.com\nFrom: baz@bar.com\nSubject: Test\n'
+            b'Content-Type: text/plain\n\nTest'
+        )
+        self.client.fetch = Mock()
+        self.client.fetch.return_value = {42: {b'RFC822': email_data}}
+
+        rv = self.client.fetch_email_messages([42])
+        self.assertEqual(rv[42].as_string(), email_data.decode())
