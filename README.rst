@@ -5,7 +5,7 @@ library.
 
 =========================  ========================================
 Current version            2.0.0
-Supported Python versions  2.7, 3.4, 3.5 and 3.6
+Supported Python versions  2.7, 3.4 - 3.7
 License                    New BSD
 Project home               https://github.com/mjs/imapclient/
 PyPI                       https://pypi.python.org/pypi/IMAPClient
