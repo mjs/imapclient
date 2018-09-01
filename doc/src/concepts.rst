@@ -70,6 +70,18 @@ If *folder_encode* is True, all folder names returned by IMAPClient
 are always returned as unicode strings. If *folder_encode* is False,
 folder names are returned as str (Python 2) or bytes (Python 3).
 
+Working With Fetched Messages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The IMAP protocol gives access to a limited amount of information about emails
+stored on the server. In depth analysis of a message usually requires
+downloading the full message and parsing its content.
+
+The `email <https://docs.python.org/3/library/email.html>`_ package of the
+Python standard library provides a reliable way to transform a raw email into
+a convenient object.
+
+.. literalinclude:: ../../examples/email_parsing.py
+
 TLS/SSL
 ~~~~~~~
 IMAPClient uses sensible TLS parameter defaults for encrypted
