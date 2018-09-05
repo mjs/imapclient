@@ -7,6 +7,7 @@
 Changed
 -------
 - TravisCI now runs tests against PyPy
+- Python 3.7 is now officially supported
 - Cleaned up server capability checks
 - Use TLS by default for interactive sessions
 
@@ -15,6 +16,8 @@ Added
 - Support the ``QUOTA`` extension
 - Support for locating special folders (``find_special_folder()``)
 - Document usage of client TLS certificates
+- Added documentation & example for parsing retrieved emails using the
+  standard library ``email`` package.
 
 Fixed
 -----
