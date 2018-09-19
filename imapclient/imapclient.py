@@ -641,7 +641,7 @@ class IMAPClient(object):
         # TODO: avoid listing all folders by using extended LIST (RFC6154)
         if self.has_capability('SPECIAL-USE'):
             for folder in self.list_folders():
-                if folder and len(folder[0]) > 1 and folder[0][1] == folder_flag:
+                if folder and len(folder[0]) > 0 and folder_flag in folder[0]:
                     return folder[2]
 
         # Detect folder by looking for common names
