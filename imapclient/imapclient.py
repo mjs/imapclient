@@ -850,8 +850,8 @@ class IMAPClient(object):
         response = parse_response(data)
         try:
             status_items = response[-1]
-        except ValueError:
-            raise Exception('folder_status ValueError: Input ' + str(response))
+        except IndexError:
+            raise Exception('folder_status IndexError: Input ' + str(response))
         return dict(as_pairs(status_items))
 
     def close_folder(self):
