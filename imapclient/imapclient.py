@@ -1601,7 +1601,7 @@ def join_message_ids(messages):
 
 def _maybe_int_to_bytes(val):
     if isinstance(val, integer_types):
-        return str(val).encode('us-ascii')
+        return str(val).encode('us-ascii') if PY3 else str(val)
     return to_bytes(val)
 
 
