@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 
+import six
 import logging
 from six import binary_type, text_type
 
@@ -37,3 +38,8 @@ def assert_imap_protocol(condition, message=None):
         if message:
             msg += "{}: {}".format(msg, message)
         raise exceptions.ProtocolError(msg)
+
+
+def chunk(lst, size):
+    for i in six.moves.range(0, len(lst), size):
+        yield lst[i:i + size]
