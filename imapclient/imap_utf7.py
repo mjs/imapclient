@@ -21,26 +21,29 @@ def encode(s):
     if not isinstance(s, text_type):
         return s
 
-    res = []
+    res = bytearray()
+
     b64_buffer = []
+
     def consume_b64_buffer(buf):
         """
         Consume the buffer by encoding it into a modified base 64 representation
         and surround it with shift characters & and -
         """
-        if b64_buffer:
-            res.extend([b'&', base64_utf7_encode(buf), b'-'])
+        if buf:
+            res.extend(b'&' + base64_utf7_encode(buf) + b'-')
             del buf[:]
 
     for c in s:
         # printable ascii case should not be modified
-        if 0x20 <= ord(c) <= 0x7e:
+        o = ord(c)
+        if 0x20 <= o <= 0x7e:
             consume_b64_buffer(b64_buffer)
             # Special case: & is used as shift character so we need to escape it in ASCII
-            if c == '&':
-                res.append(b'&-')
+            if o == 0x26:  # & = 0x26
+                res.extend(b'&-')
             else:
-                res.append(c.encode('ascii'))
+                res.append(o)
 
         # Bufferize characters that will be encoded in base64 and append them later 
         # in the result, when iterating over ASCII character or the end of string
@@ -50,7 +53,7 @@ def encode(s):
     # Consume the remaining buffer if the string finish with non-ASCII characters
     consume_b64_buffer(b64_buffer)
 
-    return b''.join(res)
+    return bytes(res)
 
 
 AMPERSAND_ORD = byte2int(b'&')
