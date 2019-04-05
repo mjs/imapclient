@@ -25,7 +25,7 @@ from . import tls
 from .datetime_util import datetime_to_INTERNALDATE, format_criteria_date
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .response_parser import parse_response, parse_message_list, parse_fetch_response
-from .util import to_bytes, to_unicode, assert_imap_protocol
+from .util import to_bytes, to_unicode, assert_imap_protocol, chunk
 xrange = moves.xrange
 
 if PY3:
@@ -609,11 +609,7 @@ class IMAPClient(object):
 
         ret = []
         parsed = parse_response(folder_data)
-        while parsed:
-            # TODO: could be more efficient
-            flags, delim, name = parsed[:3]
-            parsed = parsed[3:]
-
+        for flags, delim, name in chunk(parsed, size=3):
             if isinstance(name, (int, long)):
                 # Some IMAP implementations return integer folder names
                 # with quotes. These get parsed to ints so convert them
