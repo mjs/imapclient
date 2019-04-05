@@ -474,7 +474,7 @@ class IMAPClient(object):
             self._cached_capabilities = self._normalise_capabilites(response[0])
             return self._cached_capabilities
 
-        # If authenticated, but don't have a capability reponse, ask for one
+        # If authenticated, but don't have a capability response, ask for one
         if self._imap.state in ('SELECTED', 'AUTH'):
             self._cached_capabilities = self._do_capabilites()
             return self._cached_capabilities
@@ -751,7 +751,7 @@ class IMAPClient(object):
 
         .. note::
 
-            Any other commmands issued while the server is in IDLE
+            Any other commands issued while the server is in IDLE
             mode will fail.
 
         See :rfc:`2177` for more information about the IDLE extension.
@@ -1171,12 +1171,12 @@ class IMAPClient(object):
         """Retrieve selected *data* associated with one or more
         *messages* in the currently selected folder.
 
-        *data* should be specified as a sequnce of strings, one item
+        *data* should be specified as a sequence of strings, one item
         per data selector, for example ``['INTERNALDATE',
         'RFC822']``.
 
         *modifiers* are required for some extensions to the IMAP
-        protocol (eg. :rfc:`4551`). These should be a sequnce of strings
+        protocol (eg. :rfc:`4551`). These should be a sequence of strings
         if specified, for example ``['CHANGEDSINCE 123']``.
 
         A dictionary is returned, indexed by message number. Each item
