@@ -11,6 +11,7 @@ from datetime import datetime
 import logging
 
 import six
+from select import POLLIN
 
 from imapclient.exceptions import (
     CapabilityError, IMAPClientError, ProtocolError
@@ -379,10 +380,19 @@ class TestIdleAndNoop(IMAPClientTest):
         super(TestIdleAndNoop, self).setUp()
         self.client._cached_capabilities = [b'IDLE']
 
-    def assert_sock_calls(self, sock):
+    def assert_sock_select_calls(self, sock):
         self.assertListEqual(sock.method_calls, [
             ('settimeout', (None,), {}),
             ('setblocking', (0,), {}),
+            ('setblocking', (1,), {}),
+            ('settimeout', (None,), {}),
+        ])
+
+    def assert_sock_poll_calls(self, sock):
+        self.assertListEqual(sock.method_calls, [
+            ('settimeout', (None,), {}),
+            ('setblocking', (0,), {}),
+            ('fileno', (), {}),
             ('setblocking', (1,), {}),
             ('settimeout', (None,), {}),
         ])
@@ -396,6 +406,7 @@ class TestIdleAndNoop(IMAPClientTest):
         self.client._imap._command.assert_called_with('IDLE')
         self.assertEqual(self.client._idle_tag, sentinel.tag)
 
+    @patch('imapclient.imapclient.POLL_SUPPORT', False)
     @patch('imapclient.imapclient.select.select')
     def test_idle_check_blocking(self, mock_select):
         mock_sock = Mock()
@@ -416,9 +427,10 @@ class TestIdleAndNoop(IMAPClientTest):
         responses = self.client.idle_check()
 
         mock_select.assert_called_once_with([mock_sock], [], [], None)
-        self.assert_sock_calls(mock_sock)
+        self.assert_sock_select_calls(mock_sock)
         self.assertListEqual([(1, b'EXISTS'), (0, b'EXPUNGE')], responses)
 
+    @patch('imapclient.imapclient.POLL_SUPPORT', False)
     @patch('imapclient.imapclient.select.select')
     def test_idle_check_timeout(self, mock_select):
         mock_sock = Mock()
@@ -428,9 +440,10 @@ class TestIdleAndNoop(IMAPClientTest):
         responses = self.client.idle_check(timeout=0.5)
 
         mock_select.assert_called_once_with([mock_sock], [], [], 0.5)
-        self.assert_sock_calls(mock_sock)
+        self.assert_sock_select_calls(mock_sock)
         self.assertListEqual([], responses)
 
+    @patch('imapclient.imapclient.POLL_SUPPORT', False)
     @patch('imapclient.imapclient.select.select')
     def test_idle_check_with_data(self, mock_select):
         mock_sock = Mock()
@@ -449,7 +462,80 @@ class TestIdleAndNoop(IMAPClientTest):
         responses = self.client.idle_check()
 
         mock_select.assert_called_once_with([mock_sock], [], [], None)
-        self.assert_sock_calls(mock_sock)
+        self.assert_sock_select_calls(mock_sock)
+        self.assertListEqual([(99, b'EXISTS')], responses)
+
+    @patch('imapclient.imapclient.POLL_SUPPORT', True)
+    @patch('imapclient.imapclient.select.poll')
+    def test_idle_check_blocking(self, mock_poll_module):
+        mock_sock = Mock(fileno=Mock(return_value=1))
+        self.client._imap.sock = self.client._imap.sslobj = mock_sock
+
+        mock_poller = Mock(poll=Mock(return_value=[(1, POLLIN)]))
+        mock_poll_module.return_value = mock_poller
+        counter = itertools.count()
+
+        def fake_get_line():
+            count = six.next(counter)
+            if count == 0:
+                return b'* 1 EXISTS'
+            elif count == 1:
+                return b'* 0 EXPUNGE'
+            else:
+                raise socket.timeout
+
+        self.client._imap._get_line = fake_get_line
+
+        responses = self.client.idle_check()
+
+        assert mock_poll_module.call_count == 1
+        mock_poller.register.assert_called_once_with(1, POLLIN)
+        mock_poller.poll.assert_called_once_with(None)
+        self.assert_sock_poll_calls(mock_sock)
+        self.assertListEqual([(1, b'EXISTS'), (0, b'EXPUNGE')], responses)
+
+    @patch('imapclient.imapclient.POLL_SUPPORT', True)
+    @patch('imapclient.imapclient.select.poll')
+    def test_idle_check_timeout(self, mock_poll_module):
+        mock_sock = Mock(fileno=Mock(return_value=1))
+        self.client._imap.sock = self.client._imap.sslobj = mock_sock
+
+        mock_poller = Mock(poll=Mock(return_value=[]))
+        mock_poll_module.return_value = mock_poller
+
+        responses = self.client.idle_check(timeout=0.5)
+
+        assert mock_poll_module.call_count == 1
+        mock_poller.register.assert_called_once_with(1, POLLIN)
+        mock_poller.poll.assert_called_once_with(500)
+        self.assert_sock_poll_calls(mock_sock)
+        self.assertListEqual([], responses)
+
+    @patch('imapclient.imapclient.POLL_SUPPORT', True)
+    @patch('imapclient.imapclient.select.poll')
+    def test_idle_check_with_data(self, mock_poll_module):
+        mock_sock = Mock(fileno=Mock(return_value=1))
+        self.client._imap.sock = self.client._imap.sslobj = mock_sock
+
+        mock_poller = Mock(poll=Mock(return_value=[(1, POLLIN)]))
+        mock_poll_module.return_value = mock_poller
+        counter = itertools.count()
+
+        def fake_get_line():
+            count = six.next(counter)
+            if count == 0:
+                return b'* 99 EXISTS'
+            else:
+                raise socket.timeout
+
+        self.client._imap._get_line = fake_get_line
+
+        responses = self.client.idle_check()
+
+        assert mock_poll_module.call_count == 1
+        mock_poller.register.assert_called_once_with(1, POLLIN)
+        mock_poller.poll.assert_called_once_with(None)
+        self.assert_sock_poll_calls(mock_sock)
         self.assertListEqual([(99, b'EXISTS')], responses)
 
     def test_idle_done(self):
