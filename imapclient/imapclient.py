@@ -99,6 +99,9 @@ _POPULAR_SPECIAL_FOLDERS = {
     JUNK: ("Junk", "Spam")
 }
 
+_RE_SELECT_RESPONSE = re.compile(br'\[(?P<key>[A-Z-]+)( \((?P<data>.*)\))?\]')
+
+
 class Namespace(tuple):
 
     def __new__(cls, personal, other, shared):
@@ -698,7 +701,7 @@ class IMAPClient(object):
         # imaplib doesn't parse these correctly (broken regex) so replace
         # with the raw values out of the OK section
         for line in untagged.get('OK', []):
-            match = re.match(br'\[(?P<key>[A-Z-]+)( \((?P<data>.*)\))?\]', line)
+            match = _RE_SELECT_RESPONSE.match(line)
             if match:
                 key = match.group('key')
                 if key == b'PERMANENTFLAGS':
