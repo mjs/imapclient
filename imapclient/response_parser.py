@@ -110,13 +110,13 @@ def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
     parsed_response = defaultdict(dict)
     while True:
         try:
-            msg_id = seq = _int_or_error(six.next(response),
+            msg_id = seq = _int_or_error(next(response),
                                          'invalid message ID')
         except StopIteration:
             break
 
         try:
-            msg_response = six.next(response)
+            msg_response = next(response)
         except StopIteration:
             raise ProtocolError('unexpected EOF')
 

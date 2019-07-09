@@ -415,7 +415,7 @@ class TestIdleAndNoop(IMAPClientTest):
         counter = itertools.count()
 
         def fake_get_line():
-            count = six.next(counter)
+            count = next(counter)
             if count == 0:
                 return b'* 1 EXISTS'
             elif count == 1:
@@ -452,7 +452,7 @@ class TestIdleAndNoop(IMAPClientTest):
         counter = itertools.count()
 
         def fake_get_line():
-            count = six.next(counter)
+            count = next(counter)
             if count == 0:
                 return b'* 99 EXISTS'
             else:
@@ -476,7 +476,7 @@ class TestIdleAndNoop(IMAPClientTest):
         counter = itertools.count()
 
         def fake_get_line():
-            count = six.next(counter)
+            count = next(counter)
             if count == 0:
                 return b'* 1 EXISTS'
             elif count == 1:
@@ -522,7 +522,7 @@ class TestIdleAndNoop(IMAPClientTest):
         counter = itertools.count()
 
         def fake_get_line():
-            count = six.next(counter)
+            count = next(counter)
             if count == 0:
                 return b'* 99 EXISTS'
             else:
@@ -571,7 +571,7 @@ class TestIdleAndNoop(IMAPClientTest):
         counter = itertools.count()
 
         def fake_get_response():
-            count = six.next(counter)
+            count = next(counter)
             if count == 0:
                 return b'* 99 EXISTS'
             client._imap.tagged_commands[sentinel.tag] = ('OK', [b'Idle done'])
