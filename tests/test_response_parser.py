@@ -13,6 +13,7 @@ from datetime import datetime
 from imapclient.datetime_util import datetime_to_native
 from imapclient.fixed_offset import FixedOffset
 from imapclient.response_parser import (
+    parse_esearch_response,
     parse_response,
     parse_message_list,
     parse_fetch_response,
@@ -190,6 +191,19 @@ class TestParseMessageList(unittest.TestCase):
         self.assertSequenceEqual(out, [1, 2, 3, 4])
         self.assertEqual(out.modseq, 9)
 
+
+class TestParseEsearchRespons(unittest.TestCase):
+    def test_esort(self):
+        self.assertEqual(parse_esearch_response([b'(TAG "KFOO6") UID PARTIAL (1:5 68669,69520,68831,68835,66540) COUNT 2216']),
+                         {b'COUNT': 2216,
+                          b'PARTIAL': [68669, 69520, 68831, 68835, 66540],
+                          b'PARTIAL_RAW': b'68669,69520,68831,68835,66540'})
+
+    def test_esearch(self):
+        self.assertEqual(parse_esearch_response([b'(TAG "GJHF5") UID PARTIAL (1:5 69574,69590,69605,69607:69608) COUNT 2216']),
+                         {b'COUNT': 2216,
+                          b'PARTIAL': [69574, 69590, 69605, 69607, 69608],
+                          b'PARTIAL_RAW': b'69574,69590,69605,69607:69608'})
 
 class TestParseFetchResponse(unittest.TestCase):
 

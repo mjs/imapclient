@@ -24,7 +24,12 @@ from . import response_lexer
 from . import tls
 from .datetime_util import datetime_to_INTERNALDATE, format_criteria_date
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
-from .response_parser import parse_response, parse_message_list, parse_fetch_response
+from .response_parser import (
+    parse_esearch_response,
+    parse_fetch_response,
+    parse_message_list,
+    parse_response,
+)
 from .util import to_bytes, to_unicode, assert_imap_protocol, chunk
 xrange = moves.xrange
 
@@ -886,6 +891,48 @@ class IMAPClient(object):
         """
         return self._command_and_check('unsubscribe', self._normalise_folder(folder))
 
+    @require_capability('ESEARCH')
+    def esearch(self, criteria='ALL', returns=None, charset=None):
+        """Performs a search using the ESEARCH syntax as defined in :rfc:`4731`.
+
+        See the :py:meth:`.search` method below for what the *criteria*
+        argument should contain; *returns* should be a string that
+        contains items to be returned.
+
+        Currently supported are:
+        ALL
+        PARTIAL first:last
+        MIN
+        MAX
+        COUNT
+
+        Combinations are possible, except you cannot have both ALL and PARTIAL.
+
+        An example value could be: 'PARTIAL 1:50 COUNT'
+
+        This will return a dictionary with keys matching the item names. The values will
+        be parsed as you would expect them, meaning PARTIAL and ALL will be a list of ints,
+        and the remaining three will be ints.
+
+        For PARTIAL and ALL, there will also be matching PARTIAL_RAW and ALL_RAW values, that
+        contain the list of messages as returned by the server. This might be a more compact
+        representation and can be fed easily to :py:meth:`.fetch` without having to
+        (re)serialize the ids.
+
+        Note that ESEARCH is an extension to the IMAP4 standard so it
+        may not be supported by all IMAP servers.
+        """
+        args = []
+        if returns:
+            args.extend([b'RETURN', to_bytes('('+ returns+')')])
+
+        if charset:
+            args.extend([b'CHARSET', to_bytes(charset)])
+        args.extend(_normalise_search_criteria(criteria, charset))
+
+        data = self._raw_command_untagged(b'SEARCH', args, response_name='ESEARCH')
+        return parse_esearch_response(data)
+
     def search(self, criteria='ALL', charset=None):
         """Return a list of messages ids from the currently selected
         folder matching *criteria*.
@@ -993,6 +1040,23 @@ class IMAPClient(object):
             raise
 
         return parse_message_list(data)
+
+    @require_capability('ESORT')
+    def esort(self, sort_criteria, criteria='ALL', returns=None, charset='UTF-8'):
+        """Performs a search and sorts the result using ESORT as defined in :rfc:`5267`.
+
+        See the :py:meth:`.sort` method below for what the *criteria* and
+        *sort_criteria* arguments should contain; for the *returns* argument see
+        :py:meth:`.esearch*`.
+        """
+        args = []
+        if returns:
+            args.extend([b'RETURN', to_bytes('(' + returns + ')')])
+        args.append(_normalise_sort_criteria(sort_criteria))
+        args.append(to_bytes(charset))
+        args.extend(_normalise_search_criteria(criteria, charset))
+        data = self._raw_command_untagged(b'SORT', args, response_name='ESEARCH')
+        return parse_esearch_response(data)
 
     @require_capability('SORT')
     def sort(self, sort_criteria, criteria='ALL', charset='UTF-8'):
