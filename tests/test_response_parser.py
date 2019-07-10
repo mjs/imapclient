@@ -205,6 +205,13 @@ class TestParseEsearchRespons(unittest.TestCase):
                           b'PARTIAL': [69574, 69590, 69605, 69607, 69608],
                           b'PARTIAL_RAW': b'69574,69590,69605,69607:69608'})
 
+    def test_partial_no_result(self):
+        self.assertEqual(parse_esearch_response([b'(TAG "no-exist") UID PARTIAL (1:5 NIL) COUNT 0']),
+                                                {b'COUNT': 0,
+                                                 b'PARTIAL': [],
+                                                 b'PARTIAL_RAW': None})
+
+
 class TestParseFetchResponse(unittest.TestCase):
 
     def test_basic(self):

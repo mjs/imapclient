@@ -187,6 +187,9 @@ def parse_esearch_response(data):
     return retval
 
 def _parse_compact_message_list(message_bite):
+    if message_bite is None:
+        return []
+
     messages = []
     for message_atom in message_bite.split(b','):
         first_b, sep, last_b = message_atom.partition(b':')

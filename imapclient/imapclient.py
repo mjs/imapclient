@@ -918,6 +918,7 @@ class IMAPClient(object):
         contain the list of messages as returned by the server. This might be a more compact
         representation and can be fed easily to :py:meth:`.fetch` without having to
         (re)serialize the ids.
+        Note that if no messages match, the _RAW versions will be set to None.
 
         Note that ESEARCH is an extension to the IMAP4 standard so it
         may not be supported by all IMAP servers.
