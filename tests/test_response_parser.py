@@ -211,6 +211,11 @@ class TestParseEsearchRespons(unittest.TestCase):
                                                  b'PARTIAL': [],
                                                  b'PARTIAL_RAW': None})
 
+    def test_partial_single_result(self):
+        self.assertEqual(parse_esearch_response([b'(TAG "one-result") UID PARTIAL (1:5 69573) COUNT 1']),
+                                                {b'COUNT': 1,
+                                                 b'PARTIAL': [69573],
+                                                 b'PARTIAL_RAW': b'69573'})
 
 class TestParseFetchResponse(unittest.TestCase):
 

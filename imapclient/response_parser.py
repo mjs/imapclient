@@ -173,11 +173,11 @@ def parse_esearch_response(data):
                 continue
             elif bite == b'ALL':
                 message_bite = six.next(it)
-                retval[bite + b'_RAW'] = message_bite
+                retval[bite + b'_RAW'] = _raw_as_bytes(message_bite)
                 retval[bite] = _parse_compact_message_list(message_bite)
             elif bite == b'PARTIAL':
                 message_bite = six.next(it)[1]
-                retval[bite + b'_RAW'] = message_bite
+                retval[bite + b'_RAW'] = _raw_as_bytes(message_bite)
                 retval[bite] = _parse_compact_message_list(message_bite)
             else:
                 retval[bite] = six.next(it)
@@ -186,10 +186,21 @@ def parse_esearch_response(data):
 
     return retval
 
+
+def _raw_as_bytes(raw):
+    if raw is None:
+        return None
+    elif isinstance(raw, int):
+        return str(raw).encode('ascii')
+    else:
+        return raw
+
+
 def _parse_compact_message_list(message_bite):
     if message_bite is None:
         return []
-
+    if isinstance(message_bite, int):
+        return [message_bite]
     messages = []
     for message_atom in message_bite.split(b','):
         first_b, sep, last_b = message_atom.partition(b':')
