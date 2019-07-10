@@ -160,7 +160,6 @@ def parse_esearch_response(data):
 
     See :py:meth:`ImapClient.esearch` for more info.
     """
-    print(repr(data))
     retval = {}
     it = iter(parse_response(data))
     try:
