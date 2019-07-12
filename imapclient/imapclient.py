@@ -28,6 +28,13 @@ from .response_parser import parse_response, parse_message_list, parse_fetch_res
 from .util import to_bytes, to_unicode, assert_imap_protocol, chunk
 xrange = moves.xrange
 
+try:
+    from select import poll
+    POLL_SUPPORT = True
+except:
+    # Fallback to select() on systems that don't support poll()
+    POLL_SUPPORT = False
+
 if PY3:
     long = int  # long is just int in python3
 
@@ -760,6 +767,26 @@ class IMAPClient(object):
         if resp is not None:
             raise exceptions.IMAPClientError('Unexpected IDLE response: %s' % resp)
 
+    def _poll_socket(self, sock, timeout=None):
+        """
+        Polls the socket for events telling us it's available to read.
+        This implementation is more scalable because it ALLOWS your process
+        to have more than 1024 file descriptors.
+        """
+        poller = select.poll()
+        poller.register(sock.fileno(), select.POLLIN)
+        timeout = timeout * 1000 if timeout is not None else None
+        return poller.poll(timeout)
+
+    def _select_poll_socket(self, sock, timeout=None):
+        """
+        Polls the socket for events telling us it's available to read.
+        This implementation is a fallback because it FAILS if your process
+        has more than 1024 file descriptors.
+        We still need this for Windows and some other niche systems.
+        """
+        return select.select([sock], [], [], timeout)[0]
+
     @require_capability('IDLE')
     def idle_check(self, timeout=None):
         """Check for any IDLE responses sent by the server.
@@ -785,10 +812,16 @@ class IMAPClient(object):
         # implemented for this call
         sock.settimeout(None)
         sock.setblocking(0)
+
+        if POLL_SUPPORT:
+            poll_func = self._poll_socket
+        else:
+            poll_func = self._select_poll_socket
+
         try:
             resps = []
-            rs, _, _ = select.select([sock], [], [], timeout)
-            if rs:
+            events = poll_func(sock, timeout)
+            if events:
                 while True:
                     try:
                         line = self._imap._get_line()
