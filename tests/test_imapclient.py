@@ -604,8 +604,8 @@ class TestDebugLogging(IMAPClientTest):
         adapter = IMAPlibLoggerAdapter(logger_mock, dict())
         if six.PY3:
             adapter.info("""> b'ICHH1 LOGIN foo@bar.org "secret"'""")
-            if sys.version_info >= (3, 7):
-                # LoggerAdapter in Python 3.7+ calls logger.log()
+            if sys.version_info >= (3, 6, 4):
+                # LoggerAdapter in Python 3.6.4+ calls logger.log()
                 logger_mock.log.assert_called_once_with(
                     logging.INFO,
                     "> b'ICHH1 LOGIN **REDACTED**",
