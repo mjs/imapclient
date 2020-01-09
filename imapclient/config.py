@@ -66,6 +66,8 @@ def get_string_config_defaults():
             v = 'true'
         elif v is False:
             v = 'false'
+        elif not v:
+            v = ''
         out[k] = v
     return out
 
