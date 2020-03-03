@@ -62,7 +62,7 @@ class Lexer(object):
             for nextchar in stream_i:
                 if escape and nextchar == BACKSLASH:
                     escaper = nextchar
-                    nextchar = six.next(stream_i)
+                    nextchar = next(stream_i)
                     if nextchar != escaper and nextchar != end_char:
                         token.append(escaper)  # Don't touch invalid escaping
                 elif nextchar == end_char:
@@ -164,7 +164,7 @@ class PushableIterator(object):
     def __next__(self):
         if self.pushed:
             return self.pushed.pop()
-        return six.next(self.it)
+        return next(self.it)
 
     # For Python 2 compatibility
     next = __next__
