@@ -1694,7 +1694,7 @@ def _normalise_sort_criteria(criteria, charset=None):
     return b'(' + b' '.join(to_bytes(item).upper() for item in criteria) + b')'
 
 class _literal(bytes):
-    """Hold message data that should always be send as a literal."""
+    """Hold message data that should always be sent as a literal."""
     pass
 
 class _quoted(binary_type):
