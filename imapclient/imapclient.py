@@ -1305,7 +1305,7 @@ class IMAPClient(object):
 
         return self._raw_command(
             b'APPEND',
-            [self._normalise_folder(folder), *msgs],
+            [self._normalise_folder(folder)] + msgs,
             uid=False,
         )
 
