@@ -1288,6 +1288,27 @@ class IMAPClient(object):
                                        to_bytes(msg),
                                        unpack=True)
 
+    @require_capability('MULTIAPPEND')
+    def multiappend(self, folder, msgs):
+        """Append messages to *folder* using the MULTIAPPEND feature from RFC3502.
+
+        *msgs* should be a list of string contains the full message including
+        headers.
+
+        Returns the APPEND response from the server.
+        """
+        # literal = imaplib.MapCRLF.sub(CRLF, message)
+        # if self._imap.utf8_enabled:
+        #    literal = b'UTF8 (' + literal + b')'
+
+        msgs = [_literal(to_bytes(m)) for m in msgs]
+
+        return self._raw_command(
+            b'APPEND',
+            [self._normalise_folder(folder), *msgs],
+            uid=False,
+        )
+
     def copy(self, messages, folder):
         """Copy one or more messages from the current folder to
         *folder*. Returns the COPY response string returned by the
@@ -1538,8 +1559,14 @@ class IMAPClient(object):
     def _send_literal(self, tag, item):
         """Send a single literal for the command with *tag*.
         """
+        if b'LITERAL+' in self._cached_capabilities:
+            out = b' {' + str(len(item)).encode('ascii') + b'+}\r\n' + item
+            logger.debug('> %s', debug_trunc(out, 64))
+            self._imap.send(out)
+            return
+
         out = b' {' + str(len(item)).encode('ascii') + b'}\r\n'
-        logger.debug(out)
+        logger.debug('> %s', out)
         self._imap.send(out)
 
         # Wait for continuation response
@@ -1666,6 +1693,9 @@ def _normalise_sort_criteria(criteria, charset=None):
         criteria = [criteria]
     return b'(' + b' '.join(to_bytes(item).upper() for item in criteria) + b')'
 
+class _literal(bytes):
+    """Hold message data that should always be send as a literal."""
+    pass
 
 class _quoted(binary_type):
     """
@@ -1764,7 +1794,7 @@ def as_triplets(items):
 
 
 def _is8bit(data):
-    return any(b > 127 for b in iterbytes(data))
+    return isinstance(data, _literal) or any(b > 127 for b in iterbytes(data))
 
 
 def _iter_with_last(items):
