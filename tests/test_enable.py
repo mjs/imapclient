@@ -17,7 +17,7 @@ class TestEnable(IMAPClientTest):
         super(TestEnable, self).setUp()
         self.command = Mock()
         self.client._raw_command_untagged = self.command
-        self.client._imap.state = 'AUTH'
+        self.client.state = 'AUTH'
         self.client._cached_capabilities = [b'ENABLE']
 
     def test_success(self):
@@ -63,7 +63,7 @@ class TestEnable(IMAPClientTest):
         self.assertEqual(resp, [b'FOO', b'BAR'])
 
     def test_wrong_state(self):
-        self.client._imap.state = 'SELECTED'
+        self.client.state = 'SELECTED'
 
         self.assertRaises(
             IllegalStateError,

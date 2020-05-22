@@ -7,18 +7,21 @@ from __future__ import unicode_literals
 from .imapclient_test import IMAPClientTest
 from .util import Mock
 
-
 class TestFolderStatus(IMAPClientTest):
 
+    def setUp(self):
+        IMAPClientTest.setUp(self)
+        self.patch_method('_cmd_status')
+
     def test_basic(self):
-        self.client._imap.status.return_value = (
+        self.client._cmd_status.return_value = (
             'OK',
             [b'foo (MESSAGES 3 RECENT 0 UIDNEXT 4 UIDVALIDITY 1435636895 UNSEEN 0)']
         )
 
         out = self.client.folder_status('foo')
 
-        self.client._imap.status.assert_called_once_with(
+        self.client._cmd_status.assert_called_once_with(
             b'"foo"',
             '(MESSAGES RECENT UIDNEXT UIDVALIDITY UNSEEN)'
         )
@@ -31,14 +34,14 @@ class TestFolderStatus(IMAPClientTest):
         })
 
     def test_literal(self):
-        self.client._imap.status.return_value = (
+        self.client._cmd_status.return_value = (
             'OK',
             [(b'{3}', b'foo'), b' (UIDNEXT 4)']
         )
 
         out = self.client.folder_status('foo', ['UIDNEXT'])
 
-        self.client._imap.status.assert_called_once_with(b'"foo"', '(UIDNEXT)')
+        self.client._cmd_status.assert_called_once_with(b'"foo"', '(UIDNEXT)')
         self.assertDictEqual(out, {b'UIDNEXT': 4})
 
     def test_extra_response(self):
@@ -46,7 +49,7 @@ class TestFolderStatus(IMAPClientTest):
         # like this and be broken into two components in the tuple.
         server_response = [b"My files (UIDNEXT 24369)"]
         mock = Mock(return_value=server_response)
-        self.client._command_and_check = mock
+        self.client._subcommand_and_check = mock
 
         resp = self.client.folder_status('My files', ['UIDNEXT'])
         self.assertEqual(resp, {b'UIDNEXT': 24369})
@@ -55,7 +58,7 @@ class TestFolderStatus(IMAPClientTest):
         # ask for. In all known cases, the desired mailbox is last.
         server_response = [b"sent (UIDNEXT 123)\nINBOX (UIDNEXT 24369)"]
         mock = Mock(return_value=server_response)
-        self.client._command_and_check = mock
+        self.client._subcommand_and_check = mock
 
         resp = self.client.folder_status('INBOX', ['UIDNEXT'])
         self.assertEqual(resp, {b'UIDNEXT': 24369})

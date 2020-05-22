@@ -17,8 +17,12 @@ class TestInit(unittest.TestCase):
         self.tls = patcher.start()
         self.addCleanup(patcher.stop)
 
-        patcher = patch('imapclient.imapclient.imaplib')
-        self.imaplib = patcher.start()
+        patcher = patch('imapclient.imapclient.conn')
+        self.conn = patcher.start()
+        self.addCleanup(patcher.stop)
+
+        patcher = patch('imapclient.imapclient.IMAPClient._connect')
+        patcher.start()
         self.addCleanup(patcher.stop)
 
     def test_plain(self):
@@ -26,8 +30,9 @@ class TestInit(unittest.TestCase):
         self.imap4.IMAP4WithTimeout.return_value = fakeIMAP4
 
         imap = IMAPClient('1.2.3.4', ssl=False, timeout=sentinel.timeout)
+        imap._connect = Mock()
 
-        self.assertEqual(imap._imap, fakeIMAP4)
+        self.assertEqual(imap._conn, fakeIMAP4)
         self.imap4.IMAP4WithTimeout.assert_called_with(
             '1.2.3.4', 143,
             SocketTimeout(sentinel.timeout, sentinel.timeout)
@@ -44,8 +49,9 @@ class TestInit(unittest.TestCase):
 
         imap = IMAPClient('1.2.3.4', ssl_context=sentinel.context,
                           timeout=sentinel.timeout)
+        imap._connect = Mock()
 
-        self.assertEqual(imap._imap, fakeIMAP4_TLS)
+        self.assertEqual(imap._conn, fakeIMAP4_TLS)
         self.tls.IMAP4_TLS.assert_called_with(
             '1.2.3.4', 993,
             sentinel.context, 
@@ -59,12 +65,12 @@ class TestInit(unittest.TestCase):
 
     def test_stream(self):
         fakeIMAP4_stream = Mock()
-        self.imaplib.IMAP4_stream.return_value = fakeIMAP4_stream
+        self.conn.IMAP4_stream.return_value = fakeIMAP4_stream
 
         imap = IMAPClient('command', stream=True, ssl=False)
 
-        self.assertEqual(imap._imap, fakeIMAP4_stream)
-        self.imaplib.IMAP4_stream.assert_called_with('command')
+        self.assertEqual(imap._conn, fakeIMAP4_stream)
+        self.conn.IMAP4_stream.assert_called_with('command')
 
         self.assertEqual(imap.host, 'command')
         self.assertEqual(imap.port, None)

@@ -11,6 +11,7 @@ from .util import Mock
 
 
 class TestThread(IMAPClientTest):
+    initial_state = 'SELECTED'
 
     def setUp(self):
         super(TestThread, self).setUp()

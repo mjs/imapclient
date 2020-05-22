@@ -8,7 +8,7 @@ from imapclient.imapclient import IMAPClient
 from imapclient.exceptions import IMAPClientError
 
 from .imapclient_test import IMAPClientTest
-from .util import Mock, patch, sentinel
+from .util import Mock, patch, sentinel, ANY
 
 
 class TestStarttls(IMAPClientTest):
@@ -20,7 +20,7 @@ class TestStarttls(IMAPClientTest):
         self.tls = patcher.start()
         self.addCleanup(patcher.stop)
 
-        self.client._imap.sock = sentinel.old_sock
+        self.client.sock = sentinel.old_sock
 
         self.new_sock = Mock()
         self.new_sock.makefile.return_value = sentinel.file
@@ -29,23 +29,24 @@ class TestStarttls(IMAPClientTest):
         self.client.host = sentinel.host
         self.client.ssl = False
         self.client._starttls_done = False
-        self.client._imap._simple_command.return_value = "OK", [b'start TLS negotiation']
+        self.client._simple_command.return_value = "OK", [b'start TLS negotiation']
         self.client._cached_capabilities = [b'STARTTLS']
+        self.client._do_capabilites = Mock(return_value=[b'STARTTLS'])
 
     def test_works(self):
         resp = self.client.starttls(sentinel.ssl_context)
 
         self.tls.wrap_socket.assert_called_once_with(
-            sentinel.old_sock,
+            ANY,
             sentinel.ssl_context,
             sentinel.host,
         )
         self.new_sock.makefile.assert_called_once_with('rb')
-        self.assertEqual(self.client._imap.file, sentinel.file)
+        self.assertEqual(self.client._conn.file, sentinel.file)
         self.assertEqual(resp, b'start TLS negotiation')
 
     def test_command_fails(self):
-        self.client._imap._simple_command.return_value = "NO", [b'sorry']
+        self.client._simple_command.return_value = "NO", [b'sorry']
 
         with self.assertRaises(IMAPClientError) as raised:
             self.client.starttls(sentinel.ssl_context)

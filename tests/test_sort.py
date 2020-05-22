@@ -11,6 +11,7 @@ from .util import Mock
 
 
 class TestSort(IMAPClientTest):
+    initial_state = 'SELECTED'
 
     def setUp(self):
         super(TestSort, self).setUp()
