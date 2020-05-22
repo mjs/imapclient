@@ -18,7 +18,7 @@ from imapclient.exceptions import (
 )
 from imapclient.imapclient import (
     IMAPlibLoggerAdapter, _parse_quota, Quota, MailboxQuotaRoots,
-    require_capability
+    require_capability, _literal
 )
 from imapclient.fixed_offset import FixedOffset
 from imapclient.testable_imapclient import TestableIMAPClient as IMAPClient
@@ -270,6 +270,14 @@ class TestAppend(IMAPClientTest):
         self.client._imap.append.assert_called_with(
             b'"foobar"', '(FLAG WAVE)', '"somedate"', msg)
 
+    def test_multiappend(self):
+        self.client._cached_capabilities = (b'MULTIAPPEND',)
+        self.client._raw_command = Mock()
+        self.client.multiappend('foobar', ['msg1', 'msg2'])
+
+        self.client._raw_command.assert_called_once_with(
+            b'APPEND', [b'"foobar"', b'msg1', b'msg2'], uid=False
+        )
 
 class TestAclMethods(IMAPClientTest):
 
@@ -805,6 +813,7 @@ class TestRawCommand(IMAPClientTest):
         super(TestRawCommand, self).setUp()
         self.client._imap._get_response.return_value = None
         self.client._imap._command_complete.return_value = ('OK', ['done'])
+        self.client._cached_capabilities = ()
 
     def check(self, command, args, expected):
         typ, data = self.client._raw_command(command, args)
@@ -841,6 +850,17 @@ class TestRawCommand(IMAPClientTest):
                    b'\xfe\xff TEXT {1}\r\n'
                    b'\xcc\r\n'
                    )
+
+    def test_literal_plus(self):
+        self.client._cached_capabilities = (b'LITERAL+',)
+
+        typ, data = self.client._raw_command(b'APPEND', [b'\xff', _literal(b'hello')], uid=False)
+        self.assertEqual(typ, 'OK')
+        self.assertEqual(data, ['done'])
+        self.assertEqual(self.client._imap.sent,
+                         b'tag APPEND {1+}\r\n'
+                         b'\xff  {5+}\r\n'
+                         b'hello\r\n')
 
     def test_complex(self):
         self.check(b'search', [b'FLAGGED', b'TEXT', b'\xfe\xff', b'TEXT', b'\xcc', b'TEXT', b'foo'],
