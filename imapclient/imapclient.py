@@ -1290,17 +1290,13 @@ class IMAPClient(object):
 
     @require_capability('MULTIAPPEND')
     def multiappend(self, folder, msgs):
-        """Append messages to *folder* using the MULTIAPPEND feature from RFC3502.
+        """Append messages to *folder* using the MULTIAPPEND feature from :rfc:`3502`.
 
-        *msgs* should be a list of string contains the full message including
+        *msgs* should be a list of strings containing the full message including
         headers.
 
         Returns the APPEND response from the server.
         """
-        # literal = imaplib.MapCRLF.sub(CRLF, message)
-        # if self._imap.utf8_enabled:
-        #    literal = b'UTF8 (' + literal + b')'
-
         msgs = [_literal(to_bytes(m)) for m in msgs]
 
         return self._raw_command(
