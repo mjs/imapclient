@@ -41,6 +41,9 @@ class TestParseResponse(unittest.TestCase):
     def test_int(self):
         self._test(b'45', 45)
 
+    def test_int_zero(self):
+        self._test(b'0', 0)
+
     def test_not_an_int(self):
         self._test(b'0123', b'0123')
 
