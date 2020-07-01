@@ -215,7 +215,8 @@ def atom(src, token):
         return literal_text
     elif len(token) >= 2 and (token[:1] == token[-1:] == b'"'):
         return token[1:-1]
-    elif token.isdigit():
+    elif token.isdigit() and (token[:1] != b'0' or len(token) == 1):
+        # this prevents converting items like 0123 to 123
         return int(token)
     else:
         return token
