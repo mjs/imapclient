@@ -4,32 +4,34 @@
 
 from __future__ import unicode_literals
 
-from imapclient import IMAPClient
 from imapclient.exceptions import LoginError
 from .imapclient_test import IMAPClientTest
 
-
 class TestPlainLogin(IMAPClientTest):
 
+    def setUp(self):
+        IMAPClientTest.setUp(self)
+        self.patch_method('_cmd_authenticate')
+
     def assert_authenticate_call(self, expected_auth_string):
-        authenticate = self.client._imap.authenticate
+        authenticate = self.client._cmd_authenticate
         self.assertEqual(authenticate.call_count, 1)
         auth_type, auth_func = authenticate.call_args[0]
         self.assertEqual(auth_type, "PLAIN")
         self.assertEqual(auth_func(None), expected_auth_string)
 
     def test_simple(self):
-        self.client._imap.authenticate.return_value = ('OK', [b'Success'])
+        self.client._cmd_authenticate.return_value = ('OK', [b'Success'])
         result = self.client.plain_login("user", "secret")
         self.assertEqual(result, b'Success')
         self.assert_authenticate_call("\0user\0secret")
 
     def test_fail(self):
-        self.client._imap.authenticate.return_value = ('NO', [b'Boom'])
+        self.client._cmd_authenticate.return_value = ('NO', [b'Boom'])
         self.assertRaises(LoginError, self.client.plain_login, "user", "secret")
 
     def test_with_authorization_identity(self):
-        self.client._imap.authenticate.return_value = ('OK', [b'Success'])
+        self.client._cmd_authenticate.return_value = ('OK', [b'Success'])
         result = self.client.plain_login("user", "secret", "authid")
         self.assertEqual(result, b'Success')
         self.assert_authenticate_call("authid\0user\0secret")

@@ -6,15 +6,14 @@ from __future__ import unicode_literals
 
 from datetime import date, datetime
 
-import imaplib
-
-from imapclient.exceptions import InvalidCriteriaError
+from imapclient.exceptions import InvalidCriteriaError, IMAPClientError
 from imapclient.imapclient import _quoted
 from .imapclient_test import IMAPClientTest
 from .util import Mock
 
 
 class TestSearchBase(IMAPClientTest):
+    initial_state = 'SELECTED'
 
     def setUp(self):
         super(TestSearchBase, self).setUp()
@@ -106,10 +105,10 @@ class TestSearch(TestSearchBase):
 
     def test_search_custom_exception_with_invalid_list(self):
         def search_bad_command_exp(*args, **kwargs):
-            raise imaplib.IMAP4.error('SEARCH command error: BAD ["Unknown argument NOT DELETED"]')
+            raise IMAPClientError('SEARCH command error: BAD ["Unknown argument NOT DELETED"]')
         self.client._raw_command_untagged.side_effect = search_bad_command_exp
 
-        with self.assertRaises(imaplib.IMAP4.error) as cm:
+        with self.assertRaises(IMAPClientError) as cm:
             self.client.search(['NOT DELETED'])
         self.assertIn(
             # Python 2.x will add a `u` prefix in the list representation, so let it handle the
@@ -123,10 +122,10 @@ class TestSearch(TestSearchBase):
     def test_search_custom_exception_with_invalid_text(self):
         # Check the criteria is surrounding with quotes if the user is using a plain text criteria
         def search_bad_command_exp2(*args, **kwargs):
-            raise imaplib.IMAP4.error('SEARCH command error: BAD ["Unknown argument TOO"]')
+            raise IMAPClientError('SEARCH command error: BAD ["Unknown argument TOO"]')
         self.client._raw_command_untagged.side_effect = search_bad_command_exp2
 
-        with self.assertRaises(imaplib.IMAP4.error) as cm:
+        with self.assertRaises(IMAPClientError) as cm:
             self.client.search('TOO some@email.com')
         self.assertIn('may have been caused by a syntax error in the criteria: "TOO some@email.com"',
                       str(cm.exception))

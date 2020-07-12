@@ -30,21 +30,25 @@ class TestableIMAPClient(IMAPClient):
     def __init__(self):
         super(TestableIMAPClient, self).__init__('somehost')
 
-    def _create_IMAP4(self):
-        return MockIMAP4()
+    def _new_tag(self):
+        return 'tag'
+
+    def _connect(self):
+        pass
+
+    def _create_conn(self):
+        return MockConn()
 
 
-class MockIMAP4(Mock):
+class MockConn(Mock):
 
     def __init__(self, *args, **kwargs):
         super(Mock, self).__init__(*args, **kwargs)
-        self.use_uid = True
         self.sent = b''  # Accumulates what was given to send()
-        self.tagged_commands = {}
-        self._starttls_done = False
 
     def send(self, data):
+        print(data)
         self.sent += data
 
-    def _new_tag(self):
-        return 'tag'
+    def get_line(self):
+        return b'* OK [CAPABILITY IMAP4rev1 SASL-IR LOGIN-REFERRALS ID ENABLE IDLE LITERAL+ STARTTLS AUTH=PLAIN] Dovecot ready.'

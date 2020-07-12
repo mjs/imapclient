@@ -7,7 +7,7 @@ This module contains IMAPClient's functionality related to Transport
 Layer Security (TLS a.k.a. SSL).
 """
 
-import imaplib
+from . import conn
 import socket
 import ssl
 
@@ -32,7 +32,7 @@ def wrap_socket(sock, ssl_context, host):
     return ssl_context.wrap_socket(sock, server_hostname=host)
 
 
-class IMAP4_TLS(imaplib.IMAP4):
+class IMAP4_TLS(conn.IMAP4):
     """IMAP4 client class for TLS/SSL connections.
 
     Adapted from imaplib.IMAP4_SSL.
@@ -41,7 +41,7 @@ class IMAP4_TLS(imaplib.IMAP4):
     def __init__(self, host, port, ssl_context, timeout):
         self.ssl_context = ssl_context
         self._timeout = timeout
-        imaplib.IMAP4.__init__(self, host, port)
+        conn.IMAP4.__init__(self, host, port)
 
     def open(self, host, port):
         self.host = host
@@ -60,4 +60,4 @@ class IMAP4_TLS(imaplib.IMAP4):
         self.sock.sendall(data)
 
     def shutdown(self):
-        imaplib.IMAP4.shutdown(self)
+        conn.IMAP4.shutdown(self)

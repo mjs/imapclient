@@ -16,6 +16,8 @@ import socket
 import string
 import sys
 import time
+import logging
+
 from datetime import datetime
 from email.utils import make_msgid
 
@@ -33,6 +35,7 @@ from tests.util import unittest
 
 # TODO cleaner verbose output: avoid "__main__" and separator between classes
 
+logger = logging.getLogger('livetest')
 
 SIMPLE_MESSAGE = 'Subject: something\r\n\r\nFoo\r\n'
 
@@ -82,6 +85,7 @@ class _TestBase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        logger.debug('-- setupClass ')
         client = create_client_from_config(cls.conf)
         cls.client = client
         client.use_uid = cls.use_uid
@@ -91,16 +95,21 @@ class _TestBase(unittest.TestCase):
             cls.condstore_enabled = True
         cls.base_folder = cls.conf.namespace[0] + '__imapclient'
         cls.folder_delimiter = cls.conf.namespace[1]
+        logger.debug('-- /setupClass')
 
     def setUp(self):
+        logger.debug('-- setup ')
         self.clear_test_folders()
         self.unsub_all_test_folders()
         self.client.create_folder(self.base_folder)
         self.client.select_folder(self.base_folder)
+        logger.debug('-- /setup ')
 
     def tearDown(self):
+        logger.debug('-- tearDown ')
         self.clear_test_folders()
         self.unsub_all_test_folders()
+        logger.debug('-- /tearDown ')
 
     @classmethod
     def tearDownClass(cls):
@@ -176,11 +185,11 @@ class _TestBase(unittest.TestCase):
             self.client.unsubscribe_folder(folder)
 
     def is_gmail(self):
-        return self.client._imap.host == 'imap.gmail.com'
+        return self.client.host == 'imap.gmail.com'
 
     def is_fastmail(self):
-        return (self.client._imap.host == 'mail.messagingengine.com' or
-                self.client._imap.host == 'imap.fastmail.com')
+        return (self.client.host == 'mail.messagingengine.com' or
+                self.client.host == 'imap.fastmail.com')
 
     def is_exchange(self):
         # Assume that these capabilities mean we're talking to MS
@@ -272,12 +281,12 @@ class TestGeneral(_TestBase):
 
     def test_select_read_only(self):
         self.append_msg(SIMPLE_MESSAGE)
-        untagged = _dict_bytes_normaliser(self.client._imap.untagged_responses)
+        untagged = _dict_bytes_normaliser(self.client._untagged_responses)
         self.assertNotIn(b'READ-ONLY', untagged)
 
         resp = self.client.select_folder(self.base_folder, readonly=True)
 
-        untagged = _dict_bytes_normaliser(self.client._imap.untagged_responses)
+        untagged = _dict_bytes_normaliser(self.client._untagged_responses)
         self.assertIn(b'READ-ONLY', untagged)
         self.assertEqual(resp[b'EXISTS'], 1)
         self.assertIsInstance(resp[b'RECENT'], int)
@@ -541,7 +550,7 @@ class TestSocketTimeout(unittest.TestCase):
             quiet_logout(self.client)
 
     def test_small_connection_timeout_fail(self):
-        self.conf.timeout = SocketTimeout(connect=0.001, read=10)
+        self.conf.timeout = SocketTimeout(connect=0.00000001, read=10)
         with self.assertRaises(socket.timeout):
             self.client = create_client_from_config(self.conf)
 
@@ -551,7 +560,7 @@ class TestSocketTimeout(unittest.TestCase):
         test pass, we don't login once connected but simply try a 'noop', that
         should not be able to complete in under a such a small time.
         """
-        self.conf.timeout = SocketTimeout(connect=30, read=0.00001)
+        self.conf.timeout = SocketTimeout(connect=30, read=0.00000001)
         self.client = create_client_from_config(self.conf, login=False)
         with self.assertRaises(socket.timeout):
             self.client.noop()
@@ -1046,6 +1055,11 @@ def argv_error(msg):
 
 
 def parse_argv():
+    if '-v' in sys.argv:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.ERROR)
+
     args = sys.argv[1:]
     if not args:
         argv_error('Please specify a host configuration file. See livetest-sample.ini for an example.')

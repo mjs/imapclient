@@ -1,12 +1,17 @@
-import imaplib
 
 # Base class allowing to catch any IMAPClient related exceptions
-# To ensure backward compatibility, we "rename" the imaplib general
-# exception class, so we can catch its exceptions without having to
-# deal with it in IMAPClient codebase
-IMAPClientError = imaplib.IMAP4.error
-IMAPClientAbortError = imaplib.IMAP4.abort
-IMAPClientReadOnlyError = imaplib.IMAP4.readonly
+class IMAPClientError(RuntimeError):
+    pass
+
+
+class IMAPClientAbortError(IMAPClientError):
+    # Service errors - close and retry
+    pass
+
+
+class IMAPClientReadOnlyError(IMAPClientError):
+    # Mailbox status changed to READ-ONLY
+    pass
 
 
 class CapabilityError(IMAPClientError):

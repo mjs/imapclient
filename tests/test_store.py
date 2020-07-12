@@ -13,6 +13,7 @@ from .util import patch, sentinel, Mock
 
 
 class TestFlagsConsts(IMAPClientTest):
+    initial_state = 'SELECTED'
 
     def test_flags_are_bytes(self):
         for flag in DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT:
@@ -21,10 +22,11 @@ class TestFlagsConsts(IMAPClientTest):
 
 
 class TestFlags(IMAPClientTest):
+    initial_state = 'SELECTED'
 
     def setUp(self):
         super(TestFlags, self).setUp()
-        self.client._command_and_check = Mock()
+        self.client._uid_command_and_check = Mock()
 
     def test_get(self):
         with patch.object(self.client, 'fetch', autospec=True,
@@ -52,7 +54,7 @@ class TestFlags(IMAPClientTest):
         if silent:
             expected_command += b".SILENT"
 
-        cc = self.client._command_and_check
+        cc = self.client._uid_command_and_check
         cc.return_value = [
             b'11 (FLAGS (blah foo) UID 1)',
             b'11 (UID 1 OTHER (dont))',
@@ -61,10 +63,9 @@ class TestFlags(IMAPClientTest):
         ]
         resp = meth([1, 2], 'foo', silent=silent)
         cc.assert_called_once_with(
-            'store', b"1,2",
+            'STORE', b"1,2",
             expected_command,
-            '(foo)',
-            uid=True)
+            '(foo)')
         if silent:
             self.assertIsNone(resp)
         else:
@@ -76,10 +77,11 @@ class TestFlags(IMAPClientTest):
         cc.reset_mock()
 
 class TestGmailLabels(IMAPClientTest):
+    initial_state = 'SELECTED'
 
     def setUp(self):
         super(TestGmailLabels, self).setUp()
-        self.client._command_and_check = Mock()
+        self.client._uid_command_and_check = Mock()
 
     def test_get(self):
         with patch.object(self.client, 'fetch', autospec=True,
@@ -107,7 +109,7 @@ class TestGmailLabels(IMAPClientTest):
         if silent:
             expected_command += b".SILENT"
 
-        cc = self.client._command_and_check
+        cc = self.client._uid_command_and_check
         cc.return_value = [
             b'11 (X-GM-LABELS (&AUE-abel "f\\"o\\"o") UID 1)',
             b'22 (X-GM-LABELS ("f\\"o\\"o") UID 2)',
@@ -116,10 +118,9 @@ class TestGmailLabels(IMAPClientTest):
         ]
         resp = meth([1, 2], 'f"o"o', silent=silent)
         cc.assert_called_once_with(
-            'store', b"1,2",
+            'STORE', b"1,2",
             expected_command,
-            '("f\\"o\\"o")',
-            uid=True)
+            '("f\\"o\\"o")')
         if silent:
             self.assertIsNone(resp)
         else:

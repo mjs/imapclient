@@ -5,9 +5,9 @@
 from __future__ import unicode_literals
 
 try:
-    from unittest.mock import Mock, patch, sentinel, DEFAULT
+    from unittest.mock import Mock, patch, sentinel, DEFAULT, ANY
 except ImportError:
-    from mock import Mock, patch, sentinel, DEFAULT
+    from mock import Mock, patch, sentinel, DEFAULT, ANY
 
 
 def find_unittest2():
