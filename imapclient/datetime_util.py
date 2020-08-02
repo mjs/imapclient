@@ -56,7 +56,7 @@ def datetime_to_INTERNALDATE(dt):
 
 # Matches timestamp strings where the time separator is a dot (see
 # issue #154). For example: 'Sat, 8 May 2010 16.03.09 +0200'
-_rfc822_dotted_time = re.compile("\w+, ?\d{1,2} \w+ \d\d(\d\d)? \d\d?\.\d\d?\.\d\d?.*")
+_rfc822_dotted_time = re.compile(r"\w+, ?\d{1,2} \w+ \d\d(\d\d)? \d\d?\.\d\d?\.\d\d?.*")
 
 
 def _munge(s):

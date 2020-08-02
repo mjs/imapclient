@@ -877,7 +877,7 @@ class TestRawCommand(IMAPClientTest):
         self.client._imap._get_response.return_value = b'blah'
         self.client._imap.tagged_commands['tag'] = ('NO', ['go away'])
 
-        expected_error = "unexpected response while waiting for continuation response: \(u?'NO', \[u?'go away'\]\)"
+        expected_error = r"unexpected response while waiting for continuation response: \(u?'NO', \[u?'go away'\]\)"
         with self.assertRaisesRegex(IMAPClient.AbortError, expected_error):
             self.client._raw_command(b'FOO', [b'\xff'])
 

@@ -689,7 +689,7 @@ class IMAPClient(object):
 
     @require_capability('UNSELECT')
     def unselect_folder(self):
-        """Unselect the current folder and release associated resources.
+        r"""Unselect the current folder and release associated resources.
 
         Unlike ``close_folder``, the ``UNSELECT`` command does not expunge
         the mailbox, keeping messages with \Deleted flag set for example.

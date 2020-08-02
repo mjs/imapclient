@@ -39,7 +39,7 @@ def parse_response(data):
     return tuple(gen_parsed_response(data))
 
 
-_msg_id_pattern = re.compile("(\d+(?: +\d+)*)")
+_msg_id_pattern = re.compile(r"(\d+(?: +\d+)*)")
 
 
 def parse_message_list(data):

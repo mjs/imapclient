@@ -14,7 +14,7 @@ from .util import to_unicode
 
 class Envelope(namedtuple("Envelope", "date subject from_ sender reply_to to " +
                           "cc bcc in_reply_to message_id")):
-    """Represents envelope structures of messages. Returned when parsing
+    r"""Represents envelope structures of messages. Returned when parsing
     ENVELOPE responses.
 
     :ivar date: A datetime instance that represents the "Date" header.

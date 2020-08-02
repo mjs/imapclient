@@ -145,7 +145,7 @@ class TestParseResponse(unittest.TestCase):
         self._test(b'(foo foo[bar rrr])', (b'foo', b'foo[bar rrr]'))
 
     def test_incomplete_tuple(self):
-        self._test_parse_error(b'abc (1 2', 'Tuple incomplete before "\(1 2"')
+        self._test_parse_error(b'abc (1 2', r'Tuple incomplete before "\(1 2"')
 
     def test_bad_literal(self):
         self._test_parse_error([(b'{99}', b'abc')],
@@ -239,7 +239,7 @@ class TestParseFetchResponse(unittest.TestCase):
         self.assertRaises(ProtocolError, parse_fetch_response, [b'(UID X)'])
 
     def test_FLAGS(self):
-        self.assertEqual(parse_fetch_response([b'23 (FLAGS (\Seen Stuff))']),
+        self.assertEqual(parse_fetch_response([br'23 (FLAGS (\Seen Stuff))']),
                          {23: {b'SEQ': 23, b'FLAGS': (br'\Seen', b'Stuff')}})
 
     def test_multiple_messages(self):
