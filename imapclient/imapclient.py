@@ -1880,6 +1880,11 @@ class IMAPlibLoggerAdapter(LoggerAdapter):
     """Adapter preventing IMAP secrets from going to the logging facility."""
 
     def process(self, msg, kwargs):
+        # msg is usually unicode but see #367. Convert bytes to
+        # unicode if required.
+        if isinstance(msg, binary_type):
+            msg = msg.decode('ascii', 'ignore')
+
         for command in ("LOGIN", "AUTHENTICATE"):
             if msg.startswith(">") and command in msg:
                 msg_start = msg.split(command)[0]
