@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (c) 2014, Menno Smits
+# Copyright (c) 2020, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -45,7 +45,7 @@ def command_line():
     else:
         if opts.ssl and opts.insecure:
             p.error("Can't use --ssl and --insecure at the same time")
-        
+
         opts.ssl = not opts.insecure
 
         # Scan through options, filling in defaults and prompting when
@@ -67,6 +67,10 @@ def main():
     print('Connected.')
     banner = '\nIMAPClient instance is "c"'
 
+    def ptpython(c):
+        from ptpython.repl import embed
+        embed(globals(), locals())
+
     def ipython_400(c):
         from IPython.terminal.embed import InteractiveShellEmbed
         ipshell = InteractiveShellEmbed(banner1=banner)
@@ -86,6 +90,7 @@ def main():
         code.interact(banner, local=dict(c=c))
 
     shell_attempts = (
+        ptpython,
         ipython_400,
         ipython_011,
         ipython_010,
