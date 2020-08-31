@@ -354,7 +354,7 @@ class IMAPClient(object):
         except exceptions.IMAPClientError as e:
             raise exceptions.LoginError(str(e))
 
-        logger.info('Logged in as %s', username)
+        logger.debug('Logged in as %s', username)
         return rv
 
     def oauth2_login(self, user, access_token, mech='XOAUTH2', vendor=None):
@@ -388,7 +388,7 @@ class IMAPClient(object):
         """
         typ, data = self._imap.logout()
         self._check_resp('BYE', 'logout', typ, data)
-        logger.info('Logged out, connection closed')
+        logger.debug('Logged out, connection closed')
         return data[0]
 
     def shutdown(self):
