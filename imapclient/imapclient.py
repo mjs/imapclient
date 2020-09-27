@@ -383,6 +383,18 @@ class IMAPClient(object):
         except exceptions.IMAPClientError as e:
             raise exceptions.LoginError(str(e))
 
+    def sasl_login(self, mech_name, mech_callable):
+        """Authenticate using a provided SASL mechanism (requires server support).
+
+        The 'mech_callable' must accept a parameter with the server challenge
+        and return the client response. It will be called as many times as the
+        server produces challenges.
+        """
+        try:
+            return self._command_and_check('authenticate', mech_name, mech_callable, unpack=True)
+        except exceptions.IMAPClientError as e:
+            raise exceptions.LoginError(str(e))
+
     def logout(self):
         """Logout, returning the server response.
         """
