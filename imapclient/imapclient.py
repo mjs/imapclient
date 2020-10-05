@@ -405,6 +405,60 @@ class IMAPClient(object):
         except exceptions.IMAPClientError as e:
             raise exceptions.LoginError(str(e))
 
+    def sasl_login(self, mech_name, mech_callable):
+        """Authenticate using a provided SASL mechanism (requires server support).
+
+        The *mech_callable* will be called with one parameter (the server
+        challenge as bytes) and must return the corresponding client response
+        (as bytes, or as string which will be automatically encoded).
+
+        It will be called as many times as the server produces challenges,
+        which will depend on the specific SASL mechanism. (If the mechanism is
+        defined as "client-first", the server will nevertheless produce a
+        zero-length challenge.)
+
+        For example, PLAIN has just one step with empty challenge, so a handler
+        might look like this:
+
+            plain_mech = lambda _: "\\0%s\\0%s" % (username, password)
+
+            imap.sasl_login("PLAIN", plain_mech)
+
+        A more complex but still stateless handler might look like this:
+
+            def example_mech(challenge):
+                if challenge == b"Username:"
+                    return username.encode("utf-8")
+                elif challenge == b"Password:"
+                    return password.encode("utf-8")
+                else:
+                    return b""
+
+            imap.sasl_login("EXAMPLE", example_mech)
+
+        A stateful handler might look like this:
+
+            class ScramSha256SaslMechanism():
+                def __init__(self, username, password):
+                    ...
+
+                def __call__(self, challenge):
+                    self.step += 1
+                    if self.step == 1:
+                        response = ...
+                    elif self.step == 2:
+                        response = ...
+                    return response
+
+            scram_mech = ScramSha256SaslMechanism(username, password)
+
+            imap.sasl_login("SCRAM-SHA-256", scram_mech)
+        """
+        try:
+            return self._command_and_check('authenticate', mech_name, mech_callable, unpack=True)
+        except exceptions.IMAPClientError as e:
+            raise exceptions.LoginError(str(e))
+
     def logout(self):
         """Logout, returning the server response.
         """
