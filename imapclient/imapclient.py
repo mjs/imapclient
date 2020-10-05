@@ -358,7 +358,7 @@ class IMAPClient(object):
         return rv
 
     def oauth2_login(self, user, access_token, mech='XOAUTH2', vendor=None):
-        """Authenticate using the OAUTH2 method.
+        """Authenticate using the OAUTH2 or XOAUTH2 methods.
 
         Gmail and Yahoo both support the 'XOAUTH2' mechanism, but Yahoo requires
         the 'vendor' portion in the payload.
@@ -369,6 +369,28 @@ class IMAPClient(object):
         auth_string += '\1'
         try:
             return self._command_and_check('authenticate', mech, lambda x: auth_string)
+        except exceptions.IMAPClientError as e:
+            raise exceptions.LoginError(str(e))
+
+    def oauthbearer_login(self, identity, access_token):
+        """Authenticate using the OAUTHBEARER method.
+
+        This is supported by Gmail and is meant to supersede the non-standard
+        'OAUTH2' and 'XOAUTH2' mechanisms.
+        """
+        # https://tools.ietf.org/html/rfc5801#section-4
+        # Technically this is the authorization_identity, but at least for Gmail it's
+        # mandatory and practically behaves like the regular username/identity.
+        if identity:
+            gs2_header = 'n,a=%s,' % identity.replace('=', '=3D').replace(',', '=2C')
+        else:
+            gs2_header = 'n,,'
+        # https://tools.ietf.org/html/rfc6750#section-2.1
+        http_authz = 'Bearer %s' % access_token
+        # https://tools.ietf.org/html/rfc7628#section-3.1
+        auth_string = '%s\1auth=%s\1\1' % (gs2_header, http_authz)
+        try:
+            return self._command_and_check('authenticate', 'OAUTHBEARER', lambda x: auth_string)
         except exceptions.IMAPClientError as e:
             raise exceptions.LoginError(str(e))
 
