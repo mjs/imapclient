@@ -102,7 +102,7 @@ _POPULAR_SPECIAL_FOLDERS = {
     SENT: ("Sent", "Sent Items", "Sent items"),
     DRAFTS: ("Drafts",),
     ARCHIVE: ("Archive",),
-    TRASH: ("Trash", "Deleted Items", "Deleted Messages"),
+    TRASH: ("Trash", "Deleted Items", "Deleted Messages", "Deleted"),
     JUNK: ("Junk", "Spam")
 }
 
