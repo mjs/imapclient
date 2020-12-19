@@ -12,7 +12,7 @@ class IMAP4WithTimeout(imaplib.IMAP4):
         self._timeout = timeout
         imaplib.IMAP4.__init__(self, address, port)
 
-    def open(self, host='', port=143):
+    def open(self, host='', port=143, timeout=None):
         # This is overridden to make it consistent across Python versions.
         self.host = host
         self.port = port
