@@ -9,15 +9,21 @@ import socket
 class IMAP4WithTimeout(imaplib.IMAP4):
 
     def __init__(self, address, port, timeout):
+        if hasattr(timeout, 'connect'):
+            timeout = timeout.connect
         self._timeout = timeout
         imaplib.IMAP4.__init__(self, address, port)
 
-    def open(self, host='', port=143):
+    def open(self, host='', port=143, timeout=None):
         # This is overridden to make it consistent across Python versions.
+        if timeout is not None:
+            self._timeout = timeout
         self.host = host
         self.port = port
         self.sock = self._create_socket()
         self.file = self.sock.makefile('rb')
 
-    def _create_socket(self):
-        return socket.create_connection((self.host, self.port), self._timeout.connect)
+    def _create_socket(self, timeout=None):
+        if timeout is None:
+            timeout = self._timeout
+        return socket.create_connection((self.host, self.port), timeout)
