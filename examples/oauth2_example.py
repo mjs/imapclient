@@ -3,10 +3,10 @@
 from imapclient import IMAPClient
 
 # Populate these with actual values
-OAUTH2_USER = '...'
-OAUTH2_ACCESS_TOKEN = '...'
+OAUTH2_USER = "..."
+OAUTH2_ACCESS_TOKEN = "..."
 
-HOST = 'imap.host.com'
+HOST = "imap.host.com"
 URL = "https://somedomain.com/someuser/imap/"
 
 with IMAPClient(HOST) as server:

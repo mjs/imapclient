@@ -26,10 +26,12 @@ from .datetime_util import datetime_to_INTERNALDATE, format_criteria_date
 from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .response_parser import parse_response, parse_message_list, parse_fetch_response
 from .util import to_bytes, to_unicode, assert_imap_protocol, chunk
+
 xrange = moves.xrange
 
 try:
     from select import poll
+
     POLL_SUPPORT = True
 except:
     # Fallback to select() on systems that don't support poll()
@@ -41,57 +43,65 @@ if PY3:
 
 logger = getLogger(__name__)
 
-__all__ = ['IMAPClient', 'SocketTimeout',
-           'DELETED', 'SEEN', 'ANSWERED', 'FLAGGED', 'DRAFT', 'RECENT']
+__all__ = [
+    "IMAPClient",
+    "SocketTimeout",
+    "DELETED",
+    "SEEN",
+    "ANSWERED",
+    "FLAGGED",
+    "DRAFT",
+    "RECENT",
+]
 
 
 # We also offer the gmail-specific XLIST command...
-if 'XLIST' not in imaplib.Commands:
-    imaplib.Commands['XLIST'] = ('NONAUTH', 'AUTH', 'SELECTED')
+if "XLIST" not in imaplib.Commands:
+    imaplib.Commands["XLIST"] = ("NONAUTH", "AUTH", "SELECTED")
 
 # ...and IDLE
-if 'IDLE' not in imaplib.Commands:
-    imaplib.Commands['IDLE'] = ('NONAUTH', 'AUTH', 'SELECTED')
+if "IDLE" not in imaplib.Commands:
+    imaplib.Commands["IDLE"] = ("NONAUTH", "AUTH", "SELECTED")
 
 # ..and STARTTLS
-if 'STARTTLS' not in imaplib.Commands:
-    imaplib.Commands['STARTTLS'] = ('NONAUTH',)
+if "STARTTLS" not in imaplib.Commands:
+    imaplib.Commands["STARTTLS"] = ("NONAUTH",)
 
 # ...and ID. RFC2971 says that this command is valid in all states,
 # but not that some servers (*cough* FastMail *cough*) don't seem to
 # accept it in state NONAUTH.
-if 'ID' not in imaplib.Commands:
-    imaplib.Commands['ID'] = ('NONAUTH', 'AUTH', 'SELECTED')
+if "ID" not in imaplib.Commands:
+    imaplib.Commands["ID"] = ("NONAUTH", "AUTH", "SELECTED")
 
 # ... and UNSELECT. RFC3691 does not specify the state but there is no
 # reason to use the command without AUTH state and a mailbox selected.
-if 'UNSELECT' not in imaplib.Commands:
-    imaplib.Commands['UNSELECT'] = ('AUTH', 'SELECTED')
+if "UNSELECT" not in imaplib.Commands:
+    imaplib.Commands["UNSELECT"] = ("AUTH", "SELECTED")
 
 # .. and ENABLE.
-if 'ENABLE' not in imaplib.Commands:
-    imaplib.Commands['ENABLE'] = ('AUTH',)
+if "ENABLE" not in imaplib.Commands:
+    imaplib.Commands["ENABLE"] = ("AUTH",)
 
 # .. and MOVE for RFC6851.
-if 'MOVE' not in imaplib.Commands:
-    imaplib.Commands['MOVE'] = ('AUTH', 'SELECTED')
+if "MOVE" not in imaplib.Commands:
+    imaplib.Commands["MOVE"] = ("AUTH", "SELECTED")
 
 # System flags
-DELETED = br'\Deleted'
-SEEN = br'\Seen'
-ANSWERED = br'\Answered'
-FLAGGED = br'\Flagged'
-DRAFT = br'\Draft'
-RECENT = br'\Recent'         # This flag is read-only
+DELETED = br"\Deleted"
+SEEN = br"\Seen"
+ANSWERED = br"\Answered"
+FLAGGED = br"\Flagged"
+DRAFT = br"\Draft"
+RECENT = br"\Recent"  # This flag is read-only
 
 # Special folders, see RFC6154
 # \Flagged is omitted because it is the same as the flag defined above
-ALL = br'\All'
-ARCHIVE = br'\Archive'
-DRAFTS = br'\Drafts'
-JUNK = br'\Junk'
-SENT = br'\Sent'
-TRASH = br'\Trash'
+ALL = br"\All"
+ARCHIVE = br"\Archive"
+DRAFTS = br"\Drafts"
+JUNK = br"\Junk"
+SENT = br"\Sent"
+TRASH = br"\Trash"
 
 # Personal namespaces that are common among providers
 # used as a fallback when the server does not support the NAMESPACE capability
@@ -103,14 +113,13 @@ _POPULAR_SPECIAL_FOLDERS = {
     DRAFTS: ("Drafts",),
     ARCHIVE: ("Archive",),
     TRASH: ("Trash", "Deleted Items", "Deleted Messages", "Deleted"),
-    JUNK: ("Junk", "Spam")
+    JUNK: ("Junk", "Spam"),
 }
 
-_RE_SELECT_RESPONSE = re.compile(br'\[(?P<key>[A-Z-]+)( \((?P<data>.*)\))?\]')
+_RE_SELECT_RESPONSE = re.compile(br"\[(?P<key>[A-Z-]+)( \((?P<data>.*)\))?\]")
 
 
 class Namespace(tuple):
-
     def __new__(cls, personal, other, shared):
         return tuple.__new__(cls, (personal, other, shared))
 
@@ -140,6 +149,7 @@ class MailboxQuotaRoots(namedtuple("MailboxQuotaRoots", "mailbox quota_roots")):
     :ivar quota_roots: list of quota roots associated with the mailbox
     """
 
+
 class Quota(namedtuple("Quota", "quota_root resource usage limit")):
     """Resource quota.
 
@@ -156,16 +166,16 @@ def require_capability(capability):
     """Decorator raising CapabilityError when a capability is not available."""
 
     def actual_decorator(func):
-
         @functools.wraps(func)
         def wrapper(client, *args, **kwargs):
             if not client.has_capability(capability):
                 raise exceptions.CapabilityError(
-                    'Server does not support {} capability'.format(capability)
+                    "Server does not support {} capability".format(capability)
                 )
             return func(client, *args, **kwargs)
 
         return wrapper
+
     return actual_decorator
 
 
@@ -196,8 +206,8 @@ class IMAPClient(object):
     IMAP server. The timeout can be either a float number, or an instance
     of :py:class:`imapclient.SocketTimeout`.
 
-    * If a single float number is passed, the same timeout delay applies 
-      during the  initial connection to the server and for all future socket 
+    * If a single float number is passed, the same timeout delay applies
+      during the  initial connection to the server and for all future socket
       reads and writes.
 
     * In case of a ``SocketTimeout``, connection timeout and
@@ -227,8 +237,16 @@ class IMAPClient(object):
     AbortError = exceptions.IMAPClientAbortError
     ReadOnlyError = exceptions.IMAPClientReadOnlyError
 
-    def __init__(self, host, port=None, use_uid=True, ssl=True, stream=False,
-                 ssl_context=None, timeout=None):
+    def __init__(
+        self,
+        host,
+        port=None,
+        use_uid=True,
+        ssl=True,
+        stream=False,
+        ssl_context=None,
+        timeout=None,
+    ):
         if stream:
             if port is not None:
                 raise ValueError("can't set 'port' when 'stream' True")
@@ -238,9 +256,11 @@ class IMAPClient(object):
             port = ssl and 993 or 143
 
         if ssl and port == 143:
-            logger.warning("Attempting to establish an encrypted connection "
-                           "to a port (143) often used for unencrypted "
-                           "connections")
+            logger.warning(
+                "Attempting to establish an encrypted connection "
+                "to a port (143) often used for unencrypted "
+                "connections"
+            )
 
         self.host = host
         self.port = port
@@ -262,14 +282,15 @@ class IMAPClient(object):
         self._idle_tag = None
 
         self._imap = self._create_IMAP4()
-        logger.debug("Connected to host %s over %s", self.host,
-                     "SSL/TLS" if ssl else "plain text")
+        logger.debug(
+            "Connected to host %s over %s",
+            self.host,
+            "SSL/TLS" if ssl else "plain text",
+        )
 
         self._set_read_timeout()
         # Small hack to make imaplib log everything to its own logger
-        imaplib_logger = IMAPlibLoggerAdapter(
-            getLogger('imapclient.imaplib'), dict()
-        )
+        imaplib_logger = IMAPlibLoggerAdapter(getLogger("imapclient.imaplib"), dict())
         self._imap.debug = 5
         self._imap._mesg = imaplib_logger.debug
 
@@ -298,8 +319,8 @@ class IMAPClient(object):
 
         if self.ssl:
             return tls.IMAP4_TLS(
-                self.host, 
-                self.port, 
+                self.host,
+                self.port,
                 self.ssl_context,
                 connect_timeout,
             )
@@ -314,14 +335,14 @@ class IMAPClient(object):
     def _sock(self):
         # In py2, imaplib has sslobj (for SSL connections), and sock for non-SSL.
         # In the py3 version it's just sock.
-        return getattr(self._imap, 'sslobj', self._imap.sock)
+        return getattr(self._imap, "sslobj", self._imap.sock)
 
-    @require_capability('STARTTLS')
+    @require_capability("STARTTLS")
     def starttls(self, ssl_context=None):
         """Switch to an SSL encrypted connection by sending a STARTTLS command.
 
         The *ssl_context* argument is optional and should be a
-        :py:class:`ssl.SSLContext` object. If no SSL context is given, a SSL 
+        :py:class:`ssl.SSLContext` object. If no SSL context is given, a SSL
         context with reasonable default settings will be used.
 
         You can enable checking of the hostname in the certificate presented
@@ -335,15 +356,15 @@ class IMAPClient(object):
         or an SSL connection is already established.
         """
         if self.ssl or self._starttls_done:
-            raise exceptions.IMAPClientAbortError('TLS session already established')
+            raise exceptions.IMAPClientAbortError("TLS session already established")
 
         typ, data = self._imap._simple_command("STARTTLS")
-        self._checkok('starttls', typ, data)
+        self._checkok("starttls", typ, data)
 
         self._starttls_done = True
 
         self._imap.sock = tls.wrap_socket(self._imap.sock, ssl_context, self.host)
-        self._imap.file = self._imap.sock.makefile('rb')
+        self._imap.file = self._imap.sock.makefile("rb")
         return data[0]
 
     def login(self, username, password):
@@ -352,7 +373,7 @@ class IMAPClient(object):
         """
         try:
             rv = self._command_and_check(
-                'login',
+                "login",
                 to_unicode(username),
                 to_unicode(password),
                 unpack=True,
@@ -360,21 +381,21 @@ class IMAPClient(object):
         except exceptions.IMAPClientError as e:
             raise exceptions.LoginError(str(e))
 
-        logger.debug('Logged in as %s', username)
+        logger.debug("Logged in as %s", username)
         return rv
 
-    def oauth2_login(self, user, access_token, mech='XOAUTH2', vendor=None):
+    def oauth2_login(self, user, access_token, mech="XOAUTH2", vendor=None):
         """Authenticate using the OAUTH2 or XOAUTH2 methods.
 
         Gmail and Yahoo both support the 'XOAUTH2' mechanism, but Yahoo requires
         the 'vendor' portion in the payload.
         """
-        auth_string = 'user=%s\1auth=Bearer %s\1' % (user, access_token)
+        auth_string = "user=%s\1auth=Bearer %s\1" % (user, access_token)
         if vendor:
-            auth_string += 'vendor=%s\1' % vendor
-        auth_string += '\1'
+            auth_string += "vendor=%s\1" % vendor
+        auth_string += "\1"
         try:
-            return self._command_and_check('authenticate', mech, lambda x: auth_string)
+            return self._command_and_check("authenticate", mech, lambda x: auth_string)
         except exceptions.IMAPClientError as e:
             raise exceptions.LoginError(str(e))
 
@@ -388,26 +409,29 @@ class IMAPClient(object):
         # Technically this is the authorization_identity, but at least for Gmail it's
         # mandatory and practically behaves like the regular username/identity.
         if identity:
-            gs2_header = 'n,a=%s,' % identity.replace('=', '=3D').replace(',', '=2C')
+            gs2_header = "n,a=%s," % identity.replace("=", "=3D").replace(",", "=2C")
         else:
-            gs2_header = 'n,,'
+            gs2_header = "n,,"
         # https://tools.ietf.org/html/rfc6750#section-2.1
-        http_authz = 'Bearer %s' % access_token
+        http_authz = "Bearer %s" % access_token
         # https://tools.ietf.org/html/rfc7628#section-3.1
-        auth_string = '%s\1auth=%s\1\1' % (gs2_header, http_authz)
+        auth_string = "%s\1auth=%s\1\1" % (gs2_header, http_authz)
         try:
-            return self._command_and_check('authenticate', 'OAUTHBEARER', lambda x: auth_string)
+            return self._command_and_check(
+                "authenticate", "OAUTHBEARER", lambda x: auth_string
+            )
         except exceptions.IMAPClientError as e:
             raise exceptions.LoginError(str(e))
 
     def plain_login(self, identity, password, authorization_identity=None):
-        """Authenticate using the PLAIN method (requires server support).
-        """
+        """Authenticate using the PLAIN method (requires server support)."""
         if not authorization_identity:
             authorization_identity = ""
-        auth_string = '%s\0%s\0%s' % (authorization_identity, identity, password)
+        auth_string = "%s\0%s\0%s" % (authorization_identity, identity, password)
         try:
-            return self._command_and_check('authenticate', 'PLAIN', lambda _: auth_string, unpack=True)
+            return self._command_and_check(
+                "authenticate", "PLAIN", lambda _: auth_string, unpack=True
+            )
         except exceptions.IMAPClientError as e:
             raise exceptions.LoginError(str(e))
 
@@ -461,16 +485,17 @@ class IMAPClient(object):
             imap.sasl_login("SCRAM-SHA-256", scram_mech)
         """
         try:
-            return self._command_and_check('authenticate', mech_name, mech_callable, unpack=True)
+            return self._command_and_check(
+                "authenticate", mech_name, mech_callable, unpack=True
+            )
         except exceptions.IMAPClientError as e:
             raise exceptions.LoginError(str(e))
 
     def logout(self):
-        """Logout, returning the server response.
-        """
+        """Logout, returning the server response."""
         typ, data = self._imap.logout()
-        self._check_resp('BYE', 'logout', typ, data)
-        logger.debug('Logged out, connection closed')
+        self._check_resp("BYE", "logout", typ, data)
+        logger.debug("Logged out, connection closed")
         return data[0]
 
     def shutdown(self):
@@ -480,9 +505,9 @@ class IMAPClient(object):
         this. The logout method also shutdown down the connection.
         """
         self._imap.shutdown()
-        logger.info('Connection closed')
+        logger.info("Connection closed")
 
-    @require_capability('ENABLE')
+    @require_capability("ENABLE")
     def enable(self, *capabilities):
         """Activate one or more server side capability extensions.
 
@@ -499,22 +524,23 @@ class IMAPClient(object):
 
         See :rfc:`5161` for more details.
         """
-        if self._imap.state != 'AUTH':
+        if self._imap.state != "AUTH":
             raise exceptions.IllegalStateError(
-                'ENABLE command illegal in state %s' % self._imap.state
+                "ENABLE command illegal in state %s" % self._imap.state
             )
 
         resp = self._raw_command_untagged(
-            b'ENABLE',
+            b"ENABLE",
             [to_bytes(c) for c in capabilities],
             uid=False,
-            response_name='ENABLED',
-            unpack=True)
+            response_name="ENABLED",
+            unpack=True,
+        )
         if not resp:
             return []
         return resp.split()
 
-    @require_capability('ID')
+    @require_capability("ID")
     def id_(self, parameters=None):
         """Issue the ID command, returning a dict of server implementation
         fields.
@@ -523,17 +549,17 @@ class IMAPClient(object):
         for example: ``{"name": "IMAPClient", "version": "0.12"}``
         """
         if parameters is None:
-            args = 'NIL'
+            args = "NIL"
         else:
             if not isinstance(parameters, dict):
                 raise TypeError("'parameters' should be a dictionary")
             args = seq_to_parenstr(
-                _quote(v) for v in
-                itertools.chain.from_iterable(parameters.items()))
+                _quote(v) for v in itertools.chain.from_iterable(parameters.items())
+            )
 
-        typ, data = self._imap._simple_command('ID', args)
-        self._checkok('id', typ, data)
-        typ, data = self._imap._untagged_response(typ, data, 'ID')
+        typ, data = self._imap._simple_command("ID", args)
+        self._checkok("id", typ, data)
+        typ, data = self._imap._untagged_response(typ, data, "ID")
         return parse_response(data)
 
     def capabilities(self):
@@ -550,7 +576,7 @@ class IMAPClient(object):
         """
         # Ensure cached capabilities aren't used post-STARTTLS. As per
         # https://tools.ietf.org/html/rfc2595#section-3.1
-        if self._starttls_done and self._imap.state == 'NONAUTH':
+        if self._starttls_done and self._imap.state == "NONAUTH":
             self._cached_capabilities = None
             return self._do_capabilites()
 
@@ -561,13 +587,13 @@ class IMAPClient(object):
         # If the server returned an untagged CAPABILITY response
         # (during authentication), cache it and return that.
         untagged = _dict_bytes_normaliser(self._imap.untagged_responses)
-        response = untagged.pop('CAPABILITY', None)
+        response = untagged.pop("CAPABILITY", None)
         if response:
             self._cached_capabilities = self._normalise_capabilites(response[0])
             return self._cached_capabilities
 
         # If authenticated, but don't have a capability response, ask for one
-        if self._imap.state in ('SELECTED', 'AUTH'):
+        if self._imap.state in ("SELECTED", "AUTH"):
             self._cached_capabilities = self._do_capabilites()
             return self._cached_capabilities
 
@@ -576,7 +602,7 @@ class IMAPClient(object):
         return tuple(to_bytes(c) for c in self._imap.capabilities)
 
     def _do_capabilites(self):
-        raw_response = self._command_and_check('capability', unpack=True)
+        raw_response = self._command_and_check("capability", unpack=True)
         return self._normalise_capabilites(raw_response)
 
     def _normalise_capabilites(self, raw_response):
@@ -584,8 +610,7 @@ class IMAPClient(object):
         return tuple(raw_response.upper().split())
 
     def has_capability(self, capability):
-        """Return ``True`` if the IMAP server has the given *capability*.
-        """
+        """Return ``True`` if the IMAP server has the given *capability*."""
         # FIXME: this will not detect capabilities that are backwards
         # compatible with the current level. For instance the SORT
         # capabilities may in the future be named SORT2 which is
@@ -593,7 +618,7 @@ class IMAPClient(object):
         # be detected by this method.
         return to_bytes(capability).upper() in self.capabilities()
 
-    @require_capability('NAMESPACE')
+    @require_capability("NAMESPACE")
     def namespace(self):
         """Return the namespace for the account as a (personal, other,
         shared) tuple.
@@ -607,7 +632,7 @@ class IMAPClient(object):
 
         See :rfc:`2342` for more details.
         """
-        data = self._command_and_check('namespace')
+        data = self._command_and_check("namespace")
         parts = []
         for item in parse_response(data):
             if item is None:
@@ -642,9 +667,9 @@ class IMAPClient(object):
         decoded from modified UTF-7, except if folder_decode is not
         set.
         """
-        return self._do_list('LIST', directory, pattern)
+        return self._do_list("LIST", directory, pattern)
 
-    @require_capability('XLIST')
+    @require_capability("XLIST")
     def xlist_folders(self, directory="", pattern="*"):
         """Execute the XLIST command, returning ``(flags, delimiter,
         name)`` tuples.
@@ -674,7 +699,7 @@ class IMAPClient(object):
         The *directory* and *pattern* arguments are as per
         list_folders().
         """
-        return self._do_list('XLIST', directory, pattern)
+        return self._do_list("XLIST", directory, pattern)
 
     def list_sub_folders(self, directory="", pattern="*"):
         """Return a list of subscribed folders on the server as
@@ -683,7 +708,7 @@ class IMAPClient(object):
         The default behaviour will list all subscribed folders. The
         *directory* and *pattern* arguments are as per list_folders().
         """
-        return self._do_list('LSUB', directory, pattern)
+        return self._do_list("LSUB", directory, pattern)
 
     def _do_list(self, cmd, directory, pattern):
         directory = self._normalise_folder(directory)
@@ -697,7 +722,7 @@ class IMAPClient(object):
         # Filter out empty strings and None's.
         # This also deals with the special case of - no 'untagged'
         # responses (ie, no folders). This comes back as [None].
-        folder_data = [item for item in folder_data if item not in (b'', None)]
+        folder_data = [item for item in folder_data if item not in (b"", None)]
 
         ret = []
         parsed = parse_response(folder_data)
@@ -727,14 +752,14 @@ class IMAPClient(object):
         """
         # Detect folder by looking for known attributes
         # TODO: avoid listing all folders by using extended LIST (RFC6154)
-        if self.has_capability('SPECIAL-USE'):
+        if self.has_capability("SPECIAL-USE"):
             for folder in self.list_folders():
                 if folder and len(folder[0]) > 0 and folder_flag in folder[0]:
                     return folder[2]
 
         # Detect folder by looking for common names
         # We only look for folders in the "personal" namespace of the user
-        if self.has_capability('NAMESPACE'):
+        if self.has_capability("NAMESPACE"):
             personal_namespaces = self.namespace().personal
         else:
             personal_namespaces = _POPULAR_PERSONAL_NAMESPACES
@@ -766,10 +791,10 @@ class IMAPClient(object):
              b'UIDNEXT': 11,
              b'UIDVALIDITY': 1239278212}
         """
-        self._command_and_check('select', self._normalise_folder(folder), readonly)
+        self._command_and_check("select", self._normalise_folder(folder), readonly)
         return self._process_select_response(self._imap.untagged_responses)
 
-    @require_capability('UNSELECT')
+    @require_capability("UNSELECT")
     def unselect_folder(self):
         r"""Unselect the current folder and release associated resources.
 
@@ -778,7 +803,7 @@ class IMAPClient(object):
 
         Returns the UNSELECT response string returned by the server.
         """
-        logger.debug('< UNSELECT')
+        logger.debug("< UNSELECT")
         # IMAP4 class has no `unselect` method so we can't use `_command_and_check` there
         _typ, data = self._imap._simple_command("UNSELECT")
         return data[0]
@@ -789,22 +814,28 @@ class IMAPClient(object):
 
         # imaplib doesn't parse these correctly (broken regex) so replace
         # with the raw values out of the OK section
-        for line in untagged.get('OK', []):
+        for line in untagged.get("OK", []):
             match = _RE_SELECT_RESPONSE.match(line)
             if match:
-                key = match.group('key')
-                if key == b'PERMANENTFLAGS':
-                    out[key] = tuple(match.group('data').split())
+                key = match.group("key")
+                if key == b"PERMANENTFLAGS":
+                    out[key] = tuple(match.group("data").split())
 
         for key, value in iteritems(untagged):
             key = key.upper()
-            if key in (b'OK', b'PERMANENTFLAGS'):
+            if key in (b"OK", b"PERMANENTFLAGS"):
                 continue  # already handled above
-            elif key in (b'EXISTS', b'RECENT', b'UIDNEXT', b'UIDVALIDITY', b'HIGHESTMODSEQ'):
+            elif key in (
+                b"EXISTS",
+                b"RECENT",
+                b"UIDNEXT",
+                b"UIDVALIDITY",
+                b"HIGHESTMODSEQ",
+            ):
                 value = int(value[0])
-            elif key == b'READ-WRITE':
+            elif key == b"READ-WRITE":
                 value = True
-            elif key == b'FLAGS':
+            elif key == b"FLAGS":
                 value = tuple(value[0][1:-1].split())
             out[key] = value
         return out
@@ -825,10 +856,10 @@ class IMAPClient(object):
               (6, b'FETCH', (b'FLAGS', (b'sne',)))])
 
         """
-        tag = self._imap._command('NOOP')
-        return self._consume_until_tagged_response(tag, 'NOOP')
+        tag = self._imap._command("NOOP")
+        return self._consume_until_tagged_response(tag, "NOOP")
 
-    @require_capability('IDLE')
+    @require_capability("IDLE")
     def idle(self):
         """Put the server into IDLE mode.
 
@@ -844,10 +875,10 @@ class IMAPClient(object):
 
         See :rfc:`2177` for more information about the IDLE extension.
         """
-        self._idle_tag = self._imap._command('IDLE')
+        self._idle_tag = self._imap._command("IDLE")
         resp = self._imap._get_response()
         if resp is not None:
-            raise exceptions.IMAPClientError('Unexpected IDLE response: %s' % resp)
+            raise exceptions.IMAPClientError("Unexpected IDLE response: %s" % resp)
 
     def _poll_socket(self, sock, timeout=None):
         """
@@ -869,7 +900,7 @@ class IMAPClient(object):
         """
         return select.select([sock], [], [], timeout)[0]
 
-    @require_capability('IDLE')
+    @require_capability("IDLE")
     def idle_check(self, timeout=None):
         """Check for any IDLE responses sent by the server.
 
@@ -913,7 +944,7 @@ class IMAPClient(object):
                         # An imaplib.IMAP4.abort with "EOF" is raised
                         # under Python 3
                         err = sys.exc_info()[1]
-                        if 'EOF' in err.args[0]:
+                        if "EOF" in err.args[0]:
                             break
                         else:
                             raise
@@ -924,7 +955,7 @@ class IMAPClient(object):
             sock.setblocking(1)
             self._set_read_timeout()
 
-    @require_capability('IDLE')
+    @require_capability("IDLE")
     def idle_done(self):
         """Take the server out of IDLE mode.
 
@@ -939,9 +970,9 @@ class IMAPClient(object):
         any). These are returned in parsed form as per
         ``idle_check()``.
         """
-        logger.debug('< DONE')
-        self._imap.send(b'DONE\r\n')
-        return self._consume_until_tagged_response(self._idle_tag, 'IDLE')
+        logger.debug("< DONE")
+        self._imap.send(b"DONE\r\n")
+        return self._consume_until_tagged_response(self._idle_tag, "IDLE")
 
     def folder_status(self, folder, what=None):
         """Return the status of *folder*.
@@ -954,13 +985,13 @@ class IMAPClient(object):
         keys matching *what*.
         """
         if what is None:
-            what = ('MESSAGES', 'RECENT', 'UIDNEXT', 'UIDVALIDITY', 'UNSEEN')
+            what = ("MESSAGES", "RECENT", "UIDNEXT", "UIDVALIDITY", "UNSEEN")
         else:
             what = normalise_text_list(what)
-        what_ = '(%s)' % (' '.join(what))
+        what_ = "(%s)" % (" ".join(what))
 
         fname = self._normalise_folder(folder)
-        data = self._command_and_check('status', fname, what_)
+        data = self._command_and_check("status", fname, what_)
         response = parse_response(data)
         status_items = response[-1]
         return dict(as_pairs(status_items))
@@ -969,42 +1000,42 @@ class IMAPClient(object):
         """Close the currently selected folder, returning the server
         response string.
         """
-        return self._command_and_check('close', unpack=True)
+        return self._command_and_check("close", unpack=True)
 
     def create_folder(self, folder):
-        """Create *folder* on the server returning the server response string.
-        """
-        return self._command_and_check('create', self._normalise_folder(folder), unpack=True)
+        """Create *folder* on the server returning the server response string."""
+        return self._command_and_check(
+            "create", self._normalise_folder(folder), unpack=True
+        )
 
     def rename_folder(self, old_name, new_name):
-        """Change the name of a folder on the server.
-        """
-        return self._command_and_check('rename',
-                                       self._normalise_folder(old_name),
-                                       self._normalise_folder(new_name),
-                                       unpack=True)
+        """Change the name of a folder on the server."""
+        return self._command_and_check(
+            "rename",
+            self._normalise_folder(old_name),
+            self._normalise_folder(new_name),
+            unpack=True,
+        )
 
     def delete_folder(self, folder):
-        """Delete *folder* on the server returning the server response string.
-        """
-        return self._command_and_check('delete', self._normalise_folder(folder), unpack=True)
+        """Delete *folder* on the server returning the server response string."""
+        return self._command_and_check(
+            "delete", self._normalise_folder(folder), unpack=True
+        )
 
     def folder_exists(self, folder):
-        """Return ``True`` if *folder* exists on the server.
-        """
+        """Return ``True`` if *folder* exists on the server."""
         return len(self.list_folders("", folder)) > 0
 
     def subscribe_folder(self, folder):
-        """Subscribe to *folder*, returning the server response string.
-        """
-        return self._command_and_check('subscribe', self._normalise_folder(folder))
+        """Subscribe to *folder*, returning the server response string."""
+        return self._command_and_check("subscribe", self._normalise_folder(folder))
 
     def unsubscribe_folder(self, folder):
-        """Unsubscribe to *folder*, returning the server response string.
-        """
-        return self._command_and_check('unsubscribe', self._normalise_folder(folder))
+        """Unsubscribe to *folder*, returning the server response string."""
+        return self._command_and_check("unsubscribe", self._normalise_folder(folder))
 
-    def search(self, criteria='ALL', charset=None):
+    def search(self, criteria="ALL", charset=None):
         """Return a list of messages ids from the currently selected
         folder matching *criteria*.
 
@@ -1066,8 +1097,8 @@ class IMAPClient(object):
         """
         return self._search(criteria, charset)
 
-    @require_capability('X-GM-EXT-1')
-    def gmail_search(self, query, charset='UTF-8'):
+    @require_capability("X-GM-EXT-1")
+    def gmail_search(self, query, charset="UTF-8"):
         """Search using Gmail's X-GM-RAW attribute.
 
         *query* should be a valid Gmail search query string. For
@@ -1081,29 +1112,30 @@ class IMAPClient(object):
         See https://developers.google.com/gmail/imap_extensions#extension_of_the_search_command_x-gm-raw
         for more info.
         """
-        return self._search([b'X-GM-RAW', query], charset)
+        return self._search([b"X-GM-RAW", query], charset)
 
     def _search(self, criteria, charset):
         args = []
         if charset:
-            args.extend([b'CHARSET', to_bytes(charset)])
+            args.extend([b"CHARSET", to_bytes(charset)])
         args.extend(_normalise_search_criteria(criteria, charset))
 
         try:
-            data = self._raw_command_untagged(b'SEARCH', args)
+            data = self._raw_command_untagged(b"SEARCH", args)
         except imaplib.IMAP4.error as e:
             # Make BAD IMAP responses easier to understand to the user, with a link to the docs
-            m = re.match(r'SEARCH command error: BAD \[(.+)\]', str(e))
+            m = re.match(r"SEARCH command error: BAD \[(.+)\]", str(e))
             if m:
                 raise exceptions.InvalidCriteriaError(
-                    '{original_msg}\n\n'
-                    'This error may have been caused by a syntax error in the criteria: '
-                    '{criteria}\nPlease refer to the documentation for more information '
-                    'about search criteria syntax..\n'
-                    'https://imapclient.readthedocs.io/en/master/#imapclient.IMAPClient.search'
-                    .format(
+                    "{original_msg}\n\n"
+                    "This error may have been caused by a syntax error in the criteria: "
+                    "{criteria}\nPlease refer to the documentation for more information "
+                    "about search criteria syntax..\n"
+                    "https://imapclient.readthedocs.io/en/master/#imapclient.IMAPClient.search".format(
                         original_msg=m.group(1),
-                        criteria='"%s"' % criteria if not isinstance(criteria, list) else criteria
+                        criteria='"%s"' % criteria
+                        if not isinstance(criteria, list)
+                        else criteria,
                     )
                 )
 
@@ -1112,8 +1144,8 @@ class IMAPClient(object):
 
         return parse_message_list(data)
 
-    @require_capability('SORT')
-    def sort(self, sort_criteria, criteria='ALL', charset='UTF-8'):
+    @require_capability("SORT")
+    def sort(self, sort_criteria, criteria="ALL", charset="UTF-8"):
         """Return a list of message ids from the currently selected
         folder, sorted by *sort_criteria* and optionally filtered by
         *criteria*.
@@ -1140,10 +1172,10 @@ class IMAPClient(object):
             to_bytes(charset),
         ]
         args.extend(_normalise_search_criteria(criteria, charset))
-        ids = self._raw_command_untagged(b'SORT', args, unpack=True)
+        ids = self._raw_command_untagged(b"SORT", args, unpack=True)
         return [long(i) for i in ids.split()]
 
-    def thread(self, algorithm='REFERENCES', criteria='ALL', charset='UTF-8'):
+    def thread(self, algorithm="REFERENCES", criteria="ALL", charset="UTF-8"):
         """Return a list of messages threads from the currently
         selected folder which match *criteria*.
 
@@ -1161,14 +1193,15 @@ class IMAPClient(object):
         See :rfc:`5256` for more details.
         """
         algorithm = to_bytes(algorithm)
-        if not self.has_capability(b'THREAD=' + algorithm):
+        if not self.has_capability(b"THREAD=" + algorithm):
             raise exceptions.CapabilityError(
-                'The server does not support %s threading algorithm' % algorithm
+                "The server does not support %s threading algorithm" % algorithm
             )
 
-        args = [algorithm, to_bytes(charset)] + \
-            _normalise_search_criteria(criteria, charset)
-        data = self._raw_command_untagged(b'THREAD', args)
+        args = [algorithm, to_bytes(charset)] + _normalise_search_criteria(
+            criteria, charset
+        )
+        data = self._raw_command_untagged(b"THREAD", args)
         return parse_response(data)
 
     def get_flags(self, messages):
@@ -1178,8 +1211,8 @@ class IMAPClient(object):
         The return value is a dictionary structured like this: ``{
         msgid1: (flag1, flag2, ... ), }``.
         """
-        response = self.fetch(messages, ['FLAGS'])
-        return self._filter_fetch_dict(response, b'FLAGS')
+        response = self.fetch(messages, ["FLAGS"])
+        return self._filter_fetch_dict(response, b"FLAGS")
 
     def add_flags(self, messages, flags, silent=False):
         """Add *flags* to *messages* in the currently selected folder.
@@ -1189,7 +1222,7 @@ class IMAPClient(object):
         Returns the flags set for each modified message (see
         *get_flags*), or None if *silent* is true.
         """
-        return self._store(b'+FLAGS', messages, flags, b'FLAGS', silent=silent)
+        return self._store(b"+FLAGS", messages, flags, b"FLAGS", silent=silent)
 
     def remove_flags(self, messages, flags, silent=False):
         """Remove one or more *flags* from *messages* in the currently
@@ -1200,7 +1233,7 @@ class IMAPClient(object):
         Returns the flags set for each modified message (see
         *get_flags*), or None if *silent* is true.
         """
-        return self._store(b'-FLAGS', messages, flags, b'FLAGS', silent=silent)
+        return self._store(b"-FLAGS", messages, flags, b"FLAGS", silent=silent)
 
     def set_flags(self, messages, flags, silent=False):
         """Set the *flags* for *messages* in the currently selected
@@ -1211,7 +1244,7 @@ class IMAPClient(object):
         Returns the flags set for each modified message (see
         *get_flags*), or None if *silent* is true.
         """
-        return self._store(b'FLAGS', messages, flags, b'FLAGS', silent=silent)
+        return self._store(b"FLAGS", messages, flags, b"FLAGS", silent=silent)
 
     def get_gmail_labels(self, messages):
         """Return the label set for each message in *messages* in the
@@ -1223,10 +1256,11 @@ class IMAPClient(object):
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
         """
-        response = self.fetch(messages, [b'X-GM-LABELS'])
-        response = self._filter_fetch_dict(response, b'X-GM-LABELS')
-        return {msg: utf7_decode_sequence(labels)
-                for msg, labels in iteritems(response)}
+        response = self.fetch(messages, [b"X-GM-LABELS"])
+        response = self._filter_fetch_dict(response, b"X-GM-LABELS")
+        return {
+            msg: utf7_decode_sequence(labels) for msg, labels in iteritems(response)
+        }
 
     def add_gmail_labels(self, messages, labels, silent=False):
         """Add *labels* to *messages* in the currently selected folder.
@@ -1239,8 +1273,7 @@ class IMAPClient(object):
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
         """
-        return self._gm_label_store(b'+X-GM-LABELS', messages, labels,
-                                    silent=silent)
+        return self._gm_label_store(b"+X-GM-LABELS", messages, labels, silent=silent)
 
     def remove_gmail_labels(self, messages, labels, silent=False):
         """Remove one or more *labels* from *messages* in the
@@ -1254,8 +1287,7 @@ class IMAPClient(object):
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
         """
-        return self._gm_label_store(b'-X-GM-LABELS', messages, labels,
-                                    silent=silent)
+        return self._gm_label_store(b"-X-GM-LABELS", messages, labels, silent=silent)
 
     def set_gmail_labels(self, messages, labels, silent=False):
         """Set the *labels* for *messages* in the currently selected
@@ -1269,8 +1301,7 @@ class IMAPClient(object):
         This only works with IMAP servers that support the X-GM-LABELS
         attribute (eg. Gmail).
         """
-        return self._gm_label_store(b'X-GM-LABELS', messages, labels,
-                                    silent=silent)
+        return self._gm_label_store(b"X-GM-LABELS", messages, labels, silent=silent)
 
     def delete_messages(self, messages, silent=False):
         """Delete one or more *messages* from the currently selected
@@ -1325,17 +1356,17 @@ class IMAPClient(object):
             return {}
 
         args = [
-            'FETCH',
+            "FETCH",
             join_message_ids(messages),
             seq_to_parenstr_upper(data),
-            seq_to_parenstr_upper(modifiers) if modifiers else None
+            seq_to_parenstr_upper(modifiers) if modifiers else None,
         ]
         if self.use_uid:
-            args.insert(0, 'UID')
+            args.insert(0, "UID")
         tag = self._imap._command(*args)
-        typ, data = self._imap._command_complete('FETCH', tag)
-        self._checkok('fetch', typ, data)
-        typ, data = self._imap._untagged_response(typ, data, 'FETCH')
+        typ, data = self._imap._command_complete("FETCH", tag)
+        self._checkok("fetch", typ, data)
+        typ, data = self._imap._untagged_response(typ, data, "FETCH")
         return parse_fetch_response(data, self.normalise_times, self.use_uid)
 
     def append(self, folder, msg, flags=(), msg_time=None):
@@ -1363,14 +1394,16 @@ class IMAPClient(object):
                 time_val = to_bytes(time_val)
         else:
             time_val = None
-        return self._command_and_check('append',
-                                       self._normalise_folder(folder),
-                                       seq_to_parenstr(flags),
-                                       time_val,
-                                       to_bytes(msg),
-                                       unpack=True)
+        return self._command_and_check(
+            "append",
+            self._normalise_folder(folder),
+            seq_to_parenstr(flags),
+            time_val,
+            to_bytes(msg),
+            unpack=True,
+        )
 
-    @require_capability('MULTIAPPEND')
+    @require_capability("MULTIAPPEND")
     def multiappend(self, folder, msgs):
         """Append messages to *folder* using the MULTIAPPEND feature from :rfc:`3502`.
 
@@ -1382,7 +1415,7 @@ class IMAPClient(object):
         msgs = [_literal(to_bytes(m)) for m in msgs]
 
         return self._raw_command(
-            b'APPEND',
+            b"APPEND",
             [self._normalise_folder(folder)] + msgs,
             uid=False,
         )
@@ -1392,12 +1425,15 @@ class IMAPClient(object):
         *folder*. Returns the COPY response string returned by the
         server.
         """
-        return self._command_and_check('copy',
-                                       join_message_ids(messages),
-                                       self._normalise_folder(folder),
-                                       uid=True, unpack=True)
+        return self._command_and_check(
+            "copy",
+            join_message_ids(messages),
+            self._normalise_folder(folder),
+            uid=True,
+            unpack=True,
+        )
 
-    @require_capability('MOVE')
+    @require_capability("MOVE")
     def move(self, messages, folder):
         """Atomically move messages to another folder.
 
@@ -1406,10 +1442,13 @@ class IMAPClient(object):
         :param messages: List of message UIDs to move.
         :param folder: The destination folder name.
         """
-        return self._command_and_check('move',
-                                       join_message_ids(messages),
-                                       self._normalise_folder(folder),
-                                       uid=True, unpack=True)
+        return self._command_and_check(
+            "move",
+            join_message_ids(messages),
+            self._normalise_folder(folder),
+            uid=True,
+            unpack=True,
+        )
 
     def expunge(self, messages=None):
         """When, no *messages* are specified, remove all messages
@@ -1443,34 +1482,35 @@ class IMAPClient(object):
         """
         if messages:
             if not self.use_uid:
-                raise ValueError('cannot EXPUNGE by ID when not using uids')
-            return self._command_and_check('EXPUNGE', join_message_ids(messages), uid=True)
-        tag = self._imap._command('EXPUNGE')
-        return self._consume_until_tagged_response(tag, 'EXPUNGE')
+                raise ValueError("cannot EXPUNGE by ID when not using uids")
+            return self._command_and_check(
+                "EXPUNGE", join_message_ids(messages), uid=True
+            )
+        tag = self._imap._command("EXPUNGE")
+        return self._consume_until_tagged_response(tag, "EXPUNGE")
 
-    @require_capability('ACL')
+    @require_capability("ACL")
     def getacl(self, folder):
         """Returns a list of ``(who, acl)`` tuples describing the
         access controls for *folder*.
         """
-        data = self._command_and_check('getacl', self._normalise_folder(folder))
+        data = self._command_and_check("getacl", self._normalise_folder(folder))
         parts = list(response_lexer.TokenSource(data))
-        parts = parts[1:]       # First item is folder name
+        parts = parts[1:]  # First item is folder name
         return [(parts[i], parts[i + 1]) for i in xrange(0, len(parts), 2)]
 
-    @require_capability('ACL')
+    @require_capability("ACL")
     def setacl(self, folder, who, what):
         """Set an ACL (*what*) for user (*who*) for a folder.
 
         Set *what* to an empty string to remove an ACL. Returns the
         server response string.
         """
-        return self._command_and_check('setacl',
-                                       self._normalise_folder(folder),
-                                       who, what,
-                                       unpack=True)
+        return self._command_and_check(
+            "setacl", self._normalise_folder(folder), who, what, unpack=True
+        )
 
-    @require_capability('QUOTA')
+    @require_capability("QUOTA")
     def get_quota(self, mailbox="INBOX"):
         """Get the quotas associated with a mailbox.
 
@@ -1478,7 +1518,7 @@ class IMAPClient(object):
         """
         return self.get_quota_root(mailbox)[1]
 
-    @require_capability('QUOTA')
+    @require_capability("QUOTA")
     def _get_quota(self, quota_root=""):
         """Get the quotas associated with a quota root.
 
@@ -1488,11 +1528,9 @@ class IMAPClient(object):
 
         Returns a list of Quota objects.
         """
-        return _parse_quota(
-            self._command_and_check('getquota', _quote(quota_root))
-        )
+        return _parse_quota(self._command_and_check("getquota", _quote(quota_root)))
 
-    @require_capability('QUOTA')
+    @require_capability("QUOTA")
     def get_quota_root(self, mailbox):
         """Get the quota roots for a mailbox.
 
@@ -1504,18 +1542,16 @@ class IMAPClient(object):
         Return a tuple of MailboxQuotaRoots and list of Quota associated
         """
         quota_root_rep = self._raw_command_untagged(
-            b'GETQUOTAROOT', to_bytes(mailbox), uid=False,
-            response_name='QUOTAROOT'
+            b"GETQUOTAROOT", to_bytes(mailbox), uid=False, response_name="QUOTAROOT"
         )
-        quota_rep = pop_with_default(self._imap.untagged_responses, 'QUOTA', [])
+        quota_rep = pop_with_default(self._imap.untagged_responses, "QUOTA", [])
         quota_root_rep = parse_response(quota_root_rep)
         quota_root = MailboxQuotaRoots(
-            to_unicode(quota_root_rep[0]),
-            [to_unicode(q) for q in quota_root_rep[1:]]
+            to_unicode(quota_root_rep[0]), [to_unicode(q) for q in quota_root_rep[1:]]
         )
         return quota_root, _parse_quota(quota_rep)
 
-    @require_capability('QUOTA')
+    @require_capability("QUOTA")
     def set_quota(self, quotas):
         """Set one or more quotas on resources.
 
@@ -1533,18 +1569,13 @@ class IMAPClient(object):
             elif quota_root != quota.quota_root:
                 raise ValueError("set_quota only accepts a single quota root")
 
-            set_quota_args.append(
-                "{} {}".format(quota.resource, quota.limit)
-            )
+            set_quota_args.append("{} {}".format(quota.resource, quota.limit))
 
         set_quota_args = " ".join(set_quota_args)
-        args = [
-            to_bytes(_quote(quota_root)),
-            to_bytes("({})".format(set_quota_args))
-        ]
+        args = [to_bytes(_quote(quota_root)), to_bytes("({})".format(set_quota_args))]
 
         response = self._raw_command_untagged(
-            b'SETQUOTA', args, uid=False, response_name='QUOTA'
+            b"SETQUOTA", args, uid=False, response_name="QUOTA"
         )
         return _parse_quota(response)
 
@@ -1554,7 +1585,9 @@ class IMAPClient(object):
         Raises IMAPClient.Error if the command fails.
         """
         if typ != expected:
-            raise exceptions.IMAPClientError("%s failed: %s" % (command, to_unicode(data[0])))
+            raise exceptions.IMAPClientError(
+                "%s failed: %s" % (command, to_unicode(data[0]))
+            )
 
     def _consume_until_tagged_response(self, tag, command):
         tagged_commands = self._imap.tagged_commands
@@ -1568,7 +1601,9 @@ class IMAPClient(object):
         self._checkok(command, typ, data)
         return data[0], resps
 
-    def _raw_command_untagged(self, command, args, response_name=None, unpack=False, uid=True):
+    def _raw_command_untagged(
+        self, command, args, response_name=None, unpack=False, uid=True
+    ):
         # TODO: eventually this should replace _command_and_check (call it _command)
         typ, data = self._raw_command(command, args, uid=uid)
         if response_name is None:
@@ -1600,7 +1635,7 @@ class IMAPClient(object):
         tag = self._imap._new_tag()
         prefix = [to_bytes(tag)]
         if uid and self.use_uid:
-            prefix.append(b'UID')
+            prefix.append(b"UID")
         prefix.append(command)
 
         line = []
@@ -1611,8 +1646,8 @@ class IMAPClient(object):
             if _is8bit(item):
                 # If a line was already started send it
                 if line:
-                    out = b' '.join(line)
-                    logger.debug('> %s', out)
+                    out = b" ".join(line)
+                    logger.debug("> %s", out)
                     self._imap.send(out)
                     line = []
 
@@ -1621,30 +1656,29 @@ class IMAPClient(object):
                     item = item.original
                 self._send_literal(tag, item)
                 if not is_last:
-                    self._imap.send(b' ')
+                    self._imap.send(b" ")
             else:
                 line.append(item)
 
         if line:
-            out = b' '.join(line)
-            logger.debug('> %s', out)
+            out = b" ".join(line)
+            logger.debug("> %s", out)
             self._imap.send(out)
 
-        self._imap.send(b'\r\n')
+        self._imap.send(b"\r\n")
 
         return self._imap._command_complete(to_unicode(command), tag)
 
     def _send_literal(self, tag, item):
-        """Send a single literal for the command with *tag*.
-        """
-        if b'LITERAL+' in self._cached_capabilities:
-            out = b' {' + str(len(item)).encode('ascii') + b'+}\r\n' + item
-            logger.debug('> %s', debug_trunc(out, 64))
+        """Send a single literal for the command with *tag*."""
+        if b"LITERAL+" in self._cached_capabilities:
+            out = b" {" + str(len(item)).encode("ascii") + b"+}\r\n" + item
+            logger.debug("> %s", debug_trunc(out, 64))
             self._imap.send(out)
             return
 
-        out = b' {' + str(len(item)).encode('ascii') + b'}\r\n'
-        logger.debug('> %s', out)
+        out = b" {" + str(len(item)).encode("ascii") + b"}\r\n"
+        logger.debug("> %s", out)
         self._imap.send(out)
 
         # Wait for continuation response
@@ -1652,16 +1686,17 @@ class IMAPClient(object):
             tagged_resp = self._imap.tagged_commands.get(tag)
             if tagged_resp:
                 raise exceptions.IMAPClientAbortError(
-                    "unexpected response while waiting for continuation response: " +
-                    repr(tagged_resp))
+                    "unexpected response while waiting for continuation response: "
+                    + repr(tagged_resp)
+                )
 
         logger.debug("   (literal) > %s", debug_trunc(item, 256))
         self._imap.send(item)
 
     def _command_and_check(self, command, *args, **kwargs):
-        unpack = pop_with_default(kwargs, 'unpack', False)
-        uid = pop_with_default(kwargs, 'uid', False)
-        assert not kwargs, "unexpected keyword args: " + ', '.join(kwargs)
+        unpack = pop_with_default(kwargs, "unpack", False)
+        uid = pop_with_default(kwargs, "uid", False)
+        assert not kwargs, "unexpected keyword args: " + ", ".join(kwargs)
 
         if uid and self.use_uid:
             if PY3:
@@ -1676,13 +1711,17 @@ class IMAPClient(object):
         return data
 
     def _checkok(self, command, typ, data):
-        self._check_resp('OK', command, typ, data)
+        self._check_resp("OK", command, typ, data)
 
     def _gm_label_store(self, cmd, messages, labels, silent):
-        response = self._store(cmd, messages, self._normalise_labels(labels),
-                           b'X-GM-LABELS', silent=silent)
-        return {msg: utf7_decode_sequence(labels)
-                for msg, labels in iteritems(response)} if response else None
+        response = self._store(
+            cmd, messages, self._normalise_labels(labels), b"X-GM-LABELS", silent=silent
+        )
+        return (
+            {msg: utf7_decode_sequence(labels) for msg, labels in iteritems(response)}
+            if response
+            else None
+        )
 
     def _store(self, cmd, messages, flags, fetch_key, silent):
         """Worker function for the various flag manipulation methods.
@@ -1694,23 +1733,19 @@ class IMAPClient(object):
         if silent:
             cmd += b".SILENT"
 
-        data = self._command_and_check('store',
-                                       join_message_ids(messages),
-                                       cmd,
-                                       seq_to_parenstr(flags),
-                                       uid=True)
+        data = self._command_and_check(
+            "store", join_message_ids(messages), cmd, seq_to_parenstr(flags), uid=True
+        )
         if silent:
             return None
-        return self._filter_fetch_dict(parse_fetch_response(data),
-                                       fetch_key)
+        return self._filter_fetch_dict(parse_fetch_response(data), fetch_key)
 
     def _filter_fetch_dict(self, fetch_dict, key):
-        return dict((msgid, data[key])
-                    for msgid, data in iteritems(fetch_dict))
+        return dict((msgid, data[key]) for msgid, data in iteritems(fetch_dict))
 
     def _normalise_folder(self, folder_name):
         if isinstance(folder_name, binary_type):
-            folder_name = folder_name.decode('ascii')
+            folder_name = folder_name.decode("ascii")
         if self.folder_encode:
             folder_name = encode_utf7(folder_name)
         return _quote(folder_name)
@@ -1731,20 +1766,21 @@ class IMAPClient(object):
 
 def _quote(arg):
     if isinstance(arg, text_type):
-        arg = arg.replace('\\', '\\\\')
+        arg = arg.replace("\\", "\\\\")
         arg = arg.replace('"', '\\"')
         q = '"'
     else:
-        arg = arg.replace(b'\\', b'\\\\')
+        arg = arg.replace(b"\\", b"\\\\")
         arg = arg.replace(b'"', b'\\"')
         q = b'"'
     return q + arg + q
 
+
 def _normalise_search_criteria(criteria, charset=None):
     if not criteria:
-        raise exceptions.InvalidCriteriaError('no criteria specified')
+        raise exceptions.InvalidCriteriaError("no criteria specified")
     if not charset:
-        charset = 'us-ascii'
+        charset = "us-ascii"
 
     if isinstance(criteria, (text_type, binary_type)):
         return [to_bytes(criteria, charset)]
@@ -1752,15 +1788,15 @@ def _normalise_search_criteria(criteria, charset=None):
     out = []
     for item in criteria:
         if isinstance(item, int):
-            out.append(str(item).encode('ascii'))
+            out.append(str(item).encode("ascii"))
         elif isinstance(item, (datetime, date)):
             out.append(format_criteria_date(item))
         elif isinstance(item, (list, tuple)):
             # Process nested criteria list and wrap in parens.
             inner = _normalise_search_criteria(item)
-            inner[0] = b'(' + inner[0]
-            inner[-1] = inner[-1] + b')'
-            out.extend(inner) # flatten
+            inner[0] = b"(" + inner[0]
+            inner[-1] = inner[-1] + b")"
+            out.extend(inner)  # flatten
         else:
             out.append(_quoted.maybe(to_bytes(item, charset)))
     return out
@@ -1769,11 +1805,14 @@ def _normalise_search_criteria(criteria, charset=None):
 def _normalise_sort_criteria(criteria, charset=None):
     if isinstance(criteria, (text_type, binary_type)):
         criteria = [criteria]
-    return b'(' + b' '.join(to_bytes(item).upper() for item in criteria) + b')'
+    return b"(" + b" ".join(to_bytes(item).upper() for item in criteria) + b")"
+
 
 class _literal(bytes):
     """Hold message data that should always be sent as a literal."""
+
     pass
+
 
 class _quoted(binary_type):
     """
@@ -1793,9 +1832,9 @@ class _quoted(binary_type):
         holds the quoted version of the input while also providing
         access to the original unquoted source.
         """
-        quoted = original.replace(b'\\', b'\\\\')
+        quoted = original.replace(b"\\", b"\\\\")
         quoted = quoted.replace(b'"', b'\\"')
-        if quoted != original or b' ' in quoted or not quoted:
+        if quoted != original or b" " in quoted or not quoted:
             out = cls(b'"' + quoted + b'"')
             out.original = original
             return out
@@ -1818,7 +1857,7 @@ def seq_to_parenstr_upper(items):
 
 
 def _join_and_paren(items):
-    return '(' + ' '.join(items) + ')'
+    return "(" + " ".join(items) + ")"
 
 
 def _normalise_text_list(items):
@@ -1826,26 +1865,27 @@ def _normalise_text_list(items):
         items = (items,)
     return (to_unicode(c) for c in items)
 
+
 def join_message_ids(messages):
     """Convert a sequence of messages ids or a single integer message id
     into an id byte string for use with IMAP commands
     """
     if isinstance(messages, (text_type, binary_type, integer_types)):
         messages = (to_bytes(messages),)
-    return b','.join(_maybe_int_to_bytes(m) for m in messages)
+    return b",".join(_maybe_int_to_bytes(m) for m in messages)
 
 
 def _maybe_int_to_bytes(val):
     if isinstance(val, integer_types):
-        return str(val).encode('us-ascii') if PY3 else str(val)
+        return str(val).encode("us-ascii") if PY3 else str(val)
     return to_bytes(val)
 
 
 def _parse_untagged_response(text):
-    assert_imap_protocol(text.startswith(b'* '))
+    assert_imap_protocol(text.startswith(b"* "))
     text = text[2:]
-    if text.startswith((b'OK ', b'NO ')):
-        return tuple(text.split(b' ', 1))
+    if text.startswith((b"OK ", b"NO ")):
+        return tuple(text.split(b" ", 1))
     return parse_response([text])
 
 
@@ -1937,7 +1977,7 @@ def debug_trunc(v, maxlen):
     if len(v) < maxlen:
         return repr(v)
     hl = maxlen // 2
-    return repr(v[:hl])  + "..." + repr(v[-hl:])
+    return repr(v[:hl]) + "..." + repr(v[-hl:])
 
 
 def utf7_decode_sequence(seq):
@@ -1949,12 +1989,14 @@ def _parse_quota(quota_rep):
     rv = list()
     for quota_root, quota_resource_infos in as_pairs(quota_rep):
         for quota_resource_info in as_triplets(quota_resource_infos):
-            rv.append(Quota(
-                quota_root=to_unicode(quota_root),
-                resource=to_unicode(quota_resource_info[0]),
-                usage=quota_resource_info[1],
-                limit=quota_resource_info[2]
-            ))
+            rv.append(
+                Quota(
+                    quota_root=to_unicode(quota_root),
+                    resource=to_unicode(quota_resource_info[0]),
+                    usage=quota_resource_info[1],
+                    limit=quota_resource_info[2],
+                )
+            )
     return rv
 
 
@@ -1965,13 +2007,11 @@ class IMAPlibLoggerAdapter(LoggerAdapter):
         # msg is usually unicode but see #367. Convert bytes to
         # unicode if required.
         if isinstance(msg, binary_type):
-            msg = msg.decode('ascii', 'ignore')
+            msg = msg.decode("ascii", "ignore")
 
         for command in ("LOGIN", "AUTHENTICATE"):
             if msg.startswith(">") and command in msg:
                 msg_start = msg.split(command)[0]
                 msg = "{}{} **REDACTED**".format(msg_start, command)
                 break
-        return super(IMAPlibLoggerAdapter, self).process(
-            msg, kwargs
-        )
+        return super(IMAPlibLoggerAdapter, self).process(msg, kwargs)

@@ -21,11 +21,11 @@ CTRL_CHARS = frozenset(c for c in range(32))
 ALL_CHARS = frozenset(c for c in range(256))
 SPECIALS = frozenset(c for c in six.iterbytes(b' ()%"['))
 NON_SPECIALS = ALL_CHARS - SPECIALS - CTRL_CHARS
-WHITESPACE = frozenset(c for c in six.iterbytes(b' \t\r\n'))
+WHITESPACE = frozenset(c for c in six.iterbytes(b" \t\r\n"))
 
-BACKSLASH = ord('\\')
-OPEN_SQUARE = ord('[')
-CLOSE_SQUARE = ord(']')
+BACKSLASH = ord("\\")
+OPEN_SQUARE = ord("[")
+CLOSE_SQUARE = ord("]")
 DOUBLE_QUOTE = ord('"')
 
 
@@ -85,7 +85,7 @@ class Lexer(object):
             for nextchar in stream_i:
                 if nextchar not in whitespace:
                     stream_i.push(nextchar)
-                    break    # done skipping over the whitespace
+                    break  # done skipping over the whitespace
 
             # Non-whitespace
             token = bytearray()
@@ -133,7 +133,6 @@ class Lexer(object):
 # string literal is processed, we peek into this object to grab the
 # literal.
 class LiteralHandlingIter:
-
     def __init__(self, resp_record):
         if isinstance(resp_record, tuple):
             # A 'record' with a string which includes a literal marker, and

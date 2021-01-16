@@ -16,17 +16,18 @@ logger = logging.getLogger(__name__)
 def to_unicode(s):
     if isinstance(s, binary_type):
         try:
-            return s.decode('ascii')
+            return s.decode("ascii")
         except UnicodeDecodeError:
             logger.warning(
                 "An error occurred while decoding %s in ASCII 'strict' mode. Fallback to "
-                "'ignore' errors handling, some characters might have been stripped", s
+                "'ignore' errors handling, some characters might have been stripped",
+                s,
             )
-            return s.decode('ascii', 'ignore')
+            return s.decode("ascii", "ignore")
     return s
 
 
-def to_bytes(s, charset='ascii'):
+def to_bytes(s, charset="ascii"):
     if isinstance(s, text_type):
         return s.encode(charset)
     return s
@@ -42,4 +43,4 @@ def assert_imap_protocol(condition, message=None):
 
 def chunk(lst, size):
     for i in six.moves.range(0, len(lst), size):
-        yield lst[i:i + size]
+        yield lst[i : i + size]

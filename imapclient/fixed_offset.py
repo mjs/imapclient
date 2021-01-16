@@ -19,11 +19,11 @@ class FixedOffset(tzinfo):
     def __init__(self, minutes):
         self.__offset = timedelta(minutes=minutes)
 
-        sign = '+'
+        sign = "+"
         if minutes < 0:
-            sign = '-'
+            sign = "-"
         hours, remaining_mins = divmod(abs(minutes), 60)
-        self.__name = '%s%02d%02d' % (sign, hours, remaining_mins)
+        self.__name = "%s%02d%02d" % (sign, hours, remaining_mins)
 
     def utcoffset(self, _):
         return self.__offset

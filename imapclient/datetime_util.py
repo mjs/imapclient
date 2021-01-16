@@ -10,7 +10,7 @@ from email.utils import parsedate_tz
 
 from .fixed_offset import FixedOffset
 
-_SHORT_MONTHS = ' Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ')
+_SHORT_MONTHS = " Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ")
 
 
 def parse_to_datetime(timestamp, normalise=True):
@@ -50,7 +50,7 @@ def datetime_to_INTERNALDATE(dt):
     """
     if not dt.tzinfo:
         dt = dt.replace(tzinfo=FixedOffset.for_system())
-    fmt = '%d-' + _SHORT_MONTHS[dt.month] + '-%Y %H:%M:%S %z'
+    fmt = "%d-" + _SHORT_MONTHS[dt.month] + "-%Y %H:%M:%S %z"
     return dt.strftime(fmt)
 
 
@@ -60,14 +60,13 @@ _rfc822_dotted_time = re.compile(r"\w+, ?\d{1,2} \w+ \d\d(\d\d)? \d\d?\.\d\d?\.\
 
 
 def _munge(s):
-    s = s.decode('latin-1')  # parsedate_tz only works with strings
+    s = s.decode("latin-1")  # parsedate_tz only works with strings
     if _rfc822_dotted_time.match(s):
         return s.replace(".", ":")
     return s
 
 
 def format_criteria_date(dt):
-    """Format a date or datetime instance for use in IMAP search criteria.
-    """
-    out = '%02d-%s-%d' % (dt.day, _SHORT_MONTHS[dt.month], dt.year)
-    return out.encode('ascii')
+    """Format a date or datetime instance for use in IMAP search criteria."""
+    out = "%02d-%s-%d" % (dt.day, _SHORT_MONTHS[dt.month], dt.year)
+    return out.encode("ascii")

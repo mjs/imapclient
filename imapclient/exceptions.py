@@ -10,15 +10,15 @@ IMAPClientReadOnlyError = imaplib.IMAP4.readonly
 
 
 class CapabilityError(IMAPClientError):
-    """ 
-    The command tried by the user needs a capability not installed 
+    """
+    The command tried by the user needs a capability not installed
     on the IMAP server
     """
 
 
 class LoginError(IMAPClientError):
     """
-    A connection has been established with the server but an error 
+    A connection has been established with the server but an error
     occurred during the authentication.
     """
 
@@ -32,8 +32,8 @@ class IllegalStateError(IMAPClientError):
 
 
 class InvalidCriteriaError(IMAPClientError):
-    """ 
-    A command using a search criteria failed, probably due to a syntax 
+    """
+    A command using a search criteria failed, probably due to a syntax
     error in the criteria string.
     """
 

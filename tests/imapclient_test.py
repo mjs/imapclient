@@ -3,6 +3,5 @@ from .util import unittest
 
 
 class IMAPClientTest(unittest.TestCase):
-
     def setUp(self):
         self.client = IMAPClient()

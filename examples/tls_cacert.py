@@ -5,9 +5,9 @@ import ssl
 
 from imapclient import IMAPClient
 
-HOST = 'imap.host.com'
-USERNAME = 'someuser'
-PASSWORD = 'secret'
+HOST = "imap.host.com"
+USERNAME = "someuser"
+PASSWORD = "secret"
 
 ssl_context = ssl.create_default_context(cafile="/path/to/cacert.pem")
 

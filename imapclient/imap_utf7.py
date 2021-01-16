@@ -4,7 +4,7 @@
 #
 # The main difference is the shift character (used to switch from ASCII to
 # base64 encoding context), which is & in this modified UTF-7 convention,
-# since + is considered as mainly used in mailbox names. 
+# since + is considered as mainly used in mailbox names.
 # Other variations and examples can be found in the RFC 3501, section 5.1.3.
 from __future__ import unicode_literals
 
@@ -31,21 +31,21 @@ def encode(s):
         and surround it with shift characters & and -
         """
         if buf:
-            res.extend(b'&' + base64_utf7_encode(buf) + b'-')
+            res.extend(b"&" + base64_utf7_encode(buf) + b"-")
             del buf[:]
 
     for c in s:
         # printable ascii case should not be modified
         o = ord(c)
-        if 0x20 <= o <= 0x7e:
+        if 0x20 <= o <= 0x7E:
             consume_b64_buffer(b64_buffer)
             # Special case: & is used as shift character so we need to escape it in ASCII
             if o == 0x26:  # & = 0x26
-                res.extend(b'&-')
+                res.extend(b"&-")
             else:
                 res.append(o)
 
-        # Bufferize characters that will be encoded in base64 and append them later 
+        # Bufferize characters that will be encoded in base64 and append them later
         # in the result, when iterating over ASCII character or the end of string
         else:
             b64_buffer.append(c)
@@ -56,8 +56,8 @@ def encode(s):
     return bytes(res)
 
 
-AMPERSAND_ORD = byte2int(b'&')
-DASH_ORD = byte2int(b'-')
+AMPERSAND_ORD = byte2int(b"&")
+DASH_ORD = byte2int(b"-")
 
 
 def decode(s):
@@ -81,7 +81,7 @@ def decode(s):
         elif c == DASH_ORD and b64_buffer:
             # Special case &-, representing "&" escaped
             if len(b64_buffer) == 1:
-                res.append('&')
+                res.append("&")
             else:
                 res.append(base64_utf7_decode(b64_buffer[1:]))
             b64_buffer = bytearray()
@@ -96,14 +96,14 @@ def decode(s):
     if b64_buffer:
         res.append(base64_utf7_decode(b64_buffer[1:]))
 
-    return ''.join(res)
+    return "".join(res)
 
 
 def base64_utf7_encode(buffer):
-    s = ''.join(buffer).encode('utf-16be')
-    return binascii.b2a_base64(s).rstrip(b'\n=').replace(b'/', b',')
+    s = "".join(buffer).encode("utf-16be")
+    return binascii.b2a_base64(s).rstrip(b"\n=").replace(b"/", b",")
 
 
 def base64_utf7_decode(s):
-    s_utf7 = b'+' + s.replace(b',', b'/') + b'-'
-    return s_utf7.decode('utf-7')
+    s_utf7 = b"+" + s.replace(b",", b"/") + b"-"
+    return s_utf7.decode("utf-7")

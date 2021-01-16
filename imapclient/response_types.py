@@ -12,8 +12,12 @@ import six
 from .util import to_unicode
 
 
-class Envelope(namedtuple("Envelope", "date subject from_ sender reply_to to " +
-                          "cc bcc in_reply_to message_id")):
+class Envelope(
+    namedtuple(
+        "Envelope",
+        "date subject from_ sender reply_to to " + "cc bcc in_reply_to message_id",
+    )
+):
     r"""Represents envelope structures of messages. Returned when parsing
     ENVELOPE responses.
 
@@ -81,7 +85,7 @@ class Address(namedtuple("Address", "name route mailbox host")):
 
     def __str__(self):
         if self.mailbox and self.host:
-            address = to_unicode(self.mailbox) + '@' + to_unicode(self.host)
+            address = to_unicode(self.mailbox) + "@" + to_unicode(self.host)
         else:
             address = to_unicode(self.mailbox or self.host)
 

@@ -4,20 +4,21 @@
 
 from __future__ import unicode_literals
 
-version_info = (2, 2, 0, 'alpha')
+version_info = (2, 2, 0, "alpha")
 
 
 def _imapclient_version_string(vinfo):
     major, minor, micro, releaselevel = vinfo
-    v = '%d.%d.%d' % (major, minor, micro)
-    if releaselevel != 'final':
-        v += '-' + releaselevel
+    v = "%d.%d.%d" % (major, minor, micro)
+    if releaselevel != "final":
+        v += "-" + releaselevel
     return v
+
 
 version = _imapclient_version_string(version_info)
 
-maintainer = 'IMAPClient Maintainers'
-maintainer_email = 'imapclient@groups.io'
+maintainer = "IMAPClient Maintainers"
+maintainer_email = "imapclient@groups.io"
 
-author = 'Menno Finlay-Smits'
-author_email = 'inbox@menno.io'
+author = "Menno Finlay-Smits"
+author_email = "inbox@menno.io"

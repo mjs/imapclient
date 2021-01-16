@@ -12,7 +12,6 @@ from .util import Mock, patch, sentinel
 
 
 class TestStarttls(IMAPClientTest):
-
     def setUp(self):
         super(TestStarttls, self).setUp()
 
@@ -29,8 +28,10 @@ class TestStarttls(IMAPClientTest):
         self.client.host = sentinel.host
         self.client.ssl = False
         self.client._starttls_done = False
-        self.client._imap._simple_command.return_value = "OK", [b'start TLS negotiation']
-        self.client._cached_capabilities = [b'STARTTLS']
+        self.client._imap._simple_command.return_value = "OK", [
+            b"start TLS negotiation"
+        ]
+        self.client._cached_capabilities = [b"STARTTLS"]
 
     def test_works(self):
         resp = self.client.starttls(sentinel.ssl_context)
@@ -40,12 +41,12 @@ class TestStarttls(IMAPClientTest):
             sentinel.ssl_context,
             sentinel.host,
         )
-        self.new_sock.makefile.assert_called_once_with('rb')
+        self.new_sock.makefile.assert_called_once_with("rb")
         self.assertEqual(self.client._imap.file, sentinel.file)
-        self.assertEqual(resp, b'start TLS negotiation')
+        self.assertEqual(resp, b"start TLS negotiation")
 
     def test_command_fails(self):
-        self.client._imap._simple_command.return_value = "NO", [b'sorry']
+        self.client._imap._simple_command.return_value = "NO", [b"sorry"]
 
         with self.assertRaises(IMAPClientError) as raised:
             self.client.starttls(sentinel.ssl_context)

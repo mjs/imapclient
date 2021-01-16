@@ -13,8 +13,8 @@ except ImportError:
         from mock import Mock
     except ImportError:
         raise ImportError(
-            'mock library could not be loaded. Please install Python 3.3 or newer '
-            'or install the `mock` third-party package through PyPi.'
+            "mock library could not be loaded. Please install Python 3.3 or newer "
+            "or install the `mock` third-party package through PyPi."
         )
 
 
@@ -28,18 +28,17 @@ class TestableIMAPClient(IMAPClient):
     """
 
     def __init__(self):
-        super(TestableIMAPClient, self).__init__('somehost')
+        super(TestableIMAPClient, self).__init__("somehost")
 
     def _create_IMAP4(self):
         return MockIMAP4()
 
 
 class MockIMAP4(Mock):
-
     def __init__(self, *args, **kwargs):
         super(Mock, self).__init__(*args, **kwargs)
         self.use_uid = True
-        self.sent = b''  # Accumulates what was given to send()
+        self.sent = b""  # Accumulates what was given to send()
         self.tagged_commands = {}
         self._starttls_done = False
 
@@ -47,4 +46,4 @@ class MockIMAP4(Mock):
         self.sent += data
 
     def _new_tag(self):
-        return 'tag'
+        return "tag"

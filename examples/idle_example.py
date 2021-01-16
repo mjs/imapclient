@@ -3,13 +3,13 @@
 
 from imapclient import IMAPClient
 
-HOST = 'imap.host.com'
-USERNAME = 'someuser'
-PASSWORD = 'password'
+HOST = "imap.host.com"
+USERNAME = "someuser"
+PASSWORD = "password"
 
 server = IMAPClient(HOST)
 server.login(USERNAME, PASSWORD)
-server.select_folder('INBOX')
+server.select_folder("INBOX")
 
 # Start IDLE mode
 server.idle()

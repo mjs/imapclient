@@ -14,7 +14,7 @@ import ssl
 
 def wrap_socket(sock, ssl_context, host):
 
-    if not hasattr(ssl, 'create_default_context'):
+    if not hasattr(ssl, "create_default_context"):
         # Python 2.7.0 - 2.7.8 do not have the concept of ssl contexts.
         # Thus we have to use the less flexible and legacy way of wrapping the
         # socket
@@ -50,7 +50,7 @@ class IMAP4_TLS(imaplib.IMAP4):
             (host, port), timeout if timeout is not None else self._timeout
         )
         self.sock = wrap_socket(sock, self.ssl_context, host)
-        self.file = self.sock.makefile('rb')
+        self.file = self.sock.makefile("rb")
 
     def read(self, size):
         return self.file.read(size)
