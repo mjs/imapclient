@@ -25,3 +25,14 @@ project:
 - Thomas Steinacher
 - Zac Witte
 - Hans-Peter Jansen
+- Carson Ip
+- Jonny Hatch
+- Jasper Spaans
+- Fabio Manganiello
+- Samir M
+- Devin Bayer
+- Mantas Mikulėnas
+- zrose584
+- Michał Górny
+- François Deppierraz
+- Jasper Spaans

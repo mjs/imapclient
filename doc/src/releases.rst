@@ -1,6 +1,51 @@
 :tocdepth: 1
 
 ===============
+ Version 2.2.0
+===============
+
+Changed
+-------
+- Performance improvements (thanks Carson Ip!)
+  - 2x faster _maybe_int_to_bytes for Python 2 (#375) 
+  - Fix _proc_folder_list quadratic runtime (#374) 
+  - Faster utf7 encode (#373). ~40% faster for input with a mix of unicode and
+    ASCII chars.
+  - Cache regex in _process_select_response
+- poll() when available to surpass 1024 file descriptor limit with select() (#377) (thanks Jonny Hatch)
+- Use next instead of six.next as imapclient doesn't claim Python 2.5 support. (#396) (thanks Jasper Spaans)
+- Moved "Logged in/out" traces from INFO to DEBUG level (thanks Fabio Manganiello)
+- Run tests on Python 3.8 and 3.9
+- Support the Deleted special folder used by Outlook (thanks Samir M) 
+- Clean up timeout handling
+- Run the Black code formatter over the entire project
+
+Added
+-----
+- MULTIAPPEND and LITERAL+ support (#399) (thanks Devin Bayer)
+- Use ptpython for interactive shell if available (#272)
+- Allow any custom SASL mechanism to be provided. This allows mechanisms such
+  as EXTERNAL, GSSAPI or SCRAM-SHA-256 to be used in the same way as with
+  imaplib. (thanks Mantas Mikulėnas)
+- Add SASL OAUTHBEARER support
+- add optional timeout parameter to IMAP4_TLS.open (thanks zrose584)
+
+Fixed
+-----
+- fixed special folder searching
+- Catch the right exception in folder_status (#371)
+- test_imapclient: Fix LoggerAdapter version check (#383) (thanks Michał Górny)
+- Fix config file parsing for None attributes (#393) (thanks François Deppierraz)
+- Fix useless ref cycle in lexer
+- Protocol parsing: Prevent converting numbers with leading zeroes to int. (#390) (#405) (thanks Jasper Spaans)
+- Prevent UnicodeDecodeError in IMAPlibLoggerAdapter (#367)
+- Fix invalid string escape sequences (#397)
+- Ensure timeout is used on Python 2.7.  _create_socket isn't used with the
+  Python 2 version of imaplib so the open method has been overrided to make it
+  consistent across Python version (#380).
+- Fix IMAP4_TLS for imaplib in Python 3.9+ (thanks Christopher Arndt, marmarek and link2xt) 
+
+===============
  Version 2.1.0
 ===============
 
