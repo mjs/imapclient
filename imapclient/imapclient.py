@@ -294,11 +294,17 @@ class IMAPClient(object):
         if self.stream:
             return imaplib.IMAP4_stream(self.host)
 
-        if self.ssl:
-            return tls.IMAP4_TLS(self.host, self.port, self.ssl_context,
-                                 self._timeout)
+        connect_timeout = getattr(self._timeout, "connect", None)
 
-        return imap4.IMAP4WithTimeout(self.host, self.port, self._timeout)
+        if self.ssl:
+            return tls.IMAP4_TLS(
+                self.host, 
+                self.port, 
+                self.ssl_context,
+                connect_timeout,
+            )
+
+        return imap4.IMAP4WithTimeout(self.host, self.port, connect_timeout)
 
     def _set_read_timeout(self):
         if self._timeout is not None:

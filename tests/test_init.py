@@ -28,16 +28,22 @@ class TestInit(unittest.TestCase):
         imap = IMAPClient('1.2.3.4', ssl=False, timeout=sentinel.timeout)
 
         self.assertEqual(imap._imap, fakeIMAP4)
-        self.imap4.IMAP4WithTimeout.assert_called_with(
-            '1.2.3.4', 143,
-            SocketTimeout(sentinel.timeout, sentinel.timeout)
-        )
+        self.imap4.IMAP4WithTimeout.assert_called_with('1.2.3.4', 143, sentinel.timeout)
         self.assertEqual(imap.host, '1.2.3.4')
         self.assertEqual(imap.port, 143)
         self.assertEqual(imap.ssl, False)
         self.assertEqual(imap.ssl_context, None)
         self.assertEqual(imap.stream, False)
 
+    def test_plain_SocketTimeout(self):
+        fakeIMAP4 = Mock()
+        self.imap4.IMAP4WithTimeout.return_value = fakeIMAP4
+
+        imap = IMAPClient('1.2.3.4', ssl=False, timeout=SocketTimeout(sentinel.connect_timeout, sentinel.timeout))
+
+        self.assertEqual(imap._imap, fakeIMAP4)
+        self.imap4.IMAP4WithTimeout.assert_called_with('1.2.3.4', 143, sentinel.connect_timeout)
+        
     def test_SSL(self):
         fakeIMAP4_TLS = Mock()
         self.tls.IMAP4_TLS.return_value = fakeIMAP4_TLS
@@ -46,16 +52,22 @@ class TestInit(unittest.TestCase):
                           timeout=sentinel.timeout)
 
         self.assertEqual(imap._imap, fakeIMAP4_TLS)
-        self.tls.IMAP4_TLS.assert_called_with(
-            '1.2.3.4', 993,
-            sentinel.context, 
-            SocketTimeout(sentinel.timeout, sentinel.timeout)
-        )
+        self.tls.IMAP4_TLS.assert_called_with('1.2.3.4', 993, sentinel.context, sentinel.timeout)
         self.assertEqual(imap.host, '1.2.3.4')
         self.assertEqual(imap.port, 993)
         self.assertEqual(imap.ssl, True)
         self.assertEqual(imap.ssl_context, sentinel.context)
         self.assertEqual(imap.stream, False)
+
+    def test_SSL_SocketTimeout(self):
+        fakeIMAP4_TLS = Mock()
+        self.tls.IMAP4_TLS.return_value = fakeIMAP4_TLS
+
+        imap = IMAPClient('1.2.3.4', ssl_context=sentinel.context,
+                          timeout=SocketTimeout(sentinel.connect_timeout, sentinel.timeout))
+
+        self.assertEqual(imap._imap, fakeIMAP4_TLS)
+        self.tls.IMAP4_TLS.assert_called_with('1.2.3.4', 993, sentinel.context, sentinel.connect_timeout)
 
     def test_stream(self):
         fakeIMAP4_stream = Mock()

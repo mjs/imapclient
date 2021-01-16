@@ -43,7 +43,7 @@ class IMAP4_TLS(imaplib.IMAP4):
         self._timeout = timeout
         imaplib.IMAP4.__init__(self, host, port)
 
-    def open(self, host, port, timeout=None):
+    def open(self, host, port=993, timeout=None):
         self.host = host
         self.port = port
         sock = socket.create_connection(
