@@ -1,3 +1,6 @@
+# List number of messages in INBOX folder
+# and print details of the messages that are not deleted
+
 from imapclient import IMAPClient
 
 HOST = "imap.host.com"
