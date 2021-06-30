@@ -10,7 +10,7 @@ License                    New BSD
 Project home               https://github.com/mjs/imapclient/
 PyPI                       https://pypi.python.org/pypi/IMAPClient
 Documentation              https://imapclient.readthedocs.io/
-Discussions  `             https://github.com/mjs/imapclient/discussions
+Discussions                https://github.com/mjs/imapclient/discussions
 Mailing list               https://groups.io/g/imapclient
 =========================  ========================================
 
