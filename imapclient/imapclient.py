@@ -11,6 +11,7 @@ import select
 import socket
 import sys
 import re
+import warnings
 from collections import namedtuple
 from datetime import datetime, date
 from operator import itemgetter
@@ -329,10 +330,26 @@ class IMAPClient(object):
 
     def _set_read_timeout(self):
         if self._timeout is not None:
-            self._sock.settimeout(self._timeout.read)
+            self.socket().settimeout(self._timeout.read)
 
     @property
     def _sock(self):
+        warnings.warn("_sock is deprecated. Use socket().", DeprecationWarning)
+        return self.socket()
+
+    def socket(self):
+        """Returns socket used to connect to server.
+
+        The socket is provided for polling purposes only.
+        It can be used in,
+        for example, :py:meth:`selectors.BaseSelector.register`
+        and :py:meth:`asyncio.loop.add_reader` to wait for data.
+
+        .. WARNING::
+           All other uses of the returned socket are unsupported.
+           This includes reading from and writing to the socket,
+           as they are likely to break internal bookkeeping of messages.
+        """
         # In py2, imaplib has sslobj (for SSL connections), and sock for non-SSL.
         # In the py3 version it's just sock.
         return getattr(self._imap, "sslobj", self._imap.sock)
@@ -919,7 +936,7 @@ class IMAPClient(object):
              (1, b'EXISTS'),
              (1, b'FETCH', (b'FLAGS', (b'\\NotJunk',)))]
         """
-        sock = self._sock
+        sock = self.socket()
 
         # make the socket non-blocking so the timeout can be
         # implemented for this call
