@@ -1,0 +1,37 @@
+name: build
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "2.7"
+          - "3.4"
+          - "3.5"
+          - "3.6"
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "pypy2"
+          - "pypy3"
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Print Python version under test
+      run: python --version
+    - name: Install test dependencies
+      run: python -m pip install --editable .[test]
+    - name: Test
+      run: python setup.py test
