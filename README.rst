@@ -18,16 +18,11 @@ Test Status
 ~~~~~~~~~~~
 
 ===================== ==============
-``1.x`` unit tests    |build 1.x|
 ``master`` unit tests |build master|
 ===================== ==============
 
-.. |build 1.x| image:: https://travis-ci.org/mjs/imapclient.svg?branch=1.x
-    :target: https://travis-ci.org/mjs/imapclient/branches
-    :alt: 1.x branch
-
-.. |build master| image:: https://travis-ci.org/mjs/imapclient.svg?branch=master
-   :target: https://travis-ci.org/mjs/imapclient/branches
+.. |build master| image:: https://github.com/mjs/imapclient/actions/workflows/main.yml/badge.svg
+   :target: https://github.com/mjs/imapclient/actions
    :alt: master branch
 
 
