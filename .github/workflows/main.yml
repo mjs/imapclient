@@ -34,4 +34,4 @@ jobs:
     - name: Install test dependencies
       run: python -m pip install --editable .[test]
     - name: Test
-      run: python setup.py test
+      run: python -m unittest --verbose
