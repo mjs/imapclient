@@ -585,7 +585,7 @@ class TestIdleAndNoop(IMAPClientTest):
 
     @patch("imapclient.imapclient.POLL_SUPPORT", True)
     @patch("imapclient.imapclient.select.poll")
-    def test_idle_check_blocking(self, mock_poll_module):
+    def test_idle_check_blocking_poll(self, mock_poll_module):
         mock_sock = Mock(fileno=Mock(return_value=1))
         self.client._imap.sock = self.client._imap.sslobj = mock_sock
 
@@ -614,7 +614,7 @@ class TestIdleAndNoop(IMAPClientTest):
 
     @patch("imapclient.imapclient.POLL_SUPPORT", True)
     @patch("imapclient.imapclient.select.poll")
-    def test_idle_check_timeout(self, mock_poll_module):
+    def test_idle_check_timeout_poll(self, mock_poll_module):
         mock_sock = Mock(fileno=Mock(return_value=1))
         self.client._imap.sock = self.client._imap.sslobj = mock_sock
 
@@ -631,7 +631,7 @@ class TestIdleAndNoop(IMAPClientTest):
 
     @patch("imapclient.imapclient.POLL_SUPPORT", True)
     @patch("imapclient.imapclient.select.poll")
-    def test_idle_check_with_data(self, mock_poll_module):
+    def test_idle_check_with_data_poll(self, mock_poll_module):
         mock_sock = Mock(fileno=Mock(return_value=1))
         self.client._imap.sock = self.client._imap.sslobj = mock_sock
 
