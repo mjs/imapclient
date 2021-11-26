@@ -448,13 +448,13 @@ class IMAPClient(object):
         zero-length challenge.)
 
         For example, PLAIN has just one step with empty challenge, so a handler
-        might look like this:
+        might look like this::
 
             plain_mech = lambda _: "\\0%s\\0%s" % (username, password)
 
             imap.sasl_login("PLAIN", plain_mech)
 
-        A more complex but still stateless handler might look like this:
+        A more complex but still stateless handler might look like this::
 
             def example_mech(challenge):
                 if challenge == b"Username:"
@@ -466,7 +466,7 @@ class IMAPClient(object):
 
             imap.sasl_login("EXAMPLE", example_mech)
 
-        A stateful handler might look like this:
+        A stateful handler might look like this::
 
             class ScramSha256SaslMechanism():
                 def __init__(self, username, password):
@@ -1066,7 +1066,7 @@ class IMAPClient(object):
         To support complex search expressions, criteria lists can be
         nested. IMAPClient will insert parentheses in the right
         places. The following will match messages that are both not
-        flagged and do not have "foo" in the subject:
+        flagged and do not have "foo" in the subject::
 
             ['NOT', ['SUBJECT', 'foo', 'FLAGGED']]
 
