@@ -356,26 +356,26 @@ greatly speeds up parsing time.
 
 Other
 -----
-  * Perform quoting of Gmail labels. Thanks to Pawel Sz for the fix.
-  * The type of the various flag constants was fixed. Thanks to Thomi
-    Richards for pointing this out.
-  * Now using mock 1.3.0. Thanks to Thomi Richards for the patch.
-  * Fixed handling of very long numeric only folder names. Thanks to
-    Paweł Gorzelany for the patch.
-  * The default charset for gmail_search is now UTF-8. This makes it
-    easier to use any unicode string as a search string and is safe
-    because Gmail supports UTF-8 search criteria.
-  * PEP8 compliance fixed (except for some occasional long lines)
-  * Added a "shutdown" method.
-  * The embedded six package has been removed in favour of using an
-    externally installed instance.
-  * Fixed handling of literals in STATUS responses.
-  * Only use the untagged post-login CAPABILITY response once (if sent
-    by server).
-  * Release history made part of the main documentation.
-  * Clarified how message ids work in the docs.
-  * Livetest infrastructure now works with Yahoo's OAUTH2
-  * Fixed bytes handling in Address.__str__
+- Perform quoting of Gmail labels. Thanks to Pawel Sz for the fix.
+- The type of the various flag constants was fixed. Thanks to Thomi
+  Richards for pointing this out.
+- Now using mock 1.3.0. Thanks to Thomi Richards for the patch.
+- Fixed handling of very long numeric only folder names. Thanks to
+  Paweł Gorzelany for the patch.
+- The default charset for gmail_search is now UTF-8. This makes it
+  easier to use any unicode string as a search string and is safe
+  because Gmail supports UTF-8 search criteria.
+- PEP8 compliance fixed (except for some occasional long lines)
+- Added a "shutdown" method.
+- The embedded six package has been removed in favour of using an
+  externally installed instance.
+- Fixed handling of literals in STATUS responses.
+- Only use the untagged post-login CAPABILITY response once (if sent
+  by server).
+- Release history made part of the main documentation.
+- Clarified how message ids work in the docs.
+- Livetest infrastructure now works with Yahoo's OAUTH2
+- Fixed bytes handling in Address.__str__
 
 ==============
  Version 0.13
@@ -412,10 +412,10 @@ IMAPClient package.
 
 Other
 -----
-  * The docs for various IMAPClient methods, and the HACKING.rst file
-    have been updated.
-  * CONDSTORE live test is now more reliable (especially when running
-    against Gmail)
+- The docs for various IMAPClient methods, and the HACKING.rst file
+  have been updated.
+- CONDSTORE live test is now more reliable (especially when running
+  against Gmail)
 
 ==============
  Version 0.12
