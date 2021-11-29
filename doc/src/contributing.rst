@@ -45,7 +45,7 @@ Running Unit Tests
 ------------------
 To run the tests, from the root of the package source run::
 
-     python setup.py test
+    python -m unittest --verbose
 
 Testing Against Multiple Python Versions
 ----------------------------------------
