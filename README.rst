@@ -12,19 +12,12 @@ PyPI                       https://pypi.python.org/pypi/IMAPClient
 Documentation              https://imapclient.readthedocs.io/
 Discussions                https://github.com/mjs/imapclient/discussions
 Mailing list               https://groups.io/g/imapclient
+Test Status                |build master|
 =========================  ========================================
-
-Test Status
-~~~~~~~~~~~
-
-===================== ==============
-``master`` unit tests |build master|
-===================== ==============
 
 .. |build master| image:: https://github.com/mjs/imapclient/actions/workflows/main.yml/badge.svg
    :target: https://github.com/mjs/imapclient/actions
    :alt: master branch
-
 
 Features
 --------
