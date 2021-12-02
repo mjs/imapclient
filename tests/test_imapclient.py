@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import itertools
 import socket
 import sys
+import warnings
 from datetime import datetime
 import logging
 
@@ -1055,3 +1056,12 @@ class TestProtocolError(IMAPClientTest):
 
         with self.assertRaises(ProtocolError):
             client._consume_until_tagged_response(sentinel.tag, b"IDLE")
+
+class TestSocket(IMAPClientTest):
+    def test_issues_warning_for_deprecating_sock_property(self):
+        mock_sock = Mock()
+        self.client._imap.sock = self.client._imap.sslobj = mock_sock
+        with warnings.catch_warnings(record=True) as warnings_caught:
+            warnings.simplefilter("always", DeprecationWarning)
+            assert self.client._sock == self.client.socket()
+            assert len(warnings_caught) == 1
