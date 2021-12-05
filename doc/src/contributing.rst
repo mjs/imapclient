@@ -49,16 +49,28 @@ To run the tests, from the root of the package source run::
 
 Testing Against Multiple Python Versions
 ----------------------------------------
-When submitting a Pull Request to IMAPClient, tests are automatically ran
+When submitting a Pull Request to IMAPClient, tests are automatically run
 against all the supported Python versions.
 
-It is possible to locally run these tests using `tox`_. Once
+It is possible to run these tests locally using `tox`_. Once
 installed, the ``tox`` command will use the tox.ini file in the root
 of the project source and run the unit tests against the Python
 versions officially supported by IMAPClient (provided these versions
 of Python are installed!).
 
 .. _`tox`: http://testrun.org/tox/
+
+To avoid having to install all Python versions directly on a host, the
+``tox-all`` script can be used. It will run the unit tests inside a Docker
+container which contains all supported Python versions. As long as Docker is
+installed and your user account can sudo to root the following should work::
+
+    ./tox-all
+
+The script passes any arguments on to tox. For example to run just the tests
+just against Python 3.7 do::
+
+    ./tox-all -e py37
 
 Writing Unit Tests
 ------------------
