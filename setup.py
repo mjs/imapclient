@@ -54,8 +54,7 @@ setup(
     author_email=info["author_email"],
     license="http://en.wikipedia.org/wiki/BSD_licenses",
     url="https://github.com/mjs/imapclient/",
-    download_url="http://menno.io/projects/IMAPClient/IMAPClient-%s.zip"
-    % info["version"],
+    download_url="http://menno.io/projects/IMAPClient/IMAPClient-%s.zip" % info["version"],
     packages=["imapclient"],
     package_data=dict(imapclient=["examples/*.py"]),
     install_requires=main_deps,

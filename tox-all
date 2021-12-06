@@ -1,0 +1,3 @@
+#!/bin/sh
+
+sudo docker run -v $(pwd):/mnt --rm -it docker.io/fkrull/multi-python:bionic bash -c "cd /mnt; tox $*"
