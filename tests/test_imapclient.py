@@ -379,6 +379,35 @@ class TestAppend(IMAPClientTest):
             b"APPEND", [b'"foobar"', b"msg1", b"msg2"], uid=False
         )
 
+    def test_multiappend_with_flags_and_internaldate(self):
+        self.client._cached_capabilities = (b"MULTIAPPEND",)
+        self.client._raw_command = Mock()
+        self.client.multiappend("foobar", [
+            {
+                "msg": "msg1",
+                "flags": ["FLAG", "WAVE"],
+                "date": datetime(2009, 4, 5, 11, 0, 5, 0, FixedOffset(2 * 60)),
+            },
+            {
+                "msg": "msg2",
+                "flags": ["FLAG", "WAVE"],
+            },
+            {
+                "msg": "msg3",
+                "date": datetime(2009, 4, 5, 11, 0, 5, 0, FixedOffset(2 * 60)),
+            }])
+
+        self.client._raw_command.assert_called_once_with(
+            b"APPEND", [b'"foobar"',
+                        b'(FLAG WAVE)',
+                        b'"05-Apr-2009 11:00:05 +0200"',
+                        _literal(b"msg1"),
+                        b'(FLAG WAVE)',
+                        _literal(b"msg2"),
+                        b'"05-Apr-2009 11:00:05 +0200"',
+                        _literal(b"msg3")], uid=False
+        )
+
 
 class TestAclMethods(IMAPClientTest):
     def setUp(self):
@@ -974,6 +1003,19 @@ class TestRawCommand(IMAPClientTest):
         self.assertEqual(
             self.client._imap.sent,
             b"tag APPEND {1+}\r\n" b"\xff  {5+}\r\n" b"hello\r\n",
+        )
+
+    def test_literal_plus_multiple_literals(self):
+        self.client._cached_capabilities = (b"LITERAL+",)
+
+        typ, data = self.client._raw_command(
+            b"APPEND", [b"\xff", _literal(b"hello"), b"TEXT", _literal(b"test")], uid=False
+        )
+        self.assertEqual(typ, "OK")
+        self.assertEqual(data, ["done"])
+        self.assertEqual(
+            self.client._imap.sent,
+            b"tag APPEND {1+}\r\n" b"\xff  {5+}\r\n" b"hello" b" TEXT {4+}\r\n" b"test\r\n",
         )
 
     def test_complex(self):
