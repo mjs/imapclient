@@ -1429,7 +1429,18 @@ class IMAPClient(object):
 
         Returns the APPEND response from the server.
         """
-        msgs = [_literal(to_bytes(m)) for m in msgs]
+        def chunks():
+            for m in msgs:
+                if isinstance(m, dict):
+                    if "flags" in m:
+                        yield to_bytes(seq_to_parenstr(m["flags"]))
+                    if "date" in m:
+                        yield to_bytes('"%s"' % datetime_to_INTERNALDATE(m["date"]))
+                    yield _literal(to_bytes(m["msg"]))
+                else:
+                    yield _literal(to_bytes(m))
+
+        msgs = list(chunks())
 
         return self._raw_command(
             b"APPEND",
