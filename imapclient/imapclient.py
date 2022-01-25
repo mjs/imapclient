@@ -1424,8 +1424,11 @@ class IMAPClient(object):
     def multiappend(self, folder, msgs):
         """Append messages to *folder* using the MULTIAPPEND feature from :rfc:`3502`.
 
-        *msgs* should be a list of strings containing the full message including
-        headers.
+        *msgs* must be an iterable. Each item must be either a string containing the
+        full message including headers, or a dict containing the keys "msg" with the
+        full message as before, "flags" with a sequence of message flags to set, and
+        "date" with a datetime instance specifying the internal date to set.
+        The keys "flags" and "date" are optional.
 
         Returns the APPEND response from the server.
         """
