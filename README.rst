@@ -11,7 +11,6 @@ Project home               https://github.com/mjs/imapclient/
 PyPI                       https://pypi.python.org/pypi/IMAPClient
 Documentation              https://imapclient.readthedocs.io/
 Discussions                https://github.com/mjs/imapclient/discussions
-Mailing list               https://groups.io/g/imapclient
 Test Status                |build master|
 =========================  ========================================
 
@@ -97,8 +96,7 @@ examples of how to use IMAPClient.
 
 Current Status
 --------------
-You should feel confident using IMAPClient for production
-purposes. Any problems found will be fixed quickly once reported.
+You should feel confident using IMAPClient for production purposes. 
 
 In order to clearly communicate version compatibility, IMAPClient
 will strictly adhere to the `Semantic Versioning <http://semver.org>`_
@@ -111,26 +109,12 @@ tracker on Github. The maintainers also blog about IMAPClient
 news. Those articles can be found `here
 <http://menno.io/tags/imapclient>`_.
 
-Mailing List
-------------
-The IMAPClient mailing list can be used to ask IMAPClient related
-questions and report bugs. Details of new releases and project changes
-will also be announced there.
+Discussions
+-----------
+`Github Discussions`_ can be used to ask questions, propose changes or praise
+the project maintainers :)
 
-The mailing list is hosted at `Groups.io
-<http://groups.io>`_. Interaction via both email and the web is
-supported. To join the list, see the list archives or just find out
-more, visit https://groups.io/g/imapclient. The key details of the
-list are:
-
-* Post: imapclient@groups.io
-* Subscribe: imapclient+subscribe@groups.io
-* Unsubscribe: imapclient+unsubscribe@groups.io
-* Web: https://groups.io/g/imapclient
-* Web archives: https://groups.io/g/imapclient/messages
-
-If you're having trouble using the mailing list, please email
-inbox@menno.io.
+.. _`Github Discussions`: https://github.com/mjs/imapclient/discussions
 
 Working on IMAPClient
 ---------------------
@@ -181,7 +165,7 @@ limits its activity to a folder it creates and subfolders of that
 folder. It *should* be safe to use with any IMAP account but please
 don't run livetest against a truly important IMAP account.
 
-Please send the output of livetest.py to the mailing list if it fails
+Please include the output of livetest.py with an issue if it fails
 to run successfully against a particular IMAP server. Reports of
 successful runs are also welcome.  Please include the type and version
 of the IMAP server, if known.

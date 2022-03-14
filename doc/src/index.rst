@@ -10,7 +10,7 @@
 :Source code: https://github.com/mjs/imapclient
 :Documentation: http://imapclient.readthedocs.io/
 :License: `New BSD License <http://en.wikipedia.org/wiki/BSD_licenses>`_
-:Support: `Mailing List <https://groups.io/g/imapclient>`_
+:Forum/Support: https://github.com/mjs/imapclient/discussions
 
 Introduction
 ------------

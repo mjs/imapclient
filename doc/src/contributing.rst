@@ -6,8 +6,8 @@ The best way to contribute changes to IMAPClient is to fork the
 official repository on Github, make changes in a branch in your
 personal fork and then submit a pull request.
 
-Discussion on the mailing list before undertaking development is
-highly encouraged for potentially major changes.
+Discussion `on Github`_ before undertaking development is highly 
+encouraged for potentially major changes.
 
 Although not essential, it will make the project maintainers much
 happier if change submissions include appropriate updates to unit
@@ -15,6 +15,8 @@ tests, live tests and documentation. Please ask if you're unsure how
 of how the tests work.
 
 Please read on if you plan on submitting changes to IMAPClient.
+
+.. _`on Github`: https://github.com/mjs/imapclient/discussions
 
 Source Code
 ===========
