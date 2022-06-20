@@ -102,13 +102,6 @@ When constructing a custom context it is usually best to start with
 the default context, created by the ``ssl`` module, and modify it to
 suit your needs.
 
-.. warning::
-
-  Users of Python 2.7.0 - 2.7.8 can use TLS but cannot configure
-  the settings via an ``ssl.SSLContext``. These Python versions are
-  also not capable of proper certification verification. It is highly
-  encouraged to upgrade to a more recent version of Python.
-
 The following example shows how to to disable certification
 verification and certificate host name checks if required.
 

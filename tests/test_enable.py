@@ -2,13 +2,11 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from __future__ import unicode_literals
-
+from unittest.mock import Mock
 
 from imapclient import IMAPClient
 from imapclient.exceptions import IllegalStateError
 from .imapclient_test import IMAPClientTest
-from .util import Mock
 
 
 class TestEnable(IMAPClientTest):

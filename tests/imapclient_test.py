@@ -1,5 +1,5 @@
 from imapclient.testable_imapclient import TestableIMAPClient as IMAPClient
-from .util import unittest
+import unittest
 
 
 class IMAPClientTest(unittest.TestCase):

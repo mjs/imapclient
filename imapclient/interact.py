@@ -4,13 +4,8 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from __future__ import unicode_literals
-
-
 from getpass import getpass
 from optparse import OptionParser
-
-from six import iteritems
 
 from .config import parse_config_file, create_client_from_config, get_config_defaults
 
@@ -93,7 +88,7 @@ def command_line():
         # Scan through options, filling in defaults and prompting when
         # a compulsory option wasn't provided.
         compulsory_opts = ("host", "username", "password")
-        for name, default_value in iteritems(get_config_defaults()):
+        for name, default_value in get_config_defaults().items():
             value = getattr(opts, name, default_value)
             if name in compulsory_opts and value is None:
                 value = getpass(name + ": ")

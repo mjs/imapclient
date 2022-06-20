@@ -2,12 +2,9 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from __future__ import unicode_literals
-
-from six import text_type, binary_type, int2byte, unichr
+import unittest
 
 from imapclient.imap_utf7 import decode, encode
-from tests.util import unittest
 
 
 class IMAP4UTF7TestCase(unittest.TestCase):
@@ -30,13 +27,13 @@ class IMAP4UTF7TestCase(unittest.TestCase):
     def test_encode(self):
         for (input, output) in self.tests:
             encoded = encode(input)
-            self.assertIsInstance(encoded, binary_type)
+            self.assertIsInstance(encoded, bytes)
             self.assertEqual(encoded, output)
 
     def test_decode(self):
         for (input, output) in self.tests:
             decoded = decode(output)
-            self.assertIsInstance(decoded, text_type)
+            self.assertIsInstance(decoded, str)
             self.assertEqual(input, decoded)
 
     def test_printable_singletons(self):
@@ -46,8 +43,8 @@ class IMAP4UTF7TestCase(unittest.TestCase):
         """
         # All printables represent themselves
         for o in list(range(0x20, 0x26)) + list(range(0x27, 0x7F)):
-            self.assertEqual(int2byte(o), encode(unichr(o)))
-            self.assertEqual(unichr(o), decode(int2byte(o)))
+            self.assertEqual(bytes((o,)), encode(chr(o)))
+            self.assertEqual(chr(o), decode(bytes((o,))))
         self.assertEqual(encode("&"), b"&-")
         self.assertEqual(encode("&"), b"&-")
         self.assertEqual(decode(b"&-"), "&")

@@ -9,19 +9,15 @@ Although Lexer does all the work, TokenSource is the class to use for
 external callers.
 """
 
-from __future__ import unicode_literals
-
-import six
-
 from .util import assert_imap_protocol
 
 __all__ = ["TokenSource"]
 
 CTRL_CHARS = frozenset(c for c in range(32))
 ALL_CHARS = frozenset(c for c in range(256))
-SPECIALS = frozenset(c for c in six.iterbytes(b' ()%"['))
+SPECIALS = frozenset(c for c in b' ()%"[')
 NON_SPECIALS = ALL_CHARS - SPECIALS - CTRL_CHARS
-WHITESPACE = frozenset(c for c in six.iterbytes(b" \t\r\n"))
+WHITESPACE = frozenset(c for c in b" \t\r\n")
 
 BACKSLASH = ord("\\")
 OPEN_SQUARE = ord("[")
@@ -146,7 +142,7 @@ class LiteralHandlingIter:
             self.literal = None
 
     def __iter__(self):
-        return PushableIterator(six.iterbytes(self.src_text))
+        return PushableIterator(self.src_text)
 
 
 class PushableIterator(object):

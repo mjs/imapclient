@@ -2,8 +2,6 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from __future__ import unicode_literals
-
 import functools
 import imaplib
 import itertools
@@ -17,8 +15,6 @@ from datetime import datetime, date
 from operator import itemgetter
 from logging import LoggerAdapter, getLogger
 
-from six import moves, iteritems, text_type, integer_types, PY3, binary_type, iterbytes
-
 from . import exceptions
 from . import imap4
 from . import response_lexer
@@ -28,8 +24,6 @@ from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .response_parser import parse_response, parse_message_list, parse_fetch_response
 from .util import to_bytes, to_unicode, assert_imap_protocol, chunk
 
-xrange = moves.xrange
-
 try:
     from select import poll
 
@@ -37,9 +31,6 @@ try:
 except:
     # Fallback to select() on systems that don't support poll()
     POLL_SUPPORT = False
-
-if PY3:
-    long = int  # long is just int in python3
 
 
 logger = getLogger(__name__)
@@ -744,11 +735,11 @@ class IMAPClient(object):
         ret = []
         parsed = parse_response(folder_data)
         for flags, delim, name in chunk(parsed, size=3):
-            if isinstance(name, (int, long)):
+            if isinstance(name, int):
                 # Some IMAP implementations return integer folder names
                 # with quotes. These get parsed to ints so convert them
                 # back to strings.
-                name = text_type(name)
+                name = str(name)
             elif self.folder_encode:
                 name = decode_utf7(name)
 
@@ -838,7 +829,7 @@ class IMAPClient(object):
                 if key == b"PERMANENTFLAGS":
                     out[key] = tuple(match.group("data").split())
 
-        for key, value in iteritems(untagged):
+        for key, value in untagged.items():
             key = key.upper()
             if key in (b"OK", b"PERMANENTFLAGS"):
                 continue  # already handled above
@@ -1190,7 +1181,7 @@ class IMAPClient(object):
         ]
         args.extend(_normalise_search_criteria(criteria, charset))
         ids = self._raw_command_untagged(b"SORT", args, unpack=True)
-        return [long(i) for i in ids.split()]
+        return [int(i) for i in ids.split()]
 
     def thread(self, algorithm="REFERENCES", criteria="ALL", charset="UTF-8"):
         """Return a list of messages threads from the currently
@@ -1276,7 +1267,7 @@ class IMAPClient(object):
         response = self.fetch(messages, [b"X-GM-LABELS"])
         response = self._filter_fetch_dict(response, b"X-GM-LABELS")
         return {
-            msg: utf7_decode_sequence(labels) for msg, labels in iteritems(response)
+            msg: utf7_decode_sequence(labels) for msg, labels in response.items()
         }
 
     def add_gmail_labels(self, messages, labels, silent=False):
@@ -1405,10 +1396,7 @@ class IMAPClient(object):
         """
         if msg_time:
             time_val = '"%s"' % datetime_to_INTERNALDATE(msg_time)
-            if PY3:
-                time_val = to_unicode(time_val)
-            else:
-                time_val = to_bytes(time_val)
+            time_val = to_unicode(time_val)
         else:
             time_val = None
         return self._command_and_check(
@@ -1528,7 +1516,7 @@ class IMAPClient(object):
         data = self._command_and_check("getacl", self._normalise_folder(folder))
         parts = list(response_lexer.TokenSource(data))
         parts = parts[1:]  # First item is folder name
-        return [(parts[i], parts[i + 1]) for i in xrange(0, len(parts), 2)]
+        return [(parts[i], parts[i + 1]) for i in range(0, len(parts), 2)]
 
     @require_capability("ACL")
     def setacl(self, folder, who, what):
@@ -1730,8 +1718,7 @@ class IMAPClient(object):
         assert not kwargs, "unexpected keyword args: " + ", ".join(kwargs)
 
         if uid and self.use_uid:
-            if PY3:
-                command = to_unicode(command)  # imaplib must die
+            command = to_unicode(command)  # imaplib must die
             typ, data = self._imap.uid(command, *args)
         else:
             meth = getattr(self._imap, to_unicode(command))
@@ -1749,7 +1736,7 @@ class IMAPClient(object):
             cmd, messages, self._normalise_labels(labels), b"X-GM-LABELS", silent=silent
         )
         return (
-            {msg: utf7_decode_sequence(labels) for msg, labels in iteritems(response)}
+            {msg: utf7_decode_sequence(labels) for msg, labels in response.items()}
             if response
             else None
         )
@@ -1772,17 +1759,17 @@ class IMAPClient(object):
         return self._filter_fetch_dict(parse_fetch_response(data), fetch_key)
 
     def _filter_fetch_dict(self, fetch_dict, key):
-        return dict((msgid, data[key]) for msgid, data in iteritems(fetch_dict))
+        return dict((msgid, data[key]) for msgid, data in fetch_dict.items())
 
     def _normalise_folder(self, folder_name):
-        if isinstance(folder_name, binary_type):
+        if isinstance(folder_name, bytes):
             folder_name = folder_name.decode("ascii")
         if self.folder_encode:
             folder_name = encode_utf7(folder_name)
         return _quote(folder_name)
 
     def _normalise_labels(self, labels):
-        if isinstance(labels, (text_type, binary_type)):
+        if isinstance(labels, (str, bytes)):
             labels = (labels,)
         return [_quote(encode_utf7(l)) for l in labels]
 
@@ -1796,7 +1783,7 @@ class IMAPClient(object):
 
 
 def _quote(arg):
-    if isinstance(arg, text_type):
+    if isinstance(arg, str):
         arg = arg.replace("\\", "\\\\")
         arg = arg.replace('"', '\\"')
         q = '"'
@@ -1813,7 +1800,7 @@ def _normalise_search_criteria(criteria, charset=None):
     if not charset:
         charset = "us-ascii"
 
-    if isinstance(criteria, (text_type, binary_type)):
+    if isinstance(criteria, (str, bytes)):
         return [to_bytes(criteria, charset)]
 
     out = []
@@ -1834,7 +1821,7 @@ def _normalise_search_criteria(criteria, charset=None):
 
 
 def _normalise_sort_criteria(criteria, charset=None):
-    if isinstance(criteria, (text_type, binary_type)):
+    if isinstance(criteria, (str, bytes)):
         criteria = [criteria]
     return b"(" + b" ".join(to_bytes(item).upper() for item in criteria) + b")"
 
@@ -1845,7 +1832,7 @@ class _literal(bytes):
     pass
 
 
-class _quoted(binary_type):
+class _quoted(bytes):
     """
     This class holds a quoted bytes value which provides access to the
     unquoted value via the *original* attribute.
@@ -1892,7 +1879,7 @@ def _join_and_paren(items):
 
 
 def _normalise_text_list(items):
-    if isinstance(items, (text_type, binary_type)):
+    if isinstance(items, (str, bytes)):
         items = (items,)
     return (to_unicode(c) for c in items)
 
@@ -1901,14 +1888,14 @@ def join_message_ids(messages):
     """Convert a sequence of messages ids or a single integer message id
     into an id byte string for use with IMAP commands
     """
-    if isinstance(messages, (text_type, binary_type, integer_types)):
+    if isinstance(messages, (str, bytes, int)):
         messages = (to_bytes(messages),)
     return b",".join(_maybe_int_to_bytes(m) for m in messages)
 
 
 def _maybe_int_to_bytes(val):
-    if isinstance(val, integer_types):
-        return str(val).encode("us-ascii") if PY3 else str(val)
+    if isinstance(val, int):
+        return str(val).encode("us-ascii")
     return to_bytes(val)
 
 
@@ -1943,7 +1930,7 @@ def as_triplets(items):
 
 
 def _is8bit(data):
-    return isinstance(data, _literal) or any(b > 127 for b in iterbytes(data))
+    return isinstance(data, _literal) or any(b > 127 for b in data)
 
 
 def _iter_with_last(items):
@@ -1964,7 +1951,7 @@ class _dict_bytes_normaliser(object):
         self._d = d
 
     def iteritems(self):
-        for key, value in iteritems(self._d):
+        for key, value in self._d.items():
             yield to_bytes(key), value
 
     # For Python 3 compatibility.
@@ -1998,7 +1985,7 @@ class _dict_bytes_normaliser(object):
 
     def _gen_keys(self, k):
         yield k
-        if isinstance(k, binary_type):
+        if isinstance(k, bytes):
             yield to_unicode(k)
         else:
             yield to_bytes(k)
@@ -2037,7 +2024,7 @@ class IMAPlibLoggerAdapter(LoggerAdapter):
     def process(self, msg, kwargs):
         # msg is usually unicode but see #367. Convert bytes to
         # unicode if required.
-        if isinstance(msg, binary_type):
+        if isinstance(msg, bytes):
             msg = msg.decode("ascii", "ignore")
 
         for command in ("LOGIN", "AUTHENTICATE"):

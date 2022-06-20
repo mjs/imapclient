@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright (c) 2017, Menno Smits
 # Released subject to the New BSD License
@@ -9,17 +9,11 @@ from os import path
 
 from setuptools import setup
 
-MAJ_MIN_MIC = sys.version_info[:3]
-IS_PY3 = MAJ_MIN_MIC >= (3, 0, 0)
-
 # Read version info
 here = path.dirname(__file__)
 version_file = path.join(here, "imapclient", "version.py")
 info = {}
-if IS_PY3:
-    exec(open(version_file).read(), {}, info)
-else:
-    execfile(version_file, {}, info)
+exec(open(version_file).read(), {}, info)
 
 desc = """\
 IMAPClient is an easy-to-use, Pythonic and complete IMAP client library.
@@ -33,14 +27,12 @@ Features:
     * Convenience methods are provided for commonly used functionality.
     * Exceptions are raised when errors occur.
 
-Python versions 2.7 and 3.4 through 3.9 are officially supported.
+Python versions 3.4 through 3.9 are officially supported.
 
 IMAPClient includes comprehensive units tests and automated
 functional tests that can be run against a live IMAP server.
 """
 
-main_deps = ["six"]
-test_deps = ['mock>=1.3.0; python_version < "3.4"']
 doc_deps = ["sphinx"]
 
 setup(
@@ -57,10 +49,9 @@ setup(
     download_url="http://menno.io/projects/IMAPClient/IMAPClient-%s.zip" % info["version"],
     packages=["imapclient"],
     package_data=dict(imapclient=["examples/*.py"]),
-    install_requires=main_deps,
-    tests_require=test_deps,
-    extras_require={"test": test_deps, "doc": doc_deps},
+    extras_require={"doc": doc_deps},
     long_description=desc,
+    python_requires=">=3.4.0",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",

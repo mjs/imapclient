@@ -6,9 +6,9 @@
 Unit tests for the FetchTokeniser and FetchParser classes
 """
 
-from __future__ import unicode_literals
-
+import unittest
 from datetime import datetime
+from unittest.mock import patch
 
 from imapclient.datetime_util import datetime_to_native
 from imapclient.fixed_offset import FixedOffset
@@ -19,8 +19,6 @@ from imapclient.response_parser import (
 )
 from imapclient.response_types import Envelope, Address
 from imapclient.exceptions import ProtocolError
-from tests.util import unittest
-from .util import patch
 
 # TODO: test invalid dates and times
 

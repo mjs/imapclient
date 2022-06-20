@@ -5,8 +5,6 @@
 # version_info provides the version number in programmer friendly way.
 # The 4th part will be either alpha, beta or final.
 
-from __future__ import unicode_literals
-
 from .imapclient import *
 from .response_parser import *
 from .tls import *

@@ -2,12 +2,9 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from __future__ import unicode_literals
-
-from six import next
+import unittest
 
 from imapclient.response_lexer import TokenSource
-from tests.util import unittest
 
 
 class TestTokenSource(unittest.TestCase):
