@@ -2,12 +2,8 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from __future__ import unicode_literals
-
 from collections import namedtuple
 from email.utils import formataddr
-
-import six
 
 from .util import to_unicode
 
@@ -120,7 +116,7 @@ class BodyData(tuple):
         if isinstance(response[0], tuple):
             # Multipart, find where the message part tuples stop
             for i, part in enumerate(response):
-                if isinstance(part, six.binary_type):
+                if isinstance(part, bytes):
                     break
             return cls(([cls.create(part) for part in response[:i]],) + response[i:])
         else:

@@ -2,9 +2,9 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from __future__ import unicode_literals
-
 from datetime import datetime, date
+import unittest
+from unittest.mock import patch
 
 
 from imapclient.datetime_util import (
@@ -14,7 +14,6 @@ from imapclient.datetime_util import (
     parse_to_datetime,
 )
 from imapclient.fixed_offset import FixedOffset
-from .util import unittest, patch
 
 
 class TestParsing(unittest.TestCase):

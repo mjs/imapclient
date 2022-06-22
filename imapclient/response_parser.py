@@ -11,20 +11,14 @@ Initially inspired by http://effbot.org/zone/simple-iterator-parser.htm
 
 # TODO more exact error reporting
 
-from __future__ import unicode_literals
-
 import re
 import sys
 from collections import defaultdict
-
-import six
 
 from .datetime_util import parse_to_datetime
 from .response_lexer import TokenSource
 from .response_types import BodyData, Envelope, Address, SearchIds
 from .exceptions import ProtocolError
-
-xrange = six.moves.xrange
 
 __all__ = ["parse_response", "parse_message_list"]
 
@@ -60,7 +54,7 @@ def parse_message_list(data):
     if not data:
         return SearchIds()
 
-    if six.PY3 and isinstance(data, six.binary_type):
+    if isinstance(data, bytes):
         data = data.decode("ascii")
 
     m = _msg_id_pattern.match(data)
@@ -133,7 +127,7 @@ def parse_fetch_response(text, normalise_times=True, uid_is_key=True):
         # always return the sequence of the message, so it is available
         # even if we return keyed by UID.
         msg_data = {b"SEQ": seq}
-        for i in xrange(0, len(msg_response), 2):
+        for i in range(0, len(msg_response), 2):
             word = msg_response[i].upper()
             value = msg_response[i + 1]
 

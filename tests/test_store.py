@@ -3,19 +3,16 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from __future__ import unicode_literals
-
-import six
+from unittest.mock import patch, sentinel, Mock
 
 from imapclient.imapclient import DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT
 from .imapclient_test import IMAPClientTest
-from .util import patch, sentinel, Mock
 
 
 class TestFlagsConsts(IMAPClientTest):
     def test_flags_are_bytes(self):
         for flag in DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT:
-            if not isinstance(flag, six.binary_type):
+            if not isinstance(flag, bytes):
                 self.fail("%r flag is not bytes" % flag)
 
 

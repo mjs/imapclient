@@ -2,12 +2,11 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from __future__ import unicode_literals
-
 from datetime import timedelta
+import unittest
+from unittest.mock import Mock, patch, DEFAULT
 
 from imapclient.fixed_offset import FixedOffset
-from .util import unittest, Mock, patch, DEFAULT
 
 
 class TestFixedOffset(unittest.TestCase):

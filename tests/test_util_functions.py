@@ -2,7 +2,7 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from __future__ import unicode_literals
+import unittest
 
 from imapclient.exceptions import InvalidCriteriaError, ProtocolError
 from imapclient.imapclient import (
@@ -15,7 +15,6 @@ from imapclient.imapclient import (
     _parse_untagged_response,
 )
 from imapclient.util import assert_imap_protocol
-from tests.util import unittest
 
 
 class Test_normalise_text_list(unittest.TestCase):

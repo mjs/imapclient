@@ -2,16 +2,14 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from __future__ import unicode_literals
-
 from datetime import date, datetime
+from unittest.mock import Mock
 
 import imaplib
 
 from imapclient.exceptions import InvalidCriteriaError
 from imapclient.imapclient import _quoted
 from .imapclient_test import IMAPClientTest
-from .util import Mock
 
 
 class TestSearchBase(IMAPClientTest):

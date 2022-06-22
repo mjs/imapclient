@@ -2,8 +2,6 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from __future__ import unicode_literals
-
 version_info = (2, 2, 0, "final")
 
 

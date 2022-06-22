@@ -2,16 +2,15 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from __future__ import unicode_literals
-
+import io
 import itertools
 import socket
 import sys
 import warnings
 from datetime import datetime
 import logging
+from unittest.mock import patch, sentinel, Mock
 
-import six
 from select import POLLIN
 
 from imapclient.exceptions import CapabilityError, IMAPClientError, ProtocolError
@@ -27,7 +26,6 @@ from imapclient.fixed_offset import FixedOffset
 from imapclient.testable_imapclient import TestableIMAPClient as IMAPClient
 
 from .imapclient_test import IMAPClientTest
-from .util import patch, sentinel, Mock
 
 
 class TestListFolders(IMAPClientTest):
@@ -738,7 +736,7 @@ class TestDebugLogging(IMAPClientTest):
         # prevent basicConfig from being executed
         for handler in logging.root.handlers[:]:
             logging.root.removeHandler(handler)
-        log_stream = six.StringIO()
+        log_stream = io.StringIO()
         logging.basicConfig(stream=log_stream, level=logging.DEBUG)
 
         self.client._imap._mesg("two")
@@ -750,23 +748,16 @@ class TestDebugLogging(IMAPClientTest):
         logger_mock.getEffectiveLevel.return_value = logging.DEBUG
 
         adapter = IMAPlibLoggerAdapter(logger_mock, dict())
-        if six.PY3:
-            adapter.info("""> b'ICHH1 LOGIN foo@bar.org "secret"'""")
-            if sys.version_info >= (3, 6, 4):
-                # LoggerAdapter in Python 3.6.4+ calls logger.log()
-                logger_mock.log.assert_called_once_with(
-                    logging.INFO, "> b'ICHH1 LOGIN **REDACTED**", extra={}
-                )
-            else:
-                # LoggerAdapter in Python 3.4 to 3.6 calls logger._log()
-                logger_mock._log.assert_called_once_with(
-                    logging.INFO, "> b'ICHH1 LOGIN **REDACTED**", (), extra={}
-                )
+        adapter.info("""> b'ICHH1 LOGIN foo@bar.org "secret"'""")
+        if sys.version_info >= (3, 6, 4):
+            # LoggerAdapter in Python 3.6.4+ calls logger.log()
+            logger_mock.log.assert_called_once_with(
+                logging.INFO, "> b'ICHH1 LOGIN **REDACTED**", extra={}
+            )
         else:
-            # LoggerAdapter in Python 2.7 calls logger.info()
-            adapter.info('> ICHH1 LOGIN foo@bar.org "secret"')
-            logger_mock.info.assert_called_once_with(
-                "> ICHH1 LOGIN **REDACTED**", extra={}
+            # LoggerAdapter in Python 3.4 to 3.6 calls logger._log()
+            logger_mock._log.assert_called_once_with(
+                logging.INFO, "> b'ICHH1 LOGIN **REDACTED**", (), extra={}
             )
 
 

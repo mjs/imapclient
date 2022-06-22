@@ -2,11 +2,7 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from __future__ import unicode_literals
-
-import six
 import logging
-from six import binary_type, text_type
 
 from . import exceptions
 
@@ -14,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def to_unicode(s):
-    if isinstance(s, binary_type):
+    if isinstance(s, bytes):
         try:
             return s.decode("ascii")
         except UnicodeDecodeError:
@@ -28,7 +24,7 @@ def to_unicode(s):
 
 
 def to_bytes(s, charset="ascii"):
-    if isinstance(s, text_type):
+    if isinstance(s, str):
         return s.encode(charset)
     return s
 
@@ -42,5 +38,5 @@ def assert_imap_protocol(condition, message=None):
 
 
 def chunk(lst, size):
-    for i in six.moves.range(0, len(lst), size):
+    for i in range(0, len(lst), size):
         yield lst[i : i + size]

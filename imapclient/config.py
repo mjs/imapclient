@@ -2,16 +2,13 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from __future__ import unicode_literals
-
 import json
 from os import environ, path
 import ssl
 
-from six import iteritems
-from six.moves.configparser import SafeConfigParser, NoOptionError
-from six.moves.urllib.request import urlopen
-from six.moves.urllib.parse import urlencode
+import configparser
+import urllib.parse
+import urllib.request
 
 import imapclient
 
@@ -45,7 +42,7 @@ def parse_config_file(filename):
     Used by livetest.py and interact.py
     """
 
-    parser = SafeConfigParser(get_string_config_defaults())
+    parser = configparser.SafeConfigParser(get_string_config_defaults())
     with open(filename, "r") as fh:
         parser.readfp(fh)
 
@@ -62,7 +59,7 @@ def parse_config_file(filename):
 
 def get_string_config_defaults():
     out = {}
-    for k, v in iteritems(get_config_defaults()):
+    for k, v in get_config_defaults().items():
         if v is True:
             v = "true"
         elif v is False:
@@ -80,7 +77,7 @@ def _read_config_section(parser, section):
     def get_allowing_none(name, typefunc):
         try:
             v = parser.get(section, name)
-        except NoOptionError:
+        except configparser.NoOptionError:
             return None
         if not v:
             return None
@@ -133,7 +130,8 @@ def refresh_oauth2_token(hostname, client_id, client_secret, refresh_token):
         refresh_token=refresh_token.encode("ascii"),
         grant_type=b"refresh_token",
     )
-    response = urlopen(url, urlencode(post).encode("ascii")).read()
+    response = urllib.request.urlopen(
+        url, urllib.parse.urlencode(post).encode("ascii")).read()
     return json.loads(response.decode("ascii"))["access_token"]
 
 
