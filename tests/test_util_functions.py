@@ -12,7 +12,6 @@ from imapclient.imapclient import (
     seq_to_parenstr,
     seq_to_parenstr_upper,
     _quoted,
-    _parse_untagged_response,
 )
 from imapclient.util import assert_imap_protocol
 

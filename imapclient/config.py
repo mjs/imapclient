@@ -71,8 +71,11 @@ def get_string_config_defaults():
 
 
 def _read_config_section(parser, section):
-    get = lambda name: parser.get(section, name)
-    getboolean = lambda name: parser.getboolean(section, name)
+    def get(section, name):
+        return parser.get(section, name)
+
+    def getboolean(section, name):
+        return parser.getboolean(section, name)
 
     def get_allowing_none(name, typefunc):
         try:
@@ -195,7 +198,7 @@ def create_client_from_config(conf, login=True):
             assert conf.password, "missing password"
             client.login(conf.username, conf.password)
         return client
-    except:
+    except:  # noqa: E722
         client.shutdown()
         raise
 

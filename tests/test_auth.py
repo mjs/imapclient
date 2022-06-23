@@ -2,7 +2,6 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from imapclient import IMAPClient
 from imapclient.exceptions import LoginError
 from .imapclient_test import IMAPClientTest
 
