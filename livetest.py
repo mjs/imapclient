@@ -303,7 +303,7 @@ class TestGeneral(_TestBase):
     def test_list_folders(self):
         some_folders = ["simple", b"simple2", "L\xffR"]
         if not self.is_fastmail():
-            some_folders.extend([r'test"folder"', br"foo\bar"])
+            some_folders.extend([r'test"folder"', rb"foo\bar"])
         some_folders = self.add_prefix_to_folders(some_folders)
         for name in some_folders:
             self.client.create_folder(name)
@@ -329,7 +329,7 @@ class TestGeneral(_TestBase):
 
         foundInbox = False
         for flags, _, _ in result:
-            if br"\INBOX" in [flag.upper() for flag in flags]:
+            if rb"\INBOX" in [flag.upper() for flag in flags]:
                 foundInbox = True
                 break
         if not foundInbox:

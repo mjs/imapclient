@@ -30,7 +30,7 @@ class TestParseResponse(unittest.TestCase):
     def test_unquoted(self):
         self._test(b"FOO", b"FOO")
         self._test(b"F.O:-O_0;", b"F.O:-O_0;")
-        self._test(br"\Seen", br"\Seen")
+        self._test(rb"\Seen", rb"\Seen")
 
     def test_string(self):
         self._test(b'"TEST"', b"TEST")
@@ -159,9 +159,9 @@ class TestParseResponse(unittest.TestCase):
         self._test(response, (12, b"foo", literal_text))
 
     def test_quoted_specials(self):
-        self._test(br'"\"foo bar\""', b'"foo bar"')
-        self._test(br'"foo \"bar\""', b'foo "bar"')
-        self._test(br'"foo\\bar"', br"foo\bar")
+        self._test(rb'"\"foo bar\""', b'"foo bar"')
+        self._test(rb'"foo \"bar\""', b'foo "bar"')
+        self._test(rb'"foo\\bar"', rb"foo\bar")
 
     def test_square_brackets(self):
         self._test(b"foo[bar rrr]", b"foo[bar rrr]")
@@ -263,8 +263,8 @@ class TestParseFetchResponse(unittest.TestCase):
 
     def test_FLAGS(self):
         self.assertEqual(
-            parse_fetch_response([br"23 (FLAGS (\Seen Stuff))"]),
-            {23: {b"SEQ": 23, b"FLAGS": (br"\Seen", b"Stuff")}},
+            parse_fetch_response([rb"23 (FLAGS (\Seen Stuff))"]),
+            {23: {b"SEQ": 23, b"FLAGS": (rb"\Seen", b"Stuff")}},
         )
 
     def test_multiple_messages(self):

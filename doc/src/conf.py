@@ -38,8 +38,8 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"IMAPClient"
-copyright = u"2014, Menno Smits"
+project = "IMAPClient"
+copyright = "2014, Menno Smits"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -179,7 +179,7 @@ htmlhelp_basename = "IMAPClientdoc"
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-    ("index", "IMAPClient.tex", u"IMAPClient Documentation", u"Menno Smits", "manual"),
+    ("index", "IMAPClient.tex", "IMAPClient Documentation", "Menno Smits", "manual"),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -210,4 +210,4 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [("index", "imapclient", u"IMAPClient Documentation", [u"Menno Smits"], 1)]
+man_pages = [("index", "imapclient", "IMAPClient Documentation", ["Menno Smits"], 1)]
