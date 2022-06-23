@@ -4,7 +4,6 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-import sys
 from os import path
 
 from setuptools import setup

@@ -24,11 +24,9 @@ from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
 from .response_parser import parse_response, parse_message_list, parse_fetch_response
 from .util import to_bytes, to_unicode, assert_imap_protocol, chunk
 
-try:
-    from select import poll
-
+if hasattr(select, "poll"):
     POLL_SUPPORT = True
-except:
+else:
     # Fallback to select() on systems that don't support poll()
     POLL_SUPPORT = False
 
@@ -1770,7 +1768,7 @@ class IMAPClient(object):
     def _normalise_labels(self, labels):
         if isinstance(labels, (str, bytes)):
             labels = (labels,)
-        return [_quote(encode_utf7(l)) for l in labels]
+        return [_quote(encode_utf7(label)) for label in labels]
 
     @property
     def welcome(self):
