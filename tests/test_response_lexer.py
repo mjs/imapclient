@@ -32,12 +32,12 @@ class TestTokenSource(unittest.TestCase):
         self.check_error([b'"aaa bbb'], message)
 
     def test_escaping(self):
-        self.check([br'"aaa\"bbb"'], [br'"aaa"bbb"'])
-        self.check([br'"aaa\\bbb"'], [br'"aaa\bbb"'])
-        self.check([br'"aaa\\bbb \"\""'], [br'"aaa\bbb """'])
+        self.check([rb'"aaa\"bbb"'], [rb'"aaa"bbb"'])
+        self.check([rb'"aaa\\bbb"'], [rb'"aaa\bbb"'])
+        self.check([rb'"aaa\\bbb \"\""'], [rb'"aaa\bbb """'])
 
     def test_invalid_escape(self):
-        self.check([br'"aaa\Zbbb"'], [br'"aaa\Zbbb"'])
+        self.check([rb'"aaa\Zbbb"'], [rb'"aaa\Zbbb"'])
 
     def test_lists(self):
         self.check([b"()"], [b"(", b")"])
@@ -59,7 +59,7 @@ class TestTokenSource(unittest.TestCase):
         self.check([b"aaa [bbb]"], [b"aaa", b"[bbb]"])
 
     def test_no_escaping_in_square_brackets(self):
-        self.check([br"[aaa\\bbb]"], [br"[aaa\\bbb]"])
+        self.check([rb"[aaa\\bbb]"], [rb"[aaa\\bbb]"])
 
     def test_unmatched_square_brackets(self):
         message = "No closing ']'"

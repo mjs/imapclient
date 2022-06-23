@@ -205,11 +205,11 @@ class TestListFolders(IMAPClientTest):
     def test_quoted_specials(self):
         folders = self.client._proc_folder_list(
             [
-                br'(\HasNoChildren) "/" "Test \"Folder\""',
-                br'(\HasNoChildren) "/" "Left\"Right"',
-                br'(\HasNoChildren) "/" "Left\\Right"',
-                br'(\HasNoChildren) "/" "\"Left Right\""',
-                br'(\HasNoChildren) "/" "\"Left\\Right\""',
+                rb'(\HasNoChildren) "/" "Test \"Folder\""',
+                rb'(\HasNoChildren) "/" "Left\"Right"',
+                rb'(\HasNoChildren) "/" "Left\\Right"',
+                rb'(\HasNoChildren) "/" "\"Left Right\""',
+                rb'(\HasNoChildren) "/" "\"Left\\Right\""',
             ]
         )
         self.assertEqual(
@@ -228,9 +228,9 @@ class TestListFolders(IMAPClientTest):
 
     def test_blanks(self):
         folders = self.client._proc_folder_list(
-            ["", None, br'(\HasNoChildren) "/" "last"']
+            ["", None, rb'(\HasNoChildren) "/" "last"']
         )
-        self.assertEqual(folders, [((br"\HasNoChildren",), b"/", "last")])
+        self.assertEqual(folders, [((rb"\HasNoChildren",), b"/", "last")])
 
 
 class TestFindSpecialFolder(IMAPClientTest):
@@ -284,15 +284,15 @@ class TestSelectFolder(IMAPClientTest):
         self.client._command_and_check = Mock()
         self.client._imap.untagged_responses = {
             b"exists": [b"3"],
-            b"FLAGS": [br"(\Flagged \Deleted abc [foo]/bar def)"],
+            b"FLAGS": [rb"(\Flagged \Deleted abc [foo]/bar def)"],
             b"HIGHESTMODSEQ": [b"127110"],
             b"OK": [
-                br"[PERMANENTFLAGS (\Flagged \Deleted abc [foo]/bar def \*)] Flags permitted.",
+                rb"[PERMANENTFLAGS (\Flagged \Deleted abc [foo]/bar def \*)] Flags permitted.",
                 b"[UIDVALIDITY 631062293] UIDs valid.",
                 b"[UIDNEXT 1281] Predicted next UID.",
                 b"[HIGHESTMODSEQ 127110]",
             ],
-            b"PERMANENTFLAGS": [br"(\Flagged \Deleted abc [foo"],
+            b"PERMANENTFLAGS": [rb"(\Flagged \Deleted abc [foo"],
             b"READ-WRITE": [b""],
             b"RECENT": [b"0"],
             b"UIDNEXT": [b"1281"],
@@ -314,14 +314,14 @@ class TestSelectFolder(IMAPClientTest):
                 b"UIDNEXT": 1281,
                 b"UIDVALIDITY": 631062293,
                 b"HIGHESTMODSEQ": 127110,
-                b"FLAGS": (br"\Flagged", br"\Deleted", b"abc", b"[foo]/bar", b"def"),
+                b"FLAGS": (rb"\Flagged", rb"\Deleted", b"abc", b"[foo]/bar", b"def"),
                 b"PERMANENTFLAGS": (
-                    br"\Flagged",
-                    br"\Deleted",
+                    rb"\Flagged",
+                    rb"\Deleted",
                     b"abc",
                     b"[foo]/bar",
                     b"def",
-                    br"\*",
+                    rb"\*",
                 ),
                 b"READ-WRITE": True,
                 b"OTHER": [b"blah"],
@@ -380,30 +380,38 @@ class TestAppend(IMAPClientTest):
     def test_multiappend_with_flags_and_internaldate(self):
         self.client._cached_capabilities = (b"MULTIAPPEND",)
         self.client._raw_command = Mock()
-        self.client.multiappend("foobar", [
-            {
-                "msg": "msg1",
-                "flags": ["FLAG", "WAVE"],
-                "date": datetime(2009, 4, 5, 11, 0, 5, 0, FixedOffset(2 * 60)),
-            },
-            {
-                "msg": "msg2",
-                "flags": ["FLAG", "WAVE"],
-            },
-            {
-                "msg": "msg3",
-                "date": datetime(2009, 4, 5, 11, 0, 5, 0, FixedOffset(2 * 60)),
-            }])
+        self.client.multiappend(
+            "foobar",
+            [
+                {
+                    "msg": "msg1",
+                    "flags": ["FLAG", "WAVE"],
+                    "date": datetime(2009, 4, 5, 11, 0, 5, 0, FixedOffset(2 * 60)),
+                },
+                {
+                    "msg": "msg2",
+                    "flags": ["FLAG", "WAVE"],
+                },
+                {
+                    "msg": "msg3",
+                    "date": datetime(2009, 4, 5, 11, 0, 5, 0, FixedOffset(2 * 60)),
+                },
+            ],
+        )
 
         self.client._raw_command.assert_called_once_with(
-            b"APPEND", [b'"foobar"',
-                        b'(FLAG WAVE)',
-                        b'"05-Apr-2009 11:00:05 +0200"',
-                        _literal(b"msg1"),
-                        b'(FLAG WAVE)',
-                        _literal(b"msg2"),
-                        b'"05-Apr-2009 11:00:05 +0200"',
-                        _literal(b"msg3")], uid=False
+            b"APPEND",
+            [
+                b'"foobar"',
+                b"(FLAG WAVE)",
+                b'"05-Apr-2009 11:00:05 +0200"',
+                _literal(b"msg1"),
+                b"(FLAG WAVE)",
+                _literal(b"msg2"),
+                b'"05-Apr-2009 11:00:05 +0200"',
+                _literal(b"msg3"),
+            ],
+            uid=False,
         )
 
 
@@ -1000,13 +1008,19 @@ class TestRawCommand(IMAPClientTest):
         self.client._cached_capabilities = (b"LITERAL+",)
 
         typ, data = self.client._raw_command(
-            b"APPEND", [b"\xff", _literal(b"hello"), b"TEXT", _literal(b"test")], uid=False
+            b"APPEND",
+            [b"\xff", _literal(b"hello"), b"TEXT", _literal(b"test")],
+            uid=False,
         )
         self.assertEqual(typ, "OK")
         self.assertEqual(data, ["done"])
         self.assertEqual(
             self.client._imap.sent,
-            b"tag APPEND {1+}\r\n" b"\xff  {5+}\r\n" b"hello" b" TEXT {4+}\r\n" b"test\r\n",
+            b"tag APPEND {1+}\r\n"
+            b"\xff  {5+}\r\n"
+            b"hello"
+            b" TEXT {4+}\r\n"
+            b"test\r\n",
         )
 
     def test_complex(self):
@@ -1089,6 +1103,7 @@ class TestProtocolError(IMAPClientTest):
 
         with self.assertRaises(ProtocolError):
             client._consume_until_tagged_response(sentinel.tag, b"IDLE")
+
 
 class TestSocket(IMAPClientTest):
     def test_issues_warning_for_deprecating_sock_property(self):
