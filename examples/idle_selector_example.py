@@ -13,10 +13,7 @@ with IMAPClient(HOST, timeout=RESPONSE_TIMEOUT_SECONDS) as server:
     server.login(USERNAME, PASSWORD)
     server.select_folder("INBOX", readonly=True)
     server.idle()
-    print(
-        "Connection is now in IDLE mode,"
-        " send yourself an email or quit with ^c"
-    )
+    print("Connection is now in IDLE mode," " send yourself an email or quit with ^c")
     try:
         with DefaultSelector() as selector:
             selector.register(server.socket(), EVENT_READ, None)

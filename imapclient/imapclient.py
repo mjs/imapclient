@@ -79,21 +79,21 @@ if "MOVE" not in imaplib.Commands:
     imaplib.Commands["MOVE"] = ("AUTH", "SELECTED")
 
 # System flags
-DELETED = br"\Deleted"
-SEEN = br"\Seen"
-ANSWERED = br"\Answered"
-FLAGGED = br"\Flagged"
-DRAFT = br"\Draft"
-RECENT = br"\Recent"  # This flag is read-only
+DELETED = rb"\Deleted"
+SEEN = rb"\Seen"
+ANSWERED = rb"\Answered"
+FLAGGED = rb"\Flagged"
+DRAFT = rb"\Draft"
+RECENT = rb"\Recent"  # This flag is read-only
 
 # Special folders, see RFC6154
 # \Flagged is omitted because it is the same as the flag defined above
-ALL = br"\All"
-ARCHIVE = br"\Archive"
-DRAFTS = br"\Drafts"
-JUNK = br"\Junk"
-SENT = br"\Sent"
-TRASH = br"\Trash"
+ALL = rb"\All"
+ARCHIVE = rb"\Archive"
+DRAFTS = rb"\Drafts"
+JUNK = rb"\Junk"
+SENT = rb"\Sent"
+TRASH = rb"\Trash"
 
 # Personal namespaces that are common among providers
 # used as a fallback when the server does not support the NAMESPACE capability
@@ -108,7 +108,7 @@ _POPULAR_SPECIAL_FOLDERS = {
     JUNK: ("Junk", "Spam"),
 }
 
-_RE_SELECT_RESPONSE = re.compile(br"\[(?P<key>[A-Z-]+)( \((?P<data>.*)\))?\]")
+_RE_SELECT_RESPONSE = re.compile(rb"\[(?P<key>[A-Z-]+)( \((?P<data>.*)\))?\]")
 
 
 class Namespace(tuple):
@@ -1266,9 +1266,7 @@ class IMAPClient(object):
         """
         response = self.fetch(messages, [b"X-GM-LABELS"])
         response = self._filter_fetch_dict(response, b"X-GM-LABELS")
-        return {
-            msg: utf7_decode_sequence(labels) for msg, labels in response.items()
-        }
+        return {msg: utf7_decode_sequence(labels) for msg, labels in response.items()}
 
     def add_gmail_labels(self, messages, labels, silent=False):
         """Add *labels* to *messages* in the currently selected folder.
@@ -1420,6 +1418,7 @@ class IMAPClient(object):
 
         Returns the APPEND response from the server.
         """
+
         def chunks():
             for m in msgs:
                 if isinstance(m, dict):

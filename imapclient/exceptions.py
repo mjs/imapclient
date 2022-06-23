@@ -4,6 +4,7 @@ import imaplib
 # To ensure backward compatibility, we "rename" the imaplib general
 # exception class, so we can catch its exceptions without having to
 # deal with it in IMAPClient codebase
+
 IMAPClientError = imaplib.IMAP4.error
 IMAPClientAbortError = imaplib.IMAP4.abort
 IMAPClientReadOnlyError = imaplib.IMAP4.readonly
