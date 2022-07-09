@@ -1,6 +1,35 @@
 :tocdepth: 1
 
 ===============
+ Version 2.3.0
+===============
+
+**Note**: This will be the last release to support Python 2.
+
+Many thanks to Boni Lindsley for many of the changes in this release. Changes
+below are by them unless otherwise specified.
+
+Changed
+-------
+- Use GitHub Actions instead of TravisCI
+- Improvements to code examples (thanks shoaib30)
+- Run tests with unittest instead of setup.py
+
+Added
+-----
+- New ``socket()`` method which provides access to the underlying network
+  socket. This is useful for allowing the socket to be polled.
+- Allow flags and internaldate to be specified for MULTIAPPEND (thanks Tobias Kölling) 
+
+Fixed
+-----
+- Default SSL contexts are now created with correct purpose (thanks pinoatrome)
+- Fixed undiscoverable tests due to name shadowing
+- Fixed missing code block directives in documentation
+- Fixed typo in tox envlist
+- Fixed formatting in release notes
+
+===============
  Version 2.2.0
 ===============
 
