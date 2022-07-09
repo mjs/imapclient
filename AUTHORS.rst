@@ -36,3 +36,8 @@ project:
 - Michał Górny
 - François Deppierraz
 - Jasper Spaans
+- Boni Lindsley 
+- Tobias Kölling
+- pinoatrome
+- Shoaib Ahmed 
+
