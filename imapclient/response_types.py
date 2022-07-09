@@ -11,7 +11,7 @@ from .util import to_unicode
 class Envelope(
     namedtuple(
         "Envelope",
-        "date subject from_ sender reply_to to " + "cc bcc in_reply_to message_id",
+        "date subject from_ sender reply_to to cc bcc in_reply_to message_id",
     )
 ):
     r"""Represents envelope structures of messages. Returned when parsing
