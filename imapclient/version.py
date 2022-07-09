@@ -2,7 +2,7 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-version_info = (2, 3, 0, "final")
+version_info = (2, 3, 1, "final")
 
 
 def _imapclient_version_string(vinfo):
