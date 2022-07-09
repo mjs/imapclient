@@ -3,17 +3,7 @@
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 from .imapclient import IMAPClient
-
-try:
-    from unittest.mock import Mock
-except ImportError:
-    try:
-        from mock import Mock
-    except ImportError:
-        raise ImportError(
-            "mock library could not be loaded. Please install Python 3.3 or newer "
-            "or install the `mock` third-party package through PyPi."
-        )
+from unittest.mock import Mock
 
 
 class TestableIMAPClient(IMAPClient):
