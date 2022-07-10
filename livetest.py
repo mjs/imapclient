@@ -14,6 +14,7 @@ import socket
 import string
 import sys
 import time
+import unittest
 from datetime import datetime
 from email.utils import make_msgid
 
@@ -29,7 +30,6 @@ from imapclient.imapclient import (
 )
 from imapclient.response_types import Envelope, Address
 from imapclient.util import to_bytes, to_unicode
-from tests.util import unittest
 
 # TODO cleaner verbose output: avoid "__main__" and separator between classes
 
