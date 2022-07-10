@@ -71,10 +71,10 @@ def get_string_config_defaults():
 
 
 def _read_config_section(parser, section):
-    def get(section, name):
+    def get(name):
         return parser.get(section, name)
 
-    def getboolean(section, name):
+    def getboolean(name):
         return parser.getboolean(section, name)
 
     def get_allowing_none(name, typefunc):
