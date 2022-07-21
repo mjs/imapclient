@@ -42,9 +42,8 @@ def parse_config_file(filename):
     Used by livetest.py and interact.py
     """
 
-    parser = configparser.SafeConfigParser(get_string_config_defaults())
-    with open(filename, "r") as fh:
-        parser.readfp(fh)
+    parser = configparser.ConfigParser(get_string_config_defaults())
+    parser.read(filename)
 
     conf = _read_config_section(parser, "DEFAULT")
     if conf.expect_failure:
