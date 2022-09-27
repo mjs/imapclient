@@ -4,32 +4,32 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+import argparse
 from getpass import getpass
-from optparse import OptionParser
 
 from .config import parse_config_file, create_client_from_config, get_config_defaults
 
 
 def command_line():
-    p = OptionParser()
-    p.add_option(
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
         "-H", "--host", dest="host", action="store", help="IMAP host connect to"
     )
-    p.add_option(
+    parser.add_argument(
         "-u",
         "--username",
         dest="username",
         action="store",
         help="Username to login with",
     )
-    p.add_option(
+    parser.add_argument(
         "-p",
         "--password",
         dest="password",
         action="store",
         help="Password to login with",
     )
-    p.add_option(
+    parser.add_argument(
         "-P",
         "--port",
         dest="port",
@@ -38,7 +38,9 @@ def command_line():
         default=None,
         help="IMAP port to use (default is 993 for TLS, or 143 otherwise)",
     )
-    p.add_option(
+
+    ssl_group = parser.add_mutually_exclusive_group()
+    ssl_group.add_argument(
         "-s",
         "--ssl",
         dest="ssl",
@@ -46,15 +48,15 @@ def command_line():
         default=None,
         help="Use SSL/TLS connection (default)",
     )
-    p.add_option(
-        "",
+    ssl_group.add_argument(
         "--insecure",
         dest="insecure",
         action="store_true",
         default=False,
         help="Use insecure connection (i.e. without SSL/TLS)",
     )
-    p.add_option(
+
+    parser.add_argument(
         "-f",
         "--file",
         dest="file",
@@ -63,44 +65,40 @@ def command_line():
         help="Config file (same as livetest)",
     )
 
-    opts, args = p.parse_args()
-    if args:
-        p.error("unexpected arguments %s" % " ".join(args))
+    args = parser.parse_args()
 
-    if opts.file:
+    if args.file:
         if (
-            opts.host
-            or opts.username
-            or opts.password
-            or opts.port
-            or opts.ssl
-            or opts.insecure
+            args.host
+            or args.username
+            or args.password
+            or args.port
+            or args.ssl
+            or args.insecure
         ):
-            p.error("If -f/--file is given no other options can be used")
+            parser.error("If -f/--file is given no other options can be used")
         # Use the options in the config file
-        opts = parse_config_file(opts.file)
-    else:
-        if opts.ssl and opts.insecure:
-            p.error("Can't use --ssl and --insecure at the same time")
+        args = parse_config_file(args.file)
+        return args
 
-        opts.ssl = not opts.insecure
+    args.ssl = not args.insecure
 
-        # Scan through options, filling in defaults and prompting when
-        # a compulsory option wasn't provided.
-        compulsory_opts = ("host", "username", "password")
-        for name, default_value in get_config_defaults().items():
-            value = getattr(opts, name, default_value)
-            if name in compulsory_opts and value is None:
-                value = getpass(name + ": ")
-            setattr(opts, name, value)
+    # Scan through arguments, filling in defaults and prompting when
+    # a compulsory argument wasn't provided.
+    compulsory_args = ("host", "username", "password")
+    for name, default_value in get_config_defaults().items():
+        value = getattr(args, name, default_value)
+        if name in compulsory_args and value is None:
+            value = getpass(name + ": ")
+        setattr(args, name, value)
 
-    return opts
+    return args
 
 
 def main():
-    opts = command_line()
+    args = command_line()
     print("Connecting...")
-    client = create_client_from_config(opts)
+    client = create_client_from_config(args)
     print("Connected.")
     banner = '\nIMAPClient instance is "c"'
 
