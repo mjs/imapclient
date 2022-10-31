@@ -24,7 +24,7 @@ values are full parsed, readily usable and use sensible Python
 types. Exceptions are raised when problems occur (no error checking of
 return values is required).
 
-IMAPClient is straight forward it use, but it can be useful to have at
+IMAPClient is straightforward to use, but it can be useful to have at
 least a general understanding of the IMAP protocol. :rfc:`3501`
 explains IMAP in detail. Other RFCs also apply to various extensions
 to the base protocol. These are referred to in the documentation below
