@@ -6,7 +6,8 @@
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 import copy
-import imp
+import importlib.machinery
+import importlib.util
 import os
 import random
 import re
@@ -1186,7 +1187,8 @@ def main():
     namespace = probe_host(host_config)
     host_config.namespace = namespace
 
-    live_test_mod = imp.new_module("livetests")
+    spec = importlib.machinery.ModuleSpec("livetests", None)
+    live_test_mod = importlib.util.module_from_spec(spec)
     sys.modules["livetests"] = live_test_mod
 
     def add_test_class(klass, name=None):
