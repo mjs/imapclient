@@ -1499,8 +1499,12 @@ class IMAPClient(object):
         if messages:
             if not self.use_uid:
                 raise ValueError("cannot EXPUNGE by ID when not using uids")
+            if not self.has_capability("UIDPLUS"):
+                raise exceptions.CapabilityError(
+                    "Server does not support UIDPLUS capability"
+                )
             return self._command_and_check(
-                "EXPUNGE", join_message_ids(messages), uid=True
+                "UID EXPUNGE", join_message_ids(messages), uid=True
             )
         tag = self._imap._command("EXPUNGE")
         return self._consume_until_tagged_response(tag, "EXPUNGE")
