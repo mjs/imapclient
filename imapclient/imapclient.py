@@ -1505,6 +1505,18 @@ class IMAPClient(object):
         tag = self._imap._command("EXPUNGE")
         return self._consume_until_tagged_response(tag, "EXPUNGE")
 
+    @require_capability("UIDPLUS")
+    def uid_expunge(self, messages):
+        """Same functionality as ``expunge``,
+        but *messages* must be specified,
+        and the capability UIDPLUS is tested beforehand.
+        
+        See :rfc:`4315#section-2.1` section 2.1 for more details.
+        """
+        return self._command_and_check(
+            "EXPUNGE", join_message_ids(messages), uid=True
+        )
+
     @require_capability("ACL")
     def getacl(self, folder):
         """Returns a list of ``(who, acl)`` tuples describing the
