@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 10
     strategy:
       fail-fast: false
@@ -20,10 +20,10 @@ jobs:
           - "3.8"
           - "3.9"
           - "3.10"
-          - "pypy3"
+          - "pypy-3.9"
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Print Python version under test
