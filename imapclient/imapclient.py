@@ -1507,15 +1507,14 @@ class IMAPClient(object):
 
     @require_capability("UIDPLUS")
     def uid_expunge(self, messages):
-        """Same functionality as ``expunge``,
-        but *messages* must be specified,
-        and the capability UIDPLUS is tested beforehand.
-        
+        """Same functionality as ``expunge``, but *messages* must be
+        specified, and the capability UIDPLUS is tested beforehand. It should
+        be more fail-proof than ``expunge`` with *messages*, which cannot be
+        updated to prevent breaking compability with existing codebase.
+
         See :rfc:`4315#section-2.1` section 2.1 for more details.
         """
-        return self._command_and_check(
-            "EXPUNGE", join_message_ids(messages), uid=True
-        )
+        return self._command_and_check("EXPUNGE", join_message_ids(messages), uid=True)
 
     @require_capability("ACL")
     def getacl(self, folder):
