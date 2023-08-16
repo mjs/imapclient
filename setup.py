@@ -43,7 +43,7 @@ setup(
     maintainer_email=info["maintainer_email"],
     author=info["author"],
     author_email=info["author_email"],
-    license="http://en.wikipedia.org/wiki/BSD_licenses",
+    license="3-Clause BSD License",
     url="https://github.com/mjs/imapclient/",
     download_url="http://menno.io/projects/IMAPClient/IMAPClient-%s.zip"
     % info["version"],
