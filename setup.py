@@ -26,7 +26,7 @@ Features:
     * Convenience methods are provided for commonly used functionality.
     * Exceptions are raised when errors occur.
 
-Python versions 3.6 through 3.10 are officially supported.
+Python versions 3.7 through 3.11 are officially supported.
 
 IMAPClient includes comprehensive units tests and automated
 functional tests that can be run against a live IMAP server.
@@ -51,7 +51,7 @@ setup(
     package_data=dict(imapclient=["examples/*.py"]),
     extras_require={"doc": doc_deps},
     long_description=desc,
-    python_requires=">=3.6.0",
+    python_requires=">=3.7.0",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
