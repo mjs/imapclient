@@ -28,5 +28,7 @@ jobs:
       - run: pip install --upgrade tox
       - name: Run black code formatter (https://black.readthedocs.io/en/stable/)
         run: tox -e black -- --check
+      - name: Run isort import order checker (https://pycqa.github.io/isort/)
+        run: tox -e isort -- --check
       - name: Run flake8 (https://flake8.pycqa.org/en/latest/)
         run: tox -e flake8

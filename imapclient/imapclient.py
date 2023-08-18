@@ -5,24 +5,22 @@
 import functools
 import imaplib
 import itertools
+import re
 import select
 import socket
 import sys
-import re
 import warnings
 from collections import namedtuple
-from datetime import datetime, date
+from datetime import date, datetime
+from logging import getLogger, LoggerAdapter
 from operator import itemgetter
-from logging import LoggerAdapter, getLogger
 
-from . import exceptions
-from . import imap4
-from . import response_lexer
-from . import tls
+from . import exceptions, imap4, response_lexer, tls
 from .datetime_util import datetime_to_INTERNALDATE, format_criteria_date
-from .imap_utf7 import encode as encode_utf7, decode as decode_utf7
-from .response_parser import parse_response, parse_message_list, parse_fetch_response
-from .util import to_bytes, to_unicode, assert_imap_protocol, chunk
+from .imap_utf7 import decode as decode_utf7
+from .imap_utf7 import encode as encode_utf7
+from .response_parser import parse_fetch_response, parse_message_list, parse_response
+from .util import assert_imap_protocol, chunk, to_bytes, to_unicode
 
 if hasattr(select, "poll"):
     POLL_SUPPORT = True

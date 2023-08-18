@@ -2,8 +2,9 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from .imapclient import IMAPClient
 from unittest.mock import Mock
+
+from .imapclient import IMAPClient
 
 
 class TestableIMAPClient(IMAPClient):

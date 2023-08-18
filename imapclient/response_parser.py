@@ -16,9 +16,9 @@ import sys
 from collections import defaultdict
 
 from .datetime_util import parse_to_datetime
-from .response_lexer import TokenSource
-from .response_types import BodyData, Envelope, Address, SearchIds
 from .exceptions import ProtocolError
+from .response_lexer import TokenSource
+from .response_types import Address, BodyData, Envelope, SearchIds
 
 __all__ = ["parse_response", "parse_message_list"]
 

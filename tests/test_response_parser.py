@@ -11,14 +11,14 @@ from datetime import datetime
 from unittest.mock import patch
 
 from imapclient.datetime_util import datetime_to_native
+from imapclient.exceptions import ProtocolError
 from imapclient.fixed_offset import FixedOffset
 from imapclient.response_parser import (
-    parse_response,
-    parse_message_list,
     parse_fetch_response,
+    parse_message_list,
+    parse_response,
 )
-from imapclient.response_types import Envelope, Address
-from imapclient.exceptions import ProtocolError
+from imapclient.response_types import Address, Envelope
 
 # TODO: test invalid dates and times
 

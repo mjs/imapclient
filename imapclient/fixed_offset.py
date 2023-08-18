@@ -3,7 +3,7 @@
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 import time
-from datetime import tzinfo, timedelta
+from datetime import timedelta, tzinfo
 
 ZERO = timedelta(0)
 

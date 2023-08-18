@@ -3,6 +3,7 @@
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 from imapclient.exceptions import LoginError
+
 from .imapclient_test import IMAPClientTest
 
 

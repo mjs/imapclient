@@ -2,9 +2,9 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from datetime import timedelta
 import unittest
-from unittest.mock import Mock, patch, DEFAULT
+from datetime import timedelta
+from unittest.mock import DEFAULT, Mock, patch
 
 from imapclient.fixed_offset import FixedOffset
 

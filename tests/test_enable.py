@@ -5,6 +5,7 @@
 from unittest.mock import Mock
 
 from imapclient.exceptions import IllegalStateError
+
 from .imapclient_test import IMAPClientTest
 
 

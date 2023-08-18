@@ -3,7 +3,7 @@
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 import unittest
-from unittest.mock import patch, sentinel, Mock
+from unittest.mock import Mock, patch, sentinel
 
 from imapclient.imapclient import IMAPClient, SocketTimeout
 

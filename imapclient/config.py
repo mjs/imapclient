@@ -2,13 +2,12 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-import json
-from os import environ, path
-import ssl
-
 import configparser
+import json
+import ssl
 import urllib.parse
 import urllib.request
+from os import environ, path
 
 import imapclient
 
