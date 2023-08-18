@@ -1478,9 +1478,9 @@ class IMAPClient(object):
         followed by a list of expunge responses. For example::
 
             ('Expunge completed.',
-            [(2, 'EXPUNGE'),
-            (1, 'EXPUNGE'),
-            (0, 'RECENT')])
+             [(2, 'EXPUNGE'),
+              (1, 'EXPUNGE'),
+              (0, 'RECENT')])
 
         In this case, the responses indicate that the message with
         sequence numbers 2 and 1 where deleted, leaving no recent
