@@ -1467,7 +1467,10 @@ class IMAPClient(object):
         )
 
     def expunge(self, messages=None):
-        """When, no *messages* are specified, remove all messages
+        """Use of the *messages* argument is discouraged.
+        Please see the ``uid_expunge`` method instead.
+
+        When, no *messages* are specified, remove all messages
         from the currently selected folder that have the
         ``\\Deleted`` flag set.
 
@@ -1475,9 +1478,9 @@ class IMAPClient(object):
         followed by a list of expunge responses. For example::
 
             ('Expunge completed.',
-             [(2, 'EXPUNGE'),
-              (1, 'EXPUNGE'),
-              (0, 'RECENT')])
+            [(2, 'EXPUNGE'),
+            (1, 'EXPUNGE'),
+            (0, 'RECENT')])
 
         In this case, the responses indicate that the message with
         sequence numbers 2 and 1 where deleted, leaving no recent
@@ -1507,10 +1510,10 @@ class IMAPClient(object):
 
     @require_capability("UIDPLUS")
     def uid_expunge(self, messages):
-        """Same functionality as ``expunge``, but *messages* must be
-        specified, and the capability UIDPLUS is tested beforehand. It should
-        be more fail-proof than ``expunge`` with *messages*, which cannot be
-        updated to prevent breaking compability with existing codebase.
+        """Expunge deleted messages with the specified message ids from the
+        folder.
+
+        This requires the UIDPLUS capability.
 
         See :rfc:`4315#section-2.1` section 2.1 for more details.
         """
