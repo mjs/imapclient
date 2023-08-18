@@ -4,8 +4,8 @@
 
 from unittest.mock import Mock, patch, sentinel
 
-from imapclient.imapclient import IMAPClient
 from imapclient.exceptions import IMAPClientError
+from imapclient.imapclient import IMAPClient
 
 from .imapclient_test import IMAPClientTest
 

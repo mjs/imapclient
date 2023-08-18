@@ -6,12 +6,12 @@ import unittest
 
 from imapclient.exceptions import InvalidCriteriaError, ProtocolError
 from imapclient.imapclient import (
-    join_message_ids,
     _normalise_search_criteria,
+    _quoted,
+    join_message_ids,
     normalise_text_list,
     seq_to_parenstr,
     seq_to_parenstr_upper,
-    _quoted,
 )
 from imapclient.util import assert_imap_protocol
 

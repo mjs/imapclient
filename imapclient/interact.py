@@ -7,7 +7,7 @@
 import argparse
 from getpass import getpass
 
-from .config import parse_config_file, create_client_from_config, get_config_defaults
+from .config import create_client_from_config, get_config_defaults, parse_config_file
 
 
 def command_line():

@@ -2,10 +2,9 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from datetime import datetime, date
 import unittest
+from datetime import date, datetime
 from unittest.mock import patch
-
 
 from imapclient.datetime_util import (
     datetime_to_INTERNALDATE,

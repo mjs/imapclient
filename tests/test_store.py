@@ -3,9 +3,10 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from unittest.mock import patch, sentinel, Mock
+from unittest.mock import Mock, patch, sentinel
 
-from imapclient.imapclient import DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT
+from imapclient.imapclient import ANSWERED, DELETED, DRAFT, FLAGGED, RECENT, SEEN
+
 from .imapclient_test import IMAPClientTest
 
 

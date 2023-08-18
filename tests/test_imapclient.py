@@ -4,25 +4,24 @@
 
 import io
 import itertools
+import logging
 import socket
 import sys
 import warnings
 from datetime import datetime
-import logging
-from unittest.mock import patch, sentinel, Mock
-
 from select import POLLIN
+from unittest.mock import Mock, patch, sentinel
 
 from imapclient.exceptions import CapabilityError, IMAPClientError, ProtocolError
-from imapclient.imapclient import (
-    IMAPlibLoggerAdapter,
-    _parse_quota,
-    Quota,
-    MailboxQuotaRoots,
-    require_capability,
-    _literal,
-)
 from imapclient.fixed_offset import FixedOffset
+from imapclient.imapclient import (
+    _literal,
+    _parse_quota,
+    IMAPlibLoggerAdapter,
+    MailboxQuotaRoots,
+    Quota,
+    require_capability,
+)
 from imapclient.testable_imapclient import TestableIMAPClient as IMAPClient
 
 from .imapclient_test import IMAPClientTest

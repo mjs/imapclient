@@ -2,13 +2,13 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+import imaplib
 from datetime import date, datetime
 from unittest.mock import Mock
 
-import imaplib
-
 from imapclient.exceptions import InvalidCriteriaError
 from imapclient.imapclient import _quoted
+
 from .imapclient_test import IMAPClientTest
 
 
