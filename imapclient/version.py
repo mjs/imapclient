@@ -2,10 +2,12 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+from typing import Tuple
+
 version_info = (2, 3, 1, "final")
 
 
-def _imapclient_version_string(vinfo):
+def _imapclient_version_string(vinfo: Tuple[int, int, int, str]) -> str:
     major, minor, micro, releaselevel = vinfo
     v = "%d.%d.%d" % (major, minor, micro)
     if releaselevel != "final":

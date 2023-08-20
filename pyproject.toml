@@ -60,7 +60,6 @@ module = [
     "imapclient.testable_imapclient",
     "imapclient.tls",
     "imapclient.util",
-    "imapclient.version",
     "interact",
     "livetest",
     "setup",
