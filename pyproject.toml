@@ -2,3 +2,67 @@
 profile = "black"
 multi_line_output = 3
 order_by_type = false
+
+[tool.mypy]
+files = "."
+exclude = [
+    "doc/.*",
+    "examples/.*",
+    "tests/.*",
+]
+
+show_error_codes = true
+
+# 'strict = true' is equivalent to:
+#   --check-untyped-defs
+#   --disallow-any-generics
+#   --disallow-incomplete-defs
+#   --disallow-subclassing-any
+#   --disallow-untyped-calls
+#   --disallow-untyped-decorators
+#   --disallow-untyped-defs
+#   --extra-checks
+#   --no-implicit-reexport
+#   --strict-equality
+#   --warn-redundant-casts
+#   --warn-return-any
+#   --warn-unused-configs
+#   --warn-unused-ignores
+
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_untyped_defs = true
+extra_checks = true
+no_implicit_reexport = true
+strict_equality = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+# Overrides for currently untyped modules
+[[tool.mypy.overrides]]
+module = [
+    "imapclient.config",
+    "imapclient.datetime_util",
+    "imapclient.fixed_offset",
+    "imapclient.imap4",
+    "imapclient.imap_utf7",
+    "imapclient.imapclient",
+    "imapclient.interact",
+    "imapclient.response_lexer",
+    "imapclient.response_parser",
+    "imapclient.response_types",
+    "imapclient.testable_imapclient",
+    "imapclient.tls",
+    "imapclient.util",
+    "imapclient.version",
+    "interact",
+    "livetest",
+    "setup",
+]
+ignore_errors = true
