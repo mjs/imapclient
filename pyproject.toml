@@ -50,7 +50,6 @@ module = [
     "imapclient.config",
     "imapclient.datetime_util",
     "imapclient.fixed_offset",
-    "imapclient.imap4",
     "imapclient.imap_utf7",
     "imapclient.imapclient",
     "imapclient.interact",
