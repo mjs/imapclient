@@ -69,7 +69,6 @@ jobs = 0  # Use auto-detected number of multiple processes to speed up Pylint.
 # TODO(jlvillal): Work on removing these disables over time.
 disable = [
     "attribute-defined-outside-init",
-    "bad-classmethod-argument",
     "broad-exception-caught",
     "consider-using-f-string",
     "consider-using-in",
@@ -93,7 +92,6 @@ disable = [
     "raise-missing-from",
     "signature-differs",
     "simplifiable-if-statement",
-    "super-with-arguments",
     "too-few-public-methods",
     "too-many-arguments",
     "too-many-boolean-expressions",

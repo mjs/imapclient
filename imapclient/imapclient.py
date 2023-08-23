@@ -2042,4 +2042,4 @@ class IMAPlibLoggerAdapter(LoggerAdapter):
                 msg_start = msg.split(command)[0]
                 msg = "{}{} **REDACTED**".format(msg_start, command)
                 break
-        return super(IMAPlibLoggerAdapter, self).process(msg, kwargs)
+        return super().process(msg, kwargs)
