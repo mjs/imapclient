@@ -105,6 +105,4 @@ disable = [
     "undefined-loop-variable",
     "unnecessary-pass",
     "unused-argument",
-    "use-dict-literal",
-    "use-list-literal",
 ]

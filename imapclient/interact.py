@@ -127,7 +127,7 @@ def main():
     def builtin(c):
         import code
 
-        code.interact(banner, local=dict(c=c))
+        code.interact(banner, local={"c": c})
 
     shell_attempts = (
         ptpython,

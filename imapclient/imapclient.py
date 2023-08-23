@@ -279,7 +279,7 @@ class IMAPClient:
 
         self._set_read_timeout()
         # Small hack to make imaplib log everything to its own logger
-        imaplib_logger = IMAPlibLoggerAdapter(getLogger("imapclient.imaplib"), dict())
+        imaplib_logger = IMAPlibLoggerAdapter(getLogger("imapclient.imaplib"), {})
         self._imap.debug = 5
         self._imap._mesg = imaplib_logger.debug
 
@@ -1590,7 +1590,7 @@ class IMAPClient:
             return
 
         quota_root = None
-        set_quota_args = list()
+        set_quota_args = []
 
         for quota in quotas:
             if quota_root is None:
@@ -2014,7 +2014,7 @@ def utf7_decode_sequence(seq):
 
 def _parse_quota(quota_rep):
     quota_rep = parse_response(quota_rep)
-    rv = list()
+    rv = []
     for quota_root, quota_resource_infos in as_pairs(quota_rep):
         for quota_resource_info in as_triplets(quota_resource_infos):
             rv.append(
