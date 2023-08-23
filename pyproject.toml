@@ -65,3 +65,50 @@ module = [
     "setup",
 ]
 ignore_errors = true
+
+[tool.pylint.messages_control]
+max-line-length = 88
+jobs = 0  # Use auto-detected number of multiple processes to speed up Pylint.
+# TODO(jlvillal): Work on removing these disables over time.
+disable = [
+    "attribute-defined-outside-init",
+    "bad-classmethod-argument",
+    "broad-exception-caught",
+    "consider-using-f-string",
+    "consider-using-in",
+    "consider-using-ternary",
+    "consider-using-with",
+    "deprecated-method",
+    "fixme",
+    "import-error",
+    "import-outside-toplevel",
+    "inconsistent-return-statements",
+    "invalid-name",
+    "line-too-long",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "missing-module-docstring",
+    "no-else-break",
+    "no-else-continue",
+    "no-else-return",
+    "no-value-for-parameter",
+    "protected-access",
+    "raise-missing-from",
+    "signature-differs",
+    "simplifiable-if-statement",
+    "super-with-arguments",
+    "too-few-public-methods",
+    "too-many-arguments",
+    "too-many-boolean-expressions",
+    "too-many-branches",
+    "too-many-instance-attributes",
+    "too-many-lines",
+    "too-many-public-methods",
+    "try-except-raise",
+    "undefined-loop-variable",
+    "unnecessary-pass",
+    "unused-argument",
+    "use-dict-literal",
+    "use-list-literal",
+    "useless-object-inheritance",
+]

@@ -32,3 +32,5 @@ jobs:
         run: tox -e isort -- --check
       - name: Run flake8 (https://flake8.pycqa.org/en/latest/)
         run: tox -e flake8
+      - name: Run pylint Python code static checker (https://github.com/PyCQA/pylint)
+        run: tox -e pylint
