@@ -14,6 +14,7 @@ from collections import namedtuple
 from datetime import date, datetime
 from logging import getLogger, LoggerAdapter
 from operator import itemgetter
+from typing import Optional
 
 from . import exceptions, imap4, response_lexer, tls
 from .datetime_util import datetime_to_INTERNALDATE, format_criteria_date
@@ -227,13 +228,13 @@ class IMAPClient(object):
 
     def __init__(
         self,
-        host,
-        port=None,
-        use_uid=True,
-        ssl=True,
-        stream=False,
-        ssl_context=None,
-        timeout=None,
+        host: str,
+        port: int = None,
+        use_uid: bool = True,
+        ssl: bool = True,
+        stream: bool = False,
+        ssl_context: Optional[str] = None,
+        timeout: Optional[float] = None,
     ):
         if stream:
             if port is not None:
