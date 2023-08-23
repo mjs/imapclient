@@ -146,7 +146,6 @@ class LiteralHandlingIter:
 
 
 class PushableIterator(object):
-
     NO_MORE = object()
 
     def __init__(self, it):

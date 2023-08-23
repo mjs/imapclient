@@ -81,7 +81,6 @@ Content-Type: text/plain; charset="UTF-8"
 
 
 class _TestBase(unittest.TestCase):
-
     conf = None
     use_uid = True
 
