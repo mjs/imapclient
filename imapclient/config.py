@@ -131,9 +131,10 @@ def refresh_oauth2_token(hostname, client_id, client_secret, refresh_token):
         "refresh_token": refresh_token.encode("ascii"),
         "grant_type": b"refresh_token",
     }
-    response = urllib.request.urlopen(
+    with urllib.request.urlopen(
         url, urllib.parse.urlencode(post).encode("ascii")
-    ).read()
+    ) as request:
+        response = request.read()
     return json.loads(response.decode("ascii"))["access_token"]
 
 
