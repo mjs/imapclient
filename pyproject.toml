@@ -71,7 +71,6 @@ disable = [
     "attribute-defined-outside-init",
     "broad-exception-caught",
     "consider-using-f-string",
-    "consider-using-in",
     "consider-using-ternary",
     "consider-using-with",
     "deprecated-method",

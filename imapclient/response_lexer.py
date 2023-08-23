@@ -59,7 +59,7 @@ class Lexer:
                 if escape and nextchar == BACKSLASH:
                     escaper = nextchar
                     nextchar = next(stream_i)
-                    if nextchar != escaper and nextchar != end_char:
+                    if nextchar not in (escaper, end_char):
                         token.append(escaper)  # Don't touch invalid escaping
                 elif nextchar == end_char:
                     break
