@@ -99,6 +99,5 @@ disable = [
     "too-many-public-methods",
     "try-except-raise",
     "undefined-loop-variable",
-    "unnecessary-pass",
     "unused-argument",
 ]

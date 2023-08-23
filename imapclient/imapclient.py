@@ -1839,8 +1839,6 @@ def _normalise_sort_criteria(criteria, charset=None):
 class _literal(bytes):
     """Hold message data that should always be sent as a literal."""
 
-    pass
-
 
 class _quoted(bytes):
     """
