@@ -168,7 +168,7 @@ def require_capability(capability):
     return actual_decorator
 
 
-class IMAPClient(object):
+class IMAPClient:
     """A connection to the IMAP server specified by *host* is made when
     this class is instantiated.
 
@@ -1952,7 +1952,7 @@ def _iter_with_last(items):
 _not_present = object()
 
 
-class _dict_bytes_normaliser(object):
+class _dict_bytes_normaliser:
     """Wrap a dict with unicode/bytes keys and normalise the keys to
     bytes.
     """

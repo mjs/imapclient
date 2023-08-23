@@ -25,7 +25,7 @@ CLOSE_SQUARE = ord("]")
 DOUBLE_QUOTE = ord('"')
 
 
-class TokenSource(object):
+class TokenSource:
     """
     A simple iterator for the Lexer class that also provides access to
     the current IMAP literal.
@@ -43,7 +43,7 @@ class TokenSource(object):
         return self.src
 
 
-class Lexer(object):
+class Lexer:
     """
     A lexical analyzer class for IMAP
     """
@@ -145,7 +145,7 @@ class LiteralHandlingIter:
         return PushableIterator(self.src_text)
 
 
-class PushableIterator(object):
+class PushableIterator:
     NO_MORE = object()
 
     def __init__(self, it):
