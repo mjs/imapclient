@@ -13,7 +13,6 @@ import ssl
 
 
 def wrap_socket(sock, ssl_context, host):
-
     if not hasattr(ssl, "create_default_context"):
         # Python 2.7.0 - 2.7.8 do not have the concept of ssl contexts.
         # Thus we have to use the less flexible and legacy way of wrapping the

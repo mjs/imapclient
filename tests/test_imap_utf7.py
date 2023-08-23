@@ -25,13 +25,13 @@ class IMAP4UTF7TestCase(unittest.TestCase):
     ]
 
     def test_encode(self):
-        for (input, output) in self.tests:
+        for input, output in self.tests:
             encoded = encode(input)
             self.assertIsInstance(encoded, bytes)
             self.assertEqual(encoded, output)
 
     def test_decode(self):
-        for (input, output) in self.tests:
+        for input, output in self.tests:
             decoded = decode(output)
             self.assertIsInstance(decoded, str)
             self.assertEqual(input, decoded)
