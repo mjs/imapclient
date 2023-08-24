@@ -8,9 +8,10 @@
 # Other variations and examples can be found in the RFC 3501, section 5.1.3.
 
 import binascii
+from typing import List, Union
 
 
-def encode(s):
+def encode(s: Union[str, bytes]) -> bytes:
     """Encode a folder name using IMAP modified UTF-7 encoding.
 
     Input is unicode; output is bytes (Python 3) or str (Python 2). If
@@ -21,9 +22,9 @@ def encode(s):
 
     res = bytearray()
 
-    b64_buffer = []
+    b64_buffer: List[str] = []
 
-    def consume_b64_buffer(buf):
+    def consume_b64_buffer(buf: List[str]) -> None:
         """
         Consume the buffer by encoding it into a modified base 64 representation
         and surround it with shift characters & and -
@@ -58,7 +59,7 @@ AMPERSAND_ORD = ord("&")
 DASH_ORD = ord("-")
 
 
-def decode(s):
+def decode(s: Union[bytes, str]) -> str:
     """Decode a folder name from IMAP modified UTF-7 encoding to unicode.
 
     Input is bytes (Python 3) or str (Python 2); output is always
@@ -97,11 +98,11 @@ def decode(s):
     return "".join(res)
 
 
-def base64_utf7_encode(buffer):
+def base64_utf7_encode(buffer: List[str]) -> bytes:
     s = "".join(buffer).encode("utf-16be")
     return binascii.b2a_base64(s).rstrip(b"\n=").replace(b"/", b",")
 
 
-def base64_utf7_decode(s):
+def base64_utf7_decode(s: bytearray) -> str:
     s_utf7 = b"+" + s.replace(b",", b"/") + b"-"
     return s_utf7.decode("utf-7")
