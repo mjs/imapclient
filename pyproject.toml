@@ -48,7 +48,6 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = [
     "imapclient.config",
-    "imapclient.datetime_util",
     "imapclient.imapclient",
     "imapclient.interact",
     "imapclient.response_lexer",
