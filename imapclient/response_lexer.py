@@ -25,7 +25,7 @@ CLOSE_SQUARE = ord("]")
 DOUBLE_QUOTE = ord('"')
 
 
-class TokenSource(object):
+class TokenSource:
     """
     A simple iterator for the Lexer class that also provides access to
     the current IMAP literal.
@@ -43,7 +43,7 @@ class TokenSource(object):
         return self.src
 
 
-class Lexer(object):
+class Lexer:
     """
     A lexical analyzer class for IMAP
     """
@@ -59,7 +59,7 @@ class Lexer(object):
                 if escape and nextchar == BACKSLASH:
                     escaper = nextchar
                     nextchar = next(stream_i)
-                    if nextchar != escaper and nextchar != end_char:
+                    if nextchar not in (escaper, end_char):
                         token.append(escaper)  # Don't touch invalid escaping
                 elif nextchar == end_char:
                     break
@@ -145,7 +145,7 @@ class LiteralHandlingIter:
         return PushableIterator(self.src_text)
 
 
-class PushableIterator(object):
+class PushableIterator:
     NO_MORE = object()
 
     def __init__(self, it):

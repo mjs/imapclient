@@ -168,7 +168,7 @@ def require_capability(capability):
     return actual_decorator
 
 
-class IMAPClient(object):
+class IMAPClient:
     """A connection to the IMAP server specified by *host* is made when
     this class is instantiated.
 
@@ -279,7 +279,7 @@ class IMAPClient(object):
 
         self._set_read_timeout()
         # Small hack to make imaplib log everything to its own logger
-        imaplib_logger = IMAPlibLoggerAdapter(getLogger("imapclient.imaplib"), dict())
+        imaplib_logger = IMAPlibLoggerAdapter(getLogger("imapclient.imaplib"), {})
         self._imap.debug = 5
         self._imap._mesg = imaplib_logger.debug
 
@@ -830,7 +830,7 @@ class IMAPClient(object):
             key = key.upper()
             if key in (b"OK", b"PERMANENTFLAGS"):
                 continue  # already handled above
-            elif key in (
+            if key in (
                 b"EXISTS",
                 b"RECENT",
                 b"UIDNEXT",
@@ -951,8 +951,7 @@ class IMAPClient(object):
                         err = sys.exc_info()[1]
                         if "EOF" in err.args[0]:
                             break
-                        else:
-                            raise
+                        raise
                     else:
                         resps.append(_parse_untagged_response(line))
             return resps
@@ -1590,7 +1589,7 @@ class IMAPClient(object):
             return
 
         quota_root = None
-        set_quota_args = list()
+        set_quota_args = []
 
         for quota in quotas:
             if quota_root is None:
@@ -1839,8 +1838,6 @@ def _normalise_sort_criteria(criteria, charset=None):
 class _literal(bytes):
     """Hold message data that should always be sent as a literal."""
 
-    pass
-
 
 class _quoted(bytes):
     """
@@ -1952,7 +1949,7 @@ def _iter_with_last(items):
 _not_present = object()
 
 
-class _dict_bytes_normaliser(object):
+class _dict_bytes_normaliser:
     """Wrap a dict with unicode/bytes keys and normalise the keys to
     bytes.
     """
@@ -2014,7 +2011,7 @@ def utf7_decode_sequence(seq):
 
 def _parse_quota(quota_rep):
     quota_rep = parse_response(quota_rep)
-    rv = list()
+    rv = []
     for quota_root, quota_resource_infos in as_pairs(quota_rep):
         for quota_resource_info in as_triplets(quota_resource_infos):
             rv.append(
@@ -2042,4 +2039,4 @@ class IMAPlibLoggerAdapter(LoggerAdapter):
                 msg_start = msg.split(command)[0]
                 msg = "{}{} **REDACTED**".format(msg_start, command)
                 break
-        return super(IMAPlibLoggerAdapter, self).process(msg, kwargs)
+        return super().process(msg, kwargs)

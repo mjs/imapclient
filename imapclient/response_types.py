@@ -119,8 +119,7 @@ class BodyData(tuple):
                 if isinstance(part, bytes):
                     break
             return cls(([cls.create(part) for part in response[:i]],) + response[i:])
-        else:
-            return cls(response)
+        return cls(response)
 
     @property
     def is_multipart(self):

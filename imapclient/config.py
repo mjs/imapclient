@@ -17,22 +17,22 @@ def getenv(name, default):
 
 
 def get_config_defaults():
-    return dict(
-        username=getenv("username", None),
-        password=getenv("password", None),
-        ssl=True,
-        ssl_check_hostname=True,
-        ssl_verify_cert=True,
-        ssl_ca_file=None,
-        timeout=None,
-        starttls=False,
-        stream=False,
-        oauth2=False,
-        oauth2_client_id=getenv("oauth2_client_id", None),
-        oauth2_client_secret=getenv("oauth2_client_secret", None),
-        oauth2_refresh_token=getenv("oauth2_refresh_token", None),
-        expect_failure=None,
-    )
+    return {
+        "username": getenv("username", None),
+        "password": getenv("password", None),
+        "ssl": True,
+        "ssl_check_hostname": True,
+        "ssl_verify_cert": True,
+        "ssl_ca_file": None,
+        "timeout": None,
+        "starttls": False,
+        "stream": False,
+        "oauth2": False,
+        "oauth2_client_id": getenv("oauth2_client_id", None),
+        "oauth2_client_secret": getenv("oauth2_client_secret", None),
+        "oauth2_refresh_token": getenv("oauth2_refresh_token", None),
+        "expect_failure": None,
+    }
 
 
 def parse_config_file(filename):
@@ -125,15 +125,16 @@ def refresh_oauth2_token(hostname, client_id, client_secret, refresh_token):
     if not url:
         raise ValueError("don't know where to refresh OAUTH2 token for %r" % hostname)
 
-    post = dict(
-        client_id=client_id.encode("ascii"),
-        client_secret=client_secret.encode("ascii"),
-        refresh_token=refresh_token.encode("ascii"),
-        grant_type=b"refresh_token",
-    )
-    response = urllib.request.urlopen(
+    post = {
+        "client_id": client_id.encode("ascii"),
+        "client_secret": client_secret.encode("ascii"),
+        "refresh_token": refresh_token.encode("ascii"),
+        "grant_type": b"refresh_token",
+    }
+    with urllib.request.urlopen(
         url, urllib.parse.urlencode(post).encode("ascii")
-    ).read()
+    ) as request:
+        response = request.read()
     return json.loads(response.decode("ascii"))["access_token"]
 
 
