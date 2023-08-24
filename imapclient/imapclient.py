@@ -830,7 +830,7 @@ class IMAPClient:
             key = key.upper()
             if key in (b"OK", b"PERMANENTFLAGS"):
                 continue  # already handled above
-            elif key in (
+            if key in (
                 b"EXISTS",
                 b"RECENT",
                 b"UIDNEXT",
@@ -951,8 +951,7 @@ class IMAPClient:
                         err = sys.exc_info()[1]
                         if "EOF" in err.args[0]:
                             break
-                        else:
-                            raise
+                        raise
                     else:
                         resps.append(_parse_untagged_response(line))
             return resps

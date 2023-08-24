@@ -203,9 +203,9 @@ def _convert_ENVELOPE(envelope_response, normalise_times=True):
 def atom(src, token):
     if token == b"(":
         return parse_tuple(src)
-    elif token == b"NIL":
+    if token == b"NIL":
         return None
-    elif token[:1] == b"{":
+    if token[:1] == b"{":
         literal_len = int(token[1:-1])
         literal_text = src.current_literal
         if literal_text is None:
@@ -216,13 +216,12 @@ def atom(src, token):
                 % (literal_len, len(literal_text))
             )
         return literal_text
-    elif len(token) >= 2 and (token[:1] == token[-1:] == b'"'):
+    if len(token) >= 2 and (token[:1] == token[-1:] == b'"'):
         return token[1:-1]
-    elif token.isdigit() and (token[:1] != b"0" or len(token) == 1):
+    if token.isdigit() and (token[:1] != b"0" or len(token) == 1):
         # this prevents converting items like 0123 to 123
         return int(token)
-    else:
-        return token
+    return token
 
 
 def parse_tuple(src):
