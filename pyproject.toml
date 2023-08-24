@@ -56,7 +56,6 @@ module = [
     "imapclient.response_parser",
     "imapclient.response_types",
     "imapclient.tls",
-    "imapclient.util",
     "interact",
     "livetest",
     "setup",
