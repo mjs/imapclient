@@ -11,7 +11,7 @@ from .fixed_offset import FixedOffset
 _SHORT_MONTHS = " Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ")
 
 
-def parse_to_datetime(timestamp, normalise=True):
+def parse_to_datetime(timestamp: bytes, normalise: bool = True) -> datetime:
     """Convert an IMAP datetime string to a datetime.
 
     If normalise is True (the default), then the returned datetime
@@ -36,11 +36,11 @@ def parse_to_datetime(timestamp, normalise=True):
     return dt
 
 
-def datetime_to_native(dt):
+def datetime_to_native(dt: datetime) -> datetime:
     return dt.astimezone(FixedOffset.for_system()).replace(tzinfo=None)
 
 
-def datetime_to_INTERNALDATE(dt):
+def datetime_to_INTERNALDATE(dt: datetime) -> str:
     """Convert a datetime instance to a IMAP INTERNALDATE string.
 
     If timezone information is missing the current system
@@ -57,14 +57,14 @@ def datetime_to_INTERNALDATE(dt):
 _rfc822_dotted_time = re.compile(r"\w+, ?\d{1,2} \w+ \d\d(\d\d)? \d\d?\.\d\d?\.\d\d?.*")
 
 
-def _munge(s):
-    s = s.decode("latin-1")  # parsedate_tz only works with strings
+def _munge(timestamp: bytes) -> str:
+    s = timestamp.decode("latin-1")  # parsedate_tz only works with strings
     if _rfc822_dotted_time.match(s):
         return s.replace(".", ":")
     return s
 
 
-def format_criteria_date(dt):
+def format_criteria_date(dt: datetime) -> bytes:
     """Format a date or datetime instance for use in IMAP search criteria."""
     out = "%02d-%s-%d" % (dt.day, _SHORT_MONTHS[dt.month], dt.year)
     return out.encode("ascii")
