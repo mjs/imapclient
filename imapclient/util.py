@@ -30,11 +30,14 @@ def to_bytes(s: Union[bytes, str], charset: str = "ascii") -> bytes:
     return s
 
 
-def assert_imap_protocol(condition: bool, message: Optional[str] = None) -> None:
+def assert_imap_protocol(condition: bool, message: Optional[bytes] = None) -> None:
     if not condition:
         msg = "Server replied with a response that violates the IMAP protocol"
         if message:
-            msg += "{}: {}".format(msg, message)
+            # FIXME(jlvillal): This looks wrong as it repeats `msg` twice
+            msg += "{}: {}".format(
+                msg, message.decode(encoding="ascii", errors="ignore")
+            )
         raise exceptions.ProtocolError(msg)
 
 
