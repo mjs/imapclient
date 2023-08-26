@@ -172,6 +172,6 @@ class TestAssertIMAPProtocol(unittest.TestCase):
             assert_imap_protocol(False)
 
     def test_assert_imap_protocol_with_message(self):
-        assert_imap_protocol(True, "foo")
+        assert_imap_protocol(True, b"foo")
         with self.assertRaises(ProtocolError):
-            assert_imap_protocol(False, "foo")
+            assert_imap_protocol(False, b"foo")
