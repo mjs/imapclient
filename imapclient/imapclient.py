@@ -1572,7 +1572,7 @@ class IMAPClient:
         quota_root_rep = self._raw_command_untagged(
             b"GETQUOTAROOT", to_bytes(mailbox), uid=False, response_name="QUOTAROOT"
         )
-        quota_rep = pop_with_default(self._imap.untagged_responses, "QUOTA", [])
+        quota_rep = self._imap.untagged_responses.pop("QUOTA", [])
         quota_root_rep = parse_response(quota_root_rep)
         quota_root = MailboxQuotaRoots(
             to_unicode(quota_root_rep[0]), [to_unicode(q) for q in quota_root_rep[1:]]
@@ -1721,11 +1721,9 @@ class IMAPClient:
         logger.debug("   (literal) > %s", debug_trunc(item, 256))
         self._imap.send(item)
 
-    def _command_and_check(self, command, *args, **kwargs):
-        unpack = pop_with_default(kwargs, "unpack", False)
-        uid = pop_with_default(kwargs, "uid", False)
-        assert not kwargs, "unexpected keyword args: " + ", ".join(kwargs)
-
+    def _command_and_check(
+        self, command, *args, unpack: bool = False, uid: bool = False
+    ):
         if uid and self.use_uid:
             command = to_unicode(command)  # imaplib must die
             typ, data = self._imap.uid(command, *args)
@@ -1912,12 +1910,6 @@ def _parse_untagged_response(text):
     if text.startswith((b"OK ", b"NO ")):
         return tuple(text.split(b" ", 1))
     return parse_response([text])
-
-
-def pop_with_default(dct, key, default):
-    if key in dct:
-        return dct.pop(key)
-    return default
 
 
 def as_pairs(items):
