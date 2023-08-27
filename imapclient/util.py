@@ -41,10 +41,10 @@ def assert_imap_protocol(condition: bool, message: Optional[bytes] = None) -> No
         raise exceptions.ProtocolError(msg)
 
 
-_AtomPart = Tuple[Union[None, int, bytes], ...]
-_Atom = Tuple[Union[_AtomPart, "_Atom"], ...]
+_TupleAtomPart = Union[None, int, bytes]
+_TupleAtom = Tuple[Union[_TupleAtomPart, "_TupleAtom"], ...]
 
 
-def chunk(lst: _Atom, size: int) -> Iterator[_Atom]:
+def chunk(lst: _TupleAtom, size: int) -> Iterator[_TupleAtom]:
     for i in range(0, len(lst), size):
         yield lst[i : i + size]
