@@ -757,10 +757,9 @@ class IMAPClient:
         """
         # Detect folder by looking for known attributes
         # TODO: avoid listing all folders by using extended LIST (RFC6154)
-        if self.has_capability("SPECIAL-USE"):
-            for folder in self.list_folders():
-                if folder and len(folder[0]) > 0 and folder_flag in folder[0]:
-                    return folder[2]
+        for folder in self.list_folders():
+            if folder and len(folder[0]) > 0 and folder_flag in folder[0]:
+                return folder[2]
 
         # Detect folder by looking for common names
         # We only look for folders in the "personal" namespace of the user
