@@ -4,7 +4,9 @@
 
 from collections import namedtuple
 from email.utils import formataddr
+from typing import Any, List, Optional, Tuple, TYPE_CHECKING, Union
 
+from .typing_imapclient import _Atom
 from .util import to_unicode
 
 
@@ -79,7 +81,7 @@ class Address(namedtuple("Address", "name route mailbox host")):
     "group syntax".
     """
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.mailbox and self.host:
             address = to_unicode(self.mailbox) + "@" + to_unicode(self.host)
         else:
@@ -88,7 +90,7 @@ class Address(namedtuple("Address", "name route mailbox host")):
         return formataddr((to_unicode(self.name), address))
 
 
-class SearchIds(list):
+class SearchIds(List[int]):
     """
     Contains a list of message ids as returned by IMAPClient.search().
 
@@ -97,30 +99,37 @@ class SearchIds(list):
     criteria). See :rfc:`4551` for more details.
     """
 
-    def __init__(self, *args):
-        list.__init__(self, *args)
-        self.modseq = None
+    def __init__(self, *args: Any):
+        super().__init__(*args)
+        self.modseq: Optional[int] = None
 
 
-class BodyData(tuple):
+_BodyDataType = Tuple[Union[bytes, int, "BodyData"], "_BodyDataType"]
+
+
+class BodyData(_BodyDataType):
     """
     Returned when parsing BODY and BODYSTRUCTURE responses.
     """
 
     @classmethod
-    def create(cls, response):
+    def create(cls, response: Tuple[_Atom, ...]) -> "BodyData":
         # In case of multipart messages we will see at least 2 tuples
         # at the start. Nest these in to a list so that the returned
         # response tuple always has a consistent number of elements
         # regardless of whether the message is multipart or not.
         if isinstance(response[0], tuple):
             # Multipart, find where the message part tuples stop
+            parts = []
             for i, part in enumerate(response):
                 if isinstance(part, bytes):
                     break
-            return cls(([cls.create(part) for part in response[:i]],) + response[i:])
+                if TYPE_CHECKING:
+                    assert isinstance(part, tuple)
+                parts.append(part)
+            return cls(([cls.create(part) for part in parts],) + response[i:])
         return cls(response)
 
     @property
-    def is_multipart(self):
+    def is_multipart(self) -> bool:
         return isinstance(self[0], list)
