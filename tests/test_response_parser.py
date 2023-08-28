@@ -511,7 +511,7 @@ class TestParseFetchResponse(unittest.TestCase):
 
         output = parse_fetch_response([envelope_str], normalise_times=False)
 
-        self.assertSequenceEqual(
+        self.assertEqual(
             output[1][b"ENVELOPE"],
             Envelope(
                 datetime(2013, 3, 24, 22, 6, 10, tzinfo=FixedOffset(120)),
@@ -547,7 +547,7 @@ class TestParseFetchResponse(unittest.TestCase):
 
         output = parse_fetch_response([envelope_str], normalise_times=False)
 
-        self.assertSequenceEqual(
+        self.assertEqual(
             output[1][b"ENVELOPE"],
             Envelope(
                 None,
@@ -574,7 +574,7 @@ class TestParseFetchResponse(unittest.TestCase):
 
         output = parse_fetch_response([envelope_str], normalise_times=False)
 
-        self.assertSequenceEqual(
+        self.assertEqual(
             output[1][b"ENVELOPE"],
             Envelope(
                 None,
@@ -606,7 +606,7 @@ class TestParseFetchResponse(unittest.TestCase):
 
         output = parse_fetch_response([envelope_str], normalise_times=False)
 
-        self.assertSequenceEqual(
+        self.assertEqual(
             output[1][b"ENVELOPE"],
             Envelope(
                 None,

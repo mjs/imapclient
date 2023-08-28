@@ -209,6 +209,12 @@ def _convert_ENVELOPE(
             pass
 
     subject = envelope_response[1]
+    in_reply_to = envelope_response[8]
+    message_id = envelope_response[9]
+    if TYPE_CHECKING:
+        assert isinstance(subject, bytes)
+        assert isinstance(in_reply_to, bytes)
+        assert isinstance(message_id, bytes)
 
     # addresses contains a tuple of addresses
     # from, sender, reply_to, to, cc, bcc headers
@@ -222,6 +228,8 @@ def _convert_ENVELOPE(
                 if TYPE_CHECKING:
                     assert isinstance(addr_tuple, tuple)
                 if addr_tuple:
+                    if TYPE_CHECKING:
+                        addr_tuple = cast(Tuple[bytes, bytes, bytes, bytes], addr_tuple)
                     addrs.append(Address(*addr_tuple))
             addresses.append(tuple(addrs))
         else:
@@ -236,8 +244,8 @@ def _convert_ENVELOPE(
         to=addresses[3],
         cc=addresses[4],
         bcc=addresses[5],
-        in_reply_to=envelope_response[8],
-        message_id=envelope_response[9],
+        in_reply_to=in_reply_to,
+        message_id=message_id,
     )
 
 

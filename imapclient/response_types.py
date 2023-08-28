@@ -2,7 +2,8 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from collections import namedtuple
+import dataclasses
+import datetime
 from email.utils import formataddr
 from typing import Any, List, Optional, Tuple, TYPE_CHECKING, Union
 
@@ -10,12 +11,8 @@ from .typing_imapclient import _Atom
 from .util import to_unicode
 
 
-class Envelope(
-    namedtuple(
-        "Envelope",
-        "date subject from_ sender reply_to to cc bcc in_reply_to message_id",
-    )
-):
+@dataclasses.dataclass
+class Envelope:
     r"""Represents envelope structures of messages. Returned when parsing
     ENVELOPE responses.
 
@@ -56,9 +53,20 @@ class Envelope(
     See :rfc:`3501#section-7.4.2` and :rfc:`2822` for further details.
 
     """
+    date: Optional[datetime.datetime]
+    subject: bytes
+    from_: Optional[Tuple["Address", ...]]
+    sender: Optional[Tuple["Address", ...]]
+    reply_to: Optional[Tuple["Address", ...]]
+    to: Optional[Tuple["Address", ...]]
+    cc: Optional[Tuple["Address", ...]]
+    bcc: Optional[Tuple["Address", ...]]
+    in_reply_to: bytes
+    message_id: bytes
 
 
-class Address(namedtuple("Address", "name route mailbox host")):
+@dataclasses.dataclass
+class Address:
     """Represents electronic mail addresses. Used to store addresses in
     :py:class:`Envelope`.
 
@@ -80,6 +88,11 @@ class Address(namedtuple("Address", "name route mailbox host")):
     See also :py:class:`Envelope` for information about handling of
     "group syntax".
     """
+
+    name: bytes
+    route: bytes
+    mailbox: bytes
+    host: bytes
 
     def __str__(self) -> str:
         if self.mailbox and self.host:
