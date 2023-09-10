@@ -5,13 +5,14 @@
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 from os import path
+from typing import Dict
 
-from setuptools import setup
+from setuptools import setup  # type: ignore[import]
 
 # Read version info
 here = path.dirname(__file__)
 version_file = path.join(here, "imapclient", "version.py")
-info = {}
+info: Dict[str, str] = {}
 exec(open(version_file).read(), {}, info)
 
 desc = """\

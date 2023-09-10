@@ -52,7 +52,6 @@ module = [
     "imapclient.interact",
     "interact",
     "livetest",
-    "setup",
 ]
 ignore_errors = true
 
