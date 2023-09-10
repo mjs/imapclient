@@ -2,18 +2,19 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+import argparse
 import configparser
 import json
+import os
 import ssl
 import urllib.parse
 import urllib.request
-from os import environ, path
 
 import imapclient
 
 
 def getenv(name, default):
-    return environ.get("imapclient_" + name, default)
+    return os.environ.get("imapclient_" + name, default)
 
 
 def get_config_defaults():
@@ -92,9 +93,9 @@ def _read_config_section(parser, section):
 
     ssl_ca_file = get("ssl_ca_file")
     if ssl_ca_file:
-        ssl_ca_file = path.expanduser(ssl_ca_file)
+        ssl_ca_file = os.path.expanduser(ssl_ca_file)
 
-    return Bunch(
+    return argparse.Namespace(
         host=get("host"),
         port=getint("port"),
         ssl=getboolean("ssl"),
@@ -200,14 +201,3 @@ def create_client_from_config(conf, login=True):
     except:  # noqa: E722
         client.shutdown()
         raise
-
-
-class Bunch(dict):
-    def __getattr__(self, k):
-        try:
-            return self[k]
-        except KeyError:
-            raise AttributeError
-
-    def __setattr__(self, k, v):
-        self[k] = v
