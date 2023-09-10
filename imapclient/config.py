@@ -9,15 +9,16 @@ import os
 import ssl
 import urllib.parse
 import urllib.request
+from typing import Any, Callable, Dict, Optional, Tuple, TYPE_CHECKING, TypeVar
 
 import imapclient
 
 
-def getenv(name, default):
+def getenv(name: str, default: Optional[str]) -> Optional[str]:
     return os.environ.get("imapclient_" + name, default)
 
 
-def get_config_defaults():
+def get_config_defaults() -> Dict[str, Any]:
     return {
         "username": getenv("username", None),
         "password": getenv("password", None),
@@ -36,7 +37,7 @@ def get_config_defaults():
     }
 
 
-def parse_config_file(filename):
+def parse_config_file(filename: str) -> argparse.Namespace:
     """Parse INI files containing IMAP connection details.
 
     Used by livetest.py and interact.py
@@ -51,12 +52,13 @@ def parse_config_file(filename):
 
     conf.alternates = {}
     for section in parser.sections():
+        # pylint: disable=no-member
         conf.alternates[section] = _read_config_section(parser, section)
 
     return conf
 
 
-def get_string_config_defaults():
+def get_string_config_defaults() -> Dict[str, str]:
     out = {}
     for k, v in get_config_defaults().items():
         if v is True:
@@ -69,14 +71,19 @@ def get_string_config_defaults():
     return out
 
 
-def _read_config_section(parser, section):
-    def get(name):
+T = TypeVar("T")
+
+
+def _read_config_section(
+    parser: configparser.ConfigParser, section: str
+) -> argparse.Namespace:
+    def get(name: str) -> str:
         return parser.get(section, name)
 
-    def getboolean(name):
+    def getboolean(name: str) -> bool:
         return parser.getboolean(section, name)
 
-    def get_allowing_none(name, typefunc):
+    def get_allowing_none(name: str, typefunc: Callable[[str], T]) -> Optional[T]:
         try:
             v = parser.get(section, name)
         except configparser.NoOptionError:
@@ -85,10 +92,10 @@ def _read_config_section(parser, section):
             return None
         return typefunc(v)
 
-    def getint(name):
+    def getint(name: str) -> Optional[int]:
         return get_allowing_none(name, int)
 
-    def getfloat(name):
+    def getfloat(name: str) -> Optional[float]:
         return get_allowing_none(name, float)
 
     ssl_ca_file = get("ssl_ca_file")
@@ -121,7 +128,9 @@ OAUTH2_REFRESH_URLS = {
 }
 
 
-def refresh_oauth2_token(hostname, client_id, client_secret, refresh_token):
+def refresh_oauth2_token(
+    hostname: str, client_id: str, client_secret: str, refresh_token: str
+) -> str:
     url = OAUTH2_REFRESH_URLS.get(hostname)
     if not url:
         raise ValueError("don't know where to refresh OAUTH2 token for %r" % hostname)
@@ -136,14 +145,19 @@ def refresh_oauth2_token(hostname, client_id, client_secret, refresh_token):
         url, urllib.parse.urlencode(post).encode("ascii")
     ) as request:
         response = request.read()
-    return json.loads(response.decode("ascii"))["access_token"]
+    result = json.loads(response.decode("ascii"))["access_token"]
+    if TYPE_CHECKING:
+        assert isinstance(result, str)
+    return result
 
 
 # Tokens are expensive to refresh so use the same one for the duration of the process.
-_oauth2_cache = {}
+_oauth2_cache: Dict[Tuple[str, str, str, str], str] = {}
 
 
-def get_oauth2_token(hostname, client_id, client_secret, refresh_token):
+def get_oauth2_token(
+    hostname: str, client_id: str, client_secret: str, refresh_token: str
+) -> str:
     cache_key = (hostname, client_id, client_secret, refresh_token)
     token = _oauth2_cache.get(cache_key)
     if token:
@@ -154,7 +168,9 @@ def get_oauth2_token(hostname, client_id, client_secret, refresh_token):
     return token
 
 
-def create_client_from_config(conf, login=True):
+def create_client_from_config(
+    conf: argparse.Namespace, login: bool = True
+) -> imapclient.IMAPClient:
     assert conf.host, "missing host"
 
     ssl_context = None

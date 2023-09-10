@@ -9,6 +9,7 @@ import itertools
 import re
 import select
 import socket
+import ssl as ssl_lib
 import sys
 import warnings
 from datetime import date, datetime
@@ -247,7 +248,7 @@ class IMAPClient:
         use_uid: bool = True,
         ssl: bool = True,
         stream: bool = False,
-        ssl_context: Optional[str] = None,
+        ssl_context: Optional[ssl_lib.SSLContext] = None,
         timeout: Optional[float] = None,
     ):
         if stream:
@@ -386,7 +387,7 @@ class IMAPClient:
         self._imap.file = self._imap.sock.makefile("rb")
         return data[0]
 
-    def login(self, username, password):
+    def login(self, username: str, password: str):
         """Login using *username* and *password*, returning the
         server response.
         """
@@ -403,7 +404,13 @@ class IMAPClient:
         logger.debug("Logged in as %s", username)
         return rv
 
-    def oauth2_login(self, user, access_token, mech="XOAUTH2", vendor=None):
+    def oauth2_login(
+        self,
+        user: str,
+        access_token: str,
+        mech: str = "XOAUTH2",
+        vendor: Optional[str] = None,
+    ):
         """Authenticate using the OAUTH2 or XOAUTH2 methods.
 
         Gmail and Yahoo both support the 'XOAUTH2' mechanism, but Yahoo requires
@@ -517,7 +524,7 @@ class IMAPClient:
         logger.debug("Logged out, connection closed")
         return data[0]
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Close the connection to the IMAP server (without logging out)
 
         In most cases, :py:meth:`.logout` should be used instead of
