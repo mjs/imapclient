@@ -2,6 +2,7 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+import dataclasses
 import functools
 import imaplib
 import itertools
@@ -10,11 +11,10 @@ import select
 import socket
 import sys
 import warnings
-from collections import namedtuple
 from datetime import date, datetime
 from logging import getLogger, LoggerAdapter
 from operator import itemgetter
-from typing import Optional
+from typing import List, Optional
 
 from . import exceptions, imap4, response_lexer, tls
 from .datetime_util import datetime_to_INTERNALDATE, format_criteria_date
@@ -117,7 +117,8 @@ class Namespace(tuple):
     shared = property(itemgetter(2))
 
 
-class SocketTimeout(namedtuple("SocketTimeout", "connect read")):
+@dataclasses.dataclass
+class SocketTimeout:
     """Represents timeout configuration for an IMAP connection.
 
     :ivar connect: maximum time to wait for a connection attempt to remote server
@@ -128,8 +129,12 @@ class SocketTimeout(namedtuple("SocketTimeout", "connect read")):
     read/write operations can take up to 60 seconds once the connection is done.
     """
 
+    connect: float
+    read: float
 
-class MailboxQuotaRoots(namedtuple("MailboxQuotaRoots", "mailbox quota_roots")):
+
+@dataclasses.dataclass
+class MailboxQuotaRoots:
     """Quota roots associated with a mailbox.
 
     Represents the response of a GETQUOTAROOT command.
@@ -138,8 +143,12 @@ class MailboxQuotaRoots(namedtuple("MailboxQuotaRoots", "mailbox quota_roots")):
     :ivar quota_roots: list of quota roots associated with the mailbox
     """
 
+    mailbox: str
+    quota_roots: List[str]
 
-class Quota(namedtuple("Quota", "quota_root resource usage limit")):
+
+@dataclasses.dataclass
+class Quota:
     """Resource quota.
 
     Represents the response of a GETQUOTA command.
@@ -149,6 +158,11 @@ class Quota(namedtuple("Quota", "quota_root resource usage limit")):
     :ivar usage: the current usage of the resource
     :ivar limit: the maximum allowed usage of the resource
     """
+
+    quota_root: str
+    resource: str
+    usage: bytes
+    limit: bytes
 
 
 def require_capability(capability):
