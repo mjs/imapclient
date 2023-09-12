@@ -34,3 +34,5 @@ jobs:
         run: tox -e flake8
       - name: Run pylint Python code static checker (https://github.com/PyCQA/pylint)
         run: tox -e pylint
+      - name: Run mypy static typing checker (https://www.mypy-lang.org/)
+        run: tox -e mypy
