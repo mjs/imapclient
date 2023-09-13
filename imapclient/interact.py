@@ -7,10 +7,11 @@
 import argparse
 from getpass import getpass
 
+from . import imapclient
 from .config import create_client_from_config, get_config_defaults, parse_config_file
 
 
-def command_line():
+def command_line() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-H", "--host", dest="host", action="store", help="IMAP host connect to"
@@ -95,36 +96,38 @@ def command_line():
     return args
 
 
-def main():
+def main() -> int:
     args = command_line()
     print("Connecting...")
     client = create_client_from_config(args)
     print("Connected.")
     banner = '\nIMAPClient instance is "c"'
 
-    def ptpython(c):
-        from ptpython.repl import embed
+    def ptpython(c: imapclient.IMAPClient) -> None:
+        from ptpython.repl import embed  # type: ignore[import]
 
         embed(globals(), locals())
 
-    def ipython_400(c):
-        from IPython.terminal.embed import InteractiveShellEmbed
+    def ipython_400(c: imapclient.IMAPClient) -> None:
+        from IPython.terminal.embed import InteractiveShellEmbed  # type: ignore[import]
 
         ipshell = InteractiveShellEmbed(banner1=banner)
         ipshell("")
 
-    def ipython_011(c):
-        from IPython.frontend.terminal.embed import InteractiveShellEmbed
+    def ipython_011(c: imapclient.IMAPClient) -> None:
+        from IPython.frontend.terminal.embed import (  # type: ignore[import]
+            InteractiveShellEmbed,
+        )
 
         ipshell = InteractiveShellEmbed(banner1=banner)
         ipshell("")
 
-    def ipython_010(c):
-        from IPython.Shell import IPShellEmbed
+    def ipython_010(c: imapclient.IMAPClient) -> None:
+        from IPython.Shell import IPShellEmbed  # type: ignore[import]
 
         IPShellEmbed("", banner=banner)()
 
-    def builtin(c):
+    def builtin(c: imapclient.IMAPClient) -> None:
         import code
 
         code.interact(banner, local={"c": c})
@@ -143,6 +146,7 @@ def main():
             pass
         else:
             break
+    return 0
 
 
 if __name__ == "__main__":

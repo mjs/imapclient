@@ -48,8 +48,6 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = [
     "imapclient.imapclient",
-    "imapclient.interact",
-    "interact",
     "livetest",
 ]
 ignore_errors = true
