@@ -104,18 +104,20 @@ def main() -> int:
     banner = '\nIMAPClient instance is "c"'
 
     def ptpython(c: imapclient.IMAPClient) -> None:
-        from ptpython.repl import embed  # type: ignore[import]
+        from ptpython.repl import embed  # type: ignore[import-not-found]
 
         embed(globals(), locals())
 
     def ipython_400(c: imapclient.IMAPClient) -> None:
-        from IPython.terminal.embed import InteractiveShellEmbed  # type: ignore[import]
+        from IPython.terminal.embed import (  # type: ignore[import-not-found]
+            InteractiveShellEmbed,
+        )
 
         ipshell = InteractiveShellEmbed(banner1=banner)
         ipshell("")
 
     def ipython_011(c: imapclient.IMAPClient) -> None:
-        from IPython.frontend.terminal.embed import (  # type: ignore[import]
+        from IPython.frontend.terminal.embed import (  # type: ignore[import-not-found]
             InteractiveShellEmbed,
         )
 
@@ -123,7 +125,7 @@ def main() -> int:
         ipshell("")
 
     def ipython_010(c: imapclient.IMAPClient) -> None:
-        from IPython.Shell import IPShellEmbed  # type: ignore[import]
+        from IPython.Shell import IPShellEmbed  # type: ignore[import-not-found]
 
         IPShellEmbed("", banner=banner)()
 

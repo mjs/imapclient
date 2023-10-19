@@ -7,7 +7,7 @@
 from os import path
 from typing import Dict
 
-from setuptools import setup  # type: ignore[import]
+from setuptools import setup  # type: ignore[import-untyped]
 
 # Read version info
 here = path.dirname(__file__)
