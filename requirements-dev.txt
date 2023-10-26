@@ -2,5 +2,5 @@ sphinx
 black==23.10.0
 flake8==6.1.0
 isort==5.12.0
-mypy==1.6.0
+mypy==1.6.1
 pylint==3.0.2
