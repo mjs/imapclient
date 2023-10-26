@@ -1,4 +1,6 @@
-:tocdepth: 1
+.. note::
+   From release 3.0.0 onwards, release notes are maintained 
+   `on Github <https://github.com/mjs/imapclient/releases>`_.
 
 ===============
  Version 2.3.0
