@@ -125,7 +125,6 @@ Release History
 ---------------
 
 From release 3.0.0 onwards, release notes are maintained `on Github
-<https://github.com/mjs/imapclient/releases>`_. 
+<https://github.com/mjs/imapclient/releases>`_.
 
 Release notes for older versions can be found :doc:`in these docs <releases>`.
-

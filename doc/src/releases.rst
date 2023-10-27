@@ -1,5 +1,7 @@
+:orphan:
+
 .. note::
-   From release 3.0.0 onwards, release notes are maintained 
+   From release 3.0.0 onwards, release notes are maintained
    `on Github <https://github.com/mjs/imapclient/releases>`_.
 
 ===============
