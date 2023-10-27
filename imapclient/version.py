@@ -4,7 +4,7 @@
 
 from typing import Tuple
 
-version_info = (2, 3, 1, "final")
+version_info = (3, 0, 0, "final")
 
 
 def _imapclient_version_string(vinfo: Tuple[int, int, int, str]) -> str:

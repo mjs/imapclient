@@ -32,12 +32,16 @@ project:
 - Samir M
 - Devin Bayer
 - Mantas Mikulėnas
-- zrose584
+- @zrose584
 - Michał Górny
 - François Deppierraz
 - Jasper Spaans
-- Boni Lindsley 
+- Boni Lindsley
 - Tobias Kölling
-- pinoatrome
-- Shoaib Ahmed 
-
+- @pinoatrome
+- Shoaib Ahmed
+- John Villalovos
+- Claude Paroz
+- Stefan Wójcik
+- Andrzej Bartosiński
+- @axoroll7

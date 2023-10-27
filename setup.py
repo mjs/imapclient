@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) 2017, Menno Smits
+# Copyright (c) 2023, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -46,8 +46,6 @@ setup(
     author_email=info["author_email"],
     license="3-Clause BSD License",
     url="https://github.com/mjs/imapclient/",
-    download_url="http://menno.io/projects/IMAPClient/IMAPClient-%s.zip"
-    % info["version"],
     packages=["imapclient"],
     package_data=dict(imapclient=["examples/*.py"]),
     extras_require={"doc": doc_deps},
