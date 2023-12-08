@@ -100,9 +100,10 @@ def gen_parsed_response(text: List[bytes]) -> Iterator[_Atom]:
         raise ProtocolError("%s: %r" % (str(err), token))
 
 
-_ParseFetchResponseInnerDict = Dict[
-    bytes, Optional[Union[datetime.datetime, int, BodyData, Envelope, _Atom]]
+_ParseFetchResponseInnerDictValue = Optional[
+    Union[datetime.datetime, int, BodyData, Envelope, _Atom]
 ]
+_ParseFetchResponseInnerDict = Dict[bytes, _ParseFetchResponseInnerDictValue]
 
 
 def parse_fetch_response(
