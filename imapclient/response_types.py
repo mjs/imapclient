@@ -53,6 +53,7 @@ class Envelope:
     See :rfc:`3501#section-7.4.2` and :rfc:`2822` for further details.
 
     """
+
     date: Optional[datetime.datetime]
     subject: bytes
     from_: Optional[Tuple["Address", ...]]
