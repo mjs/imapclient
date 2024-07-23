@@ -1677,6 +1677,10 @@ class IMAPClient:
         """
         command = command.upper()
 
+        # Check for LITERAL+ now because if capabilities haven't been cached
+        # yet, we can't call CAPABILITY while sending another command.
+        has_literal_plus = self.has_capability("LITERAL+")
+
         if isinstance(args, tuple):
             args = list(args)
         if not isinstance(args, list):
@@ -1704,7 +1708,7 @@ class IMAPClient:
                 # Now send the (unquoted) literal
                 if isinstance(item, _quoted):
                     item = item.original
-                self._send_literal(tag, item)
+                self._send_literal(tag, item, has_literal_plus)
                 if not is_last:
                     self._imap.send(b" ")
             else:
@@ -1719,9 +1723,9 @@ class IMAPClient:
 
         return self._imap._command_complete(to_unicode(command), tag)
 
-    def _send_literal(self, tag, item):
+    def _send_literal(self, tag, item, has_literal_plus):
         """Send a single literal for the command with *tag*."""
-        if b"LITERAL+" in self._cached_capabilities:
+        if has_literal_plus:
             out = b" {" + str(len(item)).encode("ascii") + b"+}\r\n" + item
             logger.debug("> %s", debug_trunc(out, 64))
             self._imap.send(out)
