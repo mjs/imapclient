@@ -1,6 +1,7 @@
 sphinx==7.2.6
-black==23.11.0
+black==24.3.0
 flake8==6.1.0
 isort==5.12.0
 mypy==1.8.0
 pylint==3.0.2
+setuptools==70.1.1
