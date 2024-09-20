@@ -99,7 +99,7 @@ _POPULAR_PERSONAL_NAMESPACES = (("", ""), ("INBOX.", "."))
 
 # Names of special folders that are common among providers
 _POPULAR_SPECIAL_FOLDERS = {
-    SENT: ("Sent", "Sent Items", "Sent items"),
+    SENT: ("Sent", "Sent Items", "Sent items", "Sent Messages"),
     DRAFTS: ("Drafts",),
     ARCHIVE: ("Archive",),
     TRASH: ("Trash", "Deleted Items", "Deleted Messages", "Deleted"),
