@@ -47,7 +47,7 @@ warn_unused_ignores = true
 # Overrides for currently untyped modules
 [[tool.mypy.overrides]]
 module = [
-    "imapclient.imapclient",
+#    "imapclient.imapclient",
     "livetest",
 ]
 ignore_errors = true
