@@ -86,6 +86,10 @@ if "MOVE" not in imaplib.Commands:
 if "LIST-EXTENDED" not in imaplib.Commands:
     imaplib.Commands["LIST-EXTENDED"] = ("AUTH", "SELECTED")
 
+# .. and CREATE-SPECIAL-USE for RFC6154.
+if "CREATE" not in imaplib.Commands:
+    imaplib.Commands["CREATE"] = ("AUTH", "SELECTED")
+
 # System flags
 DELETED = rb"\Deleted"
 SEEN = rb"\Seen"
@@ -1070,11 +1074,78 @@ class IMAPClient:
         """
         return self._command_and_check("close", unpack=True)
 
-    def create_folder(self, folder):
-        """Create *folder* on the server returning the server response string."""
-        return self._command_and_check(
-            "create", self._normalise_folder(folder), unpack=True
-        )
+    def create_folder(self, folder: str, special_use: Optional[bytes] = None) -> str:
+        """Create folder with optional SPECIAL-USE attribute.
+        
+        Creates a new folder on the IMAP server. When special_use is provided,
+        the folder will be marked with the specified special-use attribute 
+        according to RFC 6154.
+        
+        Args:
+            folder: Folder name to create
+            special_use: Optional special-use attribute (e.g., SENT, DRAFTS, JUNK, etc.)
+                        Must be one of the RFC 6154 constants: ALL, ARCHIVE, DRAFTS, 
+                        JUNK, SENT, TRASH
+        
+        Returns:
+            Server response string
+            
+        Raises:
+            CapabilityError: If server doesn't support CREATE-SPECIAL-USE when 
+                           special_use is provided
+            IMAPClientError: If the CREATE command fails
+            
+        Examples:
+            Standard folder creation (existing behavior):
+            >>> client.create_folder("INBOX.NewFolder")
+            
+            Special-use folder creation (new feature):  
+            >>> client.create_folder("INBOX.MySent", special_use=imapclient.SENT)
+            >>> client.create_folder("INBOX.MyDrafts", special_use=imapclient.DRAFTS)
+        """
+        if special_use is not None:
+            return self._create_folder_with_special_use(folder, special_use)
+        else:
+            # Use standard CREATE command (existing behavior)
+            return self._command_and_check(
+                "create", self._normalise_folder(folder), unpack=True
+            )
+
+    def _create_folder_with_special_use(self, folder: str, special_use: bytes) -> str:
+        """Create folder with SPECIAL-USE attribute using RFC 6154 CREATE extension.
+        
+        Args:
+            folder: Folder name to create
+            special_use: Special-use attribute (bytes)
+        
+        Returns:
+            Server response string
+            
+        Raises:
+            CapabilityError: If server doesn't support CREATE-SPECIAL-USE
+            IMAPClientError: If special_use is not a valid RFC 6154 constant
+        """
+        if not self.has_capability("CREATE-SPECIAL-USE"):
+            raise exceptions.CapabilityError("Server does not support CREATE-SPECIAL-USE")
+        
+        # Validate special_use against known RFC 6154 constants
+        valid_special_uses = {ALL, ARCHIVE, DRAFTS, JUNK, SENT, TRASH}
+        if special_use not in valid_special_uses:
+            raise exceptions.IMAPClientError(
+                f"Invalid special_use attribute: {special_use!r}. "
+                f"Must be one of: {', '.join(attr.decode('ascii') for attr in valid_special_uses)}"
+            )
+        
+        normalized_folder = self._normalise_folder(folder)
+        
+        # Construct CREATE command with USE attribute: CREATE "folder" (USE (special_use))
+        use_clause = b"(USE (" + special_use + b"))"
+        
+        typ, data = self._imap.create(normalized_folder, use_clause)
+        if typ != "OK":
+            raise exceptions.IMAPClientError(f"CREATE command failed: {data}")
+        
+        return data[0].decode("ascii", "replace")
 
     def rename_folder(self, old_name, new_name):
         """Change the name of a folder on the server."""
