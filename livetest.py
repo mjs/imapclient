@@ -1119,6 +1119,32 @@ def createUidTestClass(conf, use_uid):
             rights = self.client.getacl(folder)
             self.assertIn(who, [u for u, r in rights])
 
+        def test_list_special_folders(self):
+            self.skip_unless_capable("SPECIAL-USE")
+            
+            # Test basic list_special_folders functionality
+            special_folders = self.client.list_special_folders()
+            self.assertIsInstance(special_folders, list)
+            
+            # Verify the response format
+            for flags, delimiter, name in special_folders:
+                self.assertIsInstance(flags, tuple)
+                self.assertIsInstance(delimiter, bytes)
+                self.assertIsInstance(name, (str, bytes))
+                
+                # Check if any flag is a special-use attribute
+                special_use_flags = [b'\\Archive', b'\\Drafts', b'\\Flagged', 
+                                   b'\\Junk', b'\\Sent', b'\\Trash', b'\\All']
+                has_special_use = any(flag in special_use_flags for flag in flags)
+                if has_special_use:
+                    # If we found a special-use folder, that's good evidence
+                    # that the RFC 6154 implementation is working
+                    break
+            
+            # Test with pattern parameter
+            inbox_folders = self.client.list_special_folders("", "INBOX*")
+            self.assertIsInstance(inbox_folders, list)
+
     LiveTest.conf = conf
     LiveTest.use_uid = use_uid
 

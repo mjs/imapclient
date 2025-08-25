@@ -278,6 +278,181 @@ class TestFindSpecialFolder(IMAPClientTest):
         self.assertEqual(folder, "Sent Items")
 
 
+class TestSpecialUseFolders(IMAPClientTest):
+    def test_list_special_folders_capability_required(self):
+        """Test that SPECIAL-USE capability is required."""
+        self.client._cached_capabilities = (b"IMAP4REV1",)
+        self.assertRaises(CapabilityError, self.client.list_special_folders)
+
+    def test_list_special_folders_basic(self):
+        """Test basic special folder listing."""
+        self.client._cached_capabilities = (b"SPECIAL-USE",)
+        self.client._imap._simple_command.return_value = ("OK", [b"something"])
+        self.client._imap._untagged_response.return_value = (
+            "LIST",
+            [
+                b'(\\HasNoChildren \\Drafts) "/" "INBOX.Drafts"',
+                b'(\\HasNoChildren \\Sent) "/" "INBOX.Sent"',
+                b'(\\HasNoChildren \\Archive) "/" "INBOX.Archive"',
+            ],
+        )
+
+        folders = self.client.list_special_folders()
+
+        self.client._imap._simple_command.assert_called_once_with(
+            "LIST", b'""', b'"*"', "RETURN", "(SPECIAL-USE)"
+        )
+        self.assertEqual(len(folders), 3)
+        self.assertEqual(folders[0], ((b"\\HasNoChildren", b"\\Drafts"), b"/", "INBOX.Drafts"))
+        self.assertEqual(folders[1], ((b"\\HasNoChildren", b"\\Sent"), b"/", "INBOX.Sent"))
+        self.assertEqual(folders[2], ((b"\\HasNoChildren", b"\\Archive"), b"/", "INBOX.Archive"))
+
+    def test_list_special_folders_with_params(self):
+        """Test list_special_folders with directory and pattern parameters."""
+        self.client._cached_capabilities = (b"SPECIAL-USE",)
+        self.client._imap._simple_command.return_value = ("OK", [b"something"])
+        self.client._imap._untagged_response.return_value = (
+            "LIST",
+            [
+                b'(\\HasNoChildren \\Trash) "/" "INBOX.Trash"',
+            ],
+        )
+
+        folders = self.client.list_special_folders("INBOX", "T*")
+
+        self.client._imap._simple_command.assert_called_once_with(
+            "LIST", b'"INBOX"', b'"T*"', "RETURN", "(SPECIAL-USE)"
+        )
+        self.assertEqual(len(folders), 1)
+        self.assertEqual(folders[0], ((b"\\HasNoChildren", b"\\Trash"), b"/", "INBOX.Trash"))
+
+    def test_list_special_folders_server_response_empty(self):
+        """Test list_special_folders with empty server response."""
+        self.client._cached_capabilities = (b"SPECIAL-USE",)
+        self.client._imap._simple_command.return_value = ("OK", [b"something"])
+        self.client._imap._untagged_response.return_value = ("LIST", [None])
+
+        folders = self.client.list_special_folders()
+
+        self.client._imap._simple_command.assert_called_once_with(
+            "LIST", b'""', b'"*"', "RETURN", "(SPECIAL-USE)"
+        )
+        self.assertEqual(folders, [])
+
+    def test_list_special_folders_server_response_multiple_attributes(self):
+        """Test parsing of server responses with multiple special-use attributes."""
+        self.client._cached_capabilities = (b"SPECIAL-USE",)
+        self.client._imap._simple_command.return_value = ("OK", [b"something"])
+        self.client._imap._untagged_response.return_value = (
+            "LIST",
+            [
+                b'(\\HasNoChildren \\Sent \\Archive) "/" "Multi-Purpose"',
+                b'(\\Trash) "/" "Trash"',
+            ],
+        )
+
+        folders = self.client.list_special_folders()
+
+        self.assertEqual(len(folders), 2)
+        self.assertEqual(folders[0], ((b"\\HasNoChildren", b"\\Sent", b"\\Archive"), b"/", "Multi-Purpose"))
+        self.assertEqual(folders[1], ((b"\\Trash",), b"/", "Trash"))
+
+    def test_list_special_folders_imap_command_failed(self):
+        """Test list_special_folders handles IMAP command failures."""
+        self.client._cached_capabilities = (b"SPECIAL-USE",)
+        self.client._imap._simple_command.return_value = ("NO", [b"Command failed"])
+
+        self.assertRaises(IMAPClientError, self.client.list_special_folders)
+
+    def test_find_special_folder_uses_rfc6154_when_available(self):
+        """Test that find_special_folder uses RFC 6154 when SPECIAL-USE capability exists."""
+        self.client._cached_capabilities = (b"SPECIAL-USE",)
+        self.client._imap._simple_command.return_value = ("OK", [b"something"])
+        self.client._imap._untagged_response.return_value = (
+            "LIST",
+            [
+                b'(\\HasNoChildren \\Sent) "/" "Sent Messages"',
+            ],
+        )
+
+        folder = self.client.find_special_folder(b"\\Sent")
+
+        # Should call LIST with SPECIAL-USE extension, not regular LIST
+        self.client._imap._simple_command.assert_called_once_with(
+            "LIST", b'""', b'"*"', "RETURN", "(SPECIAL-USE)"
+        )
+        self.assertEqual(folder, "Sent Messages")
+
+    def test_find_special_folder_fallback_without_capability(self):
+        """Test find_special_folder falls back to list_folders when no SPECIAL-USE."""
+        self.client._cached_capabilities = (b"IMAP4REV1",)  # No SPECIAL-USE
+        
+        # First call: list_folders() - looks for folders by attributes
+        # Second call: list_folders(pattern="Sent") - looks for folders by name
+        call_count = 0
+        def mock_simple_command(cmd, *args):
+            nonlocal call_count
+            call_count += 1
+            return ("OK", [b"something"])
+        
+        def mock_untagged_response(typ, dat, cmd):
+            if call_count == 1:
+                # First call returns no folders with \Sent attribute
+                return ("LIST", [b'(\\HasNoChildren) "/" "INBOX"'])
+            else:
+                # Second call (by name pattern) returns "Sent Items"
+                return ("LIST", [b'(\\HasNoChildren) "/" "Sent Items"'])
+        
+        self.client._imap._simple_command.side_effect = mock_simple_command
+        self.client._imap._untagged_response.side_effect = mock_untagged_response
+
+        folder = self.client.find_special_folder(b"\\Sent")
+
+        # Should call regular LIST command without SPECIAL-USE (twice - by attributes then by name)
+        self.assertEqual(self.client._imap._simple_command.call_count, 2)
+        self.client._imap._simple_command.assert_any_call("LIST", b'""', b'"*"')
+        self.client._imap._simple_command.assert_any_call("LIST", b'""', b'"Sent"')
+        self.assertEqual(folder, "Sent Items")
+
+    def test_list_special_folders_with_folder_encoding_disabled(self):
+        """Test list_special_folders with folder_encode disabled."""
+        self.client._cached_capabilities = (b"SPECIAL-USE",)
+        self.client.folder_encode = False
+        self.client._imap._simple_command.return_value = ("OK", [b"something"])
+        self.client._imap._untagged_response.return_value = (
+            "LIST",
+            [
+                b'(\\HasNoChildren \\Sent) "/" "Hello&AP8-world"',
+            ],
+        )
+
+        folders = self.client.list_special_folders()
+
+        self.client._imap._simple_command.assert_called_once_with(
+            "LIST", '""', '"*"', "RETURN", "(SPECIAL-USE)"
+        )
+        self.assertEqual(len(folders), 1)
+        # Name should remain as bytes when folder_encode is False
+        self.assertEqual(folders[0], ((b"\\HasNoChildren", b"\\Sent"), b"/", b"Hello&AP8-world"))
+
+    def test_list_special_folders_with_utf7_decoding(self):
+        """Test list_special_folders with UTF-7 folder name decoding."""
+        self.client._cached_capabilities = (b"SPECIAL-USE",)
+        self.client._imap._simple_command.return_value = ("OK", [b"something"])
+        self.client._imap._untagged_response.return_value = (
+            "LIST",
+            [
+                b'(\\HasNoChildren \\Sent) "/" "Hello&AP8-world"',
+            ],
+        )
+
+        folders = self.client.list_special_folders()
+
+        self.assertEqual(len(folders), 1)
+        # Name should be decoded from UTF-7 when folder_encode is True (default)
+        self.assertEqual(folders[0], ((b"\\HasNoChildren", b"\\Sent"), b"/", "Hello\xffworld"))
+
+
 class TestSelectFolder(IMAPClientTest):
     def test_normal(self):
         self.client._command_and_check = Mock()
