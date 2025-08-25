@@ -1279,6 +1279,205 @@ class TestProtocolError(IMAPClientTest):
             client._consume_until_tagged_response(sentinel.tag, b"IDLE")
 
 
+class TestCreateSpecialUseFolder(IMAPClientTest):
+    def test_create_folder_backward_compatibility(self):
+        """Test that create_folder() works unchanged without special_use parameter."""
+        self.client._command_and_check = Mock()
+        self.client._command_and_check.return_value = b"OK CREATE completed"
+        
+        result = self.client.create_folder("INBOX.TestFolder")
+        
+        self.client._command_and_check.assert_called_once_with(
+            "create", b'"INBOX.TestFolder"', unpack=True
+        )
+        self.assertEqual(result, b"OK CREATE completed")
+
+    def test_create_folder_with_special_use_capability_required(self):
+        """Test CREATE-SPECIAL-USE capability requirement when special_use provided."""
+        self.client._cached_capabilities = (b"IMAP4REV1",)
+        
+        self.assertRaises(
+            CapabilityError, 
+            self.client.create_folder, 
+            "INBOX.TestSent", 
+            special_use=b"\\Sent"
+        )
+
+    def test_create_folder_with_special_use_basic(self):
+        """Test basic special-use folder creation with valid attributes."""
+        self.client._cached_capabilities = (b"CREATE-SPECIAL-USE",)
+        self.client._imap.create = Mock()
+        self.client._imap.create.return_value = ("OK", [b"CREATE completed"])
+        
+        result = self.client.create_folder("INBOX.MySent", special_use=b"\\Sent")
+        
+        self.client._imap.create.assert_called_once_with(
+            b'"INBOX.MySent"', b"(USE (\\Sent))"
+        )
+        self.assertEqual(result, "CREATE completed")
+
+    def test_create_folder_with_special_use_sent_constant(self):
+        """Test creation with SENT RFC 6154 constant."""
+        from imapclient import SENT
+        
+        self.client._cached_capabilities = (b"CREATE-SPECIAL-USE",)
+        self.client._imap.create = Mock()
+        self.client._imap.create.return_value = ("OK", [b"CREATE completed"])
+        
+        result = self.client.create_folder("INBOX.MySent", special_use=SENT)
+        
+        self.client._imap.create.assert_called_once_with(
+            b'"INBOX.MySent"', b"(USE (\\Sent))"
+        )
+        self.assertEqual(result, "CREATE completed")
+
+    def test_create_folder_with_special_use_drafts_constant(self):
+        """Test creation with DRAFTS RFC 6154 constant."""
+        from imapclient import DRAFTS
+        
+        self.client._cached_capabilities = (b"CREATE-SPECIAL-USE",)
+        self.client._imap.create = Mock()
+        self.client._imap.create.return_value = ("OK", [b"CREATE completed"])
+        
+        result = self.client.create_folder("INBOX.MyDrafts", special_use=DRAFTS)
+        
+        self.client._imap.create.assert_called_once_with(
+            b'"INBOX.MyDrafts"', b"(USE (\\Drafts))"
+        )
+        self.assertEqual(result, "CREATE completed")
+
+    def test_create_folder_with_special_use_all_rfc6154_constants(self):
+        """Test creation with all RFC 6154 constants (SENT, DRAFTS, JUNK, etc.)."""
+        from imapclient import ALL, ARCHIVE, DRAFTS, JUNK, SENT, TRASH
+        
+        test_cases = [
+            (SENT, "INBOX.MySent", b"(USE (\\Sent))"),
+            (DRAFTS, "INBOX.MyDrafts", b"(USE (\\Drafts))"),
+            (JUNK, "INBOX.MyJunk", b"(USE (\\Junk))"),
+            (ARCHIVE, "INBOX.MyArchive", b"(USE (\\Archive))"),
+            (TRASH, "INBOX.MyTrash", b"(USE (\\Trash))"),
+            (ALL, "INBOX.MyAll", b"(USE (\\All))"),
+        ]
+        
+        for special_use, folder_name, expected_use_clause in test_cases:
+            with self.subTest(special_use=special_use):
+                self.client._cached_capabilities = (b"CREATE-SPECIAL-USE",)
+                self.client._imap.create = Mock()
+                self.client._imap.create.return_value = ("OK", [b"CREATE completed"])
+                
+                result = self.client.create_folder(folder_name, special_use=special_use)
+                
+                self.client._imap.create.assert_called_once_with(
+                    b'"' + folder_name.encode("ascii") + b'"', expected_use_clause
+                )
+                self.assertEqual(result, "CREATE completed")
+
+    def test_create_folder_with_special_use_invalid_attribute(self):
+        """Test error handling for invalid special_use attributes."""
+        self.client._cached_capabilities = (b"CREATE-SPECIAL-USE",)
+        
+        with self.assertRaises(IMAPClientError) as cm:
+            self.client.create_folder("INBOX.TestFolder", special_use=b"\\Invalid")
+            
+        self.assertIn("Invalid special_use attribute", str(cm.exception))
+        self.assertIn("\\Invalid", str(cm.exception))
+        self.assertIn("Must be one of", str(cm.exception))
+
+    def test_create_folder_with_special_use_no_capability_error(self):
+        """Test CapabilityError when CREATE-SPECIAL-USE not supported."""
+        # Test with different capability sets that don't include CREATE-SPECIAL-USE
+        capability_sets = [
+            (b"IMAP4REV1",),
+            (b"SPECIAL-USE",),  # Has SPECIAL-USE but not CREATE-SPECIAL-USE
+            (b"IMAP4REV1", b"SPECIAL-USE"),
+        ]
+        
+        for capabilities in capability_sets:
+            with self.subTest(capabilities=capabilities):
+                self.client._cached_capabilities = capabilities
+                
+                with self.assertRaises(CapabilityError) as cm:
+                    self.client.create_folder("INBOX.TestFolder", special_use=b"\\Sent")
+                
+                self.assertIn("CREATE-SPECIAL-USE", str(cm.exception))
+
+    def test_create_folder_with_special_use_imap_command_construction(self):
+        """Test proper IMAP CREATE command construction with USE attribute."""
+        self.client._cached_capabilities = (b"CREATE-SPECIAL-USE",)
+        self.client._imap.create = Mock()
+        self.client._imap.create.return_value = ("OK", [b"CREATE completed"])
+        
+        # Test with folder name that needs normalization
+        result = self.client.create_folder("TestFolder", special_use=b"\\Archive")
+        
+        # Verify the folder name was normalized and USE clause formatted correctly
+        self.client._imap.create.assert_called_once_with(
+            b'"TestFolder"', b"(USE (\\Archive))"
+        )
+        self.assertEqual(result, "CREATE completed")
+
+    def test_create_folder_with_special_use_server_response_handling(self):
+        """Test server response handling for successful CREATE command."""
+        self.client._cached_capabilities = (b"CREATE-SPECIAL-USE",)
+        self.client._imap.create = Mock()
+        
+        # Test different server response formats
+        test_responses = [
+            [b"CREATE completed"],
+            [b"CREATE completed successfully"],
+            [b"OK Mailbox created"],
+        ]
+        
+        for response in test_responses:
+            with self.subTest(response=response):
+                self.client._imap.create.return_value = ("OK", response)
+                
+                result = self.client.create_folder("INBOX.TestFolder", special_use=b"\\Sent")
+                
+                self.assertEqual(result, response[0].decode("ascii", "replace"))
+
+    def test_create_folder_with_special_use_server_error_handling(self):
+        """Test server error handling for failed CREATE command."""
+        self.client._cached_capabilities = (b"CREATE-SPECIAL-USE",)
+        self.client._imap.create = Mock()
+        self.client._imap.create.return_value = ("NO", [b"CREATE failed - folder exists"])
+        
+        with self.assertRaises(IMAPClientError) as cm:
+            self.client.create_folder("INBOX.TestFolder", special_use=b"\\Sent")
+            
+        self.assertIn("CREATE command failed", str(cm.exception))
+        self.assertIn("CREATE failed - folder exists", str(cm.exception))
+
+    def test_create_folder_with_special_use_unicode_folder_names(self):
+        """Test special-use folder creation with Unicode folder names."""
+        self.client._cached_capabilities = (b"CREATE-SPECIAL-USE",)
+        self.client._imap.create = Mock()
+        self.client._imap.create.return_value = ("OK", [b"CREATE completed"])
+        
+        # Test with Unicode folder name
+        result = self.client.create_folder("INBOX.Боксы", special_use=b"\\Archive")
+        
+        self.client._imap.create.assert_called_once()
+        # Verify folder name was properly encoded
+        call_args = self.client._imap.create.call_args[0]
+        self.assertIsInstance(call_args[0], bytes)
+        self.assertEqual(call_args[1], b"(USE (\\Archive))")
+        self.assertEqual(result, "CREATE completed")
+
+    def test_create_folder_with_special_use_empty_folder_name(self):
+        """Test behavior with empty folder name."""
+        self.client._cached_capabilities = (b"CREATE-SPECIAL-USE",)
+        self.client._imap.create = Mock()
+        self.client._imap.create.return_value = ("OK", [b"CREATE completed"])
+        
+        result = self.client.create_folder("", special_use=b"\\Sent")
+        
+        self.client._imap.create.assert_called_once_with(
+            b'""', b"(USE (\\Sent))"
+        )
+        self.assertEqual(result, "CREATE completed")
+
+
 class TestSocket(IMAPClientTest):
     def test_issues_warning_for_deprecating_sock_property(self):
         mock_sock = Mock()

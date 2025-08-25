@@ -1145,6 +1145,63 @@ def createUidTestClass(conf, use_uid):
             inbox_folders = self.client.list_special_folders("", "INBOX*")
             self.assertIsInstance(inbox_folders, list)
 
+        def test_create_special_use_folder(self):
+            """Test special-use folder creation against live server."""
+            self.skip_unless_capable("CREATE-SPECIAL-USE")
+            
+            # Import the special-use constants
+            from imapclient import SENT, DRAFTS, ARCHIVE, TRASH
+            
+            # Test folder names with timestamp to avoid conflicts
+            timestamp = str(int(time.time()))
+            test_folders = [
+                (f"TestSent_{timestamp}", SENT),
+                (f"TestDrafts_{timestamp}", DRAFTS), 
+                (f"TestArchive_{timestamp}", ARCHIVE),
+                (f"TestTrash_{timestamp}", TRASH),
+            ]
+            
+            created_folders = []
+            
+            try:
+                for folder_name, special_use in test_folders:
+                    # Create the special-use folder
+                    result = self.client.create_folder(folder_name, special_use=special_use)
+                    self.assertIsInstance(result, str)
+                    created_folders.append(folder_name)
+                    
+                    # Verify the folder was created by listing it
+                    folders = self.client.list_folders()
+                    folder_names = [name for flags, delimiter, name in folders]
+                    self.assertIn(folder_name, folder_names)
+                    
+                    # If server supports SPECIAL-USE, verify the special-use attribute
+                    if self.client.has_capability("SPECIAL-USE"):
+                        special_folders = self.client.list_special_folders()
+                        
+                        # Look for our created folder in special folders list
+                        found_special = False
+                        for flags, delimiter, name in special_folders:
+                            if name == folder_name:
+                                # Verify it has the expected special-use attribute
+                                self.assertIn(special_use, flags)
+                                found_special = True
+                                break
+                        
+                        # Note: Some servers may not immediately reflect the special-use
+                        # attribute in LIST responses, so we don't fail if not found
+                        if found_special:
+                            print(f"Verified special-use attribute for {folder_name}")
+                
+            finally:
+                # Clean up: delete test folders
+                for folder_name in created_folders:
+                    try:
+                        self.client.delete_folder(folder_name)
+                    except IMAPClientError:
+                        # Folder might already be deleted or not exist
+                        pass
+
     LiveTest.conf = conf
     LiveTest.use_uid = use_uid
 
