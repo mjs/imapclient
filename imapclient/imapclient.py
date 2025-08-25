@@ -15,7 +15,7 @@ import warnings
 from datetime import date, datetime
 from logging import getLogger, LoggerAdapter
 from operator import itemgetter
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from . import exceptions, imap4, response_lexer, tls
 from .datetime_util import datetime_to_INTERNALDATE, format_criteria_date
@@ -42,6 +42,12 @@ __all__ = [
     "FLAGGED",
     "DRAFT",
     "RECENT",
+    "ALL",
+    "ARCHIVE",
+    "DRAFTS",
+    "JUNK",
+    "SENT",
+    "TRASH",
 ]
 
 
@@ -75,6 +81,10 @@ if "ENABLE" not in imaplib.Commands:
 # .. and MOVE for RFC6851.
 if "MOVE" not in imaplib.Commands:
     imaplib.Commands["MOVE"] = ("AUTH", "SELECTED")
+
+# .. and LIST-EXTENDED for RFC6154.
+if "LIST-EXTENDED" not in imaplib.Commands:
+    imaplib.Commands["LIST-EXTENDED"] = ("AUTH", "SELECTED")
 
 # System flags
 DELETED = rb"\Deleted"
@@ -727,6 +737,27 @@ class IMAPClient:
         """
         return self._do_list("XLIST", directory, pattern)
 
+    @require_capability("SPECIAL-USE")
+    def list_special_folders(self, directory: str = "", pattern: str = "*") -> List[Tuple[Tuple[bytes, ...], bytes, str]]:
+        """List folders with SPECIAL-USE attributes.
+
+        This method uses the RFC 6154 LIST extension to efficiently query
+        folders with special-use attributes without listing all folders.
+
+        Args:
+            directory: Base directory to search (default: "")
+            pattern: Pattern to match folder names (default: "*")
+
+        Returns:
+            List of (flags, delimiter, name) tuples. Flags may contain
+            special-use attributes like b'\\Sent', b'\\Archive', etc.
+
+        Raises:
+            CapabilityError: If server doesn't support SPECIAL-USE
+            IMAPClientError: If the LIST command fails
+        """
+        return self._do_list_extended("LIST", directory, pattern, "SPECIAL-USE")
+
     def list_sub_folders(self, directory="", pattern="*"):
         """Return a list of subscribed folders on the server as
         ``(flags, delimiter, name)`` tuples.
@@ -740,6 +771,14 @@ class IMAPClient:
         directory = self._normalise_folder(directory)
         pattern = self._normalise_folder(pattern)
         typ, dat = self._imap._simple_command(cmd, directory, pattern)
+        self._checkok(cmd, typ, dat)
+        typ, dat = self._imap._untagged_response(typ, dat, cmd)
+        return self._proc_folder_list(dat)
+
+    def _do_list_extended(self, cmd, directory, pattern, selection_option):
+        directory = self._normalise_folder(directory)
+        pattern = self._normalise_folder(pattern)
+        typ, dat = self._imap._simple_command(cmd, directory, pattern, "RETURN", "(%s)" % selection_option)
         self._checkok(cmd, typ, dat)
         typ, dat = self._imap._untagged_response(typ, dat, cmd)
         return self._proc_folder_list(dat)
@@ -777,10 +816,15 @@ class IMAPClient:
         Returns the name of the folder if found, or None otherwise.
         """
         # Detect folder by looking for known attributes
-        # TODO: avoid listing all folders by using extended LIST (RFC6154)
-        for folder in self.list_folders():
-            if folder and len(folder[0]) > 0 and folder_flag in folder[0]:
-                return folder[2]
+        # Use RFC 6154 SPECIAL-USE extension when available for efficiency
+        if self.has_capability("SPECIAL-USE"):
+            for folder in self.list_special_folders():
+                if folder and len(folder[0]) > 0 and folder_flag in folder[0]:
+                    return folder[2]
+        else:
+            for folder in self.list_folders():
+                if folder and len(folder[0]) > 0 and folder_flag in folder[0]:
+                    return folder[2]
 
         # Detect folder by looking for common names
         # We only look for folders in the "personal" namespace of the user
