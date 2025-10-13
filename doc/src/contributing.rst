@@ -70,9 +70,9 @@ installed and your user account can sudo to root the following should work::
     ./tox-all
 
 The script passes any arguments on to tox. For example to run just the tests
-just against Python 3.7 do::
+just against Python 3.10 do::
 
-    ./tox-all -e py37
+    ./tox-all -e py310
 
 Writing Unit Tests
 ------------------
