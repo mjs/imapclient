@@ -2,7 +2,7 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 from unittest.mock import Mock
 
 from .imapclient import IMAPClient
@@ -31,7 +31,7 @@ class MockIMAP4(Mock):
         self.sent = b""  # Accumulates what was given to send()
         self.tagged_commands: Dict[Any, Any] = {}
         self.untagged_responses: Dict[Any, Any] = {}
-        self.capabilities = []
+        self.capabilities: List[str] = []
         self._starttls_done = False
 
     def send(self, data: bytes) -> None:
