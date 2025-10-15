@@ -79,9 +79,10 @@ point in the future.
 
 Installing IMAPClient
 ---------------------
-IMAPClient is listed on PyPI and can be installed with pip::
+IMAPClient is listed on PyPI and can be installed with `uv
+<https://docs.astral.sh/uv/>`_::
 
-    pip install imapclient
+    uv add imapclient
 
 More installation methods are described in the documentation.
 
@@ -143,7 +144,7 @@ The interactive console functionality can be accessed running the
 interact.py script in the root of the source tree or by invoking the
 interact module like this::
 
-    python -m imapclient.interact ...
+    uv run python -m imapclient.interact ...
 
 "Live" Tests
 ------------
@@ -154,7 +155,7 @@ compatibility with a given IMAP server implementation.
 The livetest functionality are run from the root of the project source
 like this::
 
-    python livetest.py <livetest.ini> [ optional unittest arguments ]
+    uv run python livetest.py <livetest.ini> [ optional unittest arguments ]
 
 The configuration file format is
 `described in the main documentation <http://imapclient.rtfd.io/#configuration-file-format>`_.

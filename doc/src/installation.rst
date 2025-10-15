@@ -3,11 +3,11 @@
 Installation
 ------------
 
-Pip
-~~~
-IMAPClient can easily be installed with pip::
+uv
+~~
+IMAPClient can easily be installed with `uv <https://docs.astral.sh/uv/>`_::
 
-    $ pip install imapclient
+    $ uv add imapclient
 
 From Source
 ~~~~~~~~~~~
@@ -21,7 +21,7 @@ You can clone the public repository::
 Once you have the sources, simply install IMAPClient with::
 
     $ cd imapclient
-    $ pip install -e .
+    $ uv pip install -e .
 
 Other versions
 ~~~~~~~~~~~~~~

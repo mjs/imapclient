@@ -47,32 +47,25 @@ Running Unit Tests
 ------------------
 To run the tests, from the root of the package source run::
 
-    python -m unittest --verbose
+    uv run python -m unittest --verbose
 
 Testing Against Multiple Python Versions
 ----------------------------------------
 When submitting a Pull Request to IMAPClient, tests are automatically run
 against all the supported Python versions.
 
-It is possible to run these tests locally using `tox`_. Once
-installed, the ``tox`` command will use the tox.ini file in the root
-of the project source and run the unit tests against the Python
-versions officially supported by IMAPClient (provided these versions
-of Python are installed!).
+It is possible to run these tests locally using `uv`_, which will
+transparently download and manage any Python versions it doesn't
+already have available. For example, to run the unit tests against
+Python 3.10::
 
-.. _`tox`: http://testrun.org/tox/
+    uv run --python 3.10 python -m unittest --verbose
 
-To avoid having to install all Python versions directly on a host, the
-``tox-all`` script can be used. It will run the unit tests inside a Docker
-container which contains all supported Python versions. As long as Docker is
-installed and your user account can sudo to root the following should work::
+.. _`uv`: https://docs.astral.sh/uv/
 
-    ./tox-all
-
-The script passes any arguments on to tox. For example to run just the tests
-just against Python 3.10 do::
-
-    ./tox-all -e py310
+Repeat this for each of the Python versions officially supported by
+IMAPClient (see ``.github/workflows/main.yml`` for the current list) to
+test against all of them.
 
 Writing Unit Tests
 ------------------
@@ -88,10 +81,11 @@ Documentation
 The source for the project's documentation can be found under doc/src
 in the source distribution.
 
-In order to build the documentation you'll need install
-Sphinx. Running ``pip install '.[doc]'`` from the root of the project
-source will do this.
+In order to build the documentation you'll need Sphinx installed.
+Running ``uv sync`` from the root of the project source will install
+Sphinx along with the other development dependencies.
 
-Once Sphinx is installed, the documentation can be rebuilt using::
+Once the dependencies are installed, the documentation can be rebuilt
+using::
 
-    python setup.py build_sphinx
+    uv run sphinx-build doc/src doc/build
