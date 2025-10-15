@@ -37,7 +37,7 @@ Getting Started
 
 Install IMAPClient::
 
-    $ pip install imapclient
+    $ uv add imapclient
 
 See :ref:`Installation <installation>` for more details.
 

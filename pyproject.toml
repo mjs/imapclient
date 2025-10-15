@@ -1,3 +1,52 @@
+[project]
+name = "IMAPClient"
+description = "Easy-to-use, Pythonic and complete IMAP client library"
+version = "3.1.0"
+authors = [
+    {name = "Menno Finlay-Smits", email = "hello@menno.io"},
+]
+maintainers = [
+    {name = "IMAPClient Maintainers", email = "imapclient@groups.io"},
+]
+keywords = ["imap", "client", "email", "mail"]
+requires-python = ">=3.8.0"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Natural Language :: English",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: Communications :: Email :: Post-Office :: IMAP",
+    "Topic :: Internet",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Networking",
+]
+readme = "README.rst"
+
+[project.urls]
+Homepage = "https://github.com/mjs/imapclient/"
+
+[dependency-groups]
+dev = [
+    "sphinx",
+    "black",
+    "flake8",
+    "isort",
+    "mypy",
+    "pylint",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["imapclient"]
+
+[tool.setuptools.package-data]
+imapclient = ["examples/*.py"]
+
 [tool.isort]
 profile = "black"
 multi_line_output = 3

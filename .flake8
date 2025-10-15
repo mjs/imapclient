@@ -1,0 +1,8 @@
+[flake8]
+exclude = .git,.venv,dist,doc,*egg,build,
+max-line-length = 88
+# We ignore the following because we use black to handle code-formatting
+# E203: Whitespace before ':'
+# E501: Line too long
+# W503: Line break occurred before a binary operator
+ignore = E203,E501,W503

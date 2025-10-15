@@ -1,24 +1,17 @@
-# Copyright (c) 2022, Menno Smits
+# Copyright (c) 2025, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from typing import Tuple
+from importlib import metadata
 
-version_info = (3, 1, 0, "final")
-
-
-def _imapclient_version_string(vinfo: Tuple[int, int, int, str]) -> str:
-    major, minor, micro, releaselevel = vinfo
-    v = "%d.%d.%d" % (major, minor, micro)
-    if releaselevel != "final":
-        v += "-" + releaselevel
-    return v
+version = metadata.version("imapclient")
 
 
-version = _imapclient_version_string(version_info)
+def _make_version_info():
+    parts = version.split(".")
+    assert len(parts) == 3
+    return tuple(int(p) for p in parts) + ("final",)
 
-maintainer = "IMAPClient Maintainers"
-maintainer_email = "imapclient@groups.io"
 
-author = "Menno Finlay-Smits"
-author_email = "hello@menno.io"
+# This is for backwards compatibility with older versions of IMAPClient only
+version_info = _make_version_info()

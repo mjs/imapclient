@@ -21,18 +21,18 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v3
-      - run: pip install --upgrade tox
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
       - name: Run black code formatter (https://black.readthedocs.io/en/stable/)
-        run: tox -e black -- --check
+        run: uv run black --check .
       - name: Run isort import order checker (https://pycqa.github.io/isort/)
-        run: tox -e isort -- --check
+        run: uv run isort --check .
       - name: Run flake8 (https://flake8.pycqa.org/en/latest/)
-        run: tox -e flake8
+        run: uv run flake8 .
       - name: Run pylint Python code static checker (https://github.com/PyCQA/pylint)
-        run: tox -e pylint
+        run: uv run pylint imapclient/
       - name: Run mypy static typing checker (https://www.mypy-lang.org/)
-        run: tox -e mypy
+        run: uv run mypy
