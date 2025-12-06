@@ -8,7 +8,6 @@ Layer Security (TLS a.k.a. SSL).
 """
 
 import imaplib
-import io
 import socket
 import ssl
 from typing import Optional, TYPE_CHECKING
@@ -35,8 +34,8 @@ class IMAP4_TLS(imaplib.IMAP4):
     def __init__(
         self,
         host: str,
-        port: int,
-        ssl_context: Optional[ssl.SSLContext],
+        port: int = 993,
+        ssl_context: Optional[ssl.SSLContext] = None,
         timeout: Optional[float] = None,
     ):
         self.ssl_context = ssl_context
