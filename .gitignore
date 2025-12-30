@@ -3,6 +3,8 @@
 *~
 build/
 dist/
+.venv
+venv
 __pycache__/
 IMAPClient.egg-info
 doc/doctrees/
