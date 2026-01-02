@@ -10,10 +10,7 @@ Layer Security (TLS a.k.a. SSL).
 import imaplib
 import socket
 import ssl
-from typing import Optional, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from typing_extensions import Buffer
+from typing import Optional
 
 
 def wrap_socket(
