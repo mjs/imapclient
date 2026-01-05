@@ -1,4 +1,4 @@
-sphinx==8.0.0
+sphinx==9.1.0
 black==25.11.0
 flake8==7.3.0
 isort==5.12.0
