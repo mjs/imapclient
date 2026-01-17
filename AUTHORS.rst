@@ -45,3 +45,5 @@ project:
 - Stefan Wójcik
 - Andrzej Bartosiński
 - @axoroll7
+- Sean Whalen
+- Peter Wienemann 
