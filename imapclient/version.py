@@ -4,7 +4,7 @@
 
 from typing import Tuple
 
-version_info = (3, 0, 1, "final")
+version_info = (3, 1, 0, "final")
 
 
 def _imapclient_version_string(vinfo: Tuple[int, int, int, str]) -> str:
@@ -21,4 +21,4 @@ maintainer = "IMAPClient Maintainers"
 maintainer_email = "imapclient@groups.io"
 
 author = "Menno Finlay-Smits"
-author_email = "inbox@menno.io"
+author_email = "hello@menno.io"
