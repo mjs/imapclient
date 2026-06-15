@@ -10,16 +10,7 @@ from typing import Optional
 class IMAP4WithTimeout(imaplib.IMAP4):
     def __init__(self, address: str, port: int, timeout: Optional[float]) -> None:
         self._timeout = timeout
-        imaplib.IMAP4.__init__(self, address, port)
-
-    def open(
-        self, host: str = "", port: int = 143, timeout: Optional[float] = None
-    ) -> None:
-        # This is overridden to make it consistent across Python versions.
-        self.host = host
-        self.port = port
-        self.sock = self._create_socket(timeout)
-        self.file = self.sock.makefile("rb")
+        super().__init__(address, port, timeout=timeout)
 
     def _create_socket(self, timeout: Optional[float] = None) -> socket.socket:
         return socket.create_connection(
