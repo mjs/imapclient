@@ -830,7 +830,11 @@ class IMAPClient:
         """
         logger.debug("< UNSELECT")
         # IMAP4 class has no `unselect` method so we can't use `_command_and_check` there
-        _typ, data = self._imap._simple_command("UNSELECT")
+        typ, data = self._imap._simple_command("UNSELECT")
+        # Mirror imaplib.IMAP4.unselect: return the connection to the
+        # authenticated state so subsequent commands (e.g. ENABLE) are legal.
+        if typ == "OK":
+            self._imap.state = "AUTH"
         return data[0]
 
     def _process_select_response(self, resp):

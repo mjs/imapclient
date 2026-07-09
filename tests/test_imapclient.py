@@ -337,6 +337,18 @@ class TestSelectFolder(IMAPClientTest):
         self.assertEqual(result, "Unselect completed.")
         self.client._imap._simple_command.assert_called_with("UNSELECT")
 
+    def test_unselect_resets_state_to_auth(self):
+        # A successful UNSELECT should return the connection to the
+        # authenticated state (mirroring imaplib.IMAP4.unselect) so that
+        # subsequent commands such as ENABLE are legal again. See #639.
+        self.client._cached_capabilities = [b"UNSELECT"]
+        self.client._imap.state = "SELECTED"
+        self.client._imap._simple_command.return_value = ("OK", ["Unselect completed."])
+
+        self.client.unselect_folder()
+
+        self.assertEqual(self.client._imap.state, "AUTH")
+
 
 class TestAppend(IMAPClientTest):
     def test_without_msg_time(self):
