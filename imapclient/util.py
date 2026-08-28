@@ -3,7 +3,7 @@
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 import logging
-from typing import Iterator, Optional, Tuple, Union
+from typing import Iterator, Optional, Sequence, Tuple, Union
 
 from . import exceptions
 
@@ -22,6 +22,19 @@ def to_unicode(s: Union[bytes, str]) -> str:
             )
             return s.decode("ascii", "ignore")
     return s
+
+
+def to_ints(
+    messages: Union[bytes, str, int, Sequence[Union[bytes, str, int]]],
+) -> Sequence[int]:
+    """Convert a sequence of values (such as messages)
+    or a single integer value into an sequence of ints
+    """
+    if not messages:
+        return []
+    if isinstance(messages, (int, str, bytes)):
+        return [int(messages)]
+    return [int(i) for i in messages]
 
 
 def to_bytes(s: Union[bytes, str], charset: str = "ascii") -> bytes:
