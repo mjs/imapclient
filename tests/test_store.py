@@ -45,18 +45,25 @@ class TestFlags(IMAPClientTest):
     def check(self, meth, expected_command):
         self._check(meth, expected_command)
         self._check(meth, expected_command, silent=True)
+        self._check(meth, expected_command, unsolicited_noise=True)
+        self._check(meth, expected_command, unsolicited_noise=True, silent=True)
 
-    def _check(self, meth, expected_command, silent=False):
+    def _check(self, meth, expected_command, unsolicited_noise=False, silent=False):
         if silent:
             expected_command += b".SILENT"
 
+        noise = [b"46 (UID 148606 FLAGS (\\Seen))"] if unsolicited_noise else []
+
         cc = self.client._command_and_check
-        cc.return_value = [
-            b"11 (FLAGS (blah foo) UID 1)",
-            b"11 (UID 1 OTHER (dont))",
-            b"22 (FLAGS (foo) UID 2)",
-            b"22 (UID 2 OTHER (care))",
-        ]
+        cc.return_value = (
+            [
+                b"11 (FLAGS (blah foo) UID 1)",
+                b"11 (UID 1 OTHER (dont))",
+                b"22 (FLAGS (foo) UID 2)",
+            ]
+            + noise
+            + [b"22 (UID 2 OTHER (care))"]
+        )
         resp = meth([1, 2], "foo", silent=silent)
         cc.assert_called_once_with("store", b"1,2", expected_command, "(foo)", uid=True)
         if silent:
@@ -104,18 +111,25 @@ class TestGmailLabels(IMAPClientTest):
     def check(self, meth, expected_command):
         self._check(meth, expected_command)
         self._check(meth, expected_command, silent=True)
+        self._check(meth, expected_command, unsolicited_noise=True)
+        self._check(meth, expected_command, unsolicited_noise=True, silent=True)
 
-    def _check(self, meth, expected_command, silent=False):
+    def _check(self, meth, expected_command, unsolicited_noise=False, silent=False):
         if silent:
             expected_command += b".SILENT"
 
+        noise = [b"46 (UID 148606 FLAGS (\\Seen))"] if unsolicited_noise else []
+
         cc = self.client._command_and_check
-        cc.return_value = [
-            b'11 (X-GM-LABELS (&AUE-abel "f\\"o\\"o") UID 1)',
-            b'22 (X-GM-LABELS ("f\\"o\\"o") UID 2)',
-            b"11 (UID 1 FLAGS (dont))",
-            b"22 (UID 2 FLAGS (care))",
-        ]
+        cc.return_value = (
+            [
+                b'11 (X-GM-LABELS (&AUE-abel "f\\"o\\"o") UID 1)',
+                b'22 (X-GM-LABELS ("f\\"o\\"o") UID 2)',
+                b"11 (UID 1 FLAGS (dont))",
+            ]
+            + noise
+            + [b"22 (UID 2 FLAGS (care))"]
+        )
         resp = meth([1, 2], 'f"o"o', silent=silent)
         cc.assert_called_once_with(
             "store", b"1,2", expected_command, '("f\\"o\\"o")', uid=True

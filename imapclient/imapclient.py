@@ -22,7 +22,7 @@ from .datetime_util import datetime_to_INTERNALDATE, format_criteria_date
 from .imap_utf7 import decode as decode_utf7
 from .imap_utf7 import encode as encode_utf7
 from .response_parser import parse_fetch_response, parse_message_list, parse_response
-from .util import assert_imap_protocol, chunk, to_bytes, to_unicode
+from .util import assert_imap_protocol, chunk, to_bytes, to_ints, to_unicode
 
 if hasattr(select, "poll"):
     POLL_SUPPORT = True
@@ -1379,6 +1379,9 @@ class IMAPClient:
                     b'INTERNALDATE': datetime.datetime(2011, 2, 24, 19, 30, 36),
                     b'SEQ': 110}}
 
+        Note that due to IMAP unsolicited FETCH responses the return
+        value may include fields not matching the original data query.
+        It is up to the caller to handle that gracefully.
         """
         if not messages:
             return {}
@@ -1395,7 +1398,13 @@ class IMAPClient:
         typ, data = self._imap._command_complete("FETCH", tag)
         self._checkok("fetch", typ, data)
         typ, data = self._imap._untagged_response(typ, data, "FETCH")
-        return parse_fetch_response(data, self.normalise_times, self.use_uid)
+        response = parse_fetch_response(data, self.normalise_times, self.use_uid)
+        # Drop unsolicited responses for other messages
+        return {
+            message_id: response[message_id]
+            for message_id in to_ints(messages)
+            if message_id in response
+        }
 
     def append(self, folder, msg, flags=(), msg_time=None):
         """Append a message to *folder*.
@@ -1793,7 +1802,14 @@ class IMAPClient:
         )
         if silent:
             return None
-        return self._filter_fetch_dict(parse_fetch_response(data), fetch_key)
+        response = parse_fetch_response(data)
+        # Drop unsolicited responses for other messages
+        without_unsolicited = {
+            message_id: response[message_id]
+            for message_id in to_ints(messages)
+            if message_id in response
+        }
+        return self._filter_fetch_dict(without_unsolicited, fetch_key)
 
     def _filter_fetch_dict(self, fetch_dict, key):
         return dict((msgid, data[key]) for msgid, data in fetch_dict.items())
