@@ -40,7 +40,7 @@ def get_config_defaults() -> Dict[str, Any]:
 def parse_config_file(filename: str) -> argparse.Namespace:
     """Parse INI files containing IMAP connection details.
 
-    Used by livetest.py and interact.py
+    Used by imapclient.livetest and imapclient.interact
     """
 
     parser = configparser.ConfigParser(get_string_config_defaults())

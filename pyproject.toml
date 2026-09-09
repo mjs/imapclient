@@ -27,6 +27,10 @@ readme = "README.rst"
 [project.urls]
 Homepage = "https://github.com/mjs/imapclient/"
 
+[project.scripts]
+imapclient-interact = "imapclient.interact:main"
+imapclient-livetest = "imapclient.livetest:main"
+
 [dependency-groups]
 dev = [
     "sphinx",
@@ -97,9 +101,15 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = [
     "imapclient.imapclient",
-    "livetest",
+    "imapclient.livetest",
 ]
 ignore_errors = true
+
+[tool.pylint.main]
+# livetest.py isn't held to the same code quality standards as the rest of
+# the package - it was historically not linted at all (it lived outside the
+# imapclient package before becoming the imapclient-livetest script).
+ignore-paths = ["imapclient/livetest.py"]
 
 [tool.pylint.messages_control]
 max-line-length = 88
@@ -131,6 +141,7 @@ disable = [
     "too-many-branches",
     "too-many-instance-attributes",
     "too-many-lines",
+    "too-many-positional-arguments",
     "too-many-public-methods",
     "try-except-raise",
     "undefined-loop-variable",
