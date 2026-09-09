@@ -62,9 +62,7 @@ Content-Transfer-Encoding: 7bit
 Here is the second part.
 
 --===============1534046211==--
-""".replace(
-    "\n", "\r\n"
-)
+""".replace("\n", "\r\n")
 
 
 SMILE = "\u263a"
@@ -75,9 +73,7 @@ Subject: stuff
 Content-Type: text/plain; charset="UTF-8"
 
 \xe2\x98\xba
-""".replace(
-    b"\n", b"\r\n"
-)
+""".replace(b"\n", b"\r\n")
 
 
 class _TestBase(unittest.TestCase):
