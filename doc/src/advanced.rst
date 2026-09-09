@@ -57,7 +57,7 @@ connected to an IMAP server.
 
 Start a session like this::
 
-   uv run python -m imapclient.interact -H <host> -u <user> ...
+   uv run imapclient-interact -H <host> -u <user> ...
 
 Various options are available to specify the IMAP server details. See
 the help (--help) for more details. You'll be prompted for a username
@@ -66,7 +66,7 @@ and password if one isn't provided on the command line.
 It is also possible to pass connection details as a configuration file
 like this::
 
-   uv run python -m imapclient.interact -f <config file>
+   uv run imapclient-interact -f <config file>
 
 See below for details of the :ref:`configuration file format<conf-files>`.
 
@@ -76,7 +76,7 @@ the basic built-in Python shell will be used.
 The connected IMAPClient instance is available as the variable
 "c". Here's an example session::
 
-    $ uv run python -m imapclient.interact -H <host> -u <user> ...
+    $ uv run imapclient-interact -H <host> -u <user> ...
     Connecting...
     Connected.
 

@@ -140,9 +140,9 @@ steps required to set up an IMAPClient instance.
 The IPython shell is used if it is installed. Otherwise the
 code.interact() function from the standard library is used.
 
-The interactive console functionality can be accessed running the
-interact.py script in the root of the source tree or by invoking the
-interact module like this::
+The interactive console functionality can be accessed by running the
+``imapclient-interact`` script that is installed alongside IMAPClient,
+or by invoking the interact module like this::
 
     uv run python -m imapclient.interact ...
 
@@ -152,10 +152,10 @@ IMAPClient includes a series of live, functional tests which exercise
 it against a live IMAP account. These are useful for ensuring
 compatibility with a given IMAP server implementation.
 
-The livetest functionality are run from the root of the project source
-like this::
+The livetest functionality is run using the ``imapclient-livetest``
+script that is installed alongside IMAPClient::
 
-    uv run python livetest.py <livetest.ini> [ optional unittest arguments ]
+    uv run imapclient-livetest <livetest.ini> [ optional unittest arguments ]
 
 The configuration file format is
 `described in the main documentation <http://imapclient.rtfd.io/#configuration-file-format>`_.
@@ -166,7 +166,7 @@ limits its activity to a folder it creates and subfolders of that
 folder. It *should* be safe to use with any IMAP account but please
 don't run livetest against a truly important IMAP account.
 
-Please include the output of livetest.py with an issue if it fails
-to run successfully against a particular IMAP server. Reports of
+Please include the output of imapclient-livetest with an issue if it
+fails to run successfully against a particular IMAP server. Reports of
 successful runs are also welcome.  Please include the type and version
 of the IMAP server, if known.

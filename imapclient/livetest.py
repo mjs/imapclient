@@ -19,18 +19,18 @@ import unittest
 from datetime import datetime
 from email.utils import make_msgid
 
-from imapclient.config import create_client_from_config, parse_config_file
-from imapclient.exceptions import IMAPClientError
-from imapclient.fixed_offset import FixedOffset
-from imapclient.imapclient import (
+from .config import create_client_from_config, parse_config_file
+from .exceptions import IMAPClientError
+from .fixed_offset import FixedOffset
+from .imapclient import (
     _dict_bytes_normaliser,
     DELETED,
     IMAPClient,
     RECENT,
     SocketTimeout,
 )
-from imapclient.response_types import Address, Envelope
-from imapclient.util import to_bytes, to_unicode
+from .response_types import Address, Envelope
+from .util import to_bytes, to_unicode
 
 # TODO cleaner verbose output: avoid "__main__" and separator between classes
 
