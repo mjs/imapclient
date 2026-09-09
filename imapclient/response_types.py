@@ -141,8 +141,13 @@ class BodyData(_BodyDataType):
                 if TYPE_CHECKING:
                     assert isinstance(part, tuple)
                 parts.append(part)
-            return cls(([cls.create(part) for part in parts],) + response[i:])
-        return cls(response)
+            # The runtime representation of BodyData mixes converted
+            # BodyData/list items with raw, not-yet-converted response
+            # atoms. _BodyDataType can't precisely express this shape, so
+            # the construction below can't be typed exactly.
+            body_parts = ([cls.create(part) for part in parts],) + response[i:]
+            return cls(body_parts)  # type: ignore[arg-type]
+        return cls(response)  # type: ignore[arg-type]
 
     @property
     def is_multipart(self) -> bool:
