@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  release:
+    types: [published, created]
+
+jobs:
+  pypi-publish:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Verify version matches release tag
+        run: |
+          RELEASE_TAG="${{ github.event.release.tag_name || github.ref_name }}"
+          PROJECT_VERSION="$(uv version --short)"
+          TAG_VERSION="${RELEASE_TAG#v}"
+
+          if [ "$PROJECT_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Project version ($PROJECT_VERSION) does not match release tag ($RELEASE_TAG)"
+            exit 1
+          fi
+          echo "Project version ($PROJECT_VERSION) matches release tag ($RELEASE_TAG)"
+
+      - name: Build release artifacts
+        run: uv build
+
+      - name: Publish to PyPI
+        env:
+          UV_PUBLISH_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+          UV_PUBLISH_USERNAME: ${{ secrets.PYPI_USERNAME || '__token__' }}
+        run: uv publish
