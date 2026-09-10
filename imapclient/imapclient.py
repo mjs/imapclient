@@ -1705,11 +1705,25 @@ class IMAPClient:
             prefix.append(b"UID")
         prefix.append(command)
 
-        line = []
-        for item, is_last in _iter_with_last(prefix + args):
+        # Check every argument before anything goes on the wire: a bad
+        # argument found after a literal was sent would leave the server
+        # waiting inside a half-sent command.
+        for item in prefix + args:
             if not isinstance(item, bytes):
                 raise ValueError("command args must be passed as bytes")
+            if b"\x00" in item:
+                raise ValueError("NUL is not allowed in command arguments")
+            if not _is8bit(item) and _CR_OR_LF.search(item):
+                # CR and LF end the command line on the wire, so an argument
+                # carrying them would be run as extra commands. A literal can
+                # hold them, which is what the 8-bit path already sends.
+                raise ValueError(
+                    "CR and LF are not allowed in command arguments; "
+                    "wrap the value in imapclient._literal to send it as a literal"
+                )
 
+        line = []
+        for item, is_last in _iter_with_last(prefix + args):
             if _is8bit(item):
                 # If a line was already started send it
                 if line:
@@ -1972,6 +1986,9 @@ def as_pairs(items):
 def as_triplets(items):
     a = iter(items)
     return zip(a, a, a)
+
+
+_CR_OR_LF = re.compile(rb"[\r\n]")
 
 
 def _is8bit(data):
