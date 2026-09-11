@@ -749,6 +749,42 @@ class TestIdleAndNoop(IMAPClientTest):
         self.assertListEqual([(99, b"EXISTS")], responses)
 
 
+class TestRawCommandRejectsControlCharacters(IMAPClientTest):
+    def setUp(self):
+        super().setUp()
+        self.client._imap.send = Mock()
+        self.client._cached_capabilities = (b"IMAP4REV1",)
+
+    def test_crlf_in_a_line_argument_is_rejected_before_sending(self):
+        criterion = b'x"\r\nX1 STORE 1:* +FLAGS (\\Deleted)\r\nX2 EXPUNGE'
+
+        with self.assertRaises(ValueError):
+            self.client._raw_command(b"SEARCH", [b"HEADER", b"Message-ID", criterion])
+
+        self.client._imap.send.assert_not_called()
+
+    def test_crlf_via_search_criteria_is_rejected_before_sending(self):
+        with self.assertRaises(ValueError):
+            self.client.search(["HEADER", "Message-ID", 'x"\r\nX1 NOOP'])
+
+        self.client._imap.send.assert_not_called()
+
+    def test_nul_is_rejected_even_inside_a_literal(self):
+        with self.assertRaises(ValueError):
+            self.client._raw_command(b"SEARCH", [b"TEXT", _literal(b"a\x00b")])
+
+        self.client._imap.send.assert_not_called()
+
+    def test_crlf_inside_a_literal_is_allowed(self):
+        self.client._send_literal = Mock()
+
+        self.client._raw_command(
+            b"SEARCH", [b"TEXT", _literal(b"line one\r\nline two")]
+        )
+
+        self.client._send_literal.assert_called_once()
+
+
 class TestDebugLogging(IMAPClientTest):
     def test_IMAP_is_patched(self):
         # Remove all logging handlers so that the order of tests does not
