@@ -378,13 +378,17 @@ class IMAPClient:
         if self.ssl or self._starttls_done:
             raise exceptions.IMAPClientAbortError("TLS session already established")
 
-        typ, data = self._imap._simple_command("STARTTLS")
+        # Delegate the socket wrap to imaplib: it manages its own read buffer
+        # since Python 3.14 (where IMAP4.file became a read-only property).
+        # imaplib's own None-fallback context does not verify certificates, so
+        # pass IMAPClient's verifying default instead.
+        if ssl_context is None:
+            ssl_context = tls.create_default_context()
+
+        typ, data = self._imap.starttls(ssl_context=ssl_context)
         self._checkok("starttls", typ, data)
 
         self._starttls_done = True
-
-        self._imap.sock = tls.wrap_socket(self._imap.sock, ssl_context, self.host)
-        self._imap.file = self._imap.sock.makefile("rb")
         return data[0]
 
     def login(self, username: str, password: str):

@@ -16,3 +16,9 @@ six-*
 
 # By explicity not ignoring these, ripgrep (rg) will search them.
 !.github/
+
+# TLS fixtures for tests/test_starttls_integration.py. Re-included because
+# common global gitignore setups exclude *.pem and *.key.
+!tests/certs/ca.pem
+!tests/certs/server.pem
+!tests/certs/server.key

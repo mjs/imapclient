@@ -13,11 +13,15 @@ import ssl
 from typing import Optional
 
 
+def create_default_context() -> ssl.SSLContext:
+    return ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH)
+
+
 def wrap_socket(
     sock: socket.socket, ssl_context: Optional[ssl.SSLContext], host: str
 ) -> socket.socket:
     if ssl_context is None:
-        ssl_context = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH)
+        ssl_context = create_default_context()
 
     return ssl_context.wrap_socket(sock, server_hostname=host)
 

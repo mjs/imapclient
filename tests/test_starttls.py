@@ -2,7 +2,7 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
-from unittest.mock import Mock, patch, sentinel
+from unittest.mock import patch, sentinel
 
 from imapclient.exceptions import IMAPClientError
 from imapclient.imapclient import IMAPClient
@@ -18,34 +18,31 @@ class TestStarttls(IMAPClientTest):
         self.tls = patcher.start()
         self.addCleanup(patcher.stop)
 
-        self.client._imap.sock = sentinel.old_sock
-
-        self.new_sock = Mock()
-        self.new_sock.makefile.return_value = sentinel.file
-        self.tls.wrap_socket.return_value = self.new_sock
-
-        self.client.host = sentinel.host
         self.client.ssl = False
         self.client._starttls_done = False
-        self.client._imap._simple_command.return_value = "OK", [
-            b"start TLS negotiation"
-        ]
+        self.client._imap.starttls.return_value = "OK", [b"start TLS negotiation"]
         self.client._cached_capabilities = [b"STARTTLS"]
 
     def test_works(self):
         resp = self.client.starttls(sentinel.ssl_context)
 
-        self.tls.wrap_socket.assert_called_once_with(
-            sentinel.old_sock,
-            sentinel.ssl_context,
-            sentinel.host,
+        self.client._imap.starttls.assert_called_once_with(
+            ssl_context=sentinel.ssl_context
         )
-        self.new_sock.makefile.assert_called_once_with("rb")
-        self.assertEqual(self.client._imap.file, sentinel.file)
+        self.tls.create_default_context.assert_not_called()
+        self.assertTrue(self.client._starttls_done)
+        self.assertEqual(resp, b"start TLS negotiation")
+
+    def test_default_context_is_used(self):
+        resp = self.client.starttls()
+
+        self.client._imap.starttls.assert_called_once_with(
+            ssl_context=self.tls.create_default_context.return_value
+        )
         self.assertEqual(resp, b"start TLS negotiation")
 
     def test_command_fails(self):
-        self.client._imap._simple_command.return_value = "NO", [b"sorry"]
+        self.client._imap.starttls.return_value = "NO", [b"sorry"]
 
         with self.assertRaises(IMAPClientError) as raised:
             self.client.starttls(sentinel.ssl_context)
