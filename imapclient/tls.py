@@ -1,4 +1,4 @@
-# Copyright (c) 2023, Menno Smits
+# Copyright (c) 2026, Menno Smits
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
@@ -43,7 +43,9 @@ class IMAP4_TLS(imaplib.IMAP4):
         self._timeout = timeout
         super().__init__(host, port)
 
-    def _create_socket(self, timeout: Optional[float]) -> socket.socket:
+    def _create_socket(self, timeout: Optional[float] = None) -> socket.socket:
+        if timeout is None:
+            timeout = self._timeout
         sock = socket.create_connection((self.host, self.port), timeout=timeout)
 
         return wrap_socket(sock, self.ssl_context, self.host)
