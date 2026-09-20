@@ -22,7 +22,7 @@ from .datetime_util import datetime_to_INTERNALDATE, format_criteria_date
 from .imap_utf7 import decode as decode_utf7
 from .imap_utf7 import encode as encode_utf7
 from .response_parser import parse_fetch_response, parse_message_list, parse_response
-from .util import assert_imap_protocol, chunk, to_bytes, to_ints, to_unicode
+from .util import assert_imap_protocol, chunk, SequenceSet, to_bytes, to_unicode
 
 if hasattr(select, "poll"):
     POLL_SUPPORT = True
@@ -1419,10 +1419,11 @@ class IMAPClient:
         typ, data = self._imap._untagged_response(typ, data, "FETCH")
         response = parse_fetch_response(data, self.normalise_times, self.use_uid)
         # Drop unsolicited responses for other messages
+        sequence_set = SequenceSet(messages)
         return {
             message_id: response[message_id]
-            for message_id in to_ints(messages)
-            if message_id in response
+            for message_id in response
+            if message_id in sequence_set
         }
 
     def append(self, folder, msg, flags=(), msg_time=None):
@@ -1837,10 +1838,11 @@ class IMAPClient:
             return None
         response = parse_fetch_response(data)
         # Drop unsolicited responses for other messages
+        sequence_set = SequenceSet(messages)
         without_unsolicited = {
             message_id: response[message_id]
-            for message_id in to_ints(messages)
-            if message_id in response
+            for message_id in response
+            if message_id in sequence_set
         }
         return self._filter_fetch_dict(without_unsolicited, fetch_key)
 
