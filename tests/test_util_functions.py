@@ -9,6 +9,7 @@ from imapclient.imapclient import (
     _normalise_search_criteria,
     _quoted,
     join_message_ids,
+    literal,
     normalise_text_list,
     seq_to_parenstr,
     seq_to_parenstr_upper,
@@ -138,6 +139,10 @@ class Test_normalise_search_criteria(unittest.TestCase):
 
     def test_quoting(self):
         self.check(["foo bar"], None, [_quoted(b'"foo bar"')])
+
+    def test_literal_is_not_quoted(self):
+        value = literal(b"line one\r\nline two")
+        self.check(["TEXT", value], None, [b"TEXT", value])
 
     def test_ints(self):
         self.check(["modseq", 500], None, [b"modseq", b"500"])

@@ -42,6 +42,7 @@ __all__ = [
     "FLAGGED",
     "DRAFT",
     "RECENT",
+    "literal",
 ]
 
 
@@ -1461,9 +1462,9 @@ class IMAPClient:
                         yield to_bytes(seq_to_parenstr(m["flags"]))
                     if "date" in m:
                         yield to_bytes('"%s"' % datetime_to_INTERNALDATE(m["date"]))
-                    yield _literal(to_bytes(m["msg"]))
+                    yield literal(to_bytes(m["msg"]))
                 else:
-                    yield _literal(to_bytes(m))
+                    yield literal(to_bytes(m))
 
         msgs = list(chunks())
 
@@ -1709,11 +1710,25 @@ class IMAPClient:
             prefix.append(b"UID")
         prefix.append(command)
 
-        line = []
-        for item, is_last in _iter_with_last(prefix + args):
+        # Check every argument before anything goes on the wire: a bad
+        # argument found after a literal was sent would leave the server
+        # waiting inside a half-sent command.
+        for item in itertools.chain(prefix, args):
             if not isinstance(item, bytes):
                 raise ValueError("command args must be passed as bytes")
+            if b"\x00" in item:
+                raise ValueError("NUL is not allowed in command arguments")
+            if not _is8bit(item) and (b"\r" in item or b"\n" in item):
+                # CR and LF end the command line on the wire, so an argument
+                # carrying them would be run as extra commands. A literal can
+                # hold them, which is what the 8-bit path already sends.
+                raise ValueError(
+                    "CR and LF are not allowed in command arguments; "
+                    "wrap the value in imapclient.literal to send it as a literal"
+                )
 
+        line = []
+        for item, is_last in _iter_with_last(prefix + args):
             if _is8bit(item):
                 # If a line was already started send it
                 if line:
@@ -1872,6 +1887,8 @@ def _normalise_search_criteria(criteria, charset=None):
             inner[0] = b"(" + inner[0]
             inner[-1] = inner[-1] + b")"
             out.extend(inner)  # flatten
+        elif isinstance(item, literal):
+            out.append(item)
         else:
             out.append(_quoted.maybe(to_bytes(item, charset)))
     return out
@@ -1883,8 +1900,11 @@ def _normalise_sort_criteria(criteria, charset=None):
     return b"(" + b" ".join(to_bytes(item).upper() for item in criteria) + b")"
 
 
-class _literal(bytes):
+class literal(bytes):
     """Hold message data that should always be sent as a literal."""
+
+
+_literal = literal  # old private name, kept for callers that imported it
 
 
 class _quoted(bytes):
@@ -1979,7 +1999,7 @@ def as_triplets(items):
 
 
 def _is8bit(data):
-    return isinstance(data, _literal) or any(b > 127 for b in data)
+    return isinstance(data, literal) or any(b > 127 for b in data)
 
 
 def _iter_with_last(items):
