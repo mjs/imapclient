@@ -1883,9 +1883,13 @@ def _normalise_search_criteria(criteria, charset=None):
             out.append(format_criteria_date(item))
         elif isinstance(item, (list, tuple)):
             # Process nested criteria list and wrap in parens.
-            inner = _normalise_search_criteria(item)
+            inner = _normalise_search_criteria(item, charset)
             inner[0] = b"(" + inner[0]
-            inner[-1] = inner[-1] + b")"
+            if _is8bit(inner[-1]):
+                # A closing parenthesis is syntax, not part of the literal.
+                inner.append(b")")
+            else:
+                inner[-1] = inner[-1] + b")"
             out.extend(inner)  # flatten
         elif isinstance(item, literal):
             out.append(item)
