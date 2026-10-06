@@ -101,6 +101,83 @@ class TestSearch(TestSearchBase):
         self.client.search(["NOT", ("SUBJECT", "topic", "TO", "some@email.com")])
         self.check_call([b"NOT", b"(SUBJECT", b"topic", b"TO", b"some@email.com)"])
 
+    def test_nested_unicode_criteria_with_charset(self):
+        self.client.search(["NOT", ["TEXT", "caf\u00e9", "UNSEEN"]], "utf-8")
+        self.check_call(
+            [
+                b"CHARSET",
+                b"utf-8",
+                b"NOT",
+                b"(TEXT",
+                _quoted(b"caf\xc3\xa9"),
+                b"UNSEEN)",
+            ]
+        )
+
+    def test_nested_unicode_tuple_with_charset(self):
+        self.client.search(["NOT", ("TEXT", "caf\u00e9", "UNSEEN")], "iso-8859-1")
+        self.check_call(
+            [
+                b"CHARSET",
+                b"iso-8859-1",
+                b"NOT",
+                b"(TEXT",
+                _quoted(b"caf\xe9"),
+                b"UNSEEN)",
+            ]
+        )
+
+    def test_nested_unicode_last_argument_preserves_literal(self):
+        self.client.search(["NOT", ["TEXT", "caf\u00e9 noir"]], "utf-8")
+        self.check_call(
+            [
+                b"CHARSET",
+                b"utf-8",
+                b"NOT",
+                b"(TEXT",
+                _quoted(b'"caf\xc3\xa9 noir"'),
+                b")",
+            ]
+        )
+        literal_arg = self.client._raw_command_untagged.call_args.args[1][-2]
+        self.assertIsInstance(literal_arg, _quoted)
+        self.assertEqual(literal_arg.original, b"caf\xc3\xa9 noir")
+
+    def test_nested_bytes_last_argument_preserves_literal(self):
+        self.client.search(["NOT", ["TEXT", b"caf\xc3\xa9 noir"]], "utf-8")
+        self.check_call(
+            [
+                b"CHARSET",
+                b"utf-8",
+                b"NOT",
+                b"(TEXT",
+                _quoted(b'"caf\xc3\xa9 noir"'),
+                b")",
+            ]
+        )
+        literal_arg = self.client._raw_command_untagged.call_args.args[1][-2]
+        self.assertIsInstance(literal_arg, _quoted)
+        self.assertEqual(literal_arg.original, b"caf\xc3\xa9 noir")
+
+    def test_deeply_nested_unicode_criteria_with_charset(self):
+        self.client.search(
+            ["OR", ["TEXT", "plain"], ["NOT", ["TEXT", "a\u00e7\u00e3o", "UNSEEN"]]],
+            "utf-8",
+        )
+        self.check_call(
+            [
+                b"CHARSET",
+                b"utf-8",
+                b"OR",
+                b"(TEXT",
+                b"plain)",
+                b"(NOT",
+                b"(TEXT",
+                _quoted(b"a\xc3\xa7\xc3\xa3o"),
+                b"UNSEEN))",
+            ]
+        )
+
     def test_search_custom_exception_with_invalid_list(self):
         def search_bad_command_exp(*args, **kwargs):
             raise imaplib.IMAP4.error(
