@@ -2,6 +2,7 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+import sys
 import unittest
 from unittest.mock import Mock, patch, sentinel
 
@@ -22,6 +23,9 @@ class TestInit(unittest.TestCase):
         self.imaplib = patcher.start()
         self.addCleanup(patcher.stop)
 
+    @unittest.skipIf(
+        sys.version_info < (3, 9), "connection timeouts require Python 3.9+"
+    )
     def test_plain(self):
         fakeIMAP4 = Mock()
         self.imap4.IMAP4WithTimeout.return_value = fakeIMAP4
@@ -36,6 +40,9 @@ class TestInit(unittest.TestCase):
         self.assertEqual(imap.ssl_context, None)
         self.assertEqual(imap.stream, False)
 
+    @unittest.skipIf(
+        sys.version_info < (3, 9), "connection timeouts require Python 3.9+"
+    )
     def test_plain_SocketTimeout(self):
         fakeIMAP4 = Mock()
         self.imap4.IMAP4WithTimeout.return_value = fakeIMAP4
@@ -51,6 +58,9 @@ class TestInit(unittest.TestCase):
             "1.2.3.4", 143, sentinel.connect_timeout
         )
 
+    @unittest.skipIf(
+        sys.version_info < (3, 9), "connection timeouts require Python 3.9+"
+    )
     def test_SSL(self):
         fakeIMAP4_TLS = Mock()
         self.tls.IMAP4_TLS.return_value = fakeIMAP4_TLS
@@ -69,6 +79,9 @@ class TestInit(unittest.TestCase):
         self.assertEqual(imap.ssl_context, sentinel.context)
         self.assertEqual(imap.stream, False)
 
+    @unittest.skipIf(
+        sys.version_info < (3, 9), "connection timeouts require Python 3.9+"
+    )
     def test_SSL_SocketTimeout(self):
         fakeIMAP4_TLS = Mock()
         self.tls.IMAP4_TLS.return_value = fakeIMAP4_TLS
