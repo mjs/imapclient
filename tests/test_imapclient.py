@@ -16,15 +16,56 @@ from imapclient.exceptions import CapabilityError, IMAPClientError, ProtocolErro
 from imapclient.fixed_offset import FixedOffset
 from imapclient.imapclient import (
     _parse_quota,
+)
+from imapclient.imapclient import IMAPClient as RealIMAPClient
+from imapclient.imapclient import (
     IMAPlibLoggerAdapter,
     literal,
     MailboxQuotaRoots,
     Quota,
     require_capability,
+    SocketTimeout,
 )
 from imapclient.testable_imapclient import TestableIMAPClient as IMAPClient
 
 from .imapclient_test import IMAPClientTest
+
+
+class TestCreateIMAP4(IMAPClientTest):
+    @patch("imapclient.imapclient.sys.version_info", (3, 8, 0))
+    @patch("imapclient.imapclient.tls.IMAP4_TLS")
+    @patch("imapclient.imapclient.imap4.IMAP4WithTimeout")
+    def test_python_38_does_not_pass_connect_timeout(self, plain_imap, tls_imap):
+        self.client._timeout = SocketTimeout(None, 30)
+        self.client.ssl_context = sentinel.ssl_context
+
+        self.client.ssl = True
+        self.assertIs(RealIMAPClient._create_IMAP4(self.client), tls_imap.return_value)
+        tls_imap.assert_called_once_with("somehost", 993, sentinel.ssl_context)
+        plain_imap.assert_not_called()
+
+        self.client.ssl = False
+        self.assertIs(
+            RealIMAPClient._create_IMAP4(self.client), plain_imap.return_value
+        )
+        plain_imap.assert_called_once_with("somehost", 993)
+
+    @patch("imapclient.imapclient.sys.version_info", (3, 8, 0))
+    @patch("imapclient.imapclient.tls.IMAP4_TLS")
+    @patch("imapclient.imapclient.imap4.IMAP4WithTimeout")
+    def test_python_38_rejects_connect_timeout(self, plain_imap, tls_imap):
+        self.client._timeout = SocketTimeout(10, 30)
+
+        for use_ssl in (True, False):
+            with self.subTest(ssl=use_ssl):
+                self.client.ssl = use_ssl
+                with self.assertRaisesRegex(
+                    ValueError, "connection timeout is not supported"
+                ):
+                    RealIMAPClient._create_IMAP4(self.client)
+
+        tls_imap.assert_not_called()
+        plain_imap.assert_not_called()
 
 
 class TestListFolders(IMAPClientTest):

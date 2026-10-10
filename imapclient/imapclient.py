@@ -322,6 +322,21 @@ class IMAPClient:
 
         connect_timeout = getattr(self._timeout, "connect", None)
 
+        if sys.version_info < (3, 9):
+            # Support for Python 3.8
+            if connect_timeout:
+                raise ValueError(
+                    "connection timeout is not supported with this version of Python"
+                )
+
+            if self.ssl:
+                return tls.IMAP4_TLS(
+                    self.host,
+                    self.port,
+                    self.ssl_context,
+                )
+            return imap4.IMAP4WithTimeout(self.host, self.port)
+
         if self.ssl:
             return tls.IMAP4_TLS(
                 self.host,
@@ -329,7 +344,6 @@ class IMAPClient:
                 self.ssl_context,
                 connect_timeout,
             )
-
         return imap4.IMAP4WithTimeout(self.host, self.port, connect_timeout)
 
     def _set_read_timeout(self):
