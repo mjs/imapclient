@@ -168,6 +168,9 @@ class TestParseResponse(unittest.TestCase):
         self._test(b'"foo[bar rrr]"', b"foo[bar rrr]")
         self._test(b"[foo bar]def", b"[foo bar]def")
         self._test(b"(foo [bar rrr])", (b"foo", b"[bar rrr]"))
+
+    def test_unclosed_square_bracket_inside_atom(self):
+        self._test(b'(foo) "." bar[baz', ((b"foo",), b".", b"bar[baz"), wrap=False)
         self._test(b"(foo foo[bar rrr])", (b"foo", b"foo[bar rrr]"))
 
     def test_incomplete_tuple(self):

@@ -66,6 +66,12 @@ class TestTokenSource(unittest.TestCase):
         self.check_error([b"["], message)
         self.check_error([b"[aaa bbb"], message)
 
+    def test_unmatched_square_bracket_inside_atom(self):
+        self.check([b"aaa[bbb"], [b"aaa[bbb"])
+        self.check([b"aaa[bbb ccc"], [b"aaa[bbb", b"ccc"])
+        self.check([b"(aaa[bbb)"], [b"(", b"aaa[bbb", b")"])
+        self.check([b"aaa[bbb[ccc]"], [b"aaa[bbb[ccc]"])
+
     def test_literal(self):
         source = TokenSource([(b"abc {7}", b"foo bar"), b")"])
         tokens = iter(source)
