@@ -77,6 +77,22 @@ class Lexer:
         token.append(end_char)
         return token
 
+    def read_optional_close_square(self, stream_i: "PushableIterator") -> bytearray:
+        """Read up to and including the next "]".
+
+        A "[" inside an atom doesn't need one (eg. the mailbox name
+        foo[bar). If there is none, everything read is pushed back and
+        the "[" stays an ordinary character of the atom.
+        """
+        section = bytearray()
+        for nextchar in stream_i:
+            section.append(nextchar)
+            if nextchar == CLOSE_SQUARE:
+                return section
+        for nextchar in reversed(section):
+            stream_i.push(nextchar)
+        return bytearray()
+
     def read_token_stream(self, stream_i: "PushableIterator") -> Iterator[bytearray]:
         whitespace = WHITESPACE
         wordchars = NON_SPECIALS
@@ -95,8 +111,12 @@ class Lexer:
                 if nextchar in wordchars:
                     token.append(nextchar)
                 elif nextchar == OPEN_SQUARE:
+                    in_atom = bool(token)
                     token.append(nextchar)
-                    token.extend(read_until(stream_i, CLOSE_SQUARE, escape=False))
+                    if in_atom:
+                        token.extend(self.read_optional_close_square(stream_i))
+                    else:
+                        token.extend(read_until(stream_i, CLOSE_SQUARE, escape=False))
                 else:
                     if nextchar in whitespace:
                         yield token

@@ -105,6 +105,21 @@ class TestListFolders(IMAPClientTest):
         )
         self.assertTrue(folders is sentinel.folder_list)
 
+    def test_unclosed_square_bracket_in_folder_name(self):
+        folders = self.client._proc_folder_list(
+            [
+                b'(\\HasNoChildren) "." foo.[bar',
+                b'(\\HasNoChildren) "." baz',
+            ]
+        )
+        self.assertEqual(
+            folders,
+            [
+                ((b"\\HasNoChildren",), b".", "foo.[bar"),
+                ((b"\\HasNoChildren",), b".", "baz"),
+            ],
+        )
+
     def test_list_folders_NO(self):
         self.client._imap._simple_command.return_value = ("NO", [b"badness"])
         self.assertRaises(IMAPClientError, self.client.list_folders)
