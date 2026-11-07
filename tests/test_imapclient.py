@@ -894,6 +894,24 @@ class TestFetch(IMAPClientTest):
         )
         self.assertEqual(out, {3: {b"SEQ": 1, b"FLAGS": (b"foo",)}})
 
+    def test_star_is_highest_id_in_response(self):
+        out = self.fetch(
+            "2:*",
+            [b"1 (UID 5 FLAGS (foo))", b"2 (UID 1 FLAGS (bar))"],
+        )
+        self.assertEqual(out, {5: {b"SEQ": 1, b"FLAGS": (b"foo",)}})
+
+    def test_star_range_beyond_highest_id(self):
+        # RFC 3501: 559:* includes the highest UID even when it is below 559
+        out = self.fetch(
+            "559:*",
+            [b"9 (UID 120 FLAGS (foo))", b"3 (UID 40 FLAGS (bar))"],
+        )
+        self.assertEqual(out, {120: {b"SEQ": 9, b"FLAGS": (b"foo",)}})
+
+    def test_no_responses(self):
+        self.assertEqual(self.fetch("2:*", [None]), {})
+
 
 class TestNamespace(IMAPClientTest):
     def setUp(self):
