@@ -79,6 +79,29 @@ class TestFlags(IMAPClientTest):
 
         cc.reset_mock()
 
+    def test_keyed_by_sequence_when_not_using_uids(self):
+        self.client.use_uid = False
+        cc = self.client._command_and_check
+        cc.return_value = [
+            b"11 (FLAGS (foo) UID 1)",
+            b"22 (FLAGS (bar) UID 2)",
+        ]
+        resp = self.client.add_flags([11, 22], "foo")
+        self.assertEqual(resp, {11: (b"foo",), 22: (b"bar",)})
+
+    def test_unsolicited_uid_not_merged_when_not_using_uids(self):
+        # The UID of the unsolicited response matches a requested sequence
+        # number, but it is for a different message.
+        self.client.use_uid = False
+        cc = self.client._command_and_check
+        cc.return_value = [
+            b"1 (FLAGS (foo))",
+            b"2 (FLAGS (foo))",
+            b"46 (UID 2 FLAGS (\\Seen))",
+        ]
+        resp = self.client.add_flags([1, 2], "foo")
+        self.assertEqual(resp, {1: (b"foo",), 2: (b"foo",)})
+
 
 class TestGmailLabels(IMAPClientTest):
     def setUp(self):
