@@ -132,6 +132,12 @@ class Test_SequenceSet(unittest.TestCase):
     def test_unicode(self):
         self.check("123", expected=[123], unexpected=[1, 124])
 
+    def test_int_list(self):
+        self.check([1, 2, 3], expected=[1, 2, 3], unexpected=[0, 4])
+
+    def test_mixed_type_list(self):
+        self.check(["2:4", 7, b"9"], expected=[2, 3, 4, 7, 9], unexpected=[1, 5, 8])
+
     def test_mixed_list(self):
         self.check(b"2:4,123,44", expected=[2, 3, 4, 123, 44], unexpected=[1, 6])
 
