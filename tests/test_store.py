@@ -33,6 +33,16 @@ class TestFlags(IMAPClientTest):
             self.client.fetch.assert_called_with(sentinel.messages, ["FLAGS"])
             self.assertEqual(out, {123: [b"foo", b"bar"], 444: [b"foo"]})
 
+    def test_get_skips_missing_field(self):
+        with patch.object(
+            self.client,
+            "fetch",
+            autospec=True,
+            return_value={123: {b"FLAGS": [b"foo"]}, 444: {b"SEQ": 3}},
+        ):
+            out = self.client.get_flags(sentinel.messages)
+            self.assertEqual(out, {123: [b"foo"]})
+
     def test_set(self):
         self.check(self.client.set_flags, b"FLAGS")
 
