@@ -1838,7 +1838,9 @@ class IMAPClient:
         )
 
     def _filter_fetch_dict(self, fetch_dict, key):
-        return dict((msgid, data[key]) for msgid, data in fetch_dict.items())
+        return dict(
+            (msgid, data[key]) for msgid, data in fetch_dict.items() if key in data
+        )
 
     def _normalise_folder(self, folder_name):
         if isinstance(folder_name, bytes):
