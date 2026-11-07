@@ -1835,7 +1835,7 @@ class IMAPClient:
         )
         if silent:
             return None
-        response = parse_fetch_response(data)
+        response = parse_fetch_response(data, uid_is_key=self.use_uid)
         # Drop unsolicited responses for other messages
         without_unsolicited = {
             message_id: response[message_id]
