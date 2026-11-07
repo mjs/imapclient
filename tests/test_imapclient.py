@@ -909,6 +909,18 @@ class TestFetch(IMAPClientTest):
         )
         self.assertEqual(out, {120: {b"SEQ": 9, b"FLAGS": (b"foo",)}})
 
+    def test_drops_responses_without_uid(self):
+        out = self.fetch(
+            [39],
+            [b"7 (UID 39 FLAGS (foo))", b"39 (FLAGS (bar))"],
+        )
+        self.assertEqual(out, {39: {b"SEQ": 7, b"FLAGS": (b"foo",)}})
+
+    def test_keeps_responses_without_uid_when_not_using_uids(self):
+        self.client.use_uid = False
+        out = self.fetch("1:2", [b"1 (FLAGS (foo))", b"5 (FLAGS (bar))"])
+        self.assertEqual(out, {1: {b"SEQ": 1, b"FLAGS": (b"foo",)}})
+
     def test_no_responses(self):
         self.assertEqual(self.fetch("2:*", [None]), {})
 
