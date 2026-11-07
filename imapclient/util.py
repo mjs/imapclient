@@ -27,20 +27,22 @@ def to_unicode(s: Union[bytes, str]) -> str:
 class SequenceSet:
     """Tests membership of one or more sequence sets.
 
-    *highest_id* is the value of * and must be supplied for sets using it.
+    *highest_id* is the value of *, the highest message ID in use.
     """
 
     def __init__(
         self,
         sequence_sets: Union[bytes, str, int, Sequence[Union[bytes, str, int]]],
-        highest_id: bytes = b"*",
+        *,
+        highest_id: int,
     ):
         if isinstance(sequence_sets, (int, str, bytes)):
             sequence_sets = (sequence_sets,)
+        star = str(highest_id).encode("ascii")
         self._id_ranges = [
             id_range
             for sequence_set in sequence_sets
-            for id_range in SequenceSet._to_ranges(sequence_set, highest_id)
+            for id_range in SequenceSet._to_ranges(sequence_set, star)
         ]
 
     @staticmethod

@@ -116,8 +116,8 @@ class Test_join_message_ids(unittest.TestCase):
 
 
 class Test_SequenceSet(unittest.TestCase):
-    def check(self, items, expected, unexpected, highest_id=b"*"):
-        sequence_set = SequenceSet(items, highest_id)
+    def check(self, items, expected, unexpected, highest_id=1000):
+        sequence_set = SequenceSet(items, highest_id=highest_id)
         for item in expected:
             self.assertIn(item, sequence_set)
         for item in unexpected:
@@ -148,23 +148,19 @@ class Test_SequenceSet(unittest.TestCase):
         self.check("2:4,123,44", expected=[2, 3, 4, 123, 44], unexpected=[1, 6])
 
     def test_infinite_list(self):
-        self.check(b"2:*", expected=[2, 3], unexpected=[1, 4], highest_id=b"3")
+        self.check(b"2:*", expected=[2, 3], unexpected=[1, 4], highest_id=3)
 
     def test_reversed_infinite_list(self):
-        self.check(b"*:2", expected=[2, 3], unexpected=[1, 4], highest_id=b"3")
+        self.check(b"*:2", expected=[2, 3], unexpected=[1, 4], highest_id=3)
 
     def test_unicode_infinite_list(self):
-        self.check("2:*", expected=[2, 3], unexpected=[1, 4], highest_id=b"3")
-
-    def test_infinite_list_without_highest(self):
-        with self.assertRaises(ValueError):
-            self.check(b"2:*", expected=[2, 3], unexpected=[1, 4])
+        self.check("2:*", expected=[2, 3], unexpected=[1, 4], highest_id=3)
 
     def test_highest_only(self):
-        self.check("*", expected=[4], unexpected=[1, 2, 3, 5], highest_id=b"4")
+        self.check("*", expected=[4], unexpected=[1, 2, 3, 5], highest_id=4)
 
     def test_highest_only_range(self):
-        self.check("*:*", expected=[4], unexpected=[1, 2, 3, 5], highest_id=b"4")
+        self.check("*:*", expected=[4], unexpected=[1, 2, 3, 5], highest_id=4)
 
 
 class Test_normalise_search_criteria(unittest.TestCase):

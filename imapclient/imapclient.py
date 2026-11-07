@@ -1975,7 +1975,7 @@ def _without_unsolicited(response, messages):
         return {}
     # Every response is for an existing message, and the server must include
     # the message that * refers to, so * is the highest ID in the response.
-    sequence_set = SequenceSet(messages, highest_id=str(max(message_ids)).encode())
+    sequence_set = SequenceSet(messages, highest_id=max(message_ids))
     return {
         message_id: response[message_id]
         for message_id in message_ids
