@@ -30,7 +30,7 @@ server. IMAPClient uses UIDs by default.
 Any method that accepts message ids takes either a sequence containing
 message ids (eg. ``[1,2,3]``), or a single message id integer, or a
 string representing sets and ranges of messages as supported by the
-IMAP protocol (e.g. ``'50-65'``, ``'2:*'`` or ``'2,4:7,9,12:*'``).
+IMAP protocol (e.g. ``'50:65'``, ``'2:*'`` or ``'2,4:7,9,12:*'``).
 
 Message Flags
 ~~~~~~~~~~~~~
