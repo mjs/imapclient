@@ -25,9 +25,11 @@ def to_unicode(s: Union[bytes, str]) -> str:
 
 
 class SequenceSet:
-    """Tests membership of one or more sequence sets."""
+    """Tests membership of one or more sequence sets.
 
-    # FIXME: need to pass highest ID or else fail on *
+    *highest_id* is the value of * and must be supplied for sets using it.
+    """
+
     def __init__(
         self,
         sequence_sets: Union[bytes, str, int, Sequence[Union[bytes, str, int]]],
