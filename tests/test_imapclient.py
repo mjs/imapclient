@@ -868,7 +868,10 @@ class TestTimeNormalisation(IMAPClientTest):
         def check(expected):
             self.client.fetch(22, ["SOMETHING"])
             parse_fetch_response.assert_called_with(
-                sentinel.fetch_data, expected, sentinel.use_uid
+                sentinel.fetch_data,
+                expected,
+                sentinel.use_uid,
+                skip_missing_uid=sentinel.use_uid,
             )
 
         self.client.normalise_times = True

@@ -1417,7 +1417,9 @@ class IMAPClient:
         typ, data = self._imap._command_complete("FETCH", tag)
         self._checkok("fetch", typ, data)
         typ, data = self._imap._untagged_response(typ, data, "FETCH")
-        response = parse_fetch_response(data, self.normalise_times, self.use_uid)
+        response = parse_fetch_response(
+            data, self.normalise_times, self.use_uid, skip_missing_uid=self.use_uid
+        )
         return _without_unsolicited(response, messages)
 
     def append(self, folder, msg, flags=(), msg_time=None):
@@ -1830,7 +1832,7 @@ class IMAPClient:
         )
         if silent:
             return None
-        response = parse_fetch_response(data)
+        response = parse_fetch_response(data, skip_missing_uid=self.use_uid)
         return self._filter_fetch_dict(
             _without_unsolicited(response, messages), fetch_key
         )
