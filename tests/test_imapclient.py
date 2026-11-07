@@ -881,6 +881,20 @@ class TestTimeNormalisation(IMAPClientTest):
         check(False)
 
 
+class TestFetch(IMAPClientTest):
+    def fetch(self, messages, responses):
+        self.client._imap._command_complete.return_value = ("OK", [b"Success"])
+        self.client._imap._untagged_response.return_value = ("OK", responses)
+        return self.client.fetch(messages, ["FLAGS"])
+
+    def test_sequence_set_drops_unsolicited(self):
+        out = self.fetch(
+            "2:4",
+            [b"1 (UID 3 FLAGS (foo))", b"5 (UID 9 FLAGS (bar))"],
+        )
+        self.assertEqual(out, {3: {b"SEQ": 1, b"FLAGS": (b"foo",)}})
+
+
 class TestNamespace(IMAPClientTest):
     def setUp(self):
         super(TestNamespace, self).setUp()

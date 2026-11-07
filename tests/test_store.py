@@ -79,6 +79,17 @@ class TestFlags(IMAPClientTest):
 
         cc.reset_mock()
 
+    def test_sequence_set_drops_unsolicited(self):
+        cc = self.client._command_and_check
+        cc.return_value = [
+            b"11 (FLAGS (foo) UID 1)",
+            b"46 (UID 148606 FLAGS (\\Seen))",
+            b"22 (FLAGS (foo) UID 2)",
+        ]
+        resp = self.client.add_flags("1:2", "foo")
+        cc.assert_called_once_with("store", b"1:2", b"+FLAGS", "(foo)", uid=True)
+        self.assertEqual(resp, {1: (b"foo",), 2: (b"foo",)})
+
 
 class TestGmailLabels(IMAPClientTest):
     def setUp(self):
