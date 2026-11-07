@@ -22,7 +22,7 @@ from .datetime_util import datetime_to_INTERNALDATE, format_criteria_date
 from .imap_utf7 import decode as decode_utf7
 from .imap_utf7 import encode as encode_utf7
 from .response_parser import parse_fetch_response, parse_message_list, parse_response
-from .util import assert_imap_protocol, chunk, to_bytes, to_ints, to_unicode
+from .util import assert_imap_protocol, chunk, SequenceSet, to_bytes, to_unicode
 
 if hasattr(select, "poll"):
     POLL_SUPPORT = True
@@ -1417,13 +1417,10 @@ class IMAPClient:
         typ, data = self._imap._command_complete("FETCH", tag)
         self._checkok("fetch", typ, data)
         typ, data = self._imap._untagged_response(typ, data, "FETCH")
-        response = parse_fetch_response(data, self.normalise_times, self.use_uid)
-        # Drop unsolicited responses for other messages
-        return {
-            message_id: response[message_id]
-            for message_id in to_ints(messages)
-            if message_id in response
-        }
+        response = parse_fetch_response(
+            data, self.normalise_times, self.use_uid, skip_missing_uid=self.use_uid
+        )
+        return _without_unsolicited(response, messages)
 
     def append(self, folder, msg, flags=(), msg_time=None):
         """Append a message to *folder*.
@@ -1835,17 +1832,15 @@ class IMAPClient:
         )
         if silent:
             return None
-        response = parse_fetch_response(data)
-        # Drop unsolicited responses for other messages
-        without_unsolicited = {
-            message_id: response[message_id]
-            for message_id in to_ints(messages)
-            if message_id in response
-        }
-        return self._filter_fetch_dict(without_unsolicited, fetch_key)
+        response = parse_fetch_response(data, skip_missing_uid=self.use_uid)
+        return self._filter_fetch_dict(
+            _without_unsolicited(response, messages), fetch_key
+        )
 
     def _filter_fetch_dict(self, fetch_dict, key):
-        return dict((msgid, data[key]) for msgid, data in fetch_dict.items())
+        return dict(
+            (msgid, data[key]) for msgid, data in fetch_dict.items() if key in data
+        )
 
     def _normalise_folder(self, folder_name):
         if isinstance(folder_name, bytes):
@@ -1971,6 +1966,21 @@ def _normalise_text_list(items):
     if isinstance(items, (str, bytes)):
         items = (items,)
     return (to_unicode(c) for c in items)
+
+
+def _without_unsolicited(response, messages):
+    """Drop unsolicited FETCH responses for messages outside *messages*."""
+    message_ids = list(response)
+    if not message_ids:
+        return {}
+    # Every response is for an existing message, and the server must include
+    # the message that * refers to, so * is the highest ID in the response.
+    sequence_set = SequenceSet(messages, highest_id=max(message_ids))
+    return {
+        message_id: response[message_id]
+        for message_id in message_ids
+        if message_id in sequence_set
+    }
 
 
 def join_message_ids(messages):

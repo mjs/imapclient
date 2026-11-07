@@ -33,6 +33,16 @@ class TestFlags(IMAPClientTest):
             self.client.fetch.assert_called_with(sentinel.messages, ["FLAGS"])
             self.assertEqual(out, {123: [b"foo", b"bar"], 444: [b"foo"]})
 
+    def test_get_skips_missing_field(self):
+        with patch.object(
+            self.client,
+            "fetch",
+            autospec=True,
+            return_value={123: {b"FLAGS": [b"foo"]}, 444: {b"SEQ": 3}},
+        ):
+            out = self.client.get_flags(sentinel.messages)
+            self.assertEqual(out, {123: [b"foo"]})
+
     def test_set(self):
         self.check(self.client.set_flags, b"FLAGS")
 
@@ -78,6 +88,17 @@ class TestFlags(IMAPClientTest):
             )
 
         cc.reset_mock()
+
+    def test_sequence_set_drops_unsolicited(self):
+        cc = self.client._command_and_check
+        cc.return_value = [
+            b"11 (FLAGS (foo) UID 1)",
+            b"46 (UID 148606 FLAGS (\\Seen))",
+            b"22 (FLAGS (foo) UID 2)",
+        ]
+        resp = self.client.add_flags("1:2", "foo")
+        cc.assert_called_once_with("store", b"1:2", b"+FLAGS", "(foo)", uid=True)
+        self.assertEqual(resp, {1: (b"foo",), 2: (b"foo",)})
 
 
 class TestGmailLabels(IMAPClientTest):

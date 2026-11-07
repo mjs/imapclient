@@ -258,6 +258,17 @@ class TestParseFetchResponse(unittest.TestCase):
             {23: {b"UID": 76, b"SEQ": 23}},
         )
 
+    def test_skip_missing_uid(self):
+        # Without skipping, the response without a UID would be keyed by its
+        # sequence number and merged into the data for UID 76.
+        self.assertEqual(
+            parse_fetch_response(
+                [b"23 (UID 76 FLAGS (Foo))", b"76 (FLAGS (Bar))"],
+                skip_missing_uid=True,
+            ),
+            {76: {b"SEQ": 23, b"FLAGS": (b"Foo",)}},
+        )
+
     def test_bad_UID(self):
         self.assertRaises(ProtocolError, parse_fetch_response, [b"(UID X)"])
 

@@ -106,12 +106,19 @@ _ParseFetchResponseInnerDict = Dict[
 
 
 def parse_fetch_response(
-    text: List[bytes], normalise_times: bool = True, uid_is_key: bool = True
+    text: List[bytes],
+    normalise_times: bool = True,
+    uid_is_key: bool = True,
+    skip_missing_uid: bool = False,
 ) -> "defaultdict[int, _ParseFetchResponseInnerDict]":
     """Pull apart IMAP FETCH responses as returned by imaplib.
 
     Returns a dictionary, keyed by message ID. Each value a dictionary
     keyed by FETCH field type (eg."RFC822").
+
+    If *skip_missing_uid* is true, responses without a UID are dropped.
+    Responses caused by a UID command must include the UID, so these
+    are unsolicited and would otherwise be keyed by sequence number.
     """
     if text == [None]:
         return defaultdict()
@@ -141,6 +148,7 @@ def parse_fetch_response(
         # always return the sequence of the message, so it is available
         # even if we return keyed by UID.
         msg_data: _ParseFetchResponseInnerDict = {b"SEQ": seq}
+        has_uid = False
         for i in range(0, len(msg_response), 2):
             msg_attribute = msg_response[i]
             if TYPE_CHECKING:
@@ -149,6 +157,7 @@ def parse_fetch_response(
             value = msg_response[i + 1]
 
             if word == b"UID":
+                has_uid = True
                 uid = _int_or_error(value, "invalid UID")
                 if uid_is_key:
                     msg_id = uid
@@ -165,6 +174,8 @@ def parse_fetch_response(
             else:
                 msg_data[word] = value
 
+        if skip_missing_uid and not has_uid:
+            continue
         parsed_response[msg_id].update(msg_data)
 
     return parsed_response
