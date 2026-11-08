@@ -959,6 +959,8 @@ class IMAPClient:
         received. If *timeout* is provided, the call will block for at
         most this many seconds while waiting for an IDLE response.
 
+        Raise ``AbortError`` if the server closes the connection.
+
         The return value is a list of received IDLE responses. These
         will be parsed with values converted to appropriate types. For
         example::
@@ -988,12 +990,16 @@ class IMAPClient:
                         line = self._imap._get_line()
                     except (socket.timeout, socket.error):
                         break
-                    except IMAPClient.AbortError:
-                        # An imaplib.IMAP4.abort with "EOF" is raised
-                        # under Python 3
-                        err = sys.exc_info()[1]
-                        if "EOF" in err.args[0]:
-                            break
+                    except IMAPClient.AbortError as err:
+                        if "EOF" in err.args[0] and not isinstance(
+                            sock, ssl_lib.SSLSocket
+                        ):
+                            # A buffered reader can report EOF when no data is ready.
+                            try:
+                                if sock.recv(1, socket.MSG_PEEK):
+                                    break
+                            except BlockingIOError:
+                                break
                         raise
                     else:
                         resps.append(_parse_untagged_response(line))
