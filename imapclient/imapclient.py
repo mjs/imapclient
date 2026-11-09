@@ -15,7 +15,7 @@ import warnings
 from datetime import date, datetime
 from logging import getLogger, LoggerAdapter
 from operator import itemgetter
-from typing import List, Optional
+from typing import Iterable, List, Optional, Union
 
 from . import exceptions, imap4, response_lexer, tls
 from .datetime_util import datetime_to_INTERNALDATE, format_criteria_date
@@ -602,9 +602,10 @@ class IMAPClient:
                 _quote(v) for v in itertools.chain.from_iterable(parameters.items())
             )
 
+        _check_wire_args([args])
         typ, data = self._imap._simple_command("ID", args)
         self._checkok("id", typ, data)
-        typ, data = self._imap._untagged_response(typ, data, "ID")
+        _, data = self._imap._untagged_response(typ, data, "ID")
         return parse_response(data)
 
     def capabilities(self):
@@ -758,6 +759,7 @@ class IMAPClient:
     def _do_list(self, cmd, directory, pattern):
         directory = self._normalise_folder(directory)
         pattern = self._normalise_folder(pattern)
+        _check_wire_args([cmd, directory, pattern])
         typ, dat = self._imap._simple_command(cmd, directory, pattern)
         self._checkok(cmd, typ, dat)
         typ, dat = self._imap._untagged_response(typ, dat, cmd)
@@ -1413,6 +1415,7 @@ class IMAPClient:
         ]
         if self.use_uid:
             args.insert(0, "UID")
+        _check_wire_args(args)
         tag = self._imap._command(*args)
         typ, data = self._imap._command_complete("FETCH", tag)
         self._checkok("fetch", typ, data)
@@ -1442,19 +1445,18 @@ class IMAPClient:
 
         Returns the APPEND response as returned by the server.
         """
+        args = [
+            to_bytes(self._normalise_folder(folder)),
+            to_bytes(seq_to_parenstr(flags)),
+        ]
         if msg_time:
-            time_val = '"%s"' % datetime_to_INTERNALDATE(msg_time)
-            time_val = to_unicode(time_val)
-        else:
-            time_val = None
-        return self._command_and_check(
-            "append",
-            self._normalise_folder(folder),
-            seq_to_parenstr(flags),
-            time_val,
-            to_bytes(msg),
-            unpack=True,
-        )
+            args.append(to_bytes('"%s"' % datetime_to_INTERNALDATE(msg_time)))
+        # Match imaplib's APPEND newline normalization. The message must always
+        # be a literal, even when it contains only ASCII characters.
+        args.append(literal(imaplib.MapCRLF.sub(b"\r\n", to_bytes(msg))))
+        typ, data = self._raw_command(b"APPEND", args, uid=False)
+        self._checkok("append", typ, data)
+        return data[0]
 
     @require_capability("MULTIAPPEND")
     def multiappend(self, folder, msgs):
@@ -1696,16 +1698,13 @@ class IMAPClient:
             return data[0]
         return data
 
-    def _raw_command(self, command, args, uid=True):
+    def _raw_command(self, command: bytes, args, uid=True):
         """Run the specific command with the arguments given. 8-bit arguments
         are sent as literals. The return value is (typ, data).
 
         This sidesteps much of imaplib's command sending
         infrastructure because imaplib can't send more than one
         literal.
-
-        *command* should be specified as bytes.
-        *args* should be specified as a list of bytes.
         """
         command = command.upper()
 
@@ -1713,6 +1712,7 @@ class IMAPClient:
         # yet, we can't call CAPABILITY while sending another command.
         has_literal_plus = self.has_capability("LITERAL+")
 
+        # TODO: remove these conversions
         if isinstance(args, tuple):
             args = list(args)
         if not isinstance(args, list):
@@ -1724,22 +1724,9 @@ class IMAPClient:
             prefix.append(b"UID")
         prefix.append(command)
 
-        # Check every argument before anything goes on the wire: a bad
-        # argument found after a literal was sent would leave the server
-        # waiting inside a half-sent command.
-        for item in itertools.chain(prefix, args):
-            if not isinstance(item, bytes):
-                raise ValueError("command args must be passed as bytes")
-            if b"\x00" in item:
-                raise ValueError("NUL is not allowed in command arguments")
-            if not _is8bit(item) and (b"\r" in item or b"\n" in item):
-                # CR and LF end the command line on the wire, so an argument
-                # carrying them would be run as extra commands. A literal can
-                # hold them, which is what the 8-bit path already sends.
-                raise ValueError(
-                    "CR and LF are not allowed in command arguments; "
-                    "wrap the value in imapclient.literal to send it as a literal"
-                )
+        _check_wire_args(
+            itertools.chain(prefix, args), require_bytes=True, raw_command=True
+        )
 
         line = []
         for item, is_last in _iter_with_last(prefix + args):
@@ -1766,7 +1753,6 @@ class IMAPClient:
             self._imap.send(out)
 
         self._imap.send(b"\r\n")
-
         return self._imap._command_complete(to_unicode(command), tag)
 
     def _send_literal(self, tag, item, has_literal_plus):
@@ -1796,6 +1782,8 @@ class IMAPClient:
     def _command_and_check(
         self, command, *args, unpack: bool = False, uid: bool = False
     ):
+        _check_wire_args(args)
+
         if uid and self.use_uid:
             command = to_unicode(command)  # imaplib must die
             typ, data = self._imap.uid(command, *args)
@@ -2016,12 +2004,12 @@ def as_triplets(items):
     return zip(a, a, a)
 
 
-def _is8bit(data):
+def _is8bit(data: Union[bytes, literal]):
     return isinstance(data, literal) or any(b > 127 for b in data)
 
 
 def _iter_with_last(items):
-    """Iterate yielding ``(item, is_last)`` for each item. 
+    """Iterate yielding ``(item, is_last)`` for each item.
 
     ``is_last`` will only be True for the last item. This function doesn't work
     on all iterables:``items`` must support ``len()``.
@@ -2029,6 +2017,26 @@ def _iter_with_last(items):
     last_i = len(items) - 1
     for i, item in enumerate(items):
         yield item, i == last_i
+
+
+def _check_wire_args(args: Iterable[object], require_bytes=False, *, raw_command=False):
+    """Validate arguments before sending any part of a command.
+
+    The raw command sender transmits 8-bit and ``literal`` values as literals.
+    Arguments passed to imaplib commands are checked as command-line text.
+    """
+    for item in args:
+        if require_bytes and not isinstance(item, bytes):
+            raise ValueError("command args must be passed as bytes")
+        if isinstance(item, str):
+            item = to_bytes(item, charset="utf-8")
+
+        if isinstance(item, bytes):
+            if b"\x00" in item:
+                raise ValueError("NUL is not allowed in command arguments")
+            is_literal = raw_command and _is8bit(item)
+            if not is_literal and (b"\r" in item or b"\n" in item):
+                raise ValueError("CR and LF are not allowed in command line arguments")
 
 
 _not_present = object()
