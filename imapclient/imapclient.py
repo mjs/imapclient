@@ -2017,6 +2017,11 @@ def _is8bit(data):
 
 
 def _iter_with_last(items):
+    """Iterate yielding ``(item, is_last)`` for each item. 
+
+    ``is_last`` will only be True for the last item. This function doesn't work
+    on all iterables:``items`` must support ``len()``.
+    """
     last_i = len(items) - 1
     for i, item in enumerate(items):
         yield item, i == last_i
