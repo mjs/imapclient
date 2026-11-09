@@ -988,6 +988,8 @@ class IMAPClient:
                 while True:
                     try:
                         line = self._imap._get_line()
+                    except ConnectionError as err:
+                        raise IMAPClient.AbortError("socket error: EOF") from err
                     except (socket.timeout, socket.error):
                         break
                     except IMAPClient.AbortError as err:
