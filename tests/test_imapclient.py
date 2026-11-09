@@ -392,32 +392,78 @@ class TestSelectFolder(IMAPClientTest):
 
 
 class TestAppend(IMAPClientTest):
+    def setUp(self):
+        super().setUp()
+        self.client._cached_capabilities = (b"IMAP4REV1",)
+        self.client._imap._command_complete.return_value = ("OK", [b"Good"])
+        self.client._send_literal = Mock()
+
+    def test_message_with_crlf_is_sent_as_literal(self):
+        msg = b"Subject: hello\r\n\r\nMessage body\r\n"
+
+        self.assertEqual(self.client.append("foobar", msg), b"Good")
+
+        self.client._send_literal.assert_called_once_with("tag", literal(msg), False)
+        self.assertEqual(self.client._imap.sent, b'tag APPEND "foobar" ()\r\n')
+        self.assertIsInstance(self.client._send_literal.call_args.args[1], literal)
+
+    def test_message_newlines_are_normalized(self):
+        self.client.append("foobar", b"header\n\nfirst\rsecond\r\n")
+
+        self.client._send_literal.assert_called_once_with(
+            "tag", literal(b"header\r\n\r\nfirst\r\nsecond\r\n"), False
+        )
+
+    def test_folder_encoding_disabled(self):
+        self.client.folder_encode = False
+        self.client.append("foobar", "body")
+        self.assertEqual(self.client._imap.sent, b'tag APPEND "foobar" ()\r\n')
+
+    def test_failed_response(self):
+        self.client._imap._command_complete.return_value = ("NO", [b"Denied"])
+        with self.assertRaisesRegex(IMAPClientError, "append failed: Denied"):
+            self.client.append("foobar", "body")
+
+    def test_invalid_line_argument_is_rejected_even_with_literal_message(self):
+        with self.assertRaises(ValueError):
+            self.client.append("foobar", b"body\r\n", ["FLAG\r\nNOOP"])
+        self.assertEqual(self.client._imap.sent, b"")
+        self.client._send_literal.assert_not_called()
+
+    def test_nul_in_message_is_rejected(self):
+        with self.assertRaises(ValueError):
+            self.client.append("foobar", b"body\x00")
+        self.assertEqual(self.client._imap.sent, b"")
+        self.client._send_literal.assert_not_called()
+
     def test_without_msg_time(self):
-        self.client._imap.append.return_value = ("OK", [b"Good"])
-        msg = "hi"
+        self.client._raw_command = Mock(return_value=("OK", [b"Good"]))
 
-        self.client.append("foobar", msg, ["FLAG", "WAVE"], None)
+        self.assertEqual(
+            self.client.append("foobar", "hi", ["FLAG", "WAVE"], None), b"Good"
+        )
 
-        self.client._imap.append.assert_called_with(
-            b'"foobar"', "(FLAG WAVE)", None, b"hi"
+        self.client._raw_command.assert_called_once_with(
+            b"APPEND", [b'"foobar"', b"(FLAG WAVE)", literal(b"hi")], uid=False
         )
 
     @patch("imapclient.imapclient.datetime_to_INTERNALDATE")
     def test_with_msg_time(self, datetime_to_INTERNALDATE):
         datetime_to_INTERNALDATE.return_value = "somedate"
-        self.client._imap.append.return_value = ("OK", [b"Good"])
-        msg = b"bye"
+        self.client._raw_command = Mock(return_value=("OK", [b"Good"]))
 
         self.client.append(
             "foobar",
-            msg,
+            b"bye",
             ["FLAG", "WAVE"],
             datetime(2009, 4, 5, 11, 0, 5, 0, FixedOffset(2 * 60)),
         )
 
         self.assertTrue(datetime_to_INTERNALDATE.called)
-        self.client._imap.append.assert_called_with(
-            b'"foobar"', "(FLAG WAVE)", '"somedate"', msg
+        self.client._raw_command.assert_called_once_with(
+            b"APPEND",
+            [b'"foobar"', b"(FLAG WAVE)", b'"somedate"', literal(b"bye")],
+            uid=False,
         )
 
     def test_multiappend(self):
@@ -794,6 +840,7 @@ class TestRawCommandRejectsControlCharacters(IMAPClientTest):
     def setUp(self):
         super().setUp()
         self.client._imap.send = Mock()
+        self.client._send_literal = Mock()
         self.client._cached_capabilities = (b"IMAP4REV1",)
 
     def test_crlf_in_a_line_argument_is_rejected_before_sending(self):
@@ -815,13 +862,52 @@ class TestRawCommandRejectsControlCharacters(IMAPClientTest):
             self.client._raw_command(b"SEARCH", [b"TEXT", literal(b"a\x00b")])
 
         self.client._imap.send.assert_not_called()
+        self.client._send_literal.assert_not_called()
 
     def test_crlf_inside_a_literal_is_allowed(self):
-        self.client._send_literal = Mock()
-
         self.client._raw_command(b"SEARCH", [b"TEXT", literal(b"line one\r\nline two")])
 
         self.client._send_literal.assert_called_once()
+
+    def test_crlf_in_8bit_argument_is_sent_as_literal(self):
+        self.client._raw_command(b"SEARCH", [b"TEXT", b"\xff\r\nvalue"])
+
+        self.client._send_literal.assert_called_once()
+        self.assertEqual(self.client._send_literal.call_args.args[1], b"\xff\r\nvalue")
+
+    def test_non_bytes_rejected_before_sending_literal(self):
+        for value in (42, None, "text", bytearray(b"text")):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(ValueError, "must be passed as bytes"):
+                    self.client._raw_command(b"SEARCH", [literal(b"body"), value])
+                self.client._imap.send.assert_not_called()
+                self.client._send_literal.assert_not_called()
+
+
+class TestWireLineArguments(IMAPClientTest):
+    def test_8bit_crlf_rejected_by_imaplib_command(self):
+        self.client._cached_capabilities = [b"ACL"]
+        for who in ("é\r\nNOOP", b"\xff\r\nNOOP", literal(b"\r\nNOOP")):
+            with self.subTest(who=who):
+                with self.assertRaises(ValueError):
+                    self.client.setacl("INBOX", who, "r")
+                self.client._imap.setacl.assert_not_called()
+
+    def test_8bit_crlf_rejected_by_list_and_fetch(self):
+        self.client.folder_encode = False
+        with self.assertRaises(ValueError):
+            self.client.list_folders(pattern="é\r\nNOOP")
+        self.client._imap._simple_command.assert_not_called()
+
+        with self.assertRaises(ValueError):
+            self.client.fetch([1], ["é\r\nNOOP"])
+        self.client._imap._command.assert_not_called()
+
+    def test_8bit_crlf_rejected_by_id(self):
+        self.client._cached_capabilities = [b"ID"]
+        with self.assertRaises(ValueError):
+            self.client.id_({"name": "é\r\nNOOP"})
+        self.client._imap._simple_command.assert_not_called()
 
 
 class TestDebugLogging(IMAPClientTest):
