@@ -2,8 +2,9 @@
 # Released subject to the New BSD License
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
+import pickle
 import unittest
-from datetime import timedelta
+from datetime import datetime, timedelta
 from unittest.mock import DEFAULT, Mock, patch
 
 from imapclient.fixed_offset import FixedOffset
@@ -29,6 +30,26 @@ class TestFixedOffset(unittest.TestCase):
         self._check(
             FixedOffset(-11 * 60 - 30), timedelta(minutes=(-11 * 60) - 30), "-1130"
         )
+
+    def test_pickle(self):
+        for minutes, name in [(0, "+0000"), (330, "+0530"), (-270, "-0430")]:
+            for protocol in range(pickle.HIGHEST_PROTOCOL + 1):
+                with self.subTest(minutes=minutes, protocol=protocol):
+                    offset = pickle.loads(
+                        pickle.dumps(FixedOffset(minutes), protocol=protocol)
+                    )
+                    self.assertIsInstance(offset, FixedOffset)
+                    self._check(offset, timedelta(minutes=minutes), name)
+
+    def test_datetime_pickle(self):
+        for minutes in [0, 330, -270]:
+            expected = datetime(2007, 2, 9, 17, 8, 8, tzinfo=FixedOffset(minutes))
+            for protocol in range(pickle.HIGHEST_PROTOCOL + 1):
+                with self.subTest(minutes=minutes, protocol=protocol):
+                    restored = pickle.loads(pickle.dumps(expected, protocol=protocol))
+                    self.assertEqual(restored, expected)
+                    self.assertEqual(restored.utcoffset(), timedelta(minutes=minutes))
+                    self.assertEqual(restored.tzname(), expected.tzname())
 
     @patch.multiple(
         "imapclient.fixed_offset.time",

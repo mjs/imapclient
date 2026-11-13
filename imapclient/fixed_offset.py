@@ -15,7 +15,7 @@ class FixedOffset(datetime.tzinfo):
     east from UTC
     """
 
-    def __init__(self, minutes: float) -> None:
+    def __init__(self, minutes: float = 0) -> None:
         self.__offset = datetime.timedelta(minutes=minutes)
 
         sign = "+"
