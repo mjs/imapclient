@@ -49,3 +49,5 @@ project:
 - Peter Wienemann 
 - Arnout Engelen
 - Lars Artmann
+- Max Azatian
+- Yaraslau Byshyk
