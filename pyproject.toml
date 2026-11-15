@@ -42,6 +42,11 @@ dev = [
     "pylint",
 ]
 
+# Allow the dev group to require a newer Python version.
+# This avoids dependabot warnings as IMAPClient supports older Pythons.
+[tool.uv.dependency-groups.dev]
+requires-python = ">=3.12"
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
