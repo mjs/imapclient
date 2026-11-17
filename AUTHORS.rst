@@ -53,3 +53,5 @@ project:
 - Yaraslau Byshyk
 - Phil Cohen (@phlipper)
 - Sam Brightman (@sambrightman)
+- @ainuo-AI
+- @nietus 
