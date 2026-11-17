@@ -14,7 +14,7 @@ from imapclient.imapclient import (
     seq_to_parenstr,
     seq_to_parenstr_upper,
 )
-from imapclient.util import assert_imap_protocol
+from imapclient.util import assert_imap_protocol, SequenceSet
 
 
 class Test_normalise_text_list(unittest.TestCase):
@@ -113,6 +113,54 @@ class Test_join_message_ids(unittest.TestCase):
 
     def test_iter(self):
         self.check(iter([123, 99]), b"123,99")
+
+
+class Test_SequenceSet(unittest.TestCase):
+    def check(self, items, expected, unexpected, highest_id=1000):
+        sequence_set = SequenceSet(items, highest_id=highest_id)
+        for item in expected:
+            self.assertIn(item, sequence_set)
+        for item in unexpected:
+            self.assertNotIn(item, sequence_set)
+
+    def test_int(self):
+        self.check(123, expected=[123], unexpected=[1, 124])
+
+    def test_binary(self):
+        self.check(b"123", expected=[123], unexpected=[1, 124])
+
+    def test_unicode(self):
+        self.check("123", expected=[123], unexpected=[1, 124])
+
+    def test_int_list(self):
+        self.check([1, 2, 3], expected=[1, 2, 3], unexpected=[0, 4])
+
+    def test_mixed_type_list(self):
+        self.check(["2:4", 7, b"9"], expected=[2, 3, 4, 7, 9], unexpected=[1, 5, 8])
+
+    def test_mixed_list(self):
+        self.check(b"2:4,123,44", expected=[2, 3, 4, 123, 44], unexpected=[1, 6])
+
+    def test_reversed_mixed_list(self):
+        self.check(b"123,44,4:2", expected=[2, 3, 4, 123, 44], unexpected=[1, 6])
+
+    def test_unicode_mixed_list(self):
+        self.check("2:4,123,44", expected=[2, 3, 4, 123, 44], unexpected=[1, 6])
+
+    def test_infinite_list(self):
+        self.check(b"2:*", expected=[2, 3], unexpected=[1, 4], highest_id=3)
+
+    def test_reversed_infinite_list(self):
+        self.check(b"*:2", expected=[2, 3], unexpected=[1, 4], highest_id=3)
+
+    def test_unicode_infinite_list(self):
+        self.check("2:*", expected=[2, 3], unexpected=[1, 4], highest_id=3)
+
+    def test_highest_only(self):
+        self.check("*", expected=[4], unexpected=[1, 2, 3, 5], highest_id=4)
+
+    def test_highest_only_range(self):
+        self.check("*:*", expected=[4], unexpected=[1, 2, 3, 5], highest_id=4)
 
 
 class Test_normalise_search_criteria(unittest.TestCase):
