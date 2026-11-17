@@ -1,7 +1,7 @@
 [project]
 name = "IMAPClient"
 description = "Easy-to-use, Pythonic and complete IMAP client library"
-version = "4.2.0"
+version = "4.3.0"
 license = {text = "BSD-3-Clause"}
 authors = [
     {name = "Menno Finlay-Smits", email = "hello@menno.io"},

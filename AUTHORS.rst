@@ -51,3 +51,5 @@ project:
 - Lars Artmann
 - Max Azatian
 - Yaraslau Byshyk
+- Phil Cohen (@phlipper)
+- Sam Brightman (@sambrightman)
