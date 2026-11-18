@@ -3,116 +3,120 @@
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 import sys
-import unittest
+import types
 from unittest.mock import Mock, patch, sentinel
+
+import pytest
 
 from imapclient.imapclient import IMAPClient, SocketTimeout
 
 
-class TestInit(unittest.TestCase):
-    def setUp(self):
-        patcher = patch("imapclient.imapclient.imap4")
-        self.imap4 = patcher.start()
-        self.addCleanup(patcher.stop)
+@pytest.fixture
+def imap_mocks():
+    with patch("imapclient.imapclient.imap4") as imap4, patch(
+        "imapclient.imapclient.tls"
+    ) as tls, patch("imapclient.imapclient.imaplib") as imaplib:
+        yield types.SimpleNamespace(imap4=imap4, tls=tls, imaplib=imaplib)
 
-        patcher = patch("imapclient.imapclient.tls")
-        self.tls = patcher.start()
-        self.addCleanup(patcher.stop)
 
-        patcher = patch("imapclient.imapclient.imaplib")
-        self.imaplib = patcher.start()
-        self.addCleanup(patcher.stop)
+@pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="connection timeouts require Python 3.9+"
+)
+def test_plain(imap_mocks):
+    fakeIMAP4 = Mock()
+    imap_mocks.imap4.IMAP4WithTimeout.return_value = fakeIMAP4
 
-    @unittest.skipIf(
-        sys.version_info < (3, 9), "connection timeouts require Python 3.9+"
+    imap = IMAPClient("1.2.3.4", ssl=False, timeout=sentinel.timeout)
+
+    assert imap._imap is fakeIMAP4
+    imap_mocks.imap4.IMAP4WithTimeout.assert_called_once_with(
+        "1.2.3.4", 143, sentinel.timeout
     )
-    def test_plain(self):
-        fakeIMAP4 = Mock()
-        self.imap4.IMAP4WithTimeout.return_value = fakeIMAP4
+    assert imap.host == "1.2.3.4"
+    assert imap.port == 143
+    assert imap.ssl is False
+    assert imap.ssl_context is None
+    assert imap.stream is False
 
-        imap = IMAPClient("1.2.3.4", ssl=False, timeout=sentinel.timeout)
 
-        self.assertEqual(imap._imap, fakeIMAP4)
-        self.imap4.IMAP4WithTimeout.assert_called_with("1.2.3.4", 143, sentinel.timeout)
-        self.assertEqual(imap.host, "1.2.3.4")
-        self.assertEqual(imap.port, 143)
-        self.assertEqual(imap.ssl, False)
-        self.assertEqual(imap.ssl_context, None)
-        self.assertEqual(imap.stream, False)
+@pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="connection timeouts require Python 3.9+"
+)
+def test_plain_SocketTimeout(imap_mocks):
+    fakeIMAP4 = Mock()
+    imap_mocks.imap4.IMAP4WithTimeout.return_value = fakeIMAP4
 
-    @unittest.skipIf(
-        sys.version_info < (3, 9), "connection timeouts require Python 3.9+"
+    imap = IMAPClient(
+        "1.2.3.4",
+        ssl=False,
+        timeout=SocketTimeout(sentinel.connect_timeout, sentinel.timeout),
     )
-    def test_plain_SocketTimeout(self):
-        fakeIMAP4 = Mock()
-        self.imap4.IMAP4WithTimeout.return_value = fakeIMAP4
 
-        imap = IMAPClient(
-            "1.2.3.4",
-            ssl=False,
-            timeout=SocketTimeout(sentinel.connect_timeout, sentinel.timeout),
-        )
-
-        self.assertEqual(imap._imap, fakeIMAP4)
-        self.imap4.IMAP4WithTimeout.assert_called_with(
-            "1.2.3.4", 143, sentinel.connect_timeout
-        )
-
-    @unittest.skipIf(
-        sys.version_info < (3, 9), "connection timeouts require Python 3.9+"
+    assert imap._imap is fakeIMAP4
+    imap_mocks.imap4.IMAP4WithTimeout.assert_called_once_with(
+        "1.2.3.4", 143, sentinel.connect_timeout
     )
-    def test_SSL(self):
-        fakeIMAP4_TLS = Mock()
-        self.tls.IMAP4_TLS.return_value = fakeIMAP4_TLS
 
-        imap = IMAPClient(
-            "1.2.3.4", ssl_context=sentinel.context, timeout=sentinel.timeout
-        )
 
-        self.assertEqual(imap._imap, fakeIMAP4_TLS)
-        self.tls.IMAP4_TLS.assert_called_with(
-            "1.2.3.4", 993, sentinel.context, sentinel.timeout
-        )
-        self.assertEqual(imap.host, "1.2.3.4")
-        self.assertEqual(imap.port, 993)
-        self.assertEqual(imap.ssl, True)
-        self.assertEqual(imap.ssl_context, sentinel.context)
-        self.assertEqual(imap.stream, False)
+@pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="connection timeouts require Python 3.9+"
+)
+def test_SSL(imap_mocks):
+    fakeIMAP4_TLS = Mock()
+    imap_mocks.tls.IMAP4_TLS.return_value = fakeIMAP4_TLS
 
-    @unittest.skipIf(
-        sys.version_info < (3, 9), "connection timeouts require Python 3.9+"
+    imap = IMAPClient("1.2.3.4", ssl_context=sentinel.context, timeout=sentinel.timeout)
+
+    assert imap._imap is fakeIMAP4_TLS
+    imap_mocks.tls.IMAP4_TLS.assert_called_once_with(
+        "1.2.3.4", 993, sentinel.context, sentinel.timeout
     )
-    def test_SSL_SocketTimeout(self):
-        fakeIMAP4_TLS = Mock()
-        self.tls.IMAP4_TLS.return_value = fakeIMAP4_TLS
+    assert imap.host == "1.2.3.4"
+    assert imap.port == 993
+    assert imap.ssl is True
+    assert imap.ssl_context is sentinel.context
+    assert imap.stream is False
 
-        imap = IMAPClient(
-            "1.2.3.4",
-            ssl_context=sentinel.context,
-            timeout=SocketTimeout(sentinel.connect_timeout, sentinel.timeout),
-        )
 
-        self.assertEqual(imap._imap, fakeIMAP4_TLS)
-        self.tls.IMAP4_TLS.assert_called_with(
-            "1.2.3.4", 993, sentinel.context, sentinel.connect_timeout
-        )
+@pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="connection timeouts require Python 3.9+"
+)
+def test_SSL_SocketTimeout(imap_mocks):
+    fakeIMAP4_TLS = Mock()
+    imap_mocks.tls.IMAP4_TLS.return_value = fakeIMAP4_TLS
 
-    def test_stream(self):
-        fakeIMAP4_stream = Mock()
-        self.imaplib.IMAP4_stream.return_value = fakeIMAP4_stream
+    imap = IMAPClient(
+        "1.2.3.4",
+        ssl_context=sentinel.context,
+        timeout=SocketTimeout(sentinel.connect_timeout, sentinel.timeout),
+    )
 
-        imap = IMAPClient("command", stream=True, ssl=False)
+    assert imap._imap is fakeIMAP4_TLS
+    imap_mocks.tls.IMAP4_TLS.assert_called_once_with(
+        "1.2.3.4", 993, sentinel.context, sentinel.connect_timeout
+    )
 
-        self.assertEqual(imap._imap, fakeIMAP4_stream)
-        self.imaplib.IMAP4_stream.assert_called_with("command")
 
-        self.assertEqual(imap.host, "command")
-        self.assertEqual(imap.port, None)
-        self.assertEqual(imap.ssl, False)
-        self.assertEqual(imap.stream, True)
+def test_stream(imap_mocks):
+    fakeIMAP4_stream = Mock()
+    imap_mocks.imaplib.IMAP4_stream.return_value = fakeIMAP4_stream
 
-    def test_ssl_and_stream_is_error(self):
-        self.assertRaises(ValueError, IMAPClient, "command", ssl=True, stream=True)
+    imap = IMAPClient("command", stream=True, ssl=False)
 
-    def test_stream_and_port_is_error(self):
-        self.assertRaises(ValueError, IMAPClient, "command", stream=True, port=123)
+    assert imap._imap is fakeIMAP4_stream
+    imap_mocks.imaplib.IMAP4_stream.assert_called_once_with("command")
+
+    assert imap.host == "command"
+    assert imap.port is None
+    assert imap.ssl is False
+    assert imap.stream is True
+
+
+def test_ssl_and_stream_is_error():
+    with pytest.raises(ValueError):
+        IMAPClient("command", ssl=True, stream=True)
+
+
+def test_stream_and_port_is_error():
+    with pytest.raises(ValueError):
+        IMAPClient("command", stream=True, port=123)

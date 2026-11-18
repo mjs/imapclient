@@ -5,21 +5,22 @@
 
 from unittest.mock import Mock, patch, sentinel
 
+import pytest
+
 from imapclient.imapclient import ANSWERED, DELETED, DRAFT, FLAGGED, RECENT, SEEN
 
-from .imapclient_test import IMAPClientTest
 
-
-class TestFlagsConsts(IMAPClientTest):
+class TestFlagsConsts:
     def test_flags_are_bytes(self):
         for flag in DELETED, SEEN, ANSWERED, FLAGGED, DRAFT, RECENT:
             if not isinstance(flag, bytes):
-                self.fail("%r flag is not bytes" % flag)
+                pytest.fail("%r flag is not bytes" % flag)
 
 
-class TestFlags(IMAPClientTest):
-    def setUp(self):
-        super(TestFlags, self).setUp()
+class TestFlags:
+    @pytest.fixture(autouse=True)
+    def _setup(self, client):
+        self.client = client
         self.client._command_and_check = Mock()
 
     def test_get(self):
@@ -31,24 +32,26 @@ class TestFlags(IMAPClientTest):
         ):
             out = self.client.get_flags(sentinel.messages)
             self.client.fetch.assert_called_with(sentinel.messages, ["FLAGS"])
-            self.assertEqual(out, {123: [b"foo", b"bar"], 444: [b"foo"]})
+            assert out == {123: [b"foo", b"bar"], 444: [b"foo"]}
 
     def test_set(self):
-        self.check(self.client.set_flags, b"FLAGS")
+        self._check(self.client.set_flags, b"FLAGS")
 
     def test_add(self):
-        self.check(self.client.add_flags, b"+FLAGS")
+        self._check(self.client.add_flags, b"+FLAGS")
 
     def test_remove(self):
-        self.check(self.client.remove_flags, b"-FLAGS")
+        self._check(self.client.remove_flags, b"-FLAGS")
 
-    def check(self, meth, expected_command):
-        self._check(meth, expected_command)
-        self._check(meth, expected_command, silent=True)
-        self._check(meth, expected_command, unsolicited_noise=True)
-        self._check(meth, expected_command, unsolicited_noise=True, silent=True)
+    def _check(self, meth, expected_command):
+        self._check_once(meth, expected_command)
+        self._check_once(meth, expected_command, silent=True)
+        self._check_once(meth, expected_command, unsolicited_noise=True)
+        self._check_once(meth, expected_command, unsolicited_noise=True, silent=True)
 
-    def _check(self, meth, expected_command, unsolicited_noise=False, silent=False):
+    def _check_once(
+        self, meth, expected_command, unsolicited_noise=False, silent=False
+    ):
         if silent:
             expected_command += b".SILENT"
 
@@ -67,15 +70,12 @@ class TestFlags(IMAPClientTest):
         resp = meth([1, 2], "foo", silent=silent)
         cc.assert_called_once_with("store", b"1,2", expected_command, "(foo)", uid=True)
         if silent:
-            self.assertIsNone(resp)
+            assert resp is None
         else:
-            self.assertEqual(
-                resp,
-                {
-                    1: (b"blah", b"foo"),
-                    2: (b"foo",),
-                },
-            )
+            assert resp == {
+                1: (b"blah", b"foo"),
+                2: (b"foo",),
+            }
 
         cc.reset_mock()
 
@@ -87,7 +87,7 @@ class TestFlags(IMAPClientTest):
             b"22 (FLAGS (bar) UID 2)",
         ]
         resp = self.client.add_flags([11, 22], "foo")
-        self.assertEqual(resp, {11: (b"foo",), 22: (b"bar",)})
+        assert resp == {11: (b"foo",), 22: (b"bar",)}
 
     def test_unsolicited_uid_not_merged_when_not_using_uids(self):
         # The UID of the unsolicited response matches a requested sequence
@@ -100,12 +100,13 @@ class TestFlags(IMAPClientTest):
             b"46 (UID 2 FLAGS (\\Seen))",
         ]
         resp = self.client.add_flags([1, 2], "foo")
-        self.assertEqual(resp, {1: (b"foo",), 2: (b"foo",)})
+        assert resp == {1: (b"foo",), 2: (b"foo",)}
 
 
-class TestGmailLabels(IMAPClientTest):
-    def setUp(self):
-        super(TestGmailLabels, self).setUp()
+class TestGmailLabels:
+    @pytest.fixture(autouse=True)
+    def _setup(self, client):
+        self.client = client
         self.client._command_and_check = Mock()
 
     def test_get(self):
@@ -120,24 +121,26 @@ class TestGmailLabels(IMAPClientTest):
         ):
             out = self.client.get_gmail_labels(sentinel.messages)
             self.client.fetch.assert_called_with(sentinel.messages, [b"X-GM-LABELS"])
-            self.assertEqual(out, {123: ["foo", "Łabel"], 444: ["foo"]})
+            assert out == {123: ["foo", "Łabel"], 444: ["foo"]}
 
     def test_set(self):
-        self.check(self.client.set_gmail_labels, b"X-GM-LABELS")
+        self._check(self.client.set_gmail_labels, b"X-GM-LABELS")
 
     def test_add(self):
-        self.check(self.client.add_gmail_labels, b"+X-GM-LABELS")
+        self._check(self.client.add_gmail_labels, b"+X-GM-LABELS")
 
     def test_remove(self):
-        self.check(self.client.remove_gmail_labels, b"-X-GM-LABELS")
+        self._check(self.client.remove_gmail_labels, b"-X-GM-LABELS")
 
-    def check(self, meth, expected_command):
-        self._check(meth, expected_command)
-        self._check(meth, expected_command, silent=True)
-        self._check(meth, expected_command, unsolicited_noise=True)
-        self._check(meth, expected_command, unsolicited_noise=True, silent=True)
+    def _check(self, meth, expected_command):
+        self._check_once(meth, expected_command)
+        self._check_once(meth, expected_command, silent=True)
+        self._check_once(meth, expected_command, unsolicited_noise=True)
+        self._check_once(meth, expected_command, unsolicited_noise=True, silent=True)
 
-    def _check(self, meth, expected_command, unsolicited_noise=False, silent=False):
+    def _check_once(
+        self, meth, expected_command, unsolicited_noise=False, silent=False
+    ):
         if silent:
             expected_command += b".SILENT"
 
@@ -158,16 +161,13 @@ class TestGmailLabels(IMAPClientTest):
             "store", b"1,2", expected_command, '("f\\"o\\"o")', uid=True
         )
         if silent:
-            self.assertIsNone(resp)
+            assert resp is None
         else:
-            self.assertEqual(
-                resp,
-                {
-                    1: ["Łabel", 'f"o"o'],
-                    2: [
-                        'f"o"o',
-                    ],
-                },
-            )
+            assert resp == {
+                1: ["Łabel", 'f"o"o'],
+                2: [
+                    'f"o"o',
+                ],
+            }
 
         cc.reset_mock()

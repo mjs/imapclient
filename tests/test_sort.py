@@ -4,39 +4,45 @@
 
 from unittest.mock import Mock
 
+import pytest
+
 from imapclient.exceptions import CapabilityError
 
-from .imapclient_test import IMAPClientTest
+
+@pytest.fixture
+def client(client):
+    client._cached_capabilities = (b"SORT",)
+    client._raw_command_untagged = Mock()
+    client._raw_command_untagged.return_value = b"9 8 7"
+    return client
 
 
-class TestSort(IMAPClientTest):
-    def setUp(self):
-        super(TestSort, self).setUp()
-        self.client._cached_capabilities = (b"SORT",)
-        self.client._raw_command_untagged = Mock()
-        self.client._raw_command_untagged.return_value = b"9 8 7"
+def _check_call(client, expected_args):
+    client._raw_command_untagged.assert_called_once_with(
+        b"SORT", expected_args, unpack=True
+    )
 
-    def check_call(self, expected_args):
-        self.client._raw_command_untagged.assert_called_once_with(
-            b"SORT", expected_args, unpack=True
-        )
 
-    def test_no_support(self):
-        self.client._cached_capabilities = (b"BLAH",)
-        self.assertRaises(CapabilityError, self.client.sort, "ARRIVAL")
+def test_no_support(client):
+    client._cached_capabilities = (b"BLAH",)
+    with pytest.raises(CapabilityError):
+        client.sort("ARRIVAL")
 
-    def test_single_criteria(self):
-        ids = self.client.sort("arrival")
 
-        self.check_call([b"(ARRIVAL)", b"UTF-8", b"ALL"])
-        self.assertSequenceEqual(ids, [9, 8, 7])
+def test_single_criteria(client):
+    ids = client.sort("arrival")
 
-    def test_multiple_criteria(self):
-        self.client.sort(["arrival", b"SUBJECT"])
+    _check_call(client, [b"(ARRIVAL)", b"UTF-8", b"ALL"])
+    assert list(ids) == [9, 8, 7]
 
-        self.check_call([b"(ARRIVAL SUBJECT)", b"UTF-8", b"ALL"])
 
-    def test_all_args(self):
-        self.client.sort("arrival", ["TEXT", "\u261e"], "UTF-7")
+def test_multiple_criteria(client):
+    client.sort(["arrival", b"SUBJECT"])
 
-        self.check_call([b"(ARRIVAL)", b"UTF-7", b"TEXT", b"+Jh4-"])
+    _check_call(client, [b"(ARRIVAL SUBJECT)", b"UTF-8", b"ALL"])
+
+
+def test_all_args(client):
+    client.sort("arrival", ["TEXT", "\u261e"], "UTF-7")
+
+    _check_call(client, [b"(ARRIVAL)", b"UTF-7", b"TEXT", b"+Jh4-"])

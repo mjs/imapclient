@@ -32,4 +32,4 @@ jobs:
     - name: Print Python version under test
       run: uv run python --version
     - name: Test
-      run: uv run python -m unittest --verbose
+      run: uv run pytest -v

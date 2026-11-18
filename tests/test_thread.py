@@ -4,40 +4,45 @@
 
 from unittest.mock import Mock
 
+import pytest
+
 from imapclient.exceptions import CapabilityError
 
-from .imapclient_test import IMAPClientTest
+
+@pytest.fixture
+def client(client):
+    client._cached_capabilities = (b"THREAD=REFERENCES",)
+    client._raw_command_untagged = Mock()
+    client._raw_command_untagged.return_value = [b"(1 2)(3)(4 5 6)"]
+    return client
 
 
-class TestThread(IMAPClientTest):
-    def setUp(self):
-        super(TestThread, self).setUp()
-        self.client._cached_capabilities = (b"THREAD=REFERENCES",)
-        self.client._raw_command_untagged = Mock()
-        self.client._raw_command_untagged.return_value = [b"(1 2)(3)(4 5 6)"]
+def _check_call(client, expected_args):
+    client._raw_command_untagged.assert_called_once_with(b"THREAD", expected_args)
 
-    def check_call(self, expected_args):
-        self.client._raw_command_untagged.assert_called_once_with(
-            b"THREAD", expected_args
-        )
 
-    def test_no_thread_support(self):
-        self.client._cached_capabilities = (b"NOT-THREAD",)
-        self.assertRaises(CapabilityError, self.client.thread)
+def test_no_thread_support(client):
+    client._cached_capabilities = (b"NOT-THREAD",)
+    with pytest.raises(CapabilityError):
+        client.thread()
 
-    def test_unsupported_algorithm(self):
-        self.client._cached_capabilities = (b"THREAD=FOO",)
-        self.assertRaises(CapabilityError, self.client.thread)
 
-    def test_defaults(self):
-        threads = self.client.thread()
+def test_unsupported_algorithm(client):
+    client._cached_capabilities = (b"THREAD=FOO",)
+    with pytest.raises(CapabilityError):
+        client.thread()
 
-        self.check_call([b"REFERENCES", b"UTF-8", b"ALL"])
-        self.assertSequenceEqual(threads, ((1, 2), (3,), (4, 5, 6)))
 
-    def test_all_args(self):
-        self.client._cached_capabilities = (b"THREAD=COTTON",)
+def test_defaults(client):
+    threads = client.thread()
 
-        self.client.thread("COTTON", ["TEXT", "\u261e"], "UTF-7")
+    _check_call(client, [b"REFERENCES", b"UTF-8", b"ALL"])
+    assert threads == ((1, 2), (3,), (4, 5, 6))
 
-        self.check_call([b"COTTON", b"UTF-7", b"TEXT", b"+Jh4-"])
+
+def test_all_args(client):
+    client._cached_capabilities = (b"THREAD=COTTON",)
+
+    client.thread("COTTON", ["TEXT", "\u261e"], "UTF-7")
+
+    _check_call(client, [b"COTTON", b"UTF-7", b"TEXT", b"+Jh4-"])

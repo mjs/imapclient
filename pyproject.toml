@@ -40,6 +40,13 @@ dev = [
     "isort",
     "mypy",
     "pylint",
+    "pytest",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = [
+    "ignore:.*TestableIMAPClient.*:pytest.PytestCollectionWarning",
 ]
 
 [build-system]

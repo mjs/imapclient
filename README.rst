@@ -145,6 +145,12 @@ or by invoking the interact module like this::
 
     uv run python -m imapclient.interact ...
 
+Unit Tests
+----------
+The unit test suite is run using pytest::
+
+    uv run pytest -v
+
 "Live" Tests
 ------------
 IMAPClient includes a series of live, functional tests which exercise

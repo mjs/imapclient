@@ -1,7 +1,3 @@
-# Copyright (c) 2025, Menno Smits
-# Released subject to the New BSD License
-# Please see http://en.wikipedia.org/wiki/BSD_licenses
-
 """Integration tests for IMAPClient(..., ssl=True) over a real socket pair.
 
 These exercise the actual TLS-from-connect code path (tls.IMAP4_TLS socket
@@ -15,8 +11,9 @@ import socket
 import ssl
 import sys
 import threading
-import unittest
 from pathlib import Path
+
+import pytest
 
 from imapclient.imapclient import IMAPClient
 
@@ -80,54 +77,64 @@ class FakeTLSServer:
             self.error = e
 
 
-@unittest.skipIf(
+@pytest.fixture
+def server():
+    srv = FakeTLSServer()
+    saved_cert_file = os.environ.pop("SSL_CERT_FILE", None)
+    os.environ["SSL_CERT_FILE"] = str(CA_FILE)
+    yield srv
+    if saved_cert_file is not None:
+        os.environ["SSL_CERT_FILE"] = saved_cert_file
+    srv.sock.close()
+    assert srv.error is None
+
+
+@pytest.fixture
+def client(server):
+    return IMAPClient("localhost", server.port, ssl=True)
+
+
+@pytest.mark.skipif(
     sys.version_info < (3, 9),
-    "imaplib.IMAP4 gained the timeout parameter in Python 3.9",
+    reason="imaplib.IMAP4 gained the timeout parameter in Python 3.9",
 )
-class TlsSocketTests(unittest.TestCase):
-    def setUp(self):
-        self.server = FakeTLSServer()
-        self._saved_cert_file = os.environ.pop("SSL_CERT_FILE", None)
-        os.environ["SSL_CERT_FILE"] = str(CA_FILE)
+def test_ssl_connect_with_default_context(client):
+    sock = client._imap.sock
+    assert isinstance(sock, ssl.SSLSocket)
+    # IMAPClient's documented default: hostname checking and certificate
+    # verification ON. imaplib's own None-fallback is unverified.
+    assert sock.context.check_hostname
+    assert sock.context.verify_mode == ssl.CERT_REQUIRED
 
-    def tearDown(self):
-        if self._saved_cert_file is not None:
-            os.environ["SSL_CERT_FILE"] = self._saved_cert_file
-        self.server.sock.close()
-        self.assertIsNone(self.server.error)
+    assert b"IMAP4REV1" in client.capabilities()
+    client.login("user", "pass")
+    client.logout()
 
-    def _client(self, **kwargs):
-        return IMAPClient("localhost", self.server.port, ssl=True, **kwargs)
 
-    def test_ssl_connect_with_default_context(self):
-        client = self._client()
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="imaplib.IMAP4 gained the timeout parameter in Python 3.9",
+)
+def test_ssl_connect_with_custom_context(server):
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
 
-        sock = client._imap.sock
-        self.assertIsInstance(sock, ssl.SSLSocket)
-        # IMAPClient's documented default: hostname checking and certificate
-        # verification ON. imaplib's own None-fallback is unverified.
-        self.assertTrue(sock.context.check_hostname)
-        self.assertEqual(sock.context.verify_mode, ssl.CERT_REQUIRED)
+    client = IMAPClient("localhost", server.port, ssl=True, ssl_context=context)
 
-        self.assertIn(b"IMAP4REV1", client.capabilities())
-        client.login("user", "pass")
-        client.logout()
+    assert client._imap.sock.context is context
+    client.login("user", "pass")
+    client.logout()
 
-    def test_ssl_connect_with_custom_context(self):
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
 
-        client = self._client(ssl_context=context)
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="imaplib.IMAP4 gained the timeout parameter in Python 3.9",
+)
+def test_ssl_connect_untrusted_cert_fails(server):
+    # Without the test CA in the verification path, the default context
+    # must reject the server's self-signed certificate.
+    del os.environ["SSL_CERT_FILE"]
 
-        self.assertIs(client._imap.sock.context, context)
-        client.login("user", "pass")
-        client.logout()
-
-    def test_ssl_connect_untrusted_cert_fails(self):
-        # Without the test CA in the verification path, the default context
-        # must reject the server's self-signed certificate.
-        del os.environ["SSL_CERT_FILE"]
-
-        with self.assertRaises(ssl.SSLError):
-            self._client()
+    with pytest.raises(ssl.SSLError):
+        IMAPClient("localhost", server.port, ssl=True)

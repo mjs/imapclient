@@ -47,7 +47,7 @@ Running Unit Tests
 ------------------
 To run the tests, from the root of the package source run::
 
-    uv run python -m unittest --verbose
+    uv run pytest -v
 
 Testing Against Multiple Python Versions
 ----------------------------------------
@@ -59,7 +59,7 @@ transparently download and manage any Python versions it doesn't
 already have available. For example, to run the unit tests against
 Python 3.10::
 
-    uv run --python 3.10 python -m unittest --verbose
+    uv run --python 3.10 pytest -v
 
 .. _`uv`: https://docs.astral.sh/uv/
 
@@ -70,11 +70,10 @@ test against all of them.
 Writing Unit Tests
 ------------------
 Protocol level unit tests should not act against a real IMAP server
-but should use canned data instead. The IMAPClientTest base class
-should typically be used as the base class for any tests - it provides
-a mock IMAPClient instance at `self.client`. See the tests in
-`tests/test_imapclient.py` for examples of how to write unit tests using
-this approach.
+but should use canned data instead. Tests should use the `client`
+pytest fixture (defined in `tests/conftest.py`) which provides a mock
+IMAPClient instance. See the tests in `tests/test_imapclient.py` for
+examples of how to write unit tests using this approach.
 
 Documentation
 =============
