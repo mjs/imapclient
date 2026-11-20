@@ -1,7 +1,3 @@
-# Copyright (c) 2025, Menno Smits
-# Released subject to the New BSD License
-# Please see http://en.wikipedia.org/wiki/BSD_licenses
-
 """Integration tests for starttls() over a real socket pair.
 
 These exercise the actual imaplib starttls code path (socket wrap plus
@@ -15,8 +11,9 @@ import socket
 import ssl
 import sys
 import threading
-import unittest
 from pathlib import Path
+
+import pytest
 
 from imapclient.exceptions import IMAPClientError
 from imapclient.imapclient import IMAPClient
@@ -107,56 +104,66 @@ class FakeSTARTTLSServer:
                 conn.sendall(tag + b" OK done\r\n")
 
 
-@unittest.skipIf(
+@pytest.fixture
+def server():
+    srv = FakeSTARTTLSServer()
+    saved_cert_file = os.environ.pop("SSL_CERT_FILE", None)
+    os.environ["SSL_CERT_FILE"] = str(CA_FILE)
+    yield srv
+    if saved_cert_file is not None:
+        os.environ["SSL_CERT_FILE"] = saved_cert_file
+    srv.sock.close()
+    assert srv.error is None
+
+
+@pytest.fixture
+def client(server):
+    return IMAPClient("localhost", server.port, ssl=False)
+
+
+@pytest.mark.skipif(
     sys.version_info < (3, 9),
-    "imaplib.IMAP4 gained the timeout parameter in Python 3.9",
+    reason="imaplib.IMAP4 gained the timeout parameter in Python 3.9",
 )
-class StarttlsSocketTests(unittest.TestCase):
-    def setUp(self):
-        self.server = FakeSTARTTLSServer()
-        self._saved_cert_file = os.environ.pop("SSL_CERT_FILE", None)
-        os.environ["SSL_CERT_FILE"] = str(CA_FILE)
+def test_starttls_with_default_context(client):
+    client.starttls()
 
-    def tearDown(self):
-        if self._saved_cert_file is not None:
-            os.environ["SSL_CERT_FILE"] = self._saved_cert_file
-        self.server.sock.close()
-        self.assertIsNone(self.server.error)
+    sock = client._imap.sock
+    assert isinstance(sock, ssl.SSLSocket)
+    # IMAPClient's documented default: hostname checking and certificate
+    # verification ON. imaplib's own None-fallback is unverified.
+    assert sock.context.check_hostname
+    assert sock.context.verify_mode == ssl.CERT_REQUIRED
 
-    def _client(self):
-        return IMAPClient("localhost", self.server.port, ssl=False)
+    assert b"STARTTLS" not in client.capabilities()
+    client.login("user", "pass")
+    client.logout()
 
-    def test_starttls_with_default_context(self):
-        client = self._client()
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="imaplib.IMAP4 gained the timeout parameter in Python 3.9",
+)
+def test_starttls_with_custom_context(server):
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+
+    client = IMAPClient("localhost", server.port, ssl=False)
+    client.starttls(context)
+
+    assert client._imap.sock.context is context
+    client.login("user", "pass")
+    client.logout()
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="imaplib.IMAP4 gained the timeout parameter in Python 3.9",
+)
+def test_starttls_refused_raises_imapclient_error(server):
+    server.refuse_tls = True
+    client = IMAPClient("localhost", server.port, ssl=False)
+
+    with pytest.raises(IMAPClientError):
         client.starttls()
-
-        sock = client._imap.sock
-        self.assertIsInstance(sock, ssl.SSLSocket)
-        # IMAPClient's documented default: hostname checking and certificate
-        # verification ON. imaplib's own None-fallback is unverified.
-        self.assertTrue(sock.context.check_hostname)
-        self.assertEqual(sock.context.verify_mode, ssl.CERT_REQUIRED)
-
-        self.assertNotIn(b"STARTTLS", client.capabilities())
-        client.login("user", "pass")
-        client.logout()
-
-    def test_starttls_with_custom_context(self):
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
-
-        client = self._client()
-        client.starttls(context)
-
-        self.assertIs(client._imap.sock.context, context)
-        client.login("user", "pass")
-        client.logout()
-
-    def test_starttls_refused_raises_imapclient_error(self):
-        self.server.refuse_tls = True
-        client = self._client()
-
-        with self.assertRaises(IMAPClientError):
-            client.starttls()

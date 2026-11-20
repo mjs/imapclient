@@ -6,104 +6,105 @@ import imaplib
 from datetime import date, datetime
 from unittest.mock import Mock
 
+import pytest
+
 from imapclient.exceptions import InvalidCriteriaError
 from imapclient.imapclient import _quoted
 
-from .imapclient_test import IMAPClientTest
+
+@pytest.fixture
+def client(client):
+    client._raw_command_untagged = Mock()
+    client._raw_command_untagged.return_value = [b"1 2 44"]
+    return client
 
 
-class TestSearchBase(IMAPClientTest):
-    def setUp(self):
-        super(TestSearchBase, self).setUp()
-        self.client._raw_command_untagged = Mock()
-        self.client._raw_command_untagged.return_value = [b"1 2 44"]
-
-    def check_call(self, expected_args):
-        self.client._raw_command_untagged.assert_called_once_with(
-            b"SEARCH", expected_args
-        )
+def _check_call(client, expected_args):
+    client._raw_command_untagged.assert_called_once_with(b"SEARCH", expected_args)
 
 
-class TestSearch(TestSearchBase):
-    def test_bytes_criteria(self):
-        result = self.client.search([b"FOO", b"BAR"])
+class TestSearch:
+    def test_bytes_criteria(self, client):
+        result = client.search([b"FOO", b"BAR"])
 
-        self.check_call([b"FOO", b"BAR"])
-        self.assertEqual(result, [1, 2, 44])
-        self.assertEqual(result.modseq, None)
+        _check_call(client, [b"FOO", b"BAR"])
+        assert result == [1, 2, 44]
+        assert result.modseq is None
 
-    def test_bytes_criteria_with_charset(self):
-        self.client.search([b"FOO", b"BAR"], "utf-92")
+    def test_bytes_criteria_with_charset(self, client):
+        client.search([b"FOO", b"BAR"], "utf-92")
 
-        self.check_call([b"CHARSET", b"utf-92", b"FOO", b"BAR"])
+        _check_call(client, [b"CHARSET", b"utf-92", b"FOO", b"BAR"])
 
-    def test_unicode_criteria(self):
-        result = self.client.search(["FOO", "BAR"])
+    def test_unicode_criteria(self, client):
+        result = client.search(["FOO", "BAR"])
 
         # Default conversion using us-ascii.
-        self.check_call([b"FOO", b"BAR"])
-        self.assertEqual(result, [1, 2, 44])
-        self.assertEqual(result.modseq, None)
+        _check_call(client, [b"FOO", b"BAR"])
+        assert result == [1, 2, 44]
+        assert result.modseq is None
 
-    def test_unicode_criteria_with_charset(self):
-        self.client.search(["FOO", "\u2639"], "utf-8")
-        self.check_call([b"CHARSET", b"utf-8", b"FOO", _quoted(b"\xe2\x98\xb9")])
+    def test_unicode_criteria_with_charset(self, client):
+        client.search(["FOO", "\u2639"], "utf-8")
+        _check_call(client, [b"CHARSET", b"utf-8", b"FOO", _quoted(b"\xe2\x98\xb9")])
 
-    def test_with_date(self):
-        self.client.search(["SINCE", date(2005, 4, 3)])
-        self.check_call([b"SINCE", b"03-Apr-2005"])
+    def test_with_date(self, client):
+        client.search(["SINCE", date(2005, 4, 3)])
+        _check_call(client, [b"SINCE", b"03-Apr-2005"])
 
-    def test_with_datetime(self):
-        self.client.search(["SINCE", datetime(2005, 4, 3, 2, 1, 0)])
-        self.check_call([b"SINCE", b"03-Apr-2005"])  # Time part is ignored
+    def test_with_datetime(self, client):
+        client.search(["SINCE", datetime(2005, 4, 3, 2, 1, 0)])
+        _check_call(client, [b"SINCE", b"03-Apr-2005"])  # Time part is ignored
 
-    def test_quoting(self):
-        self.client.search(["TEXT", "foo bar"])
-        self.check_call([b"TEXT", _quoted(b'"foo bar"')])
+    def test_quoting(self, client):
+        client.search(["TEXT", "foo bar"])
+        _check_call(client, [b"TEXT", _quoted(b'"foo bar"')])
 
-    def test_zero_length_quoting(self):
+    def test_zero_length_quoting(self, client):
         # Zero-length strings should be quoted
-        self.client.search(["HEADER", "List-Id", ""])
-        self.check_call([b"HEADER", b"List-Id", b'""'])
+        client.search(["HEADER", "List-Id", ""])
+        _check_call(client, [b"HEADER", b"List-Id", b'""'])
 
-    def test_no_results(self):
-        self.client._raw_command_untagged.return_value = [None]
+    def test_no_results(self, client):
+        client._raw_command_untagged.return_value = [None]
 
-        result = self.client.search(["FOO"])
-        self.assertEqual(result, [])
-        self.assertEqual(result.modseq, None)
+        result = client.search(["FOO"])
+        assert result == []
+        assert result.modseq is None
 
-    def test_modseq(self):
-        self.client._raw_command_untagged.return_value = [b"1 2 (MODSEQ 51101)"]
+    def test_modseq(self, client):
+        client._raw_command_untagged.return_value = [b"1 2 (MODSEQ 51101)"]
 
-        result = self.client.search(["MODSEQ", "40000"])
+        result = client.search(["MODSEQ", "40000"])
 
-        self.check_call([b"MODSEQ", b"40000"])
-        self.assertEqual(result, [1, 2])
-        self.assertEqual(result.modseq, 51101)
+        _check_call(client, [b"MODSEQ", b"40000"])
+        assert result == [1, 2]
+        assert result.modseq == 51101
 
-    def test_nested_empty(self):
-        self.assertRaises(InvalidCriteriaError, self.client.search, [[]])
+    def test_nested_empty(self, client):
+        with pytest.raises(InvalidCriteriaError):
+            client.search([[]])
 
-    def test_single(self):
-        self.client.search([["FOO"]])
-        self.check_call([b"(FOO)"])
+    def test_single(self, client):
+        client.search([["FOO"]])
+        _check_call(client, [b"(FOO)"])
 
-    def test_nested(self):
-        self.client.search(["NOT", ["SUBJECT", "topic", "TO", "some@email.com"]])
-        self.check_call([b"NOT", b"(SUBJECT", b"topic", b"TO", b"some@email.com)"])
+    def test_nested(self, client):
+        client.search(["NOT", ["SUBJECT", "topic", "TO", "some@email.com"]])
+        _check_call(client, [b"NOT", b"(SUBJECT", b"topic", b"TO", b"some@email.com)"])
 
-    def test_nested_multiple(self):
-        self.client.search(["NOT", ["OR", ["A", "x", "B", "y"], ["C", "z"]]])
-        self.check_call([b"NOT", b"(OR", b"(A", b"x", b"B", b"y)", b"(C", b"z))"])
+    def test_nested_multiple(self, client):
+        client.search(["NOT", ["OR", ["A", "x", "B", "y"], ["C", "z"]]])
+        _check_call(client, [b"NOT", b"(OR", b"(A", b"x", b"B", b"y)", b"(C", b"z))"])
 
-    def test_nested_tuple(self):
-        self.client.search(["NOT", ("SUBJECT", "topic", "TO", "some@email.com")])
-        self.check_call([b"NOT", b"(SUBJECT", b"topic", b"TO", b"some@email.com)"])
+    def test_nested_tuple(self, client):
+        client.search(["NOT", ("SUBJECT", "topic", "TO", "some@email.com")])
+        _check_call(client, [b"NOT", b"(SUBJECT", b"topic", b"TO", b"some@email.com)"])
 
-    def test_nested_unicode_criteria_with_charset(self):
-        self.client.search(["NOT", ["TEXT", "caf\u00e9", "UNSEEN"]], "utf-8")
-        self.check_call(
+    def test_nested_unicode_criteria_with_charset(self, client):
+        client.search(["NOT", ["TEXT", "caf\u00e9", "UNSEEN"]], "utf-8")
+        _check_call(
+            client,
             [
                 b"CHARSET",
                 b"utf-8",
@@ -111,12 +112,13 @@ class TestSearch(TestSearchBase):
                 b"(TEXT",
                 _quoted(b"caf\xc3\xa9"),
                 b"UNSEEN)",
-            ]
+            ],
         )
 
-    def test_nested_unicode_tuple_with_charset(self):
-        self.client.search(["NOT", ("TEXT", "caf\u00e9", "UNSEEN")], "iso-8859-1")
-        self.check_call(
+    def test_nested_unicode_tuple_with_charset(self, client):
+        client.search(["NOT", ("TEXT", "caf\u00e9", "UNSEEN")], "iso-8859-1")
+        _check_call(
+            client,
             [
                 b"CHARSET",
                 b"iso-8859-1",
@@ -124,12 +126,13 @@ class TestSearch(TestSearchBase):
                 b"(TEXT",
                 _quoted(b"caf\xe9"),
                 b"UNSEEN)",
-            ]
+            ],
         )
 
-    def test_nested_unicode_last_argument_preserves_literal(self):
-        self.client.search(["NOT", ["TEXT", "caf\u00e9 noir"]], "utf-8")
-        self.check_call(
+    def test_nested_unicode_last_argument_preserves_literal(self, client):
+        client.search(["NOT", ["TEXT", "caf\u00e9 noir"]], "utf-8")
+        _check_call(
+            client,
             [
                 b"CHARSET",
                 b"utf-8",
@@ -137,15 +140,16 @@ class TestSearch(TestSearchBase):
                 b"(TEXT",
                 _quoted(b'"caf\xc3\xa9 noir"'),
                 b")",
-            ]
+            ],
         )
-        literal_arg = self.client._raw_command_untagged.call_args.args[1][-2]
-        self.assertIsInstance(literal_arg, _quoted)
-        self.assertEqual(literal_arg.original, b"caf\xc3\xa9 noir")
+        literal_arg = client._raw_command_untagged.call_args.args[1][-2]
+        assert isinstance(literal_arg, _quoted)
+        assert literal_arg.original == b"caf\xc3\xa9 noir"
 
-    def test_nested_bytes_last_argument_preserves_literal(self):
-        self.client.search(["NOT", ["TEXT", b"caf\xc3\xa9 noir"]], "utf-8")
-        self.check_call(
+    def test_nested_bytes_last_argument_preserves_literal(self, client):
+        client.search(["NOT", ["TEXT", b"caf\xc3\xa9 noir"]], "utf-8")
+        _check_call(
+            client,
             [
                 b"CHARSET",
                 b"utf-8",
@@ -153,18 +157,19 @@ class TestSearch(TestSearchBase):
                 b"(TEXT",
                 _quoted(b'"caf\xc3\xa9 noir"'),
                 b")",
-            ]
+            ],
         )
-        literal_arg = self.client._raw_command_untagged.call_args.args[1][-2]
-        self.assertIsInstance(literal_arg, _quoted)
-        self.assertEqual(literal_arg.original, b"caf\xc3\xa9 noir")
+        literal_arg = client._raw_command_untagged.call_args.args[1][-2]
+        assert isinstance(literal_arg, _quoted)
+        assert literal_arg.original == b"caf\xc3\xa9 noir"
 
-    def test_deeply_nested_unicode_criteria_with_charset(self):
-        self.client.search(
+    def test_deeply_nested_unicode_criteria_with_charset(self, client):
+        client.search(
             ["OR", ["TEXT", "plain"], ["NOT", ["TEXT", "a\u00e7\u00e3o", "UNSEEN"]]],
             "utf-8",
         )
-        self.check_call(
+        _check_call(
+            client,
             [
                 b"CHARSET",
                 b"utf-8",
@@ -175,67 +180,73 @@ class TestSearch(TestSearchBase):
                 b"(TEXT",
                 _quoted(b"a\xc3\xa7\xc3\xa3o"),
                 b"UNSEEN))",
-            ]
+            ],
         )
 
-    def test_search_custom_exception_with_invalid_list(self):
+    def test_search_custom_exception_with_invalid_list(self, client):
         def search_bad_command_exp(*args, **kwargs):
             raise imaplib.IMAP4.error(
                 'SEARCH command error: BAD ["Unknown argument NOT DELETED"]'
             )
 
-        self.client._raw_command_untagged.side_effect = search_bad_command_exp
+        client._raw_command_untagged.side_effect = search_bad_command_exp
 
-        with self.assertRaises(imaplib.IMAP4.error) as cm:
-            self.client.search(["NOT DELETED"])
-        self.assertIn(
+        with pytest.raises(imaplib.IMAP4.error) as cm:
+            client.search(["NOT DELETED"])
+        assert (
             # Python 2.x will add a `u` prefix in the list representation, so let it handle the
             # representation of the criteria there too...
             "may have been caused by a syntax error in the criteria: %s"
-            % str(["NOT DELETED"]),
-            str(cm.exception),
+            % str(["NOT DELETED"])
+            in str(cm.value)
         )
         # Original exception message should be present too just in case...
-        self.assertIn("Unknown argument NOT DELETED", str(cm.exception))
+        assert "Unknown argument NOT DELETED" in str(cm.value)
 
-    def test_search_custom_exception_with_invalid_text(self):
+    def test_search_custom_exception_with_invalid_text(self, client):
         # Check the criteria is surrounding with quotes if the user is using a plain text criteria
         def search_bad_command_exp2(*args, **kwargs):
             raise imaplib.IMAP4.error(
                 'SEARCH command error: BAD ["Unknown argument TOO"]'
             )
 
-        self.client._raw_command_untagged.side_effect = search_bad_command_exp2
+        client._raw_command_untagged.side_effect = search_bad_command_exp2
 
-        with self.assertRaises(imaplib.IMAP4.error) as cm:
-            self.client.search("TOO some@email.com")
-        self.assertIn(
-            'may have been caused by a syntax error in the criteria: "TOO some@email.com"',
-            str(cm.exception),
+        with pytest.raises(imaplib.IMAP4.error) as cm:
+            client.search("TOO some@email.com")
+        assert (
+            'may have been caused by a syntax error in the criteria: "TOO some@email.com"'
+            in str(cm.value)
         )
-        self.assertIn("Unknown argument TOO", str(cm.exception))
+        assert "Unknown argument TOO" in str(cm.value)
 
 
-class TestGmailSearch(TestSearchBase):
-    def setUp(self):
-        super(TestGmailSearch, self).setUp()
+class TestGmailSearch:
+    @pytest.fixture(autouse=True)
+    def _setup(self, client):
+        self.client = client
         self.client._cached_capabilities = [b"X-GM-EXT-1"]
+
+    def _check_call(self, expected_args):
+        self.client._raw_command_untagged.assert_called_once_with(
+            b"SEARCH", expected_args
+        )
 
     def test_bytes_query(self):
         result = self.client.gmail_search(b"foo bar")
 
-        self.check_call([b"CHARSET", b"UTF-8", b"X-GM-RAW", b'"foo bar"'])
-        self.assertEqual(result, [1, 2, 44])
+        self._check_call([b"CHARSET", b"UTF-8", b"X-GM-RAW", b'"foo bar"'])
+        assert result == [1, 2, 44]
 
     def test_bytes_query_with_charset(self):
         result = self.client.gmail_search(b"foo bar", "utf-42")
 
-        self.check_call([b"CHARSET", b"utf-42", b"X-GM-RAW", b'"foo bar"'])
-        self.assertEqual(result, [1, 2, 44])
+        self._check_call([b"CHARSET", b"utf-42", b"X-GM-RAW", b'"foo bar"'])
+        assert result == [1, 2, 44]
 
     def test_unicode_criteria_with_charset(self):
         self.client.gmail_search("foo \u2639", "utf-8")
 
-        self.check_call(
+        self._check_call(
             [b"CHARSET", b"utf-8", b"X-GM-RAW", _quoted(b'"foo \xe2\x98\xb9"')]
         )
