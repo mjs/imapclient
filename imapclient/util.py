@@ -24,6 +24,9 @@ def to_unicode(s: Union[bytes, str]) -> str:
     return s
 
 
+_SequenceItem = Union[bytes, str, int]
+
+
 class SequenceSet:
     """Tests membership of one or more sequence sets.
 
@@ -32,11 +35,11 @@ class SequenceSet:
 
     def __init__(
         self,
-        sequence_sets: Union[bytes, str, int, Sequence[Union[bytes, str, int]]],
+        sequence_sets: Union[_SequenceItem, Sequence[_SequenceItem]],
         *,
         highest_id: int,
     ) -> None:
-        if isinstance(sequence_sets, (int, str, bytes)):
+        if isinstance(sequence_sets, (bytes, str, int)):
             sequence_sets = (sequence_sets,)
         star = str(highest_id).encode("ascii")
         self._id_ranges = [
@@ -46,9 +49,7 @@ class SequenceSet:
         ]
 
     @staticmethod
-    def _to_ranges(
-        sequence_set: Union[bytes, str, int], highest_id: bytes
-    ) -> Iterable[range]:
+    def _to_ranges(sequence_set: _SequenceItem, highest_id: bytes) -> Iterable[range]:
         if isinstance(sequence_set, int):
             return (range(sequence_set, sequence_set + 1),)
         return (
