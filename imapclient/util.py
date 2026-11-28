@@ -3,7 +3,7 @@
 # Please see http://en.wikipedia.org/wiki/BSD_licenses
 
 import logging
-from typing import Iterator, Optional, Sequence, Tuple, Union
+from typing import Iterable, Iterator, Optional, Sequence, Tuple, Union
 
 from . import exceptions
 
@@ -24,17 +24,50 @@ def to_unicode(s: Union[bytes, str]) -> str:
     return s
 
 
-def to_ints(
-    messages: Union[bytes, str, int, Sequence[Union[bytes, str, int]]],
-) -> Sequence[int]:
-    """Convert a sequence of values (such as messages)
-    or a single integer value into an sequence of ints
+_SequenceItem = Union[bytes, str, int]
+
+
+class SequenceSet:
+    """Tests membership of one or more sequence sets.
+
+    *highest_id* is the value of *, the highest message ID in use.
     """
-    if not messages:
-        return []
-    if isinstance(messages, (int, str, bytes)):
-        return [int(messages)]
-    return [int(i) for i in messages]
+
+    def __init__(
+        self,
+        sequence_sets: Union[_SequenceItem, Sequence[_SequenceItem]],
+        *,
+        highest_id: int,
+    ) -> None:
+        if isinstance(sequence_sets, (bytes, str, int)):
+            sequence_sets = (sequence_sets,)
+        star = str(highest_id).encode("ascii")
+        self._id_ranges = [
+            id_range
+            for sequence_set in sequence_sets
+            for id_range in SequenceSet._to_ranges(sequence_set, star)
+        ]
+
+    @staticmethod
+    def _to_ranges(sequence_set: _SequenceItem, highest_id: bytes) -> Iterable[range]:
+        if isinstance(sequence_set, int):
+            return (range(sequence_set, sequence_set + 1),)
+        return (
+            SequenceSet._to_range(r, highest_id)
+            for r in to_bytes(sequence_set).split(b",")
+        )
+
+    @staticmethod
+    def _to_range(sequence: bytes, highest_id: bytes) -> range:
+        first, colon, second = sequence.replace(b"*", highest_id).partition(b":")
+        start = int(first)
+        if colon:
+            end = int(second)
+            return range(min(start, end), max(start, end) + 1)
+        return range(start, start + 1)
+
+    def __contains__(self, message_id: int) -> bool:
+        return any(message_id in id_range for id_range in self._id_ranges)
 
 
 def to_bytes(s: Union[bytes, str], charset: str = "ascii") -> bytes:
